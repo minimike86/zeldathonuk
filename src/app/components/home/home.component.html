@@ -1,0 +1,54 @@
+<div class="container-fluid">
+  <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
+    <div id="twitch-embed"></div>
+  </div>
+
+  <div class="d-block">
+    <ul class="p-0">
+      <li><a class="small text-white-50" href="https://www.twitch.tv/zeldathonuk/" target="_blank"><fa-icon [icon]="faTwitch"></fa-icon> ZeldathonUK on Twitch</a></li>
+      <li><a class="small text-white-50" href="https://www.facebook.com/ZeldathonUK/" target="_blank"><fa-icon [icon]="faFacebook"></fa-icon> ZeldathonUK on Facebook</a></li>
+      <li><a class="small text-white-50" href="https://twitter.com/ZeldathonUK/" target="_blank"><fa-icon [icon]="faTwitter"></fa-icon> @ZeldathonUK on Twitter</a></li>
+      <li><a class="small text-white-50" href="https://www.youtube.com/channel/UCATOYdh-Ww9sfTQji9M1SEg/" target="_blank"><fa-icon [icon]="faYoutube"></fa-icon> ZeldathonUK on YouTube</a></li>
+    </ul>
+  </div>
+
+  <div class="d-flex">
+
+    <div class="w-25 pr-1">
+      <button class="btn btn-block btnfacebook h-100" (click)="donateFacebook();">
+        <h4 class="d-block">Donate via <fa-icon [icon]="faFacebook"></fa-icon> Facebook</h4>
+        <span class="d-block small text-white-50"><fa-icon [icon]="faInfoCircle"></fa-icon> Charities using Facebook to process donations pay no fee.</span>
+        <span class="small text-white-50">100% of the donations go to the charity.</span>
+      </button>
+      <a class="small text-white-50" href="https://www.facebook.com/help/901370616673951" target="_blank">More info on Facebook Fundraising Fees</a>
+    </div>
+
+    <div class="w-25 px-1">
+      <button class="btn btn-block btn-justgiving h-100" (click)="donateJustGiving();">
+        <h4 class="d-block">Donate via <img src="../../../assets/img/justgiving-g.svg" style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"> JustGiving</h4>
+        <span class="d-block small text-white-50"><fa-icon [icon]="faInfoCircle"></fa-icon> JustGiving deducts a 5% fee from each donation made through the site.</span>
+        <span class="small text-white-50">95% of the donations go to the charity.</span>
+      </button>
+      <a class="small text-white-50" href="https://www.justgiving.com/info/fees" target="_blank">More info on JustGiving Fundraising Fees</a>
+    </div>
+
+    <div class="w-25 pl-1">
+      <button class="btn btn-block btn-specialeffect h-100" (click)="learnAboutSpecialEffect();">
+        <h4 class="d-block"><img src="../../../assets/img/logo-specialeffect.png" style="max-width: 80%;"></h4>
+        <span class="d-block small text-white">We put fun and inclusion back into the lives of people with physical disabilities by helping them to play video games.</span>
+      </button>
+      <a class="small text-white-50" href="https://www.justgiving.com/info/fees" target="_blank">More info on our chosen charity SpecialEffect</a>
+    </div>
+
+    <div class="w-25 px-1">
+      <button class="btn btn-block btn-gameblast h-100" (click)="learnAboutGameBlast();">
+        <h4 class="d-block"><img src="../../../assets/img/GB19_logo_for_website.png" style="max-width: 70%;"></h4>
+        <span class="d-block small text-white">Can you imagine life without games? Neither can we.</span>
+        <span class="small text-white">But there are thousands of people who are desperate to share our passion for games, and their disabilities stop them playing.</span>
+      </button>
+      <a class="small text-white-50" href="https://www.justgiving.com/info/fees" target="_blank">More info on SpecialEffect's #GameBlast19 event</a>
+    </div>
+
+  </div>
+
+</div>

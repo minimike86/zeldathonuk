@@ -1,0 +1,26 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <a class="navbar-brand" href="#">
+    <img src="../../../assets/img/Zeldathon-Logo.png" style="max-height: 1.5em; filter: opacity(0.95)" title="ZeldathonUK" alt="ZeldathonUK">
+  </a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent" (click)="isCollapsed = !isCollapsed" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarToggleExternalContent" [ngbCollapse]="isCollapsed">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
+        <div class="align-self-center">
+          <button class="btn btn-sm btnfacebook" (click)="donateFacebook();">
+            Donate via Facebook
+          </button>
+        </div>
+      </li>
+      <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
+        <div class="align-self-center">
+          <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
+            Donate via JustGiving
+          </button>
+        </div>
+      </li>
+    </ul>
+  </div>
+</nav>

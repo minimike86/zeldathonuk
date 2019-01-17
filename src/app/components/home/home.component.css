@@ -1,0 +1,177 @@
+ul {
+  list-style-type: none;
+}
+
+li {
+  display: inline-block;
+  margin-right: 1em;
+}
+
+
+
+
+.btnfacebook {
+  color: #fff;
+  background-color: #3b5998;
+  border-color: #3b5998;
+}
+
+.btnfacebook:hover {
+  color: #fff;
+  background-color: #485595;
+  border-color: #415998;
+}
+
+.btnfacebook:focus,
+.btnfacebook.focus {
+  box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
+}
+
+.btnfacebook.disabled,
+.btnfacebook:disabled {
+  color: #fff;
+  background-color: #3b5998;
+  border-color: #3b5998;
+}
+
+.btnfacebook:not(:disabled):not(.disabled):active,
+.btnfacebook:not(:disabled):not(.disabled).active,
+.show > .btnfacebook.dropdown-toggle {
+  color: #fff;
+  background-color: #385595;
+  border-color: #3b5998;
+}
+
+.btnfacebook:not(:disabled):not(.disabled):active:focus,
+.btnfacebook:not(:disabled):not(.disabled).active:focus,
+.show > .btnfacebook.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
+}
+
+
+
+
+.btn-justgiving {
+  color: #fff;
+  background-color: #ad29b6;
+  border-color: #ad29b6;
+}
+
+.btn-justgiving:hover {
+  color: #fff;
+  background-color: #a020b0;
+  border-color: #a020b0;
+}
+
+.btn-justgiving:focus,
+.btn-justgiving.focus {
+  box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
+}
+
+.btn-justgiving.disabled,
+.btn-justgiving:disabled {
+  color: #fff;
+  background-color: #ad29b6;
+  border-color: #ad29b6;
+}
+
+.btn-justgiving:not(:disabled):not(.disabled):active,
+.btn-justgiving:not(:disabled):not(.disabled).active,
+.show > .btn-justgiving.dropdown-toggle {
+  color: #fff;
+  background-color: #bf49cf;
+  border-color: #bf49cf;
+}
+
+.btn-justgiving:not(:disabled):not(.disabled):active:focus,
+.btn-justgiving:not(:disabled):not(.disabled).active:focus,
+.show > .btn-justgiving.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
+}
+
+
+
+
+
+
+
+.btn-specialeffect {
+  color: #fff;
+  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  border-color: #101c34;
+}
+
+.btn-specialeffect:hover {
+  color: #fff;
+  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  border-color: #101c34;
+}
+
+.btn-specialeffect:focus,
+.btn-specialeffect.focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 12, 36, 0.25);
+}
+
+.btn-specialeffect.disabled,
+.btn-specialeffect:disabled {
+  color: #fff;
+  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  border-color: #101c34;
+}
+
+.btn-specialeffect:not(:disabled):not(.disabled):active,
+.btn-specialeffect:not(:disabled):not(.disabled).active,
+.show > .btn-specialeffect.dropdown-toggle {
+  color: #fff;
+  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  border-color: #101c34;
+}
+
+.btn-specialeffect:not(:disabled):not(.disabled):active:focus,
+.btn-specialeffect:not(:disabled):not(.disabled).active:focus,
+.show > .btn-specialeffect.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 12, 36, 0.25);
+}
+
+
+
+
+
+
+.btn-gameblast {
+  color: #fff;
+  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  border-color: #f58220;
+}
+
+.btn-gameblast:hover {
+  color: #fff;
+  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  border-color: #f58220;
+}
+
+.btn-gameblast:focus,
+.btn-gameblast.focus {
+  box-shadow: 0 0 0 0.2rem rgba(245, 130, 32, 0.5);
+}
+
+.btn-gameblast.disabled,
+.btn-gameblast:disabled {
+  color: #fff;
+  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  border-color: #f58220;
+}
+
+.btn-gameblast:not(:disabled):not(.disabled):active,
+.btn-gameblast:not(:disabled):not(.disabled).active,
+.show > .btn-gameblast.dropdown-toggle {
+  color: #fff;
+  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  border-color: #f58220;
+}
+
+.btn-gameblast:not(:disabled):not(.disabled):active:focus,
+.btn-gameblast:not(:disabled):not(.disabled).active:focus,
+.show > .btn-gameblast.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(245, 130, 32, 0.5);
+}
