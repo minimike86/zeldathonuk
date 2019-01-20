@@ -14,7 +14,7 @@ export class NavbarComponent implements OnInit {
   }
 
   donateFacebook() {
-    window.open('https://www.facebook.com/ZeldathonUK/', '_blank');
+    window.open('https://www.facebook.com/donate/235288154058664/', '_blank');
   }
 
   donateJustGiving() {
