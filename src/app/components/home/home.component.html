@@ -1,10 +1,17 @@
 <div class="container-fluid">
 
-  <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
-    <div id="twitch-embed"></div>
+  <div class="d-block card card-header mt-2 p-0">
+    <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
+      <iframe
+        src="https://player.twitch.tv/?channel=zeldathonuk&autoplay=false"
+        frameborder="0"
+        scrolling="no"
+        allowfullscreen="true">
+      </iframe>
+    </div>
   </div>
 
-  <div class="d-block">
+  <div class="d-block card card-header my-2 p-1">
     <ul class="d-flex m-0 p-1" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.75em'} : null">
       <div class="w-25">
         <li class="d-inline"><a class="small text-white-50" href="https://www.twitch.tv/zeldathonuk/" target="_blank"><fa-icon [icon]="faTwitch"></fa-icon>{{innerWidth < 750 ? ' Twitch' : ' ZeldathonUK on Twitch'}}</a></li>
