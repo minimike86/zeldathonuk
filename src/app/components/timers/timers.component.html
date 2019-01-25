@@ -1,0 +1,17 @@
+<div class="container-fluid">
+  <div class="d-block green p-5">
+    <div class="d-flex flex-column justify-content-center flex-fill">
+      <div class="cntdwn my-0 py-0" style="font-size: 5em; line-height: 1em; font-family: 'Bungee', cursive;">
+        Stream Starting Soon:
+      </div>
+      <div class="cntdwn my-0 py-0" style="font-size: 15em; line-height: 1em; font-family: 'Bungee', cursive;">
+        <countdown [config]="{ leftTime: 3600 }"
+                   (start)="onStart()"
+                   (finished)="onFinished()"
+                   (notify)="onNotify($event)">
+          $!h!:$!m!:$!s!
+        </countdown>
+      </div>
+    </div>
+  </div>
+</div>

@@ -5,6 +5,8 @@ import { HttpClientModule } from '@angular/common/http';
 
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { MomentModule } from "ngx-moment";
+import { CountdownModule } from "ngx-countdown";
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -13,6 +15,7 @@ import { PageNotFoundComponent } from './components/page-not-found/page-not-foun
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { JgDonationComponent } from './components/jg-donation/jg-donation.component';
+import { TimersComponent } from './components/timers/timers.component';
 
 @NgModule({
   declarations: [
@@ -21,7 +24,8 @@ import { JgDonationComponent } from './components/jg-donation/jg-donation.compon
     PageNotFoundComponent,
     NavbarComponent,
     FooterComponent,
-    JgDonationComponent
+    JgDonationComponent,
+    TimersComponent
   ],
   imports: [
     BrowserModule,
@@ -29,7 +33,9 @@ import { JgDonationComponent } from './components/jg-donation/jg-donation.compon
     HttpClientModule,
     AppRoutingModule,
     NgbModule,
-    FontAwesomeModule
+    FontAwesomeModule,
+    MomentModule,
+    CountdownModule
   ],
   providers: [],
   bootstrap: [AppComponent]

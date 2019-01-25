@@ -29,8 +29,10 @@
     "bootstrap": "^4.2.1",
     "core-js": "^2.5.4",
     "font-awesome": "^4.7.0",
-    "moment": "^2.23.0",
+    "moment": "^2.24.0",
     "ng-bootstrap": "^1.6.3",
+    "ngx-countdown": "^3.1.0",
+    "ngx-moment": "^3.3.0",
     "rxjs": "~6.2.0",
     "zone.js": "~0.8.26"
   },
