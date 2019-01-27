@@ -1,0 +1,15 @@
+<div *ngIf="fbTotal !== undefined; then displayTotal ? showDonations : showDonors else showNothing"></div>
+<ng-template #showDonations>
+  <div class="text-center text-white mr-3 mt-1" style="line-height: 0.65em;">
+    <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ fbTotal | currency:'GBP' }}</h6>
+    <span class="text-white-50" style="font-size: 0.65em;">Current Total (FB)</span>
+  </div>
+</ng-template>
+<ng-template #showDonors>
+  <div class="text-center text-white mr-3 mt-1" style="line-height: 0.65em;">
+    <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ fbTotal !== undefined ? fbTotal : 0 }}</h6>
+    <span class="text-white-50" style="font-size: 0.65em;">Number of Donors (FB)</span>
+  </div>
+</ng-template>
+<ng-template #showNothing>
+</ng-template>

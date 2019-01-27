@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { JgServiceService } from "../../services/jg-service.service";
+import { JgServiceService } from "../../services/jg-service/jg-service.service";
 import { timer } from "rxjs";
 
 @Component({
@@ -15,7 +15,7 @@ export class JgDonationComponent implements OnInit {
   public displayTotal: boolean;
 
   constructor(private jgServiceService: JgServiceService) {
-    const pageShortName = 'zeldathonuk-testfundraising-page435';
+    const pageShortName = 'zeldathonuk-gameblast2019';
     jgServiceService.getFundraisingPageDetails(pageShortName).subscribe(data => {
       this.fundraisingPageDetails = data;
     });

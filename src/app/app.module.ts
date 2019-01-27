@@ -16,6 +16,7 @@ import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { JgDonationComponent } from './components/jg-donation/jg-donation.component';
 import { TimersComponent } from './components/timers/timers.component';
+import { FbDonationComponent } from './components/fb-donation/fb-donation.component';
 
 @NgModule({
   declarations: [
@@ -25,7 +26,8 @@ import { TimersComponent } from './components/timers/timers.component';
     NavbarComponent,
     FooterComponent,
     JgDonationComponent,
-    TimersComponent
+    TimersComponent,
+    FbDonationComponent
   ],
   imports: [
     BrowserModule,
