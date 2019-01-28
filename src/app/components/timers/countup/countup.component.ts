@@ -39,14 +39,14 @@ export class CountupComponent implements OnInit {
   }
 
   start(): void {
-    console.log('timer started');
     if (!this.started) {
       this.startDate = new Date();
       this.started = true;
+      this.subscription = this.secondsCounter$.subscribe(n => {
+        this.updateTimer();
+      });
+      console.log('timer started');
     }
-    this.subscription = this.secondsCounter$.subscribe(n => {
-      this.updateTimer();
-    });
   }
 
   reset(): void {
