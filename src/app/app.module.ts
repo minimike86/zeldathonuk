@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule }   from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 
@@ -17,6 +18,9 @@ import { FooterComponent } from './components/footer/footer.component';
 import { JgDonationComponent } from './components/jg-donation/jg-donation.component';
 import { TimersComponent } from './components/timers/timers.component';
 import { FbDonationComponent } from './components/fb-donation/fb-donation.component';
+import { CountdownComponent } from './components/timers/countdown/countdown.component';
+import { CountupComponent } from './components/timers/countup/countup.component';
+import { CountDateComponent } from './components/timers/count-date/count-date.component';
 
 @NgModule({
   declarations: [
@@ -27,10 +31,14 @@ import { FbDonationComponent } from './components/fb-donation/fb-donation.compon
     FooterComponent,
     JgDonationComponent,
     TimersComponent,
-    FbDonationComponent
+    FbDonationComponent,
+    CountdownComponent,
+    CountupComponent,
+    CountDateComponent
   ],
   imports: [
     BrowserModule,
+    FormsModule,
     BrowserAnimationsModule,
     HttpClientModule,
     AppRoutingModule,
