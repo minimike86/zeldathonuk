@@ -1,14 +1,17 @@
 <div class="container-fluid">
   <div class="d-block green p-5">
     <div class="d-flex flex-column justify-content-center flex-fill">
+      <div class="cntdwn my-0 py-0" style="font-size: 4em; line-height: 1em; font-family: 'Bungee', cursive;">
+        <span *ngIf="activityName">{{ activityName }}</span>
+      </div>
       <div class="cntdwn my-0 py-0" style="font-size: 14em; line-height: 1em; font-family: 'Bungee', cursive;">
         {{ getTimer() }}
       </div>
     </div>
   </div>
   <div class="m-3">
-    <button class="btn btn-success mx-1" [disabled]="this.started" (click)="start()">start</button>
+    <button class="btn btn-success mx-1" [disabled]="(this.isStarted && this.hasPaused) ? false : this.isStarted" (click)="start()">{{ this.hasPaused ? 'resume' : 'start' }}</button>
     <button class="btn btn-warning mx-1" (click)="reset()">reset</button>
-    <button class="btn btn-danger mx-1" [disabled]="!this.started" (click)="stop()">{{ subscription !== undefined && this.started && subscription.closed ? 'confirm' : 'stop' }}</button>
+    <button class="btn btn-danger mx-1" [disabled]="!this.isStarted" (click)="stop()">{{ subscription !== undefined && this.isStarted && subscription.closed ? 'confirm' : 'stop' }}</button>
   </div>
 </div>

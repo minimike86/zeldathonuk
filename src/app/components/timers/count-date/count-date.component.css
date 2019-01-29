@@ -1,0 +1,39 @@
+.cntdwn {
+  background: -webkit-linear-gradient(-86deg, #20f0d8 5%, #15a6d3 53%, #d1ffff 91%);
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.05em #ffffff;
+  color: transparent;
+}
+
+.gameblast {
+  background: -webkit-linear-gradient(-86deg, #aa8220 5%, #f58220 53%, #d1ffff 91%);
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.05em #ffffff;
+  color: transparent;
+}
+
+.green {
+  background: green;
+}
+
+.blink-me {
+  animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+
+.superscript {
+  -webkit-text-stroke: 0.05em #ffffff;
+  font-size: 0.5em;
+  vertical-align: super;
+}
+
+.subscript {
+  -webkit-text-stroke: 0.05em #ffffff;
+  font-size: 0.3em;
+  vertical-align: sub;
+}

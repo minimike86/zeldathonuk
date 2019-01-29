@@ -1,0 +1,28 @@
+<div class="container-fluid">
+  <div class="d-block green p-5">
+    <div class="d-flex flex-column justify-content-center flex-fill">
+      <div class="cntdwn my-0 py-0" style="font-size: 3em; line-height: 1em; font-family: 'Bungee', cursive;">
+        <span class="d-block">Countdown to ZeldathonUK <span class="gameblast">#Gameblast19</span>:</span>
+        <span class="mr-1">{{ zeroPad(futureDate.getUTCHours(), 2) }}:{{ zeroPad(futureDate.getMinutes(), 2) }}</span>
+        <span class="superscript mr-3">{{ futureDate.getUTCHours() >= 12 ? 'pm' : 'am' }}</span>
+        <span class="mr-0">{{ zeroPad(futureDate.getUTCDate(), 2) }}</span>
+        <span class="superscript mr-3">
+          {{
+            futureDate.getUTCDate().toString().substring(futureDate.getUTCDate().toString().length - 1, futureDate.getUTCDate().toString().length) === '1' ? 'st' :
+            futureDate.getUTCDate().toString().substring(futureDate.getUTCDate().toString().length - 1, futureDate.getUTCDate().toString().length) === '2' ? 'nd' :
+            futureDate.getUTCDate().toString().substring(futureDate.getUTCDate().toString().length - 1, futureDate.getUTCDate().toString().length) === '3' ? 'rd' :
+            'th'
+          }}
+        </span>
+        <span class="mr-3">{{ getMonthName(futureDate.getUTCMonth()) }}</span>
+        <span>{{ futureDate.getFullYear() }}</span>
+      </div>
+      <div class="cntdwn my-0 py-0" style="font-size: 12em; line-height: 1em; font-family: 'Bungee', cursive;">
+        <span>{{ getTimer().days }}</span><span class="subscript">days</span>
+        <span>{{ getTimer().hours }}</span><span class="subscript">hrs</span>
+        <span>{{ getTimer().minutes }}</span><span class="subscript">mins</span>
+        <span>{{ getTimer().seconds }}</span><span class="subscript">secs</span>
+      </div>
+    </div>
+  </div>
+</div>

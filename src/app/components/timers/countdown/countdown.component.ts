@@ -15,8 +15,8 @@ export class CountdownComponent implements OnInit, OnDestroy {
   public finished: boolean;
 
   constructor(private route: ActivatedRoute) {
-    this.routeSub = this.route.params.subscribe(params => {
-      this.countdownDuration = +params['countdownDuration'];
+    this.routeSub = this.route.queryParamMap.subscribe(params => {
+      this.countdownDuration = parseInt(params.get('duration'));
     });
   }
 
@@ -25,6 +25,7 @@ export class CountdownComponent implements OnInit, OnDestroy {
       leftTime: this.countdownDuration
     };
     this.finished = false;
+    console.log('ngOnInit', this.countdownDuration);
   }
 
   ngOnDestroy(): void {

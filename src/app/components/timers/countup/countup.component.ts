@@ -14,7 +14,8 @@ export class CountupComponent implements OnInit {
 
   public subscription: Subscription;
   private secondsCounter$: Observable<any>;
-  public started: boolean;
+  public isStarted: boolean;
+  public hasPaused: boolean;
   public stopDate: Date;
   public startDate: Date;
   public nowDate: Date;
@@ -22,52 +23,60 @@ export class CountupComponent implements OnInit {
   public minutes: number;
   public seconds: number;
   public milliseconds: number;
+  public activityName: string;
   public timer: string;
 
   constructor(private route: ActivatedRoute) {
     this.secondsCounter$ = interval(1);
-    this.routeSub = this.route.params.subscribe(params => {
-      this.autoStart = params['autoStart'];
+    this.routeSub = this.route.queryParamMap.subscribe(params => {
+      this.autoStart = parseInt(params.get('autoStart')) === 1;
+      this.activityName = params.get('activityName');
     });
   }
 
   ngOnInit() {
-    this.started = false;
+    this.isStarted = false;
+    this.hasPaused = false;
     if (this.autoStart) {
       this.start();
     }
   }
 
   start(): void {
-    if (!this.started) {
-      this.startDate = new Date();
-      this.started = true;
+    if (!this.isStarted || this.hasPaused) {
+      if (!this.hasPaused) {
+        this.startDate = new Date();
+      }
+      this.isStarted = true;
+      this.hasPaused = false;
       this.subscription = this.secondsCounter$.subscribe(n => {
         this.updateTimer();
       });
-      console.log('timer started');
     }
   }
 
   reset(): void {
+    if (this.hasPaused) {
+      this.isStarted = false;
+      this.hasPaused = false;
+    }
     this.startDate = new Date();
     this.updateTimer();
-    console.log('timer reset');
   }
 
   stop(): void {
     if (this.subscription !== undefined) {
       if (this.subscription.closed) {
         // fully reset timer if pressed while subscription is closed
-        this.started = false;
-        console.log('timer fully stopped');
+        this.isStarted = false;
+        this.hasPaused = false;
         console.log(this.timer);
         console.log(this.stopDate);
       } else {
         // partially reset timer if pressed while subscription is active
+        this.hasPaused = true;
         this.stopDate = new Date();
         this.subscription.unsubscribe();
-        console.log('timer stopped');
       }
     }
   }
