@@ -20,7 +20,7 @@ export class CountDateComponent implements OnInit {
   public timer: TimerToDate;
 
   constructor(private route: ActivatedRoute) {
-    this.secondsCounter$ = interval(1000);
+    this.secondsCounter$ = interval(500);
     this.routeSub = this.route.queryParamMap.subscribe(params => {
       this.autoStart = parseInt(params.get('autoStart')) === 1;
       this.futureDate = new Date(parseInt(params.get('futureDate')));
