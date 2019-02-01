@@ -3,6 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 
 // Components
 import { HomeComponent } from "./components/home/home.component";
+import { IncentivesComponent } from "./components/incentives/incentives.component";
 import { TimersComponent } from "./components/timers/timers.component";
 import { CountdownComponent } from "./components/timers/countdown/countdown.component";
 import { CountupComponent } from "./components/timers/countup/countup.component";
@@ -12,6 +13,8 @@ import { PageNotFoundComponent } from "./components/page-not-found/page-not-foun
 const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: '', redirectTo: '/',  pathMatch: 'full' },
+  { path: 'donors', component: TimersComponent },
+  { path: 'incentives', component: IncentivesComponent },
   { path: 'timers', component: TimersComponent },
   { path: 'count-up', component: CountupComponent },
   { path: 'count-down', component: CountdownComponent },

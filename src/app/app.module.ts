@@ -21,6 +21,8 @@ import { FbDonationComponent } from './components/fb-donation/fb-donation.compon
 import { CountdownComponent } from './components/timers/countdown/countdown.component';
 import { CountupComponent } from './components/timers/countup/countup.component';
 import { CountDateComponent } from './components/timers/count-date/count-date.component';
+import { IncentivesComponent } from './components/incentives/incentives.component';
+import { DonationsComponent } from './components/donations/donations.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +36,9 @@ import { CountDateComponent } from './components/timers/count-date/count-date.co
     FbDonationComponent,
     CountdownComponent,
     CountupComponent,
-    CountDateComponent
+    CountDateComponent,
+    IncentivesComponent,
+    DonationsComponent
   ],
   imports: [
     BrowserModule,
