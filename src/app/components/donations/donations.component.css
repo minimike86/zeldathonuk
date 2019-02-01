@@ -1,0 +1,74 @@
+
+
+.btn-justgiving {
+  color: #fff;
+  background-color: #ad29b6;
+  border-color: #ad29b6;
+}
+
+.btn-justgiving:hover {
+  color: #fff;
+  background-color: #bf49cf;
+  border-color: #bf49cf;
+}
+
+.btn-justgiving:focus, .btn-justgiving.focus {
+  box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
+}
+
+.btn-justgiving.disabled, .btn-justgiving:disabled {
+  color: #fff;
+  background-color: #ad29b6;
+  border-color: #ad29b6;
+}
+
+.btn-justgiving:not(:disabled):not(.disabled):active, .btn-justgiving:not(:disabled):not(.disabled).active,
+.show > .btn-justgiving.dropdown-toggle {
+  color: #fff;
+  background-color: #bf49cf;
+  border-color: #bf49cf;
+}
+
+.btn-justgiving:not(:disabled):not(.disabled):active:focus, .btn-justgiving:not(:disabled):not(.disabled).active:focus,
+.show > .btn-justgiving.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
+}
+
+
+
+
+
+
+.btnfacebook {
+  color: #fff;
+  background-color: #3b5998;
+  border-color: #3b5998;
+}
+
+.btnfacebook:hover {
+  color: #fff;
+  background-color: #3b5998;
+  border-color: #3b5998;
+}
+
+.btnfacebook:focus, .btnfacebook.focus {
+  box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
+}
+
+.btnfacebook.disabled, .btnfacebook:disabled {
+  color: #fff;
+  background-color: #3b5998;
+  border-color: #3b5998;
+}
+
+.btnfacebook:not(:disabled):not(.disabled):active, .btnfacebook:not(:disabled):not(.disabled).active,
+.show > .btnfacebook.dropdown-toggle {
+  color: #fff;
+  background-color: #3b5998;
+  border-color: #3b5998;
+}
+
+.btnfacebook:not(:disabled):not(.disabled):active:focus, .btnfacebook:not(:disabled):not(.disabled).active:focus,
+.show > .btnfacebook.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
+}
