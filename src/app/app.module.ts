@@ -24,6 +24,8 @@ import { CountDateComponent } from './components/timers/count-date/count-date.co
 import { IncentivesComponent } from './components/incentives/incentives.component';
 import { DonationsComponent } from './components/donations/donations.component';
 
+import { CountupService } from "./services/countup-service/countup.service";
+
 @NgModule({
   declarations: [
     AppComponent,

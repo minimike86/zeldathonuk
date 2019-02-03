@@ -9,7 +9,7 @@
       </div>
       <div class="card-body">
         <input type="number" class="form-control mb-1" placeholder="milliseconds" min="1" [(ngModel)]="countdownDuration">
-        <a [routerLink]="'/count-down'" [queryParams]="{ duration: countdownDuration.valueOf() }" routerLinkActive="active" target="_blank" class="btn btn-block"
+        <a [routerLink]="'/api/count-down'" [queryParams]="{ duration: countdownDuration.valueOf() }" routerLinkActive="active" target="_blank" class="btn btn-block"
            [ngClass]="(countdownDuration !== undefined && countdownDuration >= 1) ? 'btn-success' : 'btn-dark disabled'">Start</a>
       </div>
     </div>
@@ -22,21 +22,21 @@
       </div>
       <div class="card-body">
         <input type="text" class="form-control mb-1" placeholder="Activity Name" [(ngModel)]="activityName">
-        <a [routerLink]="'/count-up'" [queryParams]="{ activityName: activityName, autoStart: 1 }" routerLinkActive="active" target="_blank" class="btn btn-block btn-success">Start</a>
+        <a [routerLink]="'/api/count-up'" [queryParams]="{ activityName: activityName, autoStart: 1 }" routerLinkActive="active" target="_blank" class="btn btn-block btn-success">Start</a>
       </div>
     </div>
 
     <div class="card m-2" style="width: 30vw;">
       <h5 class="card-header">Count To Date</h5>
       <div class="flex-fill text-center m-5" style="min-height: 10em; max-height: 10em;">
-        <img src="https://pbs.twimg.com/profile_images/814251242583195648/91ghU-wo_400x400.jpg"
-             class="card-img-top w-75" alt="..." style="margin-top: -1.5em; max-height: 15em;">
+        <img src="../../../assets/img/Zeldathon-Logo.png"
+             class="card-img-top w-75" alt="...">
       </div>
       <div class="card-body">
         <input type="datetime-local" class="form-control mb-1"
                [ngModel]="countToDate | date:'yyyy-MM-ddTHH:mm'"
                (ngModelChange)="setDate($event)">
-        <a class="btn btn-block" [routerLink]="'/count-to-date'" [queryParams]="{ futureDate: getFutureDate(), autoStart: 1 }"
+        <a class="btn btn-block" [routerLink]="'/api/count-to-date'" [queryParams]="{ futureDate: getFutureDate(), autoStart: 1 }"
            routerLinkActive="active" target="_blank" [ngClass]="isFutureDate() ? 'btn-success' : 'btn-dark disabled'">
           Start
         </a>

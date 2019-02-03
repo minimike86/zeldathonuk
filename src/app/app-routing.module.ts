@@ -17,10 +17,10 @@ const routes: Routes = [
   { path: 'donors', component: DonationsComponent },
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },
-  { path: 'timers', component: TimersComponent },
-  { path: 'count-up', component: CountupComponent },
-  { path: 'count-down', component: CountdownComponent },
-  { path: 'count-to-date', component: CountDateComponent },
+  { path: 'api/timers', component: TimersComponent },
+  { path: 'api/count-up', component: CountupComponent },
+  { path: 'api/count-down', component: CountdownComponent },
+  { path: 'api/count-to-date', component: CountDateComponent },
   { path: '**', component: PageNotFoundComponent }
 ];
 
