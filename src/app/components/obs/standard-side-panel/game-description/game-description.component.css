@@ -1,13 +1,15 @@
 .side-panel {
   width: 555px;
   border-right: 2px solid #50529a;
+  z-index: 100;
 }
 
 .spt {
 }
-
-.spt-game-bg {
+.spt-game {
   background: -webkit-linear-gradient(-90deg, #50529a, #944084);
+}
+.spt-game-bg {
   z-index: 0;
 }
 .spt-game-bg::after {
@@ -18,10 +20,9 @@
   top: -300px;
   width: 555px;
   height: 475px;
-  opacity: 0.5;
+  opacity: 0.45;
   background-image: url("../../../../../assets/img/cover-art/Majoras_Mask_3D_cover.jpg");
   background-repeat: no-repeat;
-  -ms-background-size: cover;
   -o-background-size: cover;
   -moz-background-size: cover;
   -webkit-background-size: cover;
@@ -29,11 +30,6 @@
   border-right: 2px solid #50529a;
   z-index: -1;
 }
-
-.spt-game {
-  z-index: 0;
-}
-
 .spt-game-text {
   background: #ffffff;
   -webkit-background-clip: text;
@@ -45,39 +41,49 @@
 }
 
 .spt-type {
+}
+.spt-type-text {
   background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%, transparent);
-  border-radius: 10px;
   color: lightgray;
   z-index: 0;
 }
 
 .spt-platform {
-  background: #000000;
   border-bottom: 2px solid #50529a;
-  z-index: 0;
 }
-.spt-platform::before {
+.spt-platform-bg:before {
   content: '';
   display: block;
   position: absolute;
-  left: -200px;
-  top: 175px;
-  width: 755px;
+  background: -webkit-linear-gradient(-90deg, #000000 50%, transparent);
+  left: 0;
+  top: 0;
+  width: 555px;
   height: 80px;
-  opacity: 0.1;
+  opacity: 0.5;
+  border-top: 2px solid #50529a;
+}
+.spt-platform-bg {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 175px;
+  width: 555px;
+  height: 80px;
+  opacity: 0.65;
   background-image: url("../../../../../assets/img/GB19_Background_withLOGO.png");
   background-repeat: no-repeat;
   background-position: 50% 0;
-  -ms-background-size: cover;
   -o-background-size: cover;
   -moz-background-size: cover;
   -webkit-background-size: cover;
   background-size: cover;
-  z-index: 0;
+  z-index: -1;
 }
-
 .spt-platform-content {
-  z-index: 0;
+  color: #d3d3d3;
+  z-index: 1;
 }
 
 .spt-platform-text {
@@ -86,21 +92,21 @@
 
 .br-l {
   background: -webkit-linear-gradient(180deg, #270266 70%, transparent);
-  border-top: 2px solid transparent;
-  border-right: 2px solid transparent;
-  border-bottom: 2px solid transparent;
-  border-radius: 10px 0 0 10px;
+  border-top: 1px solid transparent;
+  border-left: 0 solid transparent;
+  border-right: 1px solid transparent;
+  border-bottom: 1px solid transparent;
 }
 
 .br-m {
   background: #270266;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
 }
 
 .br-r {
   background: -webkit-linear-gradient(0deg, #270266 70%, transparent);
-  border-top: 2px solid transparent;
-  border-left: 2px solid transparent;
-  border-bottom: 2px solid transparent;
-  border-radius: 0 10px 10px 0;
+  border-top: 1px solid transparent;
+  border-left: 1px solid transparent;
+  border-right: 0 solid transparent;
+  border-bottom: 1px solid transparent;
 }

@@ -27,6 +27,8 @@ import { ObsComponent } from './components/obs/obs.component';
 import { OmnibarComponent } from './components/obs/omnibar/omnibar.component';
 import { StandardSidePanelComponent } from './components/obs/standard-side-panel/standard-side-panel.component';
 import { GameDescriptionComponent } from './components/obs/standard-side-panel/game-description/game-description.component';
+import { CameraComponent } from './components/obs/standard-side-panel/camera/camera.component';
+import { RunnerNameComponent } from './components/obs/standard-side-panel/runner-name/runner-name.component';
 
 @NgModule({
   declarations: [
@@ -46,7 +48,9 @@ import { GameDescriptionComponent } from './components/obs/standard-side-panel/g
     ObsComponent,
     OmnibarComponent,
     StandardSidePanelComponent,
-    GameDescriptionComponent
+    GameDescriptionComponent,
+    CameraComponent,
+    RunnerNameComponent
   ],
   imports: [
     BrowserModule,
