@@ -9,6 +9,7 @@ import { TimersComponent } from "./components/timers/timers.component";
 import { CountdownComponent } from "./components/timers/countdown/countdown.component";
 import { CountupComponent } from "./components/timers/countup/countup.component";
 import { CountDateComponent } from "./components/timers/count-date/count-date.component";
+import { ObsComponent } from "./components/obs/obs.component";
 import { PageNotFoundComponent } from "./components/page-not-found/page-not-found.component";
 
 const routes: Routes = [
@@ -17,6 +18,8 @@ const routes: Routes = [
   { path: 'donors', component: DonationsComponent },
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },
+  { path: 'obs', component: ObsComponent },
+  { path: 'obs/standard', component: ObsComponent },
   { path: 'api/timers', component: TimersComponent },
   { path: 'api/count-up', component: CountupComponent },
   { path: 'api/count-down', component: CountdownComponent },

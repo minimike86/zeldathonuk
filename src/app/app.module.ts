@@ -23,8 +23,10 @@ import { CountupComponent } from './components/timers/countup/countup.component'
 import { CountDateComponent } from './components/timers/count-date/count-date.component';
 import { IncentivesComponent } from './components/incentives/incentives.component';
 import { DonationsComponent } from './components/donations/donations.component';
-
-import { CountupService } from "./services/countup-service/countup.service";
+import { ObsComponent } from './components/obs/obs.component';
+import { OmnibarComponent } from './components/obs/omnibar/omnibar.component';
+import { StandardSidePanelComponent } from './components/obs/standard-side-panel/standard-side-panel.component';
+import { GameDescriptionComponent } from './components/obs/standard-side-panel/game-description/game-description.component';
 
 @NgModule({
   declarations: [
@@ -40,7 +42,11 @@ import { CountupService } from "./services/countup-service/countup.service";
     CountupComponent,
     CountDateComponent,
     IncentivesComponent,
-    DonationsComponent
+    DonationsComponent,
+    ObsComponent,
+    OmnibarComponent,
+    StandardSidePanelComponent,
+    GameDescriptionComponent
   ],
   imports: [
     BrowserModule,

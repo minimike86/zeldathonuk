@@ -1,0 +1,106 @@
+.side-panel {
+  width: 555px;
+  border-right: 2px solid #50529a;
+}
+
+.spt {
+}
+
+.spt-game-bg {
+  background: -webkit-linear-gradient(-90deg, #50529a, #944084);
+  z-index: 0;
+}
+.spt-game-bg::after {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 0;
+  top: -300px;
+  width: 555px;
+  height: 475px;
+  opacity: 0.5;
+  background-image: url("../../../../../assets/img/cover-art/Majoras_Mask_3D_cover.jpg");
+  background-repeat: no-repeat;
+  -ms-background-size: cover;
+  -o-background-size: cover;
+  -moz-background-size: cover;
+  -webkit-background-size: cover;
+  background-size: cover;
+  border-right: 2px solid #50529a;
+  z-index: -1;
+}
+
+.spt-game {
+  z-index: 0;
+}
+
+.spt-game-text {
+  background: #ffffff;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.025em #50529a;
+  font-size: 2.35em;
+  font-family: 'Bungee', cursive;
+  color: transparent;
+  z-index: 0;
+}
+
+.spt-type {
+  background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%, transparent);
+  border-radius: 10px;
+  color: lightgray;
+  z-index: 0;
+}
+
+.spt-platform {
+  background: #000000;
+  border-bottom: 2px solid #50529a;
+  z-index: 0;
+}
+.spt-platform::before {
+  content: '';
+  display: block;
+  position: absolute;
+  left: -200px;
+  top: 175px;
+  width: 755px;
+  height: 80px;
+  opacity: 0.1;
+  background-image: url("../../../../../assets/img/GB19_Background_withLOGO.png");
+  background-repeat: no-repeat;
+  background-position: 50% 0;
+  -ms-background-size: cover;
+  -o-background-size: cover;
+  -moz-background-size: cover;
+  -webkit-background-size: cover;
+  background-size: cover;
+  z-index: 0;
+}
+
+.spt-platform-content {
+  z-index: 0;
+}
+
+.spt-platform-text {
+  color: lightgray;
+}
+
+.br-l {
+  background: -webkit-linear-gradient(180deg, #270266 70%, transparent);
+  border-top: 2px solid transparent;
+  border-right: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 10px 0 0 10px;
+}
+
+.br-m {
+  background: #270266;
+  border: 2px solid transparent;
+}
+
+.br-r {
+  background: -webkit-linear-gradient(0deg, #270266 70%, transparent);
+  border-top: 2px solid transparent;
+  border-left: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 0 10px 10px 0;
+}

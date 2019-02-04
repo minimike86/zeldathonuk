@@ -1,4 +1,7 @@
-
+.navbar {
+  background-color: #46336b;
+  border-bottom: 1px solid #56437b;
+}
 
 .btn-justgiving {
   color: #fff;

@@ -12,13 +12,15 @@ export class AppComponent {
   innerWidth: any;
 
   ngOnInit() {
-    this.isApiCall = window.location.toString().includes('api');
+    this.isApiCall = window.location.toString().includes('api') || window.location.toString().includes('obs');
     this.innerHeight = window.innerHeight;
     this.innerWidth = window.innerWidth;
   }
 
   @HostListener('window:resize', ['$event'])
   onResize(event) {
+    console.log(window.innerHeight, window.innerWidth);
+    this.innerHeight = window.innerHeight;
     this.innerWidth = window.innerWidth;
   }
 

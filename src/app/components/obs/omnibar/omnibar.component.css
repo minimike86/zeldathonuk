@@ -1,0 +1,13 @@
+.omnibar {
+  background: -webkit-linear-gradient(-90deg, #50529a, #944084);
+  border-top: 2px solid #50529a;
+}
+
+.dtotal {
+  background: -webkit-linear-gradient(-90deg, #46336b, #628cc4, #628cc4, #46336b);
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.025em #ffffff;
+  font-size: 3em;
+  font-family: 'Bungee', cursive;
+  color: transparent;
+}
