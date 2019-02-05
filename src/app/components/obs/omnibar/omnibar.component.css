@@ -1,13 +1,17 @@
 .omnibar {
-  background: -webkit-linear-gradient(-90deg, #50529a, #944084);
+  background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%);
   border-top: 2px solid #50529a;
 }
 
 .dtotal {
-  background: -webkit-linear-gradient(-90deg, #46336b, #628cc4, #628cc4, #46336b);
+  background: #ffffff;
   -webkit-background-clip: text;
-  -webkit-text-stroke: 0.025em #ffffff;
+  -webkit-text-stroke: 0.025em #782F99;
   font-size: 3em;
   font-family: 'Bungee', cursive;
   color: transparent;
+}
+
+.omnibar-content {
+  background: -webkit-linear-gradient(-90deg, #313539, #414549);
 }

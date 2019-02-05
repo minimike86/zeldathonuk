@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { interval, Observable } from "rxjs";
+import {interval, Observable} from "rxjs";
 
 @Component({
-  selector: 'app-omnibar',
-  templateUrl: './omnibar.component.html',
-  styleUrls: ['./omnibar.component.css']
+  selector: 'app-ad-panel',
+  templateUrl: './ad-panel.component.html',
+  styleUrls: ['./ad-panel.component.css']
 })
-export class OmnibarComponent implements OnInit {
+export class AdPanelComponent implements OnInit {
 
   public charityLogoUrl: string
   public charityLogoSwap: boolean;
@@ -31,10 +31,6 @@ export class OmnibarComponent implements OnInit {
       this.charityLogoUrl = '../../../../assets/img/GB19_logo_for_website2.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
-  }
-
-  getCharityLogoUrl(): string {
-    return this.charityLogoUrl;
   }
 
 }

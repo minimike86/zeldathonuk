@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 
 @Component({
   selector: 'app-runner-name',
@@ -6,10 +7,14 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./runner-name.component.css']
 })
 export class RunnerNameComponent implements OnInit {
+  public runnerName: string;
+  public faTwitch = faTwitch;
 
-  constructor() { }
+  constructor() {
+  }
 
   ngOnInit() {
+    this.runnerName = 'miikkkeeee_';
   }
 
 }

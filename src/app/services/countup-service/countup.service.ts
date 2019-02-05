@@ -9,6 +9,7 @@ export class CountupService {
   private secondsCounter$: Observable<any>;
   public isStarted: boolean;
   public hasPaused: boolean;
+  public includeMillisecs: boolean;
   public startDate: Date;
   public stopDate: Date;
   public nowDate: Date;
@@ -22,6 +23,7 @@ export class CountupService {
     this.secondsCounter$ = interval(1);
     this.isStarted = false;
     this.hasPaused = false;
+    this.includeMillisecs = false;
   }
 
   start(): void {
@@ -72,11 +74,17 @@ export class CountupService {
     this.hours = this.nowDate.getUTCHours();
     this.minutes = this.nowDate.getUTCMinutes();
     this.seconds = this.nowDate.getUTCSeconds();
-    this.milliseconds = this.nowDate.getUTCMilliseconds();
-    this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
-      this.zeroPad(this.minutes, 2) + ':' +
-      this.zeroPad(this.seconds, 2) + '.' +
-      this.zeroPad(this.milliseconds, 3));
+    if (this.includeMillisecs) {
+      this.milliseconds = this.nowDate.getUTCMilliseconds();
+      this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
+        this.zeroPad(this.minutes, 2) + ':' +
+        this.zeroPad(this.seconds, 2) + '.' +
+        this.zeroPad(this.milliseconds, 3));
+    } else {
+      this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
+        this.zeroPad(this.minutes, 2) + ':' +
+        this.zeroPad(this.seconds, 2));
+    }
   }
 
   getTimer(): Observable<string> {
@@ -89,6 +97,10 @@ export class CountupService {
 
   getHasPaused(): boolean {
     return this.hasPaused;
+  }
+
+  setIncludeMillisecs(value: boolean): void {
+    this.includeMillisecs = value;
   }
 
   zeroPad(num: number, maxLen: number): string {

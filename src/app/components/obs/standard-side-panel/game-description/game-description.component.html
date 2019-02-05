@@ -1,24 +1,31 @@
 <div class="side-panel spt">
-  <div class="d-flex spt-game"
-       style="height:175px; max-height:175px;">
-    <div class="spt-game-bg"
-         [ngStyle]="{ 'background-position':yPos }">
+  <div class="d-flex spt-game" style="height:175px; max-height:175px;">
+
+    <div class="spt-game-img-container">
+      <img class="spt-game-img"
+           [ngStyle]="{ 'top.px': pos }"
+           [src]="coverArt">
     </div>
+
     <div class="d-flex justify-content-center align-items-center spt-game-text">
       <h1 class="text-center" style="width: 90%; overflow-wrap: break-word;">
         {{ gameName | uppercase }}
       </h1>
     </div>
+
   </div>
   <div class="d-flex justify-content-start spt-type"
        style="height:30px; max-height:30px; margin: 0; margin-top: -15px;">
+
     <div class="d-flex justify-content-center align-items-center spt-type-text"
          style="height:30px; width: 90%;">
       {{ gameType }}
     </div>
+
   </div>
   <div class="d-flex justify-content-center align-items-center spt-platform"
        style="height:85px; max-height:85px; margin-top: -20px;">
+
     <div class="d-flex justify-content-center text-center spt-platform-bg"></div>
     <div class="d-flex justify-content-center text-center spt-platform-content"
          style="height:30px; width: 90%;">
@@ -47,5 +54,6 @@
         </div>
       </div>
     </div>
+
   </div>
 </div>

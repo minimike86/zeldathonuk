@@ -1,24 +1,27 @@
 <div class="d-flex justify-content-center align-items-center omnibar"
      style="">
   <div class="d-flex justify-content-center align-items-center"
-       style="height:56px; width:128px; max-height:56px; max-width:128px;"
+       style="height:56px; width:180px; max-height:56px; max-width:180px; border-right: 2px solid #50529a;"
        id="brand_logo">
     <img src="../../../../assets/img/zeldathonuk_brand_logo2.png"
+         class="px-3 py-2"
          style="max-width: 90%;" />
   </div>
-  <div class="d-flex flex-grow-1 justify-content-center align-items-center bg-dark"
+  <div class="d-flex flex-grow-1 justify-content-center align-items-center omnibar-content"
        style="height:56px; max-height:56px;"
        id="omnibar_content">
-    omnibar_content
+
+
+
   </div>
   <div class="d-flex justify-content-center align-items-center"
-       style="height:56px; max-height:56px;"
+       style="height:56px; max-height:56px; border-left: 2px solid #50529a;"
        id="donation_total_charity_logo">
-    <div class="p-2">
+    <div class="p-3">
       <h2 class="dtotal m-0">&pound;0.00</h2>
     </div>
     <img [src]="getCharityLogoUrl()"
-         class="p-2"
+         class="pl-1 pr-3"
          style="max-width: 120px;" />
   </div>
 </div>

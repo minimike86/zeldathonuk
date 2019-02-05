@@ -29,6 +29,8 @@ import { StandardSidePanelComponent } from './components/obs/standard-side-panel
 import { GameDescriptionComponent } from './components/obs/standard-side-panel/game-description/game-description.component';
 import { CameraComponent } from './components/obs/standard-side-panel/camera/camera.component';
 import { RunnerNameComponent } from './components/obs/standard-side-panel/runner-name/runner-name.component';
+import { SspTimerComponent } from './components/obs/standard-side-panel/ssp-timer/ssp-timer.component';
+import { AdPanelComponent } from './components/obs/standard-side-panel/ad-panel/ad-panel.component';
 
 @NgModule({
   declarations: [
@@ -50,7 +52,9 @@ import { RunnerNameComponent } from './components/obs/standard-side-panel/runner
     StandardSidePanelComponent,
     GameDescriptionComponent,
     CameraComponent,
-    RunnerNameComponent
+    RunnerNameComponent,
+    SspTimerComponent,
+    AdPanelComponent
   ],
   imports: [
     BrowserModule,
