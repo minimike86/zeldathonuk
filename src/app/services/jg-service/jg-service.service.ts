@@ -28,8 +28,8 @@ export class JgServiceService {
   };
 
   constructor(private http: HttpClient) {
-    this.prod = true;
-    this.jgPage = 'zeldathonuk-gameblast2019'; //'zeldathonuk-testfundraising-page435';
+    this.prod = false;
+    this.jgPage = 'zeldathonuk-testfundraising-page435'; //'zeldathonuk-gameblast2019';
     this.jgCampaign = 'https://www.justgiving.com/campaign/gameblast19';
     this.jgCharity = 'https://www.justgiving.com/specialeffect';
     this.baseTestUri = 'https://api.staging.justgiving.com/v1';
@@ -59,21 +59,21 @@ export class JgServiceService {
    */
   getFundraisingPageDetails(pageShortName: string): Observable<any> {
     //GET
-    const uri = '/fundraising/pages/{pageShortName}/';
+    const uri = `/fundraising/pages/${pageShortName}/`;
     if (this.prod) {
-      return this.http.get(this.baseProdUri + uri.replace('{pageShortName}', pageShortName), this.httpOptions);
+      return this.http.get(this.baseProdUri + uri, this.httpOptions);
     } else {
-      return this.http.get(this.baseTestUri + uri.replace('{pageShortName}', pageShortName), this.httpOptions);
+      return this.http.get(this.baseTestUri + uri, this.httpOptions);
     }
   }
 
   getFundraisingPageDonations(pageShortName: string): Observable<any> {
     //GET
-    const uri = '/fundraising/pages/{pageShortName}/donations';
+    const uri = `/fundraising/pages/${pageShortName}/donations`;
     if (this.prod) {
-      return this.http.get(this.baseProdUri + uri.replace('{pageShortName}', pageShortName), this.httpOptions);
+      return this.http.get(this.baseProdUri + uri, this.httpOptions);
     } else {
-      return this.http.get(this.baseTestUri + uri.replace('{pageShortName}', pageShortName), this.httpOptions);
+      return this.http.get(this.baseTestUri + uri, this.httpOptions);
     }
   }
 
