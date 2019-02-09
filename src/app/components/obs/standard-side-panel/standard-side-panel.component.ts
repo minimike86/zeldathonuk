@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, Input, OnInit, ViewChild} from '@angular/core';
 import {GameDescriptionComponent} from "./game-description/game-description.component";
 
 @Component({
@@ -7,6 +7,8 @@ import {GameDescriptionComponent} from "./game-description/game-description.comp
   styleUrls: ['./standard-side-panel.component.css']
 })
 export class StandardSidePanelComponent implements OnInit {
+
+  @Input() gameData: any;
 
   @ViewChild(GameDescriptionComponent)
   private gameDescriptionComponent: GameDescriptionComponent

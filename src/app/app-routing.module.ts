@@ -11,6 +11,7 @@ import { CountupComponent } from "./components/timers/countup/countup.component"
 import { CountDateComponent } from "./components/timers/count-date/count-date.component";
 import { ObsComponent } from "./components/obs/obs.component";
 import { PageNotFoundComponent } from "./components/page-not-found/page-not-found.component";
+import { GameTrackingComponent } from "./components/game-tracking/game-tracking.component";
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -20,6 +21,7 @@ const routes: Routes = [
   { path: 'incentives', component: IncentivesComponent },
   { path: 'obs', component: ObsComponent },
   { path: 'obs/standard', component: ObsComponent },
+  { path: 'tracking/:game', component: GameTrackingComponent },
   { path: 'api/timers', component: TimersComponent },
   { path: 'api/count-up', component: CountupComponent },
   { path: 'api/count-down', component: CountdownComponent },

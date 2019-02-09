@@ -31,6 +31,7 @@ import { CameraComponent } from './components/obs/standard-side-panel/camera/cam
 import { RunnerNameComponent } from './components/obs/standard-side-panel/runner-name/runner-name.component';
 import { SspTimerComponent } from './components/obs/standard-side-panel/ssp-timer/ssp-timer.component';
 import { AdPanelComponent } from './components/obs/standard-side-panel/ad-panel/ad-panel.component';
+import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
 
 @NgModule({
   declarations: [
@@ -54,7 +55,8 @@ import { AdPanelComponent } from './components/obs/standard-side-panel/ad-panel/
     CameraComponent,
     RunnerNameComponent,
     SspTimerComponent,
-    AdPanelComponent
+    AdPanelComponent,
+    GameTrackingComponent
   ],
   imports: [
     BrowserModule,

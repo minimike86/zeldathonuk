@@ -1,0 +1,22 @@
+<div class="container-fluid">
+  <pre class="text-white">{{ gameDesc.gameName }}</pre>
+
+  <div class="d-flex flex-wrap">
+    <ng-template ngFor let-gameItem [ngForOf]="gameItems">
+      <div class="card m-1" style="width: 10%;">
+        <div class="card-header text-truncate small p-1">
+          {{ gameItem.name }}
+        </div>
+        <div class="d-flex justify-content-center card-body p-1">
+          <img class="align-self-center card-img"
+               style="height: 3em; width: 3em;"
+               [src]="gameItem.imgUrl"
+               [alt]="gameItem.name"
+               [ngClass]="gameItem.collected ? '' : 'img-greyscale'"
+               (click)="collectItem(gameItem.name)">
+        </div>
+      </div>
+    </ng-template>
+  </div>
+
+</div>
