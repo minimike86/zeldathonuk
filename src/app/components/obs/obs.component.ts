@@ -8,7 +8,7 @@ import {StandardSidePanelComponent} from "./standard-side-panel/standard-side-pa
   styleUrls: ['./obs.component.css']
 })
 export class ObsComponent implements OnInit {
-  private layoutString: string;
+  public layoutString: string;
 
   @ViewChild(StandardSidePanelComponent)
   private standardSidePanelComponent: StandardSidePanelComponent;

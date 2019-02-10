@@ -40,6 +40,11 @@ import { SspTimerComponent } from './components/obs/standard-side-panel/ssp-time
 import { AdPanelComponent } from './components/obs/standard-side-panel/ad-panel/ad-panel.component';
 import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
 import { LoginComponent } from './components/login/login.component';
+import { WidescreenSidePanelComponent } from './components/obs/widescreen-side-panel/widescreen-side-panel.component';
+import { GameboySidePanelComponent } from './components/obs/gameboy-side-panel/gameboy-side-panel.component';
+import { GbaSidePanelComponent } from './components/obs/gba-side-panel/gba-side-panel.component';
+import { Ds3BottomPanelComponent } from './components/obs/ds3-bottom-panel/ds3-bottom-panel.component';
+import { DsvSidePanelComponent } from './components/obs/dsv-side-panel/dsv-side-panel.component';
 
 
 @NgModule({
@@ -66,7 +71,12 @@ import { LoginComponent } from './components/login/login.component';
     SspTimerComponent,
     AdPanelComponent,
     GameTrackingComponent,
-    LoginComponent
+    LoginComponent,
+    WidescreenSidePanelComponent,
+    GameboySidePanelComponent,
+    GbaSidePanelComponent,
+    Ds3BottomPanelComponent,
+    DsvSidePanelComponent
   ],
   imports: [
     BrowserModule,

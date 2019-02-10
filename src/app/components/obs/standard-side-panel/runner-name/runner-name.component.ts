@@ -8,13 +8,15 @@ import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 })
 export class RunnerNameComponent implements OnInit {
   public runnerName: string;
+  public hasTwitchAccount: boolean;
   public faTwitch = faTwitch;
 
   constructor() {
   }
 
   ngOnInit() {
-    this.runnerName = 'miikkkeeee_';
+    this.runnerName = 'Nobody';
+    this.hasTwitchAccount = true;
   }
 
 }
