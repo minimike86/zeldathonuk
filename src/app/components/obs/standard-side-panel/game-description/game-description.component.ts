@@ -33,7 +33,7 @@ export class GameDescriptionComponent implements OnInit {
   }
 
   updatePos(n: number) {
-    const maxCount = 800 - 175;
+    const maxCount = 750 - 175;
     if (n % maxCount === 0) {
       this.direction = !this.direction;
     }
