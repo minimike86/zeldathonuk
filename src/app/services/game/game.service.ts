@@ -1,39 +1,18 @@
 import {Injectable} from '@angular/core';
 import {GameItem} from "../../models/game-item";
-import {BehaviorSubject, Observable} from "rxjs";
-import {GameDesc} from "../../models/game-desc";
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameService {
-
-  private bsGameDesc$ = new BehaviorSubject<GameDesc>(new GameDesc( '', '', '', '', '', '', ));
-  private bsGameItems$ = new BehaviorSubject<GameItem[]>([]);
   private gameItems: GameItem[];
+
+  //TODO: Refactor into seperate firebase service
 
   constructor() {
   }
 
-  observeGameDesc(): Observable<GameDesc> {
-    return this.bsGameDesc$.asObservable();
-  }
-
-  observeGameItems(): Observable<GameItem[]> {
-    return this.bsGameItems$.asObservable();
-  }
-
   loadMajorasMask() {
-    this.bsGameDesc$.next(
-      new GameDesc(
-      '../../../../../assets/img/cover-art/Majoras_Mask_3D_cover.jpg',
-      'The Legend of Zelda: Majora\'s Mask 3D',
-      'Casual Any%',
-      '3DS',
-      '2015',
-      '16:45:00'
-      )
-    );
     //Empty the array
     this.gameItems = [];
     //Inventory Items
@@ -113,12 +92,70 @@ export class GameService {
     this.gameItems.push(new GameItem('Captain\'s Hat', '../../../../../assets/img/game-items/mm/MM3D Captain\'s Hat Icon.png', false));
     this.gameItems.push(new GameItem('Giant\'s Mask', '../../../../../assets/img/game-items/mm/MM3D Giant\'s Mask Icon.png', false));
     this.gameItems.push(new GameItem('Fierce Deity\'s Mask', '../../../../../assets/img/game-items/mm/MM3D Fierce Deity\'s Mask Icon.png', false));
-    this.bsGameItems$.next(this.gameItems);
+  }
+
+  loadMinishCap() {
+    //Empty the array
+    this.gameItems = [];
+    //Inventory Items
+    this.gameItems.push(new GameItem('Smith\'s Sword', '../../../../../assets/img/game-items/mc/TMC Smith\'s Sword Sprite.png', false));
+    this.gameItems.push(new GameItem('White Sword', '../../../../../assets/img/game-items/mc/TMC White Sword Sprite.png', false));
+    this.gameItems.push(new GameItem('White Sword (Two Elements)', '../../../../../assets/img/game-items/mc/TMC White Sword (Two Elements) Sprite.png', false));
+    this.gameItems.push(new GameItem('White Sword (Three Elements)', '../../../../../assets/img/game-items/mc/TMC White Sword (Three Elements) Sprite.png', false));
+    this.gameItems.push(new GameItem('Four Sword', '../../../../../assets/img/game-items/mc/TMC Four Sword Sprite.png', false));
+    this.gameItems.push(new GameItem('Gust Jar', '../../../../../assets/img/game-items/mc/TMC Gust Jar Sprite.png', false));
+    this.gameItems.push(new GameItem('Cane of Pacci', '../../../../../assets/img/game-items/mc/TMC Cane of Pacci Sprite.png', false));
+    this.gameItems.push(new GameItem('Boomerang', '../../../../../assets/img/game-items/mc/TMC Boomerang Sprite.png', false));
+    this.gameItems.push(new GameItem('Magical Boomerang', '../../../../../assets/img/game-items/mc/TMC Magical Boomerang Sprite.png', false));
+    this.gameItems.push(new GameItem('Small Shield', '../../../../../assets/img/game-items/mc/TMC Small Shield Sprite.png', false));
+    this.gameItems.push(new GameItem('Mirror Shield', '../../../../../assets/img/game-items/mc/TMC Mirror Shield Sprite.png', false));
+    this.gameItems.push(new GameItem('Mole Mitts', '../../../../../assets/img/game-items/mc/TMC Mole Mitts Sprite.png', false));
+    this.gameItems.push(new GameItem('Flame Lantern', '../../../../../assets/img/game-items/mc/FlameLantern TMC.gif', false));
+    this.gameItems.push(new GameItem('Bomb', '../../../../../assets/img/game-items/mc/TMC Bomb Sprite.png', false));
+    this.gameItems.push(new GameItem('Remote Bomb', '../../../../../assets/img/game-items/mc/TMC Remote Bomb Sprite.png', false));
+    this.gameItems.push(new GameItem('Pegasus Boots', '../../../../../assets/img/game-items/mc/TMC Pegasus Boots Sprite.png', false));
+    this.gameItems.push(new GameItem('Roc\'s Cape', '../../../../../assets/img/game-items/mc/TMC Roc\'s Cape Sprite.png', false));
+    this.gameItems.push(new GameItem('Ocarina of Wind', '../../../../../assets/img/game-items/mc/TMC Ocarina of Wind Sprite.png', false));
+    this.gameItems.push(new GameItem('Bow', '../../../../../assets/img/game-items/mc/TMC Bow Sprite.png', false));
+    this.gameItems.push(new GameItem('Light Arrows', '../../../../../assets/img/game-items/mc/TMC Light Arrows Sprite.png', false));
+    this.gameItems.push(new GameItem('Bottle 1', '../../../../../assets/img/game-items/mc/TMC Bottle Sprite.png', false));
+    this.gameItems.push(new GameItem('Bottle 2', '../../../../../assets/img/game-items/mc/TMC Bottle Sprite.png', false));
+    this.gameItems.push(new GameItem('Bottle 3', '../../../../../assets/img/game-items/mc/TMC Bottle Sprite.png', false));
+    this.gameItems.push(new GameItem('Bottle 4', '../../../../../assets/img/game-items/mc/TMC Bottle Sprite.png', false));
+    //Quest Items
+    this.gameItems.push(new GameItem('Kinstone Bag', '../../../../../assets/img/game-items/mc/TMC Kinstone Bag Sprite.png', false));
+    this.gameItems.push(new GameItem('Tingle Trophy', '../../../../../assets/img/game-items/mc/TingleTrophy.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Spin Attack)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Sword Beam)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Dash Attack)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Peril Beam)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Rock Breaker)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Roll Attack)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Down Thrust)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Tiger Scroll (Great Spin Attack)', '../../../../../assets/img/game-items/mc/TMC Tiger Scrolls Sprite.png', false));
+    this.gameItems.push(new GameItem('Mysterious Shell', '../../../../../assets/img/game-items/mc/TMC Mysterious Shell Sprite.png', false));
+    this.gameItems.push(new GameItem('Carlov Medal', '../../../../../assets/img/game-items/mc/TMC Carlov Medal Sprite.png', false));
+    this.gameItems.push(new GameItem('Grip Ring', '../../../../../assets/img/game-items/mc/TMC Grip Ring Sprite.png', false));
+    this.gameItems.push(new GameItem('Power Bracelets', '../../../../../assets/img/game-items/mc/TMC Power Bracelets Sprite.png', false));
+    this.gameItems.push(new GameItem('Flippers', '../../../../../assets/img/game-items/mc/TMC Flippers Sprite.png', false));
+    this.gameItems.push(new GameItem('Broken Picori Blade', '../../../../../assets/img/game-items/mc/TMC Broken Picori Blade Sprite.png', false));
+    this.gameItems.push(new GameItem('Spare Key', '../../../../../assets/img/game-items/mc/Sparekey.png', false));
+    this.gameItems.push(new GameItem('Wake-Up Mushroom', '../../../../../assets/img/game-items/mc/WakeUpMushroom.png', false));
+    this.gameItems.push(new GameItem('Graveyard Key', '../../../../../assets/img/game-items/mc/TMC Graveyard Key Sprite.png', false));
+    this.gameItems.push(new GameItem('Bomb Bag', '../../../../../assets/img/game-items/mc/TMC Big Bomb Bag Sprite.png', false));
+    this.gameItems.push(new GameItem('Quiver', '../../../../../assets/img/game-items/mc/BigQuiver(TMC).png', false));
+    this.gameItems.push(new GameItem('Wallet', '../../../../../assets/img/game-items/mc/TMC Wallet Sprite.png', false));
+    this.gameItems.push(new GameItem('Joy Butterfly', '../../../../../assets/img/game-items/mc/TMC Joy Butterfly Sprite.png', false));
+    this.gameItems.push(new GameItem('Jabber Nut', '../../../../../assets/img/game-items/mc/TMC Jabber Nut Sprite.png', false));
+    //Elements
+    this.gameItems.push(new GameItem('Earth Element', '../../../../../assets/img/game-items/mc/TMC Earth Element Sprite.png', false));
+    this.gameItems.push(new GameItem('Fire Element', '../../../../../assets/img/game-items/mc/TMC Fire Element Sprite.png', false));
+    this.gameItems.push(new GameItem('Water Element', '../../../../../assets/img/game-items/mc/TMC Water Element Sprite.png', false));
+    this.gameItems.push(new GameItem('Wind Element', '../../../../../assets/img/game-items/mc/TMC Wind Element Sprite.png', false));
   }
 
   collectItem(name: string) {
     this.gameItems.find(pred => pred.name === name).toggleCollectItem();
-    this.bsGameItems$.next(this.gameItems);
     console.log('collectItem', name, this.gameItems.find(pred => pred.name === name).collected);
   }
 

@@ -1,5 +1,7 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {interval, Observable, Subscription} from "rxjs";
+import { Component, OnInit } from '@angular/core';
+import { interval, Observable, Subscription } from "rxjs";
+import { GameDesc } from "../../../../models/game-desc";
+import { CurrentlyPlayingService } from "../../../../services/firebase/currently-playing/currently-playing.service";
 
 @Component({
   selector: 'app-game-description',
@@ -7,33 +9,27 @@ import {interval, Observable, Subscription} from "rxjs";
   styleUrls: ['./game-description.component.css']
 })
 export class GameDescriptionComponent implements OnInit {
-  @Input() public coverArt: string;
+  public gameDesc: GameDesc = new GameDesc('','','','','','');
+
   public pos: number;
   public direction: boolean;
   private subscription: Subscription;
   private secondsCounter$: Observable<any>;
-  @Input() public gameName: string;
-  @Input() public gameType: string;
-  @Input() public gamePlatform: string;
-  @Input() public gameRelYear: string;
-  @Input() public gameEstimate: string;
 
-  constructor() {
+  constructor(private currentlyPlayingService: CurrentlyPlayingService) {
+    currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
+      this.gameDesc = new GameDesc('','','','','','');
+      this.gameDesc = data[0];
+    });
+  }
+
+  ngOnInit() {
     this.pos = 0;
     this.direction = true;
     this.secondsCounter$ = interval(75);
     this.subscription = this.secondsCounter$.subscribe(n => {
       this.updatePos(n);
     });
-  }
-
-  ngOnInit() {
-    this.coverArt = '../../../../../assets/img/cover-art/Majoras_Mask_3D_cover.jpg';
-    this.gameName = 'The Legend of Zelda: Majora\'s Mask 3D';
-    this.gameType = 'Casual Any%';
-    this.gamePlatform = '3DS';
-    this.gameRelYear = '2015';
-    this.gameEstimate = '16:45:00';
   }
 
   updatePos(n: number) {

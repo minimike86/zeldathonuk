@@ -10,7 +10,7 @@
 }
 
 .timer-text {
-  background: #ffffff;
+  background: rgb(225, 225, 225);
   -webkit-background-clip: text;
   -webkit-text-stroke: 0.025em #782F99;
   font-size: 3em;

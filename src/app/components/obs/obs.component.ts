@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
+import {ActivatedRoute} from "@angular/router";
+import {StandardSidePanelComponent} from "./standard-side-panel/standard-side-panel.component";
 
 @Component({
   selector: 'app-obs',
@@ -6,12 +8,16 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./obs.component.css']
 })
 export class ObsComponent implements OnInit {
+  private layoutString: string;
 
-  //TODO use router to select obs layout
+  @ViewChild(StandardSidePanelComponent)
+  private standardSidePanelComponent: StandardSidePanelComponent;
 
-  //TODO use game service to get game details
-
-  constructor() { }
+  constructor(private route: ActivatedRoute) {
+    this.route.paramMap.subscribe(params => {
+      this.layoutString = params.get('layout');
+    });
+  }
 
   ngOnInit() {
   }

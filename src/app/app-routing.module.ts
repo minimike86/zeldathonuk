@@ -12,15 +12,16 @@ import { CountDateComponent } from "./components/timers/count-date/count-date.co
 import { ObsComponent } from "./components/obs/obs.component";
 import { PageNotFoundComponent } from "./components/page-not-found/page-not-found.component";
 import { GameTrackingComponent } from "./components/game-tracking/game-tracking.component";
+import { LoginComponent } from "./components/login/login.component";
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: '', redirectTo: '/',  pathMatch: 'full' },
+  { path: 'login', component: LoginComponent },
   { path: 'donors', component: DonationsComponent },
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },
-  { path: 'obs', component: ObsComponent },
-  { path: 'obs/standard', component: ObsComponent },
+  { path: 'obs/:layout', component: ObsComponent },
   { path: 'tracking/:game', component: GameTrackingComponent },
   { path: 'api/timers', component: TimersComponent },
   { path: 'api/count-up', component: CountupComponent },

@@ -19,7 +19,7 @@ export class AppComponent {
 
   @HostListener('window:resize', ['$event'])
   onResize(event) {
-    console.log(window.innerHeight, window.innerWidth);
+    // console.log(window.innerHeight, window.innerWidth);
     this.innerHeight = window.innerHeight;
     this.innerWidth = window.innerWidth;
   }
