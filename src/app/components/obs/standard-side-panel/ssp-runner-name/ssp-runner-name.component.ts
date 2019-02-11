@@ -2,11 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 
 @Component({
-  selector: 'app-runner-name',
-  templateUrl: './runner-name.component.html',
-  styleUrls: ['./runner-name.component.css']
+  selector: 'app-ssp-runner-name',
+  templateUrl: './ssp-runner-name.component.html',
+  styleUrls: ['./ssp-runner-name.component.css']
 })
-export class RunnerNameComponent implements OnInit {
+export class SspRunnerNameComponent implements OnInit {
   public runnerName: string;
   public hasTwitchAccount: boolean;
   public faTwitch = faTwitch;
@@ -15,7 +15,7 @@ export class RunnerNameComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.runnerName = 'Nobody';
+    this.runnerName = 'Miikkkeeee_';
     this.hasTwitchAccount = true;
   }
 

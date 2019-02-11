@@ -1,9 +1,9 @@
 import {AfterViewInit, Component, OnInit, ViewChild} from '@angular/core';
-import {GameDescriptionComponent} from "./game-description/game-description.component";
-import {CameraComponent} from "./camera/camera.component";
-import {RunnerNameComponent} from "./runner-name/runner-name.component";
+import {SspGameDescriptionComponent} from "./ssp-game-description/ssp-game-description.component";
+import {SspCameraComponent} from "./ssp-camera/ssp-camera.component";
+import {SspRunnerNameComponent} from "./ssp-runner-name/ssp-runner-name.component";
 import {SspTimerComponent} from "./ssp-timer/ssp-timer.component";
-import {AdPanelComponent} from "./ad-panel/ad-panel.component";
+import {SspAdPanelComponent} from "./ssp-ad-panel/ssp-ad-panel.component";
 
 @Component({
   selector: 'app-standard-side-panel',
@@ -11,16 +11,16 @@ import {AdPanelComponent} from "./ad-panel/ad-panel.component";
   styleUrls: ['./standard-side-panel.component.css']
 })
 export class StandardSidePanelComponent implements OnInit, AfterViewInit {
-  @ViewChild(GameDescriptionComponent)
-  private gameDescriptionComponent: GameDescriptionComponent;
-  @ViewChild(CameraComponent)
-  private cameraComponent: CameraComponent;
-  @ViewChild(RunnerNameComponent)
-  private runnerNameComponent: RunnerNameComponent;
+  @ViewChild(SspGameDescriptionComponent)
+  private gameDescriptionComponent: SspGameDescriptionComponent;
+  @ViewChild(SspCameraComponent)
+  private cameraComponent: SspCameraComponent;
+  @ViewChild(SspRunnerNameComponent)
+  private runnerNameComponent: SspRunnerNameComponent;
   @ViewChild(SspTimerComponent)
   private sspTimerComponent: SspTimerComponent;
-  @ViewChild(AdPanelComponent)
-  private adPanelComponent: AdPanelComponent;
+  @ViewChild(SspAdPanelComponent)
+  private adPanelComponent: SspAdPanelComponent;
 
   constructor() {
   }

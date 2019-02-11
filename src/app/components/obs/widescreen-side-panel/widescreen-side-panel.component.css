@@ -1,0 +1,56 @@
+.side-panel {
+  border-right: 2px solid #50529a;
+  height:1024px;
+  width:479px;
+  max-height:1024px;
+  max-width:479px;
+}
+
+.gameplay-panel {
+  background-color: #28a745;
+  height:809px;
+  width:1442px;
+  max-height:809px;
+  max-width:1442px;
+  z-index: -1;
+}
+
+.camera-panel {
+  background-color: #28a745;
+  height:530px;
+  width:479px;
+  max-height:530px;
+  max-width:479px;
+  z-index: -1;
+}
+
+.adv-panel {
+  border-top: 2px solid #50529a;
+  height:550px;
+  width:479px;
+  max-height:550px;
+  max-width:479px;
+}
+
+.bottom-panel {
+  border-top: 2px solid #50529a;
+  height:215px;
+  width:1442px;
+  max-height:215px;
+  max-width:1442px;
+}
+
+.name-timer-panel {
+  border-right: 2px solid #50529a;
+  height:215px;
+  width:691px;
+  max-height:215px;
+  max-width:691px;
+}
+
+.game-desc-panel {
+  height:215px;
+  width:750px;
+  max-height:215px;
+  max-width:750px;
+}

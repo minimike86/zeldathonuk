@@ -6,12 +6,9 @@
         <span *ngIf="finished">It&apos;s Time!</span>
       </div>
       <div class="cntdwn my-0 py-0" [ngClass]="finished ? 'blink-me' : ''" style="font-size: 14em; line-height: 1em; font-family: 'Bungee', cursive;">
-        <countdown [config]="cdConfig"
-                   (start)="onStart()"
-                   (finished)="onFinished()"
-                   (notify)="onNotify($event)">
-          $!h!:$!m!:$!s!
-        </countdown>
+        <!--
+        countdown
+        -->
       </div>
     </div>
   </div>

@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { RunnerNameComponent } from './runner-name.component';
+import { SspRunnerNameComponent } from './runner-name.component';
 
 describe('RunnerNameComponent', () => {
-  let component: RunnerNameComponent;
-  let fixture: ComponentFixture<RunnerNameComponent>;
+  let component: SspRunnerNameComponent;
+  let fixture: ComponentFixture<SspRunnerNameComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ RunnerNameComponent ]
+      declarations: [ SspRunnerNameComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(RunnerNameComponent);
+    fixture = TestBed.createComponent(SspRunnerNameComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

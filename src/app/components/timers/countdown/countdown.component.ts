@@ -1,5 +1,4 @@
 import { Component, Input, OnInit, OnDestroy, ViewChild } from '@angular/core';
-import { CountdownComponent as NgxCountdown } from "ngx-countdown";
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
@@ -9,7 +8,6 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class CountdownComponent implements OnInit, OnDestroy {
   @Input() countdownDuration: number;
-  @ViewChild(NgxCountdown) counter: NgxCountdown;
   private routeSub: any;
   public cdConfig: any;
   public finished: boolean;
@@ -44,13 +42,6 @@ export class CountdownComponent implements OnInit, OnDestroy {
 
   onNotify(event: any) {
     console.log('timer notify');
-  }
-
-  resetTimer(){
-    this.counter.restart();
-    this.counter.stop();
-    this.counter.pause();
-    this.counter.resume();
   }
 
 }

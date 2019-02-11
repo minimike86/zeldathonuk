@@ -6,7 +6,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { MomentModule } from "ngx-moment";
 import { CountdownModule } from "ngx-countdown";
 import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire';
@@ -31,13 +30,13 @@ import { CountDateComponent } from './components/timers/count-date/count-date.co
 import { IncentivesComponent } from './components/incentives/incentives.component';
 import { DonationsComponent } from './components/donations/donations.component';
 import { ObsComponent } from './components/obs/obs.component';
-import { OmnibarComponent } from './components/obs/omnibar/omnibar.component';
 import { StandardSidePanelComponent } from './components/obs/standard-side-panel/standard-side-panel.component';
-import { GameDescriptionComponent } from './components/obs/standard-side-panel/game-description/game-description.component';
-import { CameraComponent } from './components/obs/standard-side-panel/camera/camera.component';
-import { RunnerNameComponent } from './components/obs/standard-side-panel/runner-name/runner-name.component';
-import { SspTimerComponent } from './components/obs/standard-side-panel/ssp-timer/ssp-timer.component';
-import { AdPanelComponent } from './components/obs/standard-side-panel/ad-panel/ad-panel.component';
+  import { SspGameDescriptionComponent } from './components/obs/standard-side-panel/ssp-game-description/ssp-game-description.component';
+  import { SspCameraComponent } from './components/obs/standard-side-panel/ssp-camera/ssp-camera.component';
+  import { SspRunnerNameComponent } from './components/obs/standard-side-panel/ssp-runner-name/ssp-runner-name.component';
+  import { SspTimerComponent } from './components/obs/standard-side-panel/ssp-timer/ssp-timer.component';
+  import { SspAdPanelComponent } from './components/obs/standard-side-panel/ssp-ad-panel/ssp-ad-panel.component';
+import { OmnibarComponent } from './components/obs/omnibar/omnibar.component';
 import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
 import { LoginComponent } from './components/login/login.component';
 import { WidescreenSidePanelComponent } from './components/obs/widescreen-side-panel/widescreen-side-panel.component';
@@ -65,11 +64,11 @@ import { DsvSidePanelComponent } from './components/obs/dsv-side-panel/dsv-side-
     ObsComponent,
     OmnibarComponent,
     StandardSidePanelComponent,
-    GameDescriptionComponent,
-    CameraComponent,
-    RunnerNameComponent,
+    SspGameDescriptionComponent,
+    SspCameraComponent,
+    SspRunnerNameComponent,
     SspTimerComponent,
-    AdPanelComponent,
+    SspAdPanelComponent,
     GameTrackingComponent,
     LoginComponent,
     WidescreenSidePanelComponent,
@@ -95,4 +94,4 @@ import { DsvSidePanelComponent } from './components/obs/dsv-side-panel/dsv-side-
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}

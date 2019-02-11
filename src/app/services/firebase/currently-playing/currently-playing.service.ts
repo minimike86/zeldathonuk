@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreCollection } from "@angular/fire/firestore";
 import { Observable } from "rxjs";
 import { map } from 'rxjs/operators';
+import { AuthService } from "../auth/auth.service";
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,8 @@ export class CurrentlyPlayingService {
   private currentlyPlayingCollection: AngularFirestoreCollection<CurrentlyPlaying>;
   private currentlyPlaying: CurrentlyPlayingId[];
 
-  constructor(public db: AngularFirestore) {
+  constructor(private auth: AuthService,
+              private db: AngularFirestore) {
     this.currentlyPlayingCollection = db.collection<CurrentlyPlaying>('/currently-playing');
     this.getCurrentlyPlaying().subscribe( data => {
       this.currentlyPlaying = data;
@@ -28,6 +30,7 @@ export class CurrentlyPlayingService {
   }
 
   setCurrentlyPlaying(data: CurrentlyPlaying): void {
+    console.log('user: ', this.auth.authenticated);
     this.currentlyPlayingCollection.doc('bFrAHwuF1iksUjYAkhj3').set(data);
   }
 

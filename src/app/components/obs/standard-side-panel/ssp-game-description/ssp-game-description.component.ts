@@ -4,11 +4,11 @@ import { GameDesc } from "../../../../models/game-desc";
 import { CurrentlyPlayingService } from "../../../../services/firebase/currently-playing/currently-playing.service";
 
 @Component({
-  selector: 'app-game-description',
-  templateUrl: './game-description.component.html',
-  styleUrls: ['./game-description.component.css']
+  selector: 'app-ssp-game-description',
+  templateUrl: './ssp-game-description.component.html',
+  styleUrls: ['./ssp-game-description.component.css']
 })
-export class GameDescriptionComponent implements OnInit {
+export class SspGameDescriptionComponent implements OnInit {
   public gameDesc: GameDesc = new GameDesc('','','','','','');
 
   public pos: number;
