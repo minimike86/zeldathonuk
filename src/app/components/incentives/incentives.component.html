@@ -5,29 +5,80 @@
     <h6 class="text-white-50">
       We have a number of donor incentives to help inspire and motivate more people to start donating, give larger donations than they normally would, and engage long-term with our chosen charity.
     </h6>
-    <div class="text-center card card-header">
-      <div class="d-inline">
-        <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
-          Donate via Facebook
-        </button>
-        <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-          Donate via JustGiving
-        </button>
-      </div>
+  </div>
+
+  <div class="text-center card card-header">
+    <div class="d-inline">
+      <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+        Donate via Facebook
+      </button>
+      <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
+        Donate via JustGiving
+      </button>
     </div>
   </div>
 
-  <div class="d-flex">
+  <h2 class="text-white my-5">Challenges</h2>
+  <div class="d-flex my-2">
+
+    <div class="d-inline-flex flex-fill">
+
+      <div class="card text-white bg-secondary w-25 mr-2">
+        <div class="card-header">
+          <h5>EXERCISE</h5> <span class="badge badge-success mr-1">Team</span> <span class="badge badge-warning">During certain hours</span>
+        </div>
+        <img class="card-img" style="width: 275px; height: 275px;" src="../../../assets/img/challenges/exercise.jpg">
+        <div class="card-body">
+          You donate and we have to exercise. Push-ups, sit-ups, <a class="font-weight-bold text-white" href="https://clips.twitch.tv/SolidFamousLaptopOSsloth" target="_blank">backflips</a>...
+        </div>
+        <div class="card-footer small">
+          Donation Total: <b>Any</b>
+        </div>
+      </div>
+
+      <div class="card text-white bg-secondary w-25 mr-2">
+        <div class="card-header">
+          <h5>DYED BEARD</h5> <span class="badge badge-info mr-1">Mike</span>
+        </div>
+        <img class="card-img" style="width: 275px; height: 275px;" src="../../../assets/img/challenges/rainbow-beard.jpg">
+        <div class="card-body">
+          Mike will dye his beard if we get £500 in donations.
+        </div>
+        <div class="card-footer small">
+          Donation Total: <b>£500</b>
+        </div>
+      </div>
+
+      <div class="card text-white bg-secondary w-25 mr-2">
+        <div class="card-header">
+          <h5>REVERSE MOHAWK</h5> <span class="badge badge-info mr-1">Mike</span>
+        </div>
+        <img class="card-img" style="width: 275px; height: 275px;" src="../../../assets/img/challenges/reverse-mohawk.jpg">
+        <div class="card-body">
+          Mike will get a new hair style if we get £5000 in donations.
+        </div>
+        <div class="card-footer small">
+          Donation Total: <b>£5000</b>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <h2 class="text-white my-5">Prizes</h2>
+  <div class="d-flex my-2">
+
     <div class="d-inline-flex flex-fill">
 
       <div class="card text-white bg-secondary w-25 mr-2">
         <div class="card-header">
           <a class="font-weight-bold text-warning" href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">Insert Coin</a> Voucher (<b>£10</b>)
         </div>
+        <a href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">
+          <img class="card-img p-3" style="width: 275px; height: 275px;" src="https://www.insertcoinclothing.com/images/2016/logo.svg">
+        </a>
         <div class="card-body">
-          <a href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">
-            <img class="card-img" style="max-height: 125px;" src="https://www.insertcoinclothing.com/images/2016/logo.svg">
-          </a>
+          The <span class="-hashtag">#GameBlast19</span> crew have given us a £10 voucher for one lucky prize winner to save on an <a class="text-warning" href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">Insert Coin</a> clothing purchase.
         </div>
         <div class="card-footer small">
           Quantity: <b>1</b>
@@ -38,10 +89,11 @@
         <div class="card-header">
           <a class="font-weight-bold text-warning" href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">Insert Coin</a> Voucher (<b>£5</b>)
         </div>
+        <a href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">
+          <img class="card-img p-3" style="width: 275px; height: 275px;" src="https://www.insertcoinclothing.com/images/2016/logo.svg">
+        </a>
         <div class="card-body">
-          <a href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">
-            <img class="card-img" style="max-height: 125px;" src="https://www.insertcoinclothing.com/images/2016/logo.svg">
-          </a>
+          The <span>#GameBlast19</span> crew have given five a £5 vouchers for five lucky prize winners to save on an <a class="text-warning" href="https://www.insertcoinclothing.com/specialeffect/" target="_blank">Insert Coin</a> clothing purchase.
         </div>
         <div class="card-footer small">
           Quantity: <b>5</b>
@@ -52,8 +104,9 @@
         <div class="card-header">
           Ocarina of Time 3DS Promo Item
         </div>
+        <img class="card-img" style="width: 275px; height: 275px;" src="../../../assets/img/prizes/s-l300.jpg">
         <div class="card-body">
-          <img class="card-img" style="max-height: 125px;" src="/assets/img/prizes/s-l300.jpg">
+          <span class="font-weight-bold text-danger">Nintendo UK</span> have given us multiple Legend of Zelda promotional items for our prize winners to win!
         </div>
         <div class="card-footer small">
           Quantity: <b>30</b>

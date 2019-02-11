@@ -47,6 +47,24 @@
   max-height:215px;
   max-width:691px;
 }
+.name-timer-panel::after {
+  content: "";
+  display: block;
+  position: relative;
+  height:215px;
+  width:691px;
+  background: linear-gradient(-90deg,
+    rgba(80,82,154, 0.35),
+    rgba(148,64,132, 0.65)
+  ),
+  url("../../../../assets/img/GB19_Background_withLOGO.png");
+  background-size: cover;
+  background-position: bottom;
+  opacity: 0.5;
+  top: -185px;
+  left: 0;
+  z-index: -1;
+}
 
 .game-desc-panel {
   height:215px;

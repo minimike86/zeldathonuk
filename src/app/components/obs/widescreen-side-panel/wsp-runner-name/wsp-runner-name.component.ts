@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import {faTwitch} from "@fortawesome/free-brands-svg-icons";
 
 @Component({
   selector: 'app-wsp-runner-name',
@@ -6,10 +7,16 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./wsp-runner-name.component.css']
 })
 export class WspRunnerNameComponent implements OnInit {
+  public runnerName: string;
+  public hasTwitchAccount: boolean;
+  public faTwitch = faTwitch;
 
-  constructor() { }
+  constructor() {
+  }
 
   ngOnInit() {
+    this.runnerName = 'Miikkkeeee_';
+    this.hasTwitchAccount = true;
   }
 
 }

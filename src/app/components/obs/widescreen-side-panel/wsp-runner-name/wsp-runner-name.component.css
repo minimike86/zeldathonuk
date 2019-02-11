@@ -1,0 +1,14 @@
+.runner-name {
+  width: 90%;
+  background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%, transparent);
+  color: rgb(225, 225, 225);
+  -webkit-text-stroke: 0.025em #270266;
+  font-family: 'Passion One', cursive;
+}
+
+.runner-name-label {
+  color: gray;
+  -webkit-text-stroke: 0em transparent;
+  font-size: small;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"
+}
