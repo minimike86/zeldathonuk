@@ -85,7 +85,6 @@ import { DsvSidePanelComponent } from './components/obs/dsv-side-panel/dsv-side-
     AppRoutingModule,
     NgbModule,
     FontAwesomeModule,
-    MomentModule,
     CountdownModule,
     AngularFireModule.initializeApp(environment.firebase, 'zeldathonuk'),
     AngularFireAuthModule,
