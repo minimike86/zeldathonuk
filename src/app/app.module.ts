@@ -44,6 +44,11 @@ import { GameboySidePanelComponent } from './components/obs/gameboy-side-panel/g
 import { GbaSidePanelComponent } from './components/obs/gba-side-panel/gba-side-panel.component';
 import { Ds3BottomPanelComponent } from './components/obs/ds3-bottom-panel/ds3-bottom-panel.component';
 import { DsvSidePanelComponent } from './components/obs/dsv-side-panel/dsv-side-panel.component';
+import { WspAdPanelComponent } from './components/obs/widescreen-side-panel/wsp-ad-panel/wsp-ad-panel.component';
+import { WspCameraComponent } from './components/obs/widescreen-side-panel/wsp-camera/wsp-camera.component';
+import { WspGameDescriptionComponent } from './components/obs/widescreen-side-panel/wsp-game-description/wsp-game-description.component';
+import { WspRunnerNameComponent } from './components/obs/widescreen-side-panel/wsp-runner-name/wsp-runner-name.component';
+import { WspTimerComponent } from './components/obs/widescreen-side-panel/wsp-timer/wsp-timer.component';
 
 
 @NgModule({
@@ -75,7 +80,12 @@ import { DsvSidePanelComponent } from './components/obs/dsv-side-panel/dsv-side-
     GameboySidePanelComponent,
     GbaSidePanelComponent,
     Ds3BottomPanelComponent,
-    DsvSidePanelComponent
+    DsvSidePanelComponent,
+    WspAdPanelComponent,
+    WspCameraComponent,
+    WspGameDescriptionComponent,
+    WspRunnerNameComponent,
+    WspTimerComponent
   ],
   imports: [
     BrowserModule,
