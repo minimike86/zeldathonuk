@@ -40,8 +40,6 @@ import { OmnibarComponent } from './components/obs/omnibar/omnibar.component';
 import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
 import { LoginComponent } from './components/login/login.component';
 import { WidescreenSidePanelComponent } from './components/obs/widescreen-side-panel/widescreen-side-panel.component';
-import { GameboySidePanelComponent } from './components/obs/gameboy-side-panel/gameboy-side-panel.component';
-import { GbaSidePanelComponent } from './components/obs/gba-side-panel/gba-side-panel.component';
 import { Ds3BottomPanelComponent } from './components/obs/ds3-bottom-panel/ds3-bottom-panel.component';
 import { DsvSidePanelComponent } from './components/obs/dsv-side-panel/dsv-side-panel.component';
 import { WspAdPanelComponent } from './components/obs/widescreen-side-panel/wsp-ad-panel/wsp-ad-panel.component';
@@ -49,6 +47,11 @@ import { WspCameraComponent } from './components/obs/widescreen-side-panel/wsp-c
 import { WspGameDescriptionComponent } from './components/obs/widescreen-side-panel/wsp-game-description/wsp-game-description.component';
 import { WspRunnerNameComponent } from './components/obs/widescreen-side-panel/wsp-runner-name/wsp-runner-name.component';
 import { WspTimerComponent } from './components/obs/widescreen-side-panel/wsp-timer/wsp-timer.component';
+import { DsvGameDescriptionComponent } from './components/obs/dsv-side-panel/dsv-game-description/dsv-game-description.component';
+import { DsvCameraComponent } from './components/obs/dsv-side-panel/dsv-camera/dsv-camera.component';
+import { DsvRunnerNameComponent } from './components/obs/dsv-side-panel/dsv-runner-name/dsv-runner-name.component';
+import { DsvTimerComponent } from './components/obs/dsv-side-panel/dsv-timer/dsv-timer.component';
+import { DsvAdPanelComponent } from './components/obs/dsv-side-panel/dsv-ad-panel/dsv-ad-panel.component';
 
 
 @NgModule({
@@ -77,15 +80,18 @@ import { WspTimerComponent } from './components/obs/widescreen-side-panel/wsp-ti
     GameTrackingComponent,
     LoginComponent,
     WidescreenSidePanelComponent,
-    GameboySidePanelComponent,
-    GbaSidePanelComponent,
     Ds3BottomPanelComponent,
     DsvSidePanelComponent,
     WspAdPanelComponent,
     WspCameraComponent,
     WspGameDescriptionComponent,
     WspRunnerNameComponent,
-    WspTimerComponent
+    WspTimerComponent,
+    DsvGameDescriptionComponent,
+    DsvCameraComponent,
+    DsvRunnerNameComponent,
+    DsvTimerComponent,
+    DsvAdPanelComponent
   ],
   imports: [
     BrowserModule,

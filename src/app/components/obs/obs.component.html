@@ -9,11 +9,8 @@
   <ng-template [ngIf]="layoutString === '3ds'">
     <app-ds3-bottom-panel></app-ds3-bottom-panel>
   </ng-template>
-  <ng-template [ngIf]="layoutString === 'ds-vertical'">
+  <ng-template [ngIf]="layoutString === 'dsv'">
     <app-dsv-side-panel></app-dsv-side-panel>
-  </ng-template>
-  <ng-template [ngIf]="layoutString === 'gameboy'">
-    <app-gameboy-side-panel></app-gameboy-side-panel>
   </ng-template>
   <app-omnibar></app-omnibar>
 </div>

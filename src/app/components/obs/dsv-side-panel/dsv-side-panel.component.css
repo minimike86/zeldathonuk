@@ -1,0 +1,72 @@
+.side-panel {
+  border-right: 2px solid #50529a;
+  height:1024px;
+  width:751px;
+  max-height:1024px;
+  max-width:751px;
+}
+
+.dsv-panel {
+  position: absolute;
+  top: 0;
+  left: 751px;
+  height: 1024px;
+  width: 1169px;
+  max-height: 1024px;
+  max-width: 1169px;
+}
+.dsv-panel:after {
+  content: '';
+  display: block;
+  position: absolute;
+  background: url("../../../../assets/img/obs-bg/3ds-layout.png"), #782F99;
+  top: 0;
+  left: 0;
+  height: 1024px;
+  width: 1169px;
+  max-height: 1024px;
+  max-width: 1169px;
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.ds-left-spacer {
+  height: 1024px;
+  width: 260px;
+  max-height: 1024px;
+  max-width: 260px;
+}
+
+.ds-screen {
+  height: 1024px;
+  width: 650px;
+  max-height: 1024px;
+  max-width: 650px;
+}
+
+.ds-top-screen {
+  border-left: 2px solid #50529a;
+  border-bottom: 2px solid #50529a;
+  border-right: 2px solid #50529a;
+  background-color: #28a745;
+  height: 489px;
+  width: 650px;
+  max-height: 489px;
+  max-width: 650px;
+}
+
+.ds-screen-gap {
+  height: 50px;
+  width: 650px;
+  max-height: 50px;
+  max-width: 650px;
+}
+
+.ds-bottom-screen {
+  border: 2px solid #50529a;
+  background-color: #28a745;
+  height: 488px;
+  width: 650px;
+  max-height: 488px;
+  max-width: 650px;
+}
