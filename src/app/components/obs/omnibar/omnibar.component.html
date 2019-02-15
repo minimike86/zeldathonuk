@@ -18,7 +18,9 @@
        style="height:56px; max-height:56px; border-left: 2px solid #50529a;"
        id="donation_total_charity_logo">
     <div class="p-3">
-      <h2 class="dtotal m-0">&pound;0.00</h2>
+      <h2 class="dtotal m-0">
+        {{ fundraisingPageDetails.grandTotalRaisedExcludingGiftAid | currency:fundraisingPageDetails.currencyCode }}
+      </h2>
     </div>
     <img [src]="getCharityLogoUrl()"
          class="pl-1 pr-3"

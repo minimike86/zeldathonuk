@@ -57,9 +57,9 @@ export class JgServiceService {
    * FUNDRAISING ENDPOINTS
    * Create, edit or manage fundraising pages
    */
-  getFundraisingPageDetails(pageShortName: string): Observable<any> {
+  getFundraisingPageDetails(): Observable<any> {
     //GET
-    const uri = `/fundraising/pages/${pageShortName}/`;
+    const uri = `/fundraising/pages/${this.jgPage}/`;
     if (this.prod) {
       return this.http.get(this.baseProdUri + uri, this.httpOptions);
     } else {
@@ -67,9 +67,9 @@ export class JgServiceService {
     }
   }
 
-  getFundraisingPageDonations(pageShortName: string): Observable<any> {
+  getFundraisingPageDonations(): Observable<any> {
     //GET
-    const uri = `/fundraising/pages/${pageShortName}/donations`;
+    const uri = `/fundraising/pages/${this.jgPage}/donations`;
     if (this.prod) {
       return this.http.get(this.baseProdUri + uri, this.httpOptions);
     } else {

@@ -1,7 +1,7 @@
 <div class="container p-3" style="background-color: #606060;">
 
   <div class="py-2">
-    <h3 class="text-white">Donors</h3>
+    <h3 class="text-white">Donate</h3>
     <h6 class="text-white-50">
       On behalf of everyone at the ZeldathonUK team, I would like to thank all of the donors below for their generous donations.
     </h6>
@@ -18,8 +18,39 @@
   </div>
 
 
-  <div class="py-2 text-white">
-    No donors yet! Please consider starting us off!
+  <div class="py-2">
+    <h3 class="text-white mb-3">Donations (JustGiving)</h3>
+    <ng-template #showDonors [ngIf]="fundraisingPageDonations !== undefined && fundraisingPageDonations.length >= 1">
+      <div class="d-inline-block" style="width: 33%;" *ngFor="let donor of fundraisingPageDonations;">
+
+        <div class="d-flex text-white donation">
+          <div class="align-items-start">
+            <img class="ml-2 mr-4"
+                 [src]="donor.image"
+                 [alt]="donor.donorDisplayName"
+                 [title]="donor.donorDisplayName">
+          </div>
+          <div>
+            <div class="d-flex justify-content-between">
+              <h4 class="mb-0 mr-5">{{ donor.donorDisplayName }}</h4>
+              <div class="align-self-center">
+                <span class="small text-white-50">{{ timeAgo.format(getDate(donor.donationDate)) }}</span>
+              </div>
+            </div>
+            <div style="max-width: 20em;">
+              {{ donor.message.length >= 1 ? donor.message : '-' }}
+            </div>
+            <div>
+              <h3>{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</h3>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </ng-template>
+    <ng-template #showNothing [ngIf]="fundraisingPageDonations !== undefined && fundraisingPageDonations.length === 0">
+      No donors yet! Please consider starting us off!
+    </ng-template>
   </div>
 
 </div>

@@ -8,18 +8,16 @@ import { timer } from "rxjs";
   styleUrls: ['./jg-donation.component.css']
 })
 export class JgDonationComponent implements OnInit {
-
   public fundraisingPageDetails: any;
   public fundraisingPageDonations: any[];
 
   public displayTotal: boolean;
 
   constructor(private jgServiceService: JgServiceService) {
-    const pageShortName = 'zeldathonuk-gameblast2019';
-    jgServiceService.getFundraisingPageDetails(pageShortName).subscribe(data => {
+    jgServiceService.getFundraisingPageDetails().subscribe(data => {
       this.fundraisingPageDetails = data;
     });
-    jgServiceService.getFundraisingPageDonations(pageShortName).subscribe(data => {
+    jgServiceService.getFundraisingPageDonations().subscribe(data => {
       this.fundraisingPageDonations = data.donations;
     });
   }

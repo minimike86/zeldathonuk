@@ -72,3 +72,14 @@
 .show > .btnfacebook.dropdown-toggle:focus {
   box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
 }
+
+
+.donation {
+  background: #56437b;
+  border: #3C0C78 solid 1px;
+  border-radius: 1em;
+  padding: 1em;
+  width: 95%;
+  margin-right: 1em;
+  margin-bottom: 1em;
+}
