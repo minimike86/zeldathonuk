@@ -3,7 +3,7 @@
   display: block;
   position: absolute;
   left: -10px;
-  top: 480px;
+  top: 470px;
   height:550px;
   width:479px;
   opacity: 0.5;
@@ -38,7 +38,7 @@
 
 .advertisement-panel {
   position: relative;
-  height: 520px;
+  height: 535px;
   width: 100%;
   color: darkgrey;
   opacity: 0.8;
