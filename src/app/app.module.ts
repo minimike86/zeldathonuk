@@ -16,6 +16,7 @@ import { AngularFirestoreModule } from '@angular/fire/firestore';
 import { environment } from "../environments/environment";
 
 /* SERVICES */
+import { AuthGuardService } from "./router/guards/auth-guard.service";
 import { JgServiceService } from "./services/jg-service/jg-service.service";
 
 /* COMPONENTS */
@@ -55,6 +56,7 @@ import { DsvCameraComponent } from './components/obs/dsv-side-panel/dsv-camera/d
 import { DsvRunnerNameComponent } from './components/obs/dsv-side-panel/dsv-runner-name/dsv-runner-name.component';
 import { DsvTimerComponent } from './components/obs/dsv-side-panel/dsv-timer/dsv-timer.component';
 import { DsvAdPanelComponent } from './components/obs/dsv-side-panel/dsv-ad-panel/dsv-ad-panel.component';
+import { ObsLayoutComponent } from './components/obs/layout/obs-layout.component';
 
 
 @NgModule({
@@ -73,6 +75,7 @@ import { DsvAdPanelComponent } from './components/obs/dsv-side-panel/dsv-ad-pane
     IncentivesComponent,
     DonationsComponent,
     ObsComponent,
+    ObsLayoutComponent,
     OmnibarComponent,
     StandardSidePanelComponent,
     SspGameDescriptionComponent,
@@ -109,7 +112,7 @@ import { DsvAdPanelComponent } from './components/obs/dsv-side-panel/dsv-ad-pane
     AngularFireAuthModule,
     AngularFirestoreModule,
   ],
-  providers: [JgServiceService],
+  providers: [AuthGuardService, JgServiceService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

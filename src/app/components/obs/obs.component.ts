@@ -1,6 +1,10 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
-import {ActivatedRoute} from "@angular/router";
-import {StandardSidePanelComponent} from "./standard-side-panel/standard-side-panel.component";
+import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {
+  CurrentlyPlaying, CurrentlyPlayingId,
+  CurrentlyPlayingService
+} from "../../services/firebase/currently-playing/currently-playing.service";
+import {ModalDismissReasons, NgbActiveModal, NgbModal} from "@ng-bootstrap/ng-bootstrap";
+
 
 @Component({
   selector: 'app-obs',
@@ -8,18 +12,36 @@ import {StandardSidePanelComponent} from "./standard-side-panel/standard-side-pa
   styleUrls: ['./obs.component.css']
 })
 export class ObsComponent implements OnInit {
-  public layoutString: string;
+  @ViewChild('yesNoModalDialog')
+  private yesNoModalDialogRef : TemplateRef<any>;
+  public yesNoModal: NgbActiveModal;
 
-  @ViewChild(StandardSidePanelComponent)
-  private standardSidePanelComponent: StandardSidePanelComponent;
+  public currentlyPlaying: CurrentlyPlayingId[];
+  public gameList: CurrentlyPlaying[];
+  public swapToGame: CurrentlyPlaying;
 
-  constructor(private route: ActivatedRoute) {
-    this.route.paramMap.subscribe(params => {
-      this.layoutString = params.get('layout');
+  constructor(private modalService: NgbModal,
+              private currentlyPlayingService: CurrentlyPlayingService) {
+    currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
+      this.currentlyPlaying = data;
     });
+    this.gameList = currentlyPlayingService.gameList;
+    this.swapToGame = null;
   }
 
   ngOnInit() {
   }
 
+  onSwapGameClick(game: CurrentlyPlaying) {
+    this.swapToGame = game;
+    this.yesNoModal = this.modalService.open(this.yesNoModalDialogRef);
+  }
+
+  swapModalBtn(game: CurrentlyPlaying) {
+    this.currentlyPlayingService.setCurrentlyPlaying(game);
+    this.yesNoModal.close('Game swapped');
+  }
+
 }
+
+

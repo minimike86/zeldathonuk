@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
+import {AuthService} from "../../services/firebase/auth/auth.service";
 
 @Component({
   selector: 'app-navbar',
@@ -7,8 +8,15 @@ import { Component, OnInit } from '@angular/core';
 })
 export class NavbarComponent implements OnInit {
   public isCollapsed = true;
+  @Input() showJgDonationComponent: boolean;
+  public user: any;
 
-  constructor() { }
+  constructor(private auth: AuthService) {
+    auth.user$.subscribe(data => {
+      console.log('AuthService: ', data);
+      this.user = data;
+    });
+  }
 
   ngOnInit() {
   }
@@ -19,6 +27,10 @@ export class NavbarComponent implements OnInit {
 
   donateJustGiving() {
     window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast2019', '_blank');
+  }
+
+  logout(){
+    this.auth.logout();
   }
 
 }

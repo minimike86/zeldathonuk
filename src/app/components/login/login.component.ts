@@ -18,7 +18,9 @@ export class LoginComponent implements OnInit {
     this.authService.user$.subscribe(user => {
       console.log('Logged in: ', user);
       this.currentUser = user;
-      this.router.navigateByUrl('');
+      if (this.currentUser !== undefined && this.currentUser !== null) {
+        this.router.navigateByUrl('');
+      }
     });
   }
 
@@ -27,6 +29,7 @@ export class LoginComponent implements OnInit {
       console.log('logged in');
     } else if (this.currentUser === undefined || this.currentUser === null) {
       console.log('not logged in');
+      this.login();
     }
   }
 
