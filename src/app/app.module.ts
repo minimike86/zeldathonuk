@@ -57,6 +57,11 @@ import { DsvRunnerNameComponent } from './components/obs/dsv-side-panel/dsv-runn
 import { DsvTimerComponent } from './components/obs/dsv-side-panel/dsv-timer/dsv-timer.component';
 import { DsvAdPanelComponent } from './components/obs/dsv-side-panel/dsv-ad-panel/dsv-ad-panel.component';
 import { ObsLayoutComponent } from './components/obs/layout/obs-layout.component';
+import { Ds3AdPanelComponent } from './components/obs/ds3-bottom-panel/ds3-ad-panel/ds3-ad-panel.component';
+import { Ds3CameraComponent } from './components/obs/ds3-bottom-panel/ds3-camera/ds3-camera.component';
+import { Ds3GameDescriptionComponent } from './components/obs/ds3-bottom-panel/ds3-game-description/ds3-game-description.component';
+import { Ds3RunnerNameComponent } from './components/obs/ds3-bottom-panel/ds3-runner-name/ds3-runner-name.component';
+import { Ds3TimerComponent } from './components/obs/ds3-bottom-panel/ds3-timer/ds3-timer.component';
 
 
 @NgModule({
@@ -97,7 +102,12 @@ import { ObsLayoutComponent } from './components/obs/layout/obs-layout.component
     DsvCameraComponent,
     DsvRunnerNameComponent,
     DsvTimerComponent,
-    DsvAdPanelComponent
+    DsvAdPanelComponent,
+    Ds3AdPanelComponent,
+    Ds3CameraComponent,
+    Ds3GameDescriptionComponent,
+    Ds3RunnerNameComponent,
+    Ds3TimerComponent
   ],
   imports: [
     BrowserModule,

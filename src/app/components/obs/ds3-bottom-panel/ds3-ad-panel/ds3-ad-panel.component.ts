@@ -2,11 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import {interval, Observable} from "rxjs";
 
 @Component({
-  selector: 'app-wsp-ad-panel',
-  templateUrl: './wsp-ad-panel.component.html',
-  styleUrls: ['./wsp-ad-panel.component.css']
+  selector: 'app-ds3-ad-panel',
+  templateUrl: './ds3-ad-panel.component.html',
+  styleUrls: ['./ds3-ad-panel.component.css']
 })
-export class WspAdPanelComponent implements OnInit {
+export class Ds3AdPanelComponent implements OnInit {
   public charityLogoUrl: string;
   public charityLogoSwap: boolean;
   private secondsCounter$: Observable<any>;

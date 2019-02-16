@@ -1,3 +1,28 @@
-<p>
-  ds3-bottom-panel works!
-</p>
+<div class="d-flex">
+  <div class="d-flex flex-column-reverse side-panel">
+
+    <div class="adv-panel">
+      <app-ds3-ad-panel></app-ds3-ad-panel>
+    </div>
+    <div class="camera-panel">
+      <app-ds3-camera></app-ds3-camera>
+    </div>
+
+  </div>
+  <div class="d-flex flex-column-reverse">
+
+    <div class="d-flex bottom-panel">
+      <div class="name-timer-panel">
+        <app-ds3-runner-name></app-ds3-runner-name>
+        <app-ds3-timer></app-ds3-timer>
+      </div>
+      <div class="game-desc-panel">
+        <app-ds3-game-description></app-ds3-game-description>
+      </div>
+    </div>
+
+    <div class="gameplay-panel">
+    </div>
+
+  </div>
+</div>

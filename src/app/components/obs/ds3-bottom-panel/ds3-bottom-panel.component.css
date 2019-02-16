@@ -1,0 +1,89 @@
+.side-panel {
+  border-right: 2px solid #50529a;
+  height:1024px;
+  width:554px;
+  max-height:1024px;
+  max-width:554px;
+}
+
+.gameplay-panel {
+  background-color: #28a745;
+  height:821px;
+  width:1366px;
+  max-height:821px;
+  max-width:1366px;
+  z-index: -1;
+}
+
+.camera-panel {
+  background-color: #28a745;
+  border-top: 2px solid #50529a;
+  height:417px;
+  width:554px;
+  max-height:417px;
+  max-width:554px;
+  z-index: -1;
+}
+.camera-panel:after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #28a745;
+  border-bottom: 2px solid #50529a;
+  height:415px;
+  width:554px;
+  max-height:415px;
+  max-width:554px;
+  z-index: 0;
+}
+
+.adv-panel {
+  border-top: 2px solid #50529a;
+  height:203px;
+  width:554px;
+  max-height:204px;
+  max-width:554px;
+}
+
+.bottom-panel {
+  border-top: 2px solid #50529a;
+  height:204px;
+  width:1366px;
+  max-height:204px;
+  max-width:1366px;
+}
+
+.name-timer-panel {
+  border-right: 2px solid #50529a;
+  height:204px;
+  width:615px;
+  max-height:204px;
+  max-width:615px;
+}
+.name-timer-panel::after {
+  content: "";
+  display: block;
+  position: relative;
+  height:204px;
+  width:615px;
+  background: linear-gradient(-90deg,
+  rgba(80,82,154, 0.35),
+  rgba(148,64,132, 0.65)
+  ),
+  url("../../../../assets/img/GB19_Background_withLOGO.png");
+  background-size: cover;
+  background-position: bottom;
+  opacity: 0.5;
+  top: -178px;
+  left: 0;
+  z-index: -1;
+}
+
+.game-desc-panel {
+  height:204px;
+  width:750px;
+  max-height:215px;
+  max-width:750px;
+}
