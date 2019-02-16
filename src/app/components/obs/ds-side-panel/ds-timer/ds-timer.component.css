@@ -1,0 +1,27 @@
+.timer-outer {
+  height: 67px;
+  min-height: 67px;
+}
+
+.timer-inner {
+  height: 100%;
+  width: 90%;
+  background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%, #371276);
+}
+
+.timer-text {
+  background: rgb(225, 225, 225);
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.025em #782F99;
+  font-size: 3em;
+  font-family: 'Bungee', cursive;
+  color: transparent;
+  margin-bottom: 0;
+}
+
+.timer-label {
+  color: gray;
+  -webkit-text-stroke: 0em transparent;
+  font-size: small;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"
+}

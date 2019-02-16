@@ -1,0 +1,40 @@
+.side-panel {
+  border-right: 2px solid #50529a;
+  height:1024px;
+  width:555px;
+  max-height:1024px;
+  max-width:555px;
+}
+
+.ds-primary-screen {
+  position: absolute;
+  top: 0;
+  left: 555px;
+  height: 1024px;
+  width: 1365px;
+  background-color: #28a745;
+  z-index: -1;
+}
+
+.ds-secondary-screen {
+  height:415px;
+  width:555px;
+  max-height:415px;
+  max-width:555px;
+  background-color: #28a745;
+  z-index: -1;
+}
+
+.timer-panel {
+  position: absolute;
+  top: 680px;
+  width: 500px;
+  height: 67px;
+}
+
+.runner-name-panel {
+  position: absolute;
+  top: 960px;
+  width: 500px;
+  height: 58px;
+}

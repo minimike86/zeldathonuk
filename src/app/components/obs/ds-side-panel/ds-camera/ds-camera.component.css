@@ -1,0 +1,8 @@
+.camera-panel {
+  position: absolute;
+  top: 670px;
+  height: 355px;
+  width: 555px;
+  background-color: #28a745;
+  z-index: -1;
+}
