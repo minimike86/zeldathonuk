@@ -2,23 +2,26 @@ import { Component, OnInit } from '@angular/core';
 import { JgServiceService } from "../../services/jg-service/jg-service.service";
 import { timer } from "rxjs";
 
+
+/**
+ * COMPONENT IS DISPLAYED WITHIN THE NAVBAR
+ */
 @Component({
   selector: 'app-jg-donation',
   templateUrl: './jg-donation.component.html',
   styleUrls: ['./jg-donation.component.css']
 })
 export class JgDonationComponent implements OnInit {
-  public fundraisingPageDetails: any;
-  public fundraisingPageDonations: any[];
-
+  public fundraisingPageDetails: FundraisingPageDetails[];
+  public fundraisingPageDonations: FundraisingPageDonations;
   public displayTotal: boolean;
 
   constructor(private jgServiceService: JgServiceService) {
-    jgServiceService.getFundraisingPageDetails().subscribe(data => {
+    jgServiceService.getFundraisingPageDetails(1000*60).subscribe(data => {
       this.fundraisingPageDetails = data;
     });
-    jgServiceService.getFundraisingPageDonations().subscribe(data => {
-      this.fundraisingPageDonations = data.donations;
+    jgServiceService.getFundraisingPageDonations(1000*60).subscribe(data => {
+      this.fundraisingPageDonations = data;
     });
   }
 

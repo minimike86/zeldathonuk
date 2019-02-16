@@ -17,7 +17,7 @@ export class OmnibarComponent implements OnInit {
     this.charityLogoSwap = true;
     this.updateCharityLogoUrl();
     this.secondsCounter$ = interval(1000 * 15);
-    jgServiceService.getFundraisingPageDetails().subscribe(data => {
+    jgServiceService.getFundraisingPageDetails(1000*5).subscribe(data => {
       this.fundraisingPageDetails = data;
     });
   }

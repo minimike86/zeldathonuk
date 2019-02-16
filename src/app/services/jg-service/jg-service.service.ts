@@ -1,47 +1,26 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable } from "rxjs";
+import { Injectable, OnInit } from '@angular/core';
+import { HttpClient } from "@angular/common/http";
+import { BehaviorSubject, Observable } from "rxjs";
+import { environment } from "../../../environments/environment";
 
 @Injectable({
   providedIn: 'root'
 })
 export class JgServiceService {
-
-  private jgPage: string;
   private jgCampaign: string;
   private jgCharity: string;
-  private httpOptions: any;
 
-  private prod: boolean;
-  private baseProdUri: string;
-  private baseTestUri: string;
-  private testCreditCard: {
-    type: 'Master Card',
-    number: '4111111111111111',
-    expiry: '01/2020',
-    cv2: '123'
-    verifyStepPswd: '12345',
-  };
-  private testPayPal: {
-    username: 'paypalsandboxapi@justgiving.com',
-    password: 'letmeinplease',
-  };
+  private fundraisingPageDetailsData$ = new BehaviorSubject<FundraisingPageDetails[]>([]);
+  private fundraisingPageDonationsData$ = new BehaviorSubject<FundraisingPageDonations>({
+    donations: [],
+    pageShortName: null,
+    pagination: null
+  });
 
   constructor(private http: HttpClient) {
-    this.prod = false;
-    this.jgPage = 'zeldathonuk-testfundraising-page435'; //'zeldathonuk-gameblast2019';
     this.jgCampaign = 'https://www.justgiving.com/campaign/gameblast19';
     this.jgCharity = 'https://www.justgiving.com/specialeffect';
-    this.baseTestUri = 'https://api.staging.justgiving.com/v1';
-    this.baseProdUri = 'https://api.justgiving.com/v1';
-    this.httpOptions = {
-      headers: new HttpHeaders({
-        'Accept':  'application/json',
-        'x-api-key': '6cb44e17'
-      })
-    };
   }
-
 
   /**
    * CAMPAIGNS ENDPOINTS
@@ -57,24 +36,60 @@ export class JgServiceService {
    * FUNDRAISING ENDPOINTS
    * Create, edit or manage fundraising pages
    */
-  getFundraisingPageDetails(): Observable<any> {
-    //GET
-    const uri = `/fundraising/pages/${this.jgPage}/`;
-    if (this.prod) {
-      return this.http.get(this.baseProdUri + uri, this.httpOptions);
-    } else {
-      return this.http.get(this.baseTestUri + uri, this.httpOptions);
+  getFundraisingPageDetails(interval: number): BehaviorSubject<FundraisingPageDetails[]> {
+    if (interval !== undefined) {
+      setInterval(() => {
+        this.http
+          .get<FundraisingPageDetails[]>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/`, environment.justgiving.httpOptions)
+          .subscribe(
+            (data: any) => {
+              //console.log("GetFundraisingPages: ", data);
+              this.fundraisingPageDetailsData$.next(data);
+            },
+            (err: any) => console.error("GetFundraisingPages: ERROR"),
+            () => console.log("GetFundraisingPages: Complete")
+          );
+      }, interval);
     }
+    this.http
+      .get<FundraisingPageDetails[]>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/`, environment.justgiving.httpOptions)
+      .subscribe(
+        (data: any) => {
+          //console.log("GetFundraisingPages: ", data);
+          this.fundraisingPageDetailsData$.next(data);
+        },
+        (err: any) => console.error("GetFundraisingPages: ERROR"),
+        () => console.log("GetFundraisingPages: Complete")
+      );
+    return this.fundraisingPageDetailsData$;
   }
 
-  getFundraisingPageDonations(): Observable<any> {
-    //GET
-    const uri = `/fundraising/pages/${this.jgPage}/donations`;
-    if (this.prod) {
-      return this.http.get(this.baseProdUri + uri, this.httpOptions);
-    } else {
-      return this.http.get(this.baseTestUri + uri, this.httpOptions);
+  getFundraisingPageDonations(interval: number): BehaviorSubject<FundraisingPageDonations> {
+    if (interval !== undefined) {
+      setInterval(() => {
+        this.http
+          .get<FundraisingPageDonations>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/donations`, environment.justgiving.httpOptions)
+          .subscribe (
+            (data: any) => {
+              //console.log("GetFundraisingPageDonations: ", data);
+              this.fundraisingPageDonationsData$.next(data);
+            },
+            (err: any) => console.error("GetFundraisingPageDonations: ERROR"),
+            () => console.log("GetFundraisingPageDonations: Complete")
+          );
+      }, interval);
     }
+    this.http
+      .get<FundraisingPageDonations>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/donations`, environment.justgiving.httpOptions)
+      .subscribe (
+        (data: any) => {
+          //console.log("GetFundraisingPageDonations: ", data);
+          this.fundraisingPageDonationsData$.next(data);
+        },
+        (err: any) => console.error("GetFundraisingPageDonations: ERROR"),
+        () => console.log("GetFundraisingPageDonations: Complete")
+      );
+    return this.fundraisingPageDonationsData$;
   }
 
   updateOfflineAmount(pageShortName: string) {

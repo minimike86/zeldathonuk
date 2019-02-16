@@ -4,23 +4,25 @@ import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en'
 
 
+/**
+ * COMPONENT IS DISPLAYED WITHIN THE DONATIONS PAGE
+ */
 @Component({
   selector: 'app-donations',
   templateUrl: './donations.component.html',
   styleUrls: ['./donations.component.css']
 })
 export class DonationsComponent implements OnInit {
-  public fundraisingPageDetails: any;
-  public fundraisingPageDonations: any[];
-  private timeAgo: TimeAgo;
+  public fundraisingPageDetails: FundraisingPageDetails[];
+  public fundraisingPageDonations: FundraisingPageDonations;
+  public timeAgo: TimeAgo;
 
   constructor(private jgServiceService: JgServiceService) {
-    jgServiceService.getFundraisingPageDetails().subscribe(data => {
+    jgServiceService.getFundraisingPageDetails(1000*60).subscribe(data => {
       this.fundraisingPageDetails = data;
     });
-    jgServiceService.getFundraisingPageDonations().subscribe(data => {
-      console.log('getFundraisingPageDonations: ', data);
-      this.fundraisingPageDonations = data.donations;
+    jgServiceService.getFundraisingPageDonations(1000*60).subscribe(data => {
+      this.fundraisingPageDonations = data;
     });
   }
 

@@ -15,6 +15,9 @@ import { AngularFirestoreModule } from '@angular/fire/firestore';
 // Environment Variables
 import { environment } from "../environments/environment";
 
+/* SERVICES */
+import { JgServiceService } from "./services/jg-service/jg-service.service";
+
 /* COMPONENTS */
 import { AppComponent } from './app.component';
 import { HomeComponent } from './components/home/home.component';
@@ -106,7 +109,7 @@ import { DsvAdPanelComponent } from './components/obs/dsv-side-panel/dsv-ad-pane
     AngularFireAuthModule,
     AngularFirestoreModule,
   ],
-  providers: [],
+  providers: [JgServiceService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

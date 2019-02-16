@@ -1,3 +1,5 @@
+import {HttpHeaders} from "@angular/common/http";
+
 export const environment = {
   production: true,
   firebase: {
@@ -7,5 +9,15 @@ export const environment = {
     projectId: "zeldathonuk",
     storageBucket: "zeldathonuk.appspot.com",
     messagingSenderId: "828201836447"
+  },
+  justgiving: {
+    pageShortName: 'zeldathonuk-gameblast2019',
+    baseUri: 'https://api.justgiving.com/v1',
+    httpOptions: {
+      headers: new HttpHeaders({
+        'Accept': 'application/json',
+        'x-api-key': '6cb44e17'
+      })
+    }
   }
 };
