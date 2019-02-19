@@ -1,7 +1,7 @@
 import { Injectable, OnInit } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import { BehaviorSubject, Observable } from "rxjs";
-import { environment } from "../../../environments/environment";
+import { jgEnvironment } from "../../../environments/environment";
 
 @Injectable({
   providedIn: 'root'
@@ -40,7 +40,7 @@ export class JgServiceService {
     if (interval !== undefined) {
       setInterval(() => {
         this.http
-          .get<FundraisingPageDetails[]>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/`, environment.justgiving.httpOptions)
+          .get<FundraisingPageDetails[]>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/`, jgEnvironment.justgiving.httpOptions)
           .subscribe(
             (data: any) => {
               //console.log("GetFundraisingPages: ", data);
@@ -52,7 +52,7 @@ export class JgServiceService {
       }, interval);
     }
     this.http
-      .get<FundraisingPageDetails[]>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/`, environment.justgiving.httpOptions)
+      .get<FundraisingPageDetails[]>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/`, jgEnvironment.justgiving.httpOptions)
       .subscribe(
         (data: any) => {
           //console.log("GetFundraisingPages: ", data);
@@ -68,7 +68,7 @@ export class JgServiceService {
     if (interval !== undefined) {
       setInterval(() => {
         this.http
-          .get<FundraisingPageDonations>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/donations`, environment.justgiving.httpOptions)
+          .get<FundraisingPageDonations>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/donations`, jgEnvironment.justgiving.httpOptions)
           .subscribe (
             (data: any) => {
               //console.log("GetFundraisingPageDonations: ", data);
@@ -80,7 +80,7 @@ export class JgServiceService {
       }, interval);
     }
     this.http
-      .get<FundraisingPageDonations>(environment.justgiving.baseUri + `/fundraising/pages/${environment.justgiving.pageShortName}/donations`, environment.justgiving.httpOptions)
+      .get<FundraisingPageDonations>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/donations`, jgEnvironment.justgiving.httpOptions)
       .subscribe (
         (data: any) => {
           //console.log("GetFundraisingPageDonations: ", data);

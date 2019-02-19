@@ -13,7 +13,11 @@ export const environment = {
     projectId: "zeldathonuk",
     storageBucket: "zeldathonuk.appspot.com",
     messagingSenderId: "828201836447"
-  },
+  }
+};
+
+export const jgEnvironment = {
+  production: false,
   justgiving: {
     pageShortName: 'zeldathonuk-testfundraising-page435',
     baseUri: 'https://api.staging.justgiving.com/v1',
@@ -35,7 +39,7 @@ export const environment = {
       password: 'letmeinplease'
     }
   }
-}
+};
 
 /*
  * For easier debugging in development mode, you can import the following file

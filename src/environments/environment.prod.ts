@@ -9,7 +9,11 @@ export const environment = {
     projectId: "zeldathonuk",
     storageBucket: "zeldathonuk.appspot.com",
     messagingSenderId: "828201836447"
-  },
+  }
+};
+
+export const jgEnvironment = {
+  production: true,
   justgiving: {
     pageShortName: 'zeldathonuk-gameblast2019',
     baseUri: 'https://api.justgiving.com/v1',
