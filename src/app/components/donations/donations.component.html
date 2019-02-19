@@ -13,9 +13,6 @@
         <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
           Donate via JustGiving
         </button>
-        <button class="btn btn-sm btn-warning ml-3" (click)="getSubInfo();">
-          getSubInfo
-        </button>
       </div>
     </div>
   </div>
@@ -23,32 +20,34 @@
 
   <div class="py-2">
     <h3 class="text-white mb-3">Donations (JustGiving)</h3>
-    <ng-template #showDonors [ngIf]="fundraisingPageDonations !== undefined && fundraisingPageDonations.donations.length >= 1">
-      <div class="d-inline-block donor-list" *ngFor="let donor of fundraisingPageDonations.donations">
+    <ng-template #showDonors>
+      <div *ngIf="fundraisingPageDonations !== undefined && fundraisingPageDonations.donations.length >= 1">
+        <div class="d-inline-block donor-list" *ngFor="let donor of fundraisingPageDonations.donations">
 
-        <div class="d-flex text-white donation">
-          <div class="align-items-start">
-            <img class="ml-2 mr-4"
-                 [src]="donor.image"
-                 [alt]="donor.donorDisplayName"
-                 [title]="donor.donorDisplayName">
-          </div>
-          <div class="w-100">
-            <div class="d-flex justify-content-between w-100">
-              <h4 class="mb-0 pr-3 w-75" style="word-break: break-word;">{{ donor.donorDisplayName }}</h4>
-              <div class="align-self-center w-25">
-                <span class="small text-white-50">{{ timeAgo.format(getDate(donor.donationDate)) }}</span>
+          <div class="d-flex text-white donation">
+            <div class="align-items-start">
+              <img class="ml-2 mr-4"
+                   [src]="donor.image"
+                   [alt]="donor.donorDisplayName"
+                   [title]="donor.donorDisplayName">
+            </div>
+            <div class="w-100">
+              <div class="d-flex justify-content-between w-100">
+                <h4 class="mb-0 pr-3 w-75" style="word-break: break-word;">{{ donor.donorDisplayName }}</h4>
+                <div class="align-self-center w-25">
+                  <span class="small text-white-50">{{ timeAgo.format(getDate(donor.donationDate)) }}</span>
+                </div>
+              </div>
+              <div style="max-width: 20em;">
+                {{ donor.message.length >= 1 ? donor.message : '-' }}
+              </div>
+              <div>
+                <h3>{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</h3>
               </div>
             </div>
-            <div style="max-width: 20em;">
-              {{ donor.message.length >= 1 ? donor.message : '-' }}
-            </div>
-            <div>
-              <h3>{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</h3>
-            </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </ng-template>
     <ng-template #showNothing [ngIf]="fundraisingPageDonations !== undefined && fundraisingPageDonations.length === 0">
