@@ -13,7 +13,6 @@ export class WspTimerComponent implements OnInit {
     countupService.getTimer().subscribe(data => {
       this.timer = data;
     });
-    countupService.start();
   }
 
   ngOnInit() {

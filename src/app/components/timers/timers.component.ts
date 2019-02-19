@@ -6,8 +6,6 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./timers.component.css']
 })
 export class TimersComponent implements OnInit {
-
-  public countdownDuration: number;
   public activityName: string;
   public countToDate: Date;
 
@@ -16,7 +14,6 @@ export class TimersComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.countdownDuration = 3600;
     this.activityName = '';
   }
 

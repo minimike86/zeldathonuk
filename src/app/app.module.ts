@@ -18,6 +18,7 @@ import { environment } from "../environments/environment";
 /* SERVICES */
 import { AuthGuardService } from "./router/guards/auth-guard.service";
 import { JgServiceService } from "./services/jg-service/jg-service.service";
+import { FirebaseTimerService } from "./services/firebase/firebase-timer/firebase-timer.service";
 
 /* COMPONENTS */
 import { AppComponent } from './app.component';
@@ -28,7 +29,6 @@ import { FooterComponent } from './components/footer/footer.component';
 import { JgDonationComponent } from './components/jg-donation/jg-donation.component';
 import { TimersComponent } from './components/timers/timers.component';
 import { FbDonationComponent } from './components/fb-donation/fb-donation.component';
-import { CountdownComponent } from './components/timers/countdown/countdown.component';
 import { CountupComponent } from './components/timers/countup/countup.component';
 import { CountDateComponent } from './components/timers/count-date/count-date.component';
 import { IncentivesComponent } from './components/incentives/incentives.component';
@@ -79,7 +79,6 @@ import { DsTimerComponent } from './components/obs/ds-side-panel/ds-timer/ds-tim
     JgDonationComponent,
     TimersComponent,
     FbDonationComponent,
-    CountdownComponent,
     CountupComponent,
     CountDateComponent,
     IncentivesComponent,
@@ -132,7 +131,7 @@ import { DsTimerComponent } from './components/obs/ds-side-panel/ds-timer/ds-tim
     AngularFireAuthModule,
     AngularFirestoreModule,
   ],
-  providers: [AuthGuardService, JgServiceService],
+  providers: [AuthGuardService, JgServiceService, FirebaseTimerService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

@@ -4,7 +4,7 @@ import {GameItem} from "../../models/game-item";
 @Injectable({
   providedIn: 'root'
 })
-export class GameService {
+export class GameItemService {
   private gameItems: GameItem[];
 
   //TODO: Refactor into seperate firebase service

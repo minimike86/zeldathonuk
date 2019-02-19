@@ -2,19 +2,6 @@
   <div class="d-flex">
 
     <div class="card m-2" style="width: 30vw;">
-      <h5 class="card-header">Count Down</h5>
-      <div class="flex-fill text-center m-5" style="min-height: 10em; max-height: 10em;">
-        <img src="https://c-3sux78kvnkay76x24j7a1v9r0cvge9qx2eiruajlx78utzx2etkz.g00.gamepedia.com/g00/3_c-3fkrjg.mgskvkjog.ius_/c-3SUXKVNKAY76x24nzzvyx3ax2fx2fj7a1v9r0cvge9q.iruajlx78utz.tkzx2ffkrjg_mgskvkjog_ktx2fznashx2fjx2fj6x2fGRHC_Jgx78q_Zx78olux78ik.vtmx2f7693vd-GRHC_Jgx78q_Zx78olux78ik.vtmx3fbkx78youtx3d346229lgh5jk7hil34732h36901l4j9gx26o76i.sgx78qx3dosgmk_$/$/$/$/$/$/$"
-             class="card-img-top w-75" alt="..." style="min-height: 10em; max-height: 10em;">
-      </div>
-      <div class="card-body">
-        <input type="number" class="form-control mb-1" placeholder="milliseconds" min="1" [(ngModel)]="countdownDuration">
-        <a [routerLink]="'/api/count-down'" [queryParams]="{ duration: countdownDuration.valueOf() }" routerLinkActive="active" target="_blank" class="btn btn-block"
-           [ngClass]="(countdownDuration !== undefined && countdownDuration >= 1) ? 'btn-success' : 'btn-dark disabled'">Start</a>
-      </div>
-    </div>
-
-    <div class="card m-2" style="width: 30vw;">
       <h5 class="card-header">Count Up</h5>
       <div class="flex-fill text-center m-5" style="min-height: 10em; max-height: 10em;">
         <img src="https://c-3sux78kvnkay76x24j7a1v9r0cvge9qx2eiruajlx78utzx2etkz.g00.gamepedia.com/g00/3_c-3fkrjg.mgskvkjog.ius_/c-3SUXKVNKAY76x24nzzvyx3ax2fx2fj7a1v9r0cvge9q.iruajlx78utz.tkzx2ffkrjg_mgskvkjog_ktx2fznashx2f3x2f36x2fGRHC_Zx78olux78ik_Gx78zcux78q.vtmx2f7693vd-GRHC_Zx78olux78ik_Gx78zcux78q.vtmx3fbkx78youtx3dhgh9194gil996233g9798435i6g49ik9x26o76i.sgx78qx3dosgmk_$/$/$/$/$/$/$"
@@ -22,7 +9,7 @@
       </div>
       <div class="card-body">
         <input type="text" class="form-control mb-1" placeholder="Activity Name" [(ngModel)]="activityName">
-        <a [routerLink]="'/api/count-up'" [queryParams]="{ activityName: activityName, autoStart: 1 }" routerLinkActive="active" target="_blank" class="btn btn-block btn-success">Start</a>
+        <a [routerLink]="'/api/count-up'" [queryParams]="{ activityName: activityName }" routerLinkActive="active" target="_blank" class="btn btn-block btn-success">Start</a>
       </div>
     </div>
 

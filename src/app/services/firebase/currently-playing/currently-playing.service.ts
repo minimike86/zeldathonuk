@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreCollection } from "@angular/fire/firestore";
 import { Observable } from "rxjs";
 import { map } from 'rxjs/operators';
-import { AuthService } from "../auth/auth.service";
+import { CurrentlyPlaying, CurrentlyPlayingId } from "./currently-playing";
 
 @Injectable({
   providedIn: 'root'
@@ -61,8 +61,7 @@ export class CurrentlyPlayingService {
   };
   public gameList = [this.minishCapDesc, this.majorasMaskDesc, this.spiritTracksDesc, this.adventureOfLinkDesc, this.twilightPrincessDesc, this.linksAwakeningDesc];
 
-  constructor(private auth: AuthService,
-              private db: AngularFirestore) {
+  constructor(private db: AngularFirestore) {
     this.currentlyPlayingCollection = db.collection<CurrentlyPlaying>('/currently-playing');
     this.getCurrentlyPlaying().subscribe( data => {
       this.currentlyPlaying = data;
@@ -80,23 +79,7 @@ export class CurrentlyPlayingService {
   }
 
   setCurrentlyPlaying(data: CurrentlyPlaying): void {
-    console.log('user: ', this.auth.authenticated);
     this.currentlyPlayingCollection.doc('bFrAHwuF1iksUjYAkhj3').set(data);
   }
 
 }
-
-
-export interface CurrentlyPlayingId extends CurrentlyPlaying {
-  id: string;
-}
-
-export interface CurrentlyPlaying {
-  coverArt: string;
-  gameName: string;
-  gameType: string;
-  gamePlatform: string;
-  gameRelYear: string;
-  gameEstimate: string;
-}
-

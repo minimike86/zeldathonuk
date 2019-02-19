@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
 import {BehaviorSubject, interval, Observable, Subscription} from "rxjs";
+import {FirebaseTimerService} from "../firebase/firebase-timer/firebase-timer.service";
+import {CountUpTimerId} from "../firebase/firebase-timer/count-up-timer";
+
 
 @Injectable({
   providedIn: 'root'
@@ -7,83 +10,63 @@ import {BehaviorSubject, interval, Observable, Subscription} from "rxjs";
 export class CountupService {
   public subscription: Subscription;
   private secondsCounter$: Observable<any>;
-  public isStarted: boolean;
-  public hasPaused: boolean;
+  private countUpData: CountUpTimerId[];
   public includeMillisecs: boolean;
-  public startDate: Date;
-  public stopDate: Date;
   public nowDate: Date;
   public hours: number;
   public minutes: number;
   public seconds: number;
   public milliseconds: number;
-  public timer$ = new BehaviorSubject<string>('00:00:00.000');
+  public timer$ = new BehaviorSubject<string>('00:00:00');
 
-  constructor() {
+  constructor(private firebaseTimerService: FirebaseTimerService) {
+    this.firebaseTimerService.getCountUpTimer().subscribe(data => {
+      this.countUpData = data;
+    });
     this.secondsCounter$ = interval(1);
-    this.isStarted = false;
-    this.hasPaused = false;
+    this.subscription = this.secondsCounter$.subscribe(n => {
+      this.updateTimer();
+    });
     this.includeMillisecs = false;
   }
 
-  start(): void {
-    console.log('start');
-    if (!this.isStarted || this.hasPaused) {
-      if (!this.hasPaused) {
-        this.startDate = new Date();
-      }
-      this.isStarted = true;
-      this.hasPaused = false;
-      this.subscription = this.secondsCounter$.subscribe(n => {
-        this.updateTimer();
-      });
-    }
-  }
-
-  reset(): void {
-    console.log('reset');
-    if (this.hasPaused) {
-      this.isStarted = false;
-      this.hasPaused = false;
-    }
-    this.startDate = new Date();
-    this.updateTimer();
-  }
-
-  stop(): void {
-    if (this.subscription !== undefined) {
-      if (this.subscription.closed) {
-        console.log('fully stop timer');
-        // fully reset timer if pressed while subscription is closed
-        this.isStarted = false;
-        this.hasPaused = false;
-        // console.log(this.timer$);
-        // console.log(this.stopDate);
-      } else {
-        console.log('psuedo stop timer');
-        // partially reset timer if pressed while subscription is active
-        this.hasPaused = true;
-        this.stopDate = new Date();
-        this.subscription.unsubscribe();
-      }
-    }
-  }
-
   updateTimer(): void {
-    this.nowDate = new Date(new Date().getTime() - this.startDate.getTime());
-    this.hours = this.nowDate.getUTCHours();
-    this.minutes = this.nowDate.getUTCMinutes();
-    this.seconds = this.nowDate.getUTCSeconds();
-    if (this.includeMillisecs) {
-      this.milliseconds = this.nowDate.getUTCMilliseconds();
-      this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
-        this.zeroPad(this.minutes, 2) + ':' +
-        this.zeroPad(this.seconds, 2) + '.' +
-        this.zeroPad(this.milliseconds, 3));
-    } else {
-      this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
-        this.zeroPad(this.minutes, 2) + ':' +
-        this.zeroPad(this.seconds, 2));
+    if (this.countUpData !== undefined && this.countUpData[0] !== undefined) {
+      if (this.getIsStarted()) {
+        // @ts-ignore: IDE does not detect seconds variable from firebase.firestore.Timestamp
+        this.nowDate = new Date(new Date().getTime() - new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
+        this.hours = this.nowDate.getUTCHours();
+        this.minutes = this.nowDate.getUTCMinutes();
+        this.seconds = this.nowDate.getUTCSeconds();
+        if (this.includeMillisecs) {
+          this.milliseconds = this.nowDate.getUTCMilliseconds();
+          this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
+            this.zeroPad(this.minutes, 2) + ':' +
+            this.zeroPad(this.seconds, 2) + '.' +
+            this.zeroPad(this.milliseconds, 3));
+        } else {
+          this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
+            this.zeroPad(this.minutes, 2) + ':' +
+            this.zeroPad(this.seconds, 2));
+        }
+      } else if (this.getHasPaused() && this.countUpData[0].stopDate !== null) {
+        // @ts-ignore: IDE does not detect seconds variable from firebase.firestore.Timestamp
+        this.nowDate = new Date(new Date(this.countUpData[0].stopDate.seconds * 1000).getTime() - new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
+        this.hours = this.nowDate.getUTCHours();
+        this.minutes = this.nowDate.getUTCMinutes();
+        this.seconds = this.nowDate.getUTCSeconds();
+        if (this.includeMillisecs) {
+          this.milliseconds = this.nowDate.getUTCMilliseconds();
+          this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
+            this.zeroPad(this.minutes, 2) + ':' +
+            this.zeroPad(this.seconds, 2) + '.' +
+            this.zeroPad(this.milliseconds, 3));
+        } else {
+          this.timer$.next(this.zeroPad(this.hours, 2) + ':' +
+            this.zeroPad(this.minutes, 2) + ':' +
+            this.zeroPad(this.seconds, 2));
+        }
+      }
     }
   }
 
@@ -92,11 +75,15 @@ export class CountupService {
   }
 
   getIsStarted(): boolean {
-    return this.isStarted;
+    return this.countUpData[0].isStarted;
   }
 
   getHasPaused(): boolean {
-    return this.hasPaused;
+    return this.countUpData[0].hasPaused;
+  }
+
+  getIsStopped(): boolean {
+    return this.countUpData[0].isStopped;
   }
 
   setIncludeMillisecs(value: boolean): void {

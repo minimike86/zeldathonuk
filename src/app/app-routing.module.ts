@@ -8,7 +8,6 @@ import { PageNotFoundComponent } from "./components/page-not-found/page-not-foun
 import { DonationsComponent } from "./components/donations/donations.component";
 import { IncentivesComponent } from "./components/incentives/incentives.component";
 import { TimersComponent } from "./components/timers/timers.component";
-import { CountdownComponent } from "./components/timers/countdown/countdown.component";
 import { CountupComponent } from "./components/timers/countup/countup.component";
 import { CountDateComponent } from "./components/timers/count-date/count-date.component";
 import { ObsComponent } from "./components/obs/obs.component";
@@ -28,7 +27,6 @@ const routes: Routes = [
   { path: 'tracking/:game', component: GameTrackingComponent,     canActivate: [AuthGuard] },
   { path: 'api/timers', component: TimersComponent,               canActivate: [AuthGuard] },
   { path: 'api/count-up', component: CountupComponent,            canActivate: [AuthGuard] },
-  { path: 'api/count-down', component: CountdownComponent,        canActivate: [AuthGuard] },
   { path: 'api/count-to-date', component: CountDateComponent,     canActivate: [AuthGuard] },
   { path: '**', component: PageNotFoundComponent }
 ];
