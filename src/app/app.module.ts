@@ -18,6 +18,7 @@ import { environment } from "../environments/environment";
 /* SERVICES */
 import { AuthGuardService } from "./router/guards/auth-guard.service";
 import { JgServiceService } from "./services/jg-service/jg-service.service";
+import { GameItemService } from "./services/game-item/game-item.service";
 import { FirebaseTimerService } from "./services/firebase/firebase-timer/firebase-timer.service";
 
 /* COMPONENTS */
@@ -131,7 +132,7 @@ import { DsTimerComponent } from './components/obs/ds-side-panel/ds-timer/ds-tim
     AngularFireAuthModule,
     AngularFirestoreModule,
   ],
-  providers: [AuthGuardService, JgServiceService, FirebaseTimerService],
+  providers: [AuthGuardService, JgServiceService, GameItemService, FirebaseTimerService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}
