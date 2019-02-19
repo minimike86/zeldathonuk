@@ -50,8 +50,10 @@
         </div>
       </div>
     </ng-template>
-    <ng-template #showNothing [ngIf]="fundraisingPageDonations !== undefined && fundraisingPageDonations.length === 0">
-      No donors yet! Please consider starting us off!
+    <ng-template #showNothing>
+      <div *ngIf="fundraisingPageDonations !== undefined && fundraisingPageDonations.length === 0">
+        No donors yet! Please consider starting us off!
+      </div>
     </ng-template>
   </div>
 
