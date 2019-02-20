@@ -4,6 +4,9 @@ import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { CurrentlyPlaying, CurrentlyPlayingId } from "../../services/firebase/currently-playing/currently-playing";
 import { FirebaseTimerService } from "../../services/firebase/firebase-timer/firebase-timer.service";
 import { CountUpTimerId } from "../../services/firebase/firebase-timer/count-up-timer";
+import { faTwitch } from "@fortawesome/free-brands-svg-icons";
+import { RunnerNameService } from "../../services/firebase/runner-name/runner-name.service";
+import { RunnerNameId } from "../../services/firebase/runner-name/runner-name";
 
 
 @Component({
@@ -18,15 +21,25 @@ export class ObsComponent implements OnInit {
 
   public countUpTimer: CountUpTimerId[];
 
+  public faTwitch = faTwitch;
+  public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
+  public currentRunner: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
+
   public currentlyPlaying: CurrentlyPlayingId[];
-  public gameList: CurrentlyPlaying[];
+  public gameList: CurrentlyPlaying[] = [];
   public swapToGame: CurrentlyPlaying;
 
   constructor(private modalService: NgbModal,
               private firebaseTimerService: FirebaseTimerService,
+              private runnerNameService: RunnerNameService,
               private currentlyPlayingService: CurrentlyPlayingService) {
     firebaseTimerService.getCountUpTimer().subscribe(data => {
       this.countUpTimer = data;
+    });
+    runnerNameService.getRunnerName().subscribe(data => {
+      this.runnerName = data[0];
+      this.currentRunner.runnerName = data[0].runnerName;
+      this.currentRunner.runnerHasTwitchAccount = data[0].runnerHasTwitchAccount;
     });
     currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
       this.currentlyPlaying = data;
@@ -92,6 +105,10 @@ export class ObsComponent implements OnInit {
       this.firebaseTimerService.setCountUpTimerHasPaused(false);
       this.firebaseTimerService.setCountUpTimerIsStopped(true);
     }
+  }
+
+  updateRunner() {
+    this.runnerNameService.setRunnerName({'runnerName': this.runnerName.runnerName, runnerHasTwitchAccount: this.runnerName.runnerHasTwitchAccount});
   }
 
 }

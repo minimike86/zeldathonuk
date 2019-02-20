@@ -49,6 +49,43 @@
 
   <div class="mb-3">
     <div class="d-flex">
+      <h1 class="text-dark pt-2 mr-3">Runner Name</h1>
+      <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
+        <div class="d-flex">
+          <span class="small mr-2">Current Runner:</span>
+          <h6 class="m-0">{{ currentRunner !== undefined ? currentRunner.runnerName + ' (Twitch: ' + currentRunner.runnerHasTwitchAccount + ')' : 'fetching...' }}</h6>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex">
+
+      <div class="input-group input-group-lg">
+
+        <div class="input-group input-group-lg mb-3">
+          <div class="input-group-prepend">
+            <div class="input-group-text">
+              <fa-icon [icon]="faTwitch" class="pr-3"></fa-icon>
+              <input style="width: 20px; height: 20px;"
+                     type="checkbox"
+                     title="Is this runner on twitch?" [(ngModel)]="runnerName.runnerHasTwitchAccount">
+            </div>
+          </div>
+          <input type="text" class="form-control" [(ngModel)]="runnerName.runnerName">
+          <div class="input-group-append">
+            <button class="btn btn-primary btn-lg" (click)="updateRunner()">Change Runner</button>
+          </div>
+        </div>
+
+
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="hr">
+
+  <div class="mb-3">
+    <div class="d-flex">
       <h1 class="text-dark pt-2 mr-3">Select Game</h1>
       <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
         <div class="d-flex">
