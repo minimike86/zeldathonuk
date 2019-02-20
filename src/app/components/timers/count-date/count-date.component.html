@@ -17,11 +17,18 @@
         <span class="mr-3">{{ getMonthName(futureDate.getUTCMonth()) }}</span>
         <span>{{ futureDate.getFullYear() }}</span>
       </div>
-      <div class="cntdwn my-0 py-0" style="font-size: 12em; line-height: 1em; font-family: 'Bungee', cursive;">
+      <div class="cntdwn my-0 py-0"
+           style="font-size: 12em; line-height: 1em; font-family: 'Bungee', cursive;"
+           *ngIf="!finished">
         <span>{{ getTimer().days }}</span><span class="subscript">days</span>
         <span>{{ getTimer().hours }}</span><span class="subscript">hrs</span>
         <span>{{ getTimer().minutes }}</span><span class="subscript">mins</span>
         <span>{{ getTimer().seconds }}</span><span class="subscript">secs</span>
+      </div>
+      <div class="cntdwn my-0 py-0 blink-me"
+           style="font-size: 12em; line-height: 1em; font-family: 'Bungee', cursive;"
+           *ngIf="finished">
+        <span>Wake up. Link...</span>
       </div>
     </div>
   </div>

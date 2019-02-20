@@ -14,6 +14,7 @@ export class CountDateComponent implements OnInit {
   public subscription: Subscription;
   private secondsCounter$: Observable<any>;
   public started: boolean;
+  public finished: boolean;
   public stopDate: Date;
   public startDate: Date;
   public futureDate: Date;
@@ -29,6 +30,7 @@ export class CountDateComponent implements OnInit {
 
   ngOnInit() {
     this.started = false;
+    this.finished = false;
     if (this.autoStart) {
       this.start();
     }
@@ -38,7 +40,6 @@ export class CountDateComponent implements OnInit {
     if (!this.started) {
       this.started = true;
       this.subscription = this.secondsCounter$.subscribe(n => {
-        console.log(n);
         this.updateTimer();
       });
       console.log('timer started');
@@ -46,6 +47,7 @@ export class CountDateComponent implements OnInit {
   }
 
   stop(): void {
+    this.finished = true;
     this.subscription.unsubscribe();
     console.log('timer stopped');
   }
@@ -57,11 +59,16 @@ export class CountDateComponent implements OnInit {
     const hours = Math.floor(((milliseconds / (1000*60*60)) % 24));
     const minutes = Math.floor(((milliseconds / (1000*60)) % 60));
     const seconds = Math.floor((milliseconds / 1000) % 60);
-    this.timer = {
+    console.log(milliseconds);
+    if (milliseconds > 0) {
+      this.timer = {
         days: this.zeroPad(days, 2),
         hours: this.zeroPad(hours, 2),
         minutes: this.zeroPad(minutes, 2),
         seconds: this.zeroPad(seconds, 2),
+      }
+    } else {
+      this.finished = true;
     }
   }
 
