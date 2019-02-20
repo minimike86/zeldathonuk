@@ -2,15 +2,20 @@
 
   <div class="py-2">
     <h3 class="text-white">Donate</h3>
-    <h6 class="text-white-50">
-      On behalf of everyone at the ZeldathonUK team, I would like to thank all of the donors below for their generous donations.
-    </h6>
     <div class="text-center card card-header">
+      <ul class="text-white text-left">
+        <li><span class="h3">£5 -</span> can buy flexible fixings to enable a correct and firm hold of controller, joystick or button for safe and comfortable use.</li>
+        <li><span class="h3">£10 -</span> could purchase joystick extensions, to potentially enable greater control of a thumbstick, with its increased leverage.</li>
+        <li><span class="h3">£25 -</span> will enable us to deliver an adapted gaming setup quickly and directly to someone who needs it.</li>
+        <li><span class="h3">£50 -</span> will buy a gamepad to be modified in the workshop with low force joysticks and buttons for a gamer with weak hand muscles to use.</li>
+        <li><span class="h3">£100 -</span> can enable us to buy a mounting system which will hold a joystick and position it for optimum use by a gamer to control it.</li>
+        <li><span class="h3">£200 -</span> could buy a single handed controller to enable a disabled gamer to play with just one hand.</li>
+      </ul>
       <div class="d-inline">
-        <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+        <button class="btn btn-lg btnfacebook mr-3" (click)="donateFacebook();">
           Donate via Facebook
         </button>
-        <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
+        <button class="btn btn-lg btn-justgiving" (click)="donateJustGiving();">
           Donate via JustGiving
         </button>
       </div>
@@ -20,8 +25,11 @@
 
   <div class="py-2">
     <h3 class="text-white mb-3">Donations (JustGiving)</h3>
-    <ng-template #showDonors>
-      <div *ngIf="fundraisingPageDonations !== undefined && fundraisingPageDonations.donations.length >= 1">
+    <h6 class="text-white-50">
+      On behalf of everyone at the ZeldathonUK team, I would like to thank all of the donors below for their generous donations.
+    </h6>
+    <ng-template [ngIf]="fundraisingPageDonations.donations.length >= 1">
+      <div>
         <div class="d-inline-block donor-list" *ngFor="let donor of fundraisingPageDonations.donations">
 
           <div class="d-flex text-white donation">
@@ -50,8 +58,8 @@
         </div>
       </div>
     </ng-template>
-    <ng-template #showNothing>
-      <div *ngIf="fundraisingPageDonations !== undefined && fundraisingPageDonations.length === 0">
+    <ng-template [ngIf]="fundraisingPageDonations.donations.length === 0">
+      <div>
         No donors yet! Please consider starting us off!
       </div>
     </ng-template>
