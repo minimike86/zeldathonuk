@@ -1,0 +1,45 @@
+.up-next-div {
+  position: absolute;
+  top: 1026px;
+  left: 178px;
+  width: 200px;
+  height: 56px;
+}
+.up-next-div-triangle {
+  width: 0;
+  height: 0;
+  position: relative;
+  top: 0;
+  left: 0;
+  border-style: solid;
+  border-width: 28px 0 28px 24px;
+  border-color: transparent transparent transparent #270266;
+  z-index: 2;
+}
+
+.up-next {
+  display: inline-block;
+  background: #270266;
+  width: 200px;
+  height: 56px;
+  text-align: center;
+  font-family: 'Bungee', cursive;
+  font-size: 1.95em;
+  padding-top: 5px;
+  color: white;
+  -webkit-text-stroke: 0.075em black;
+  z-index: 1;
+}
+
+.up-next-game {
+  position: relative;
+  top: 0;
+  left: 0;
+  font-weight: bold;
+  font-size: 1.95em;
+  text-align: left;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}

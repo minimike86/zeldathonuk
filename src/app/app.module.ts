@@ -68,6 +68,9 @@ import { DsCameraComponent } from './components/obs/ds-side-panel/ds-camera/ds-c
 import { DsGameDescriptionComponent } from './components/obs/ds-side-panel/ds-game-description/ds-game-description.component';
 import { DsRunnerNameComponent } from './components/obs/ds-side-panel/ds-runner-name/ds-runner-name.component';
 import { DsTimerComponent } from './components/obs/ds-side-panel/ds-timer/ds-timer.component';
+import { CallToActionComponent } from './components/obs/omnibar/call-to-action/call-to-action.component';
+import { UpNextGameComponent } from './components/obs/omnibar/up-next-game/up-next-game.component';
+import { OmnibarDonationsComponent } from './components/obs/omnibar/omnibar-donations/omnibar-donations.component';
 
 
 @NgModule({
@@ -117,7 +120,10 @@ import { DsTimerComponent } from './components/obs/ds-side-panel/ds-timer/ds-tim
     DsCameraComponent,
     DsGameDescriptionComponent,
     DsRunnerNameComponent,
-    DsTimerComponent
+    DsTimerComponent,
+    CallToActionComponent,
+    UpNextGameComponent,
+    OmnibarDonationsComponent
   ],
   imports: [
     BrowserModule,
