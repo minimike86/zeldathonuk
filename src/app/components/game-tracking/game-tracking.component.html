@@ -13,10 +13,14 @@
                [alt]="gameItem.name"
                [title]="gameItem.name"
                [ngClass]="gameItem.collected ? '' : 'img-greyscale'"
-               (click)="collectItem(gameItem.name)">
+               (click)="collectItem(gameItem.name, gameItem.collected)">
         </div>
       </div>
     </ng-template>
   </div>
+
+  <!--
+  <button (click)="addData()">Add Data</button>
+  -->
 
 </div>
