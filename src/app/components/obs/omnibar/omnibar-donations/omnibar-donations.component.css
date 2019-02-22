@@ -1,0 +1,75 @@
+.donation-container {
+  white-space: nowrap;
+  width: 1370px;
+  margin-left: 1370px;
+  margin-right: 1370px;
+  position: relative;
+  top: -12px;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation: mymove 45s linear 2s infinite alternate; /* Safari 4.0 - 8.0 */
+  animation: mymove 45s linear 2s infinite alternate;
+}
+@-webkit-keyframes mymove {
+   from {left: 1370px;}
+   to {left: -5000px;}
+}
+@keyframes mymove {
+  from {left: 1370px;}
+  to {left: -5000px;}
+}
+
+.donation {
+  display: inline-block;
+  background: #56437b;
+  border: #3C0C78 solid 1px;
+  border-radius: 0.5em;
+  width: 300px;
+  height: 50px;
+}
+
+.up-next-div {
+  position: absolute;
+  top: 1026px;
+  left: 177px;
+  width: 200px;
+  height: 56px;
+}
+
+.up-next-div-triangle {
+  width: 0;
+  height: 0;
+  position: relative;
+  top: 0;
+  left: 0;
+  border-style: solid;
+  border-width: 28px 0 28px 24px;
+  border-color: transparent transparent transparent #270266;
+  z-index: 2;
+}
+
+.up-next {
+  display: inline-block;
+  background: #270266;
+  width: 200px;
+  height: 56px;
+  text-align: center;
+  font-family: 'Bungee', cursive;
+  font-size: 1.95em;
+  padding-top: 5px;
+  color: white;
+  -webkit-text-stroke: 0.075em black;
+  z-index: 1;
+}
+
+.up-next-game {
+  position: relative;
+  top: 0;
+  left: 0;
+  font-weight: bold;
+  font-size: 1.95em;
+  text-align: left;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}

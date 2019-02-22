@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-center align-items-center omnibar"
      style="">
-  <div class="d-flex justify-content-center align-items-center"
+  <div class="d-flex justify-content-center align-items-center omnibar-brand"
        style="height:56px; width:180px; max-height:56px; max-width:180px; border-right: 2px solid #50529a;"
        id="brand_logo">
     <img src="../../../../assets/img/zeldathonuk_brand_logo2.png"
@@ -11,13 +11,13 @@
        style="height:56px; max-height:56px;"
        id="omnibar_content">
 
-    <!--
-    <app-call-to-action></app-call-to-action>
-    <app-up-next-game></app-up-next-game>
-    -->
+    <app-call-to-action *ngIf="showOmnibarContent1"></app-call-to-action>
+    <app-up-next-game *ngIf="showOmnibarContent2"></app-up-next-game>
+    <app-omnibar-donations style="max-width: 1370px;" *ngIf="showOmnibarContent3"></app-omnibar-donations>
+    <app-omnibar-donation-plea *ngIf="showOmnibarContent4"></app-omnibar-donation-plea>
 
   </div>
-  <div class="d-flex justify-content-center align-items-center"
+  <div class="d-flex justify-content-center align-items-center omnibar-donation-total"
        style="height:56px; max-height:56px; border-left: 2px solid #50529a;"
        id="donation_total_charity_logo">
     <div class="p-3">

@@ -71,6 +71,7 @@ import { DsTimerComponent } from './components/obs/ds-side-panel/ds-timer/ds-tim
 import { CallToActionComponent } from './components/obs/omnibar/call-to-action/call-to-action.component';
 import { UpNextGameComponent } from './components/obs/omnibar/up-next-game/up-next-game.component';
 import { OmnibarDonationsComponent } from './components/obs/omnibar/omnibar-donations/omnibar-donations.component';
+import { OmnibarDonationPleaComponent } from './components/obs/omnibar/omnibar-donation-plea/omnibar-donation-plea.component';
 
 
 @NgModule({
@@ -123,7 +124,8 @@ import { OmnibarDonationsComponent } from './components/obs/omnibar/omnibar-dona
     DsTimerComponent,
     CallToActionComponent,
     UpNextGameComponent,
-    OmnibarDonationsComponent
+    OmnibarDonationsComponent,
+    OmnibarDonationPleaComponent
   ],
   imports: [
     BrowserModule,

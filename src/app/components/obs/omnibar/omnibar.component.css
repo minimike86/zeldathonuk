@@ -1,6 +1,16 @@
 .omnibar {
-  background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%);
+  background: -webkit-linear-gradient(-90deg, #313539, #414549);
   border-top: 2px solid #50529a;
+}
+
+.omnibar-brand {
+  background: #270266;
+  z-index: 1;
+}
+
+.omnibar-donation-total {
+  background: #782F99;
+  z-index: 1;
 }
 
 .dtotal {
@@ -14,4 +24,7 @@
 
 .omnibar-content {
   background: -webkit-linear-gradient(-90deg, #313539, #414549);
+  /*
+  background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%);
+  */
 }

@@ -9,9 +9,13 @@ import {JgServiceService} from "../../../services/jg-service/jg-service.service"
 })
 export class OmnibarComponent implements OnInit {
   public fundraisingPageDetails: any;
-  public charityLogoUrl: string
+  public charityLogoUrl: string;
   public charityLogoSwap: boolean;
   private secondsCounter$: Observable<any>;
+  public showOmnibarContent1 = false;
+  public showOmnibarContent2 = false;
+  public showOmnibarContent3 = false;
+  public showOmnibarContent4 = false;
 
   constructor(private jgServiceService: JgServiceService) {
     this.charityLogoSwap = true;
@@ -25,7 +29,28 @@ export class OmnibarComponent implements OnInit {
   ngOnInit() {
     this.secondsCounter$.subscribe(n => {
       this.updateCharityLogoUrl();
+      this.changeOmnibarContent();
     });
+  }
+
+  changeOmnibarContent(): void {
+    if (!this.showOmnibarContent1 && !this.showOmnibarContent2 && !this.showOmnibarContent3 && !this.showOmnibarContent4) {
+      this.showOmnibarContent1 = true;
+    } else if (this.showOmnibarContent1) {
+      this.showOmnibarContent1 = false;
+      this.showOmnibarContent2 = true;
+    } else if (this.showOmnibarContent2) {
+      this.showOmnibarContent2 = false;
+      this.showOmnibarContent3 = true;
+    } else if (this.showOmnibarContent3) {
+      this.showOmnibarContent3 = false;
+      this.showOmnibarContent4 = true;
+    } else if (this.showOmnibarContent4) {
+      this.showOmnibarContent1 = false;
+      this.showOmnibarContent2 = false;
+      this.showOmnibarContent3 = false;
+      this.showOmnibarContent4 = false;
+    }
   }
 
   updateCharityLogoUrl(): void {
