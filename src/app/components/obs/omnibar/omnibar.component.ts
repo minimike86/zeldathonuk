@@ -29,7 +29,7 @@ export class OmnibarComponent implements OnInit {
   ngOnInit() {
     this.secondsCounter$.subscribe(n => {
       this.updateCharityLogoUrl();
-      if ( n % 4 === 0 ) {
+      if ( n % 5 === 0 ) {
         this.changeOmnibarContent();
       }
     });

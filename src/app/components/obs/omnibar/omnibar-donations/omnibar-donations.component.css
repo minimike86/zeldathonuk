@@ -31,7 +31,7 @@
   position: absolute;
   top: 1026px;
   left: 177px;
-  width: 200px;
+  width: 350px;
   height: 56px;
 }
 
@@ -50,7 +50,7 @@
 .up-next {
   display: inline-block;
   background: #270266;
-  width: 200px;
+  width: 350px;
   height: 56px;
   text-align: center;
   font-family: 'Bungee', cursive;
