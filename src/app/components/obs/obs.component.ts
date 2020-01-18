@@ -1,12 +1,12 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { CurrentlyPlayingService } from "../../services/firebase/currently-playing/currently-playing.service";
-import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { CurrentlyPlaying, CurrentlyPlayingId } from "../../services/firebase/currently-playing/currently-playing";
-import { FirebaseTimerService } from "../../services/firebase/firebase-timer/firebase-timer.service";
-import { CountUpTimerId } from "../../services/firebase/firebase-timer/count-up-timer";
-import { faTwitch } from "@fortawesome/free-brands-svg-icons";
-import { RunnerNameService } from "../../services/firebase/runner-name/runner-name.service";
-import { RunnerNameId } from "../../services/firebase/runner-name/runner-name";
+import { CurrentlyPlayingService } from '../../services/firebase/currently-playing/currently-playing.service';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { CurrentlyPlaying, CurrentlyPlayingId } from '../../services/firebase/currently-playing/currently-playing';
+import { FirebaseTimerService } from '../../services/firebase/firebase-timer/firebase-timer.service';
+import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-timer';
+import { faTwitch } from '@fortawesome/free-brands-svg-icons';
+import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
+import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 
 
 @Component({
@@ -15,8 +15,8 @@ import { RunnerNameId } from "../../services/firebase/runner-name/runner-name";
   styleUrls: ['./obs.component.css']
 })
 export class ObsComponent implements OnInit {
-  @ViewChild('yesNoModalDialog')
-  private yesNoModalDialogRef : TemplateRef<any>;
+  @ViewChild('yesNoModalDialog', {static: false})
+  private yesNoModalDialogRef: TemplateRef<any>;
   public yesNoModal: NgbActiveModal;
 
   public countUpTimer: CountUpTimerId[];
@@ -108,7 +108,10 @@ export class ObsComponent implements OnInit {
   }
 
   updateRunner() {
-    this.runnerNameService.setRunnerName({'runnerName': this.runnerName.runnerName, runnerHasTwitchAccount: this.runnerName.runnerHasTwitchAccount});
+    this.runnerNameService.setRunnerName({
+        'runnerName': this.runnerName.runnerName,
+        runnerHasTwitchAccount: this.runnerName.runnerHasTwitchAccount
+      });
   }
 
 }

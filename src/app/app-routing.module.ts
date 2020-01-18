@@ -3,17 +3,17 @@ import { Routes, RouterModule } from '@angular/router';
 import { AuthGuardService as AuthGuard } from './router/guards/auth-guard.service';
 
 // Components
-import { HomeComponent } from "./components/home/home.component";
-import { PageNotFoundComponent } from "./components/page-not-found/page-not-found.component";
-import { DonationsComponent } from "./components/donations/donations.component";
-import { IncentivesComponent } from "./components/incentives/incentives.component";
-import { TimersComponent } from "./components/timers/timers.component";
-import { CountupComponent } from "./components/timers/countup/countup.component";
-import { CountDateComponent } from "./components/timers/count-date/count-date.component";
-import { ObsComponent } from "./components/obs/obs.component";
-import { ObsLayoutComponent } from "./components/obs/layout/obs-layout.component";
-import { GameTrackingComponent } from "./components/game-tracking/game-tracking.component";
-import { LoginComponent } from "./components/login/login.component";
+import { HomeComponent } from './components/home/home.component';
+import { PageNotFoundComponent } from './components/page-not-found/page-not-found.component';
+import { DonationsComponent } from './components/donations/donations.component';
+import { IncentivesComponent } from './components/incentives/incentives.component';
+import { TimersComponent } from './components/timers/timers.component';
+import { CountupComponent } from './components/timers/countup/countup.component';
+import { CountDateComponent } from './components/timers/count-date/count-date.component';
+import { ObsComponent } from './components/obs/obs.component';
+import { ObsLayoutComponent } from './components/obs/layout/obs-layout.component';
+import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
+import { LoginComponent } from './components/login/login.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
