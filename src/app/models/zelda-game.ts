@@ -1,4 +1,4 @@
-export class GameDesc {
+export class ZeldaGame {
   public coverArt: string;
   public gameName: string;
   public gameType: string;

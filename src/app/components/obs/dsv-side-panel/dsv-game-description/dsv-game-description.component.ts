@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import {GameDesc} from "../../../../models/game-desc";
-import {interval, Observable, Subscription} from "rxjs";
-import {CurrentlyPlayingService} from "../../../../services/firebase/currently-playing/currently-playing.service";
+import {ZeldaGame} from '../../../../models/zelda-game';
+import {interval, Observable, Subscription} from 'rxjs';
+import {CurrentlyPlayingService} from '../../../../services/firebase/currently-playing/currently-playing.service';
+import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
 
 @Component({
   selector: 'app-dsv-game-description',
@@ -9,7 +10,8 @@ import {CurrentlyPlayingService} from "../../../../services/firebase/currently-p
   styleUrls: ['./dsv-game-description.component.css']
 })
 export class DsvGameDescriptionComponent implements OnInit {
-  public gameDesc: GameDesc = new GameDesc('','','','','','');
+  public gameId: CurrentlyPlayingId;
+  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '');
 
   public pos: number;
   public direction: boolean;
@@ -18,8 +20,7 @@ export class DsvGameDescriptionComponent implements OnInit {
 
   constructor(private currentlyPlayingService: CurrentlyPlayingService) {
     currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
-      this.gameDesc = new GameDesc('','','','','','');
-      this.gameDesc = data[0];
+      this.gameId = data[0];
     });
   }
 

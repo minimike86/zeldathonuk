@@ -1,12 +1,16 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CurrentlyPlayingService } from '../../services/firebase/currently-playing/currently-playing.service';
+import {GameLineupService} from '../../services/firebase/game-lineup/game-lineup.service';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { CurrentlyPlaying, CurrentlyPlayingId } from '../../services/firebase/currently-playing/currently-playing';
+import { CurrentlyPlaying } from '../../services/firebase/currently-playing/currently-playing';
 import { FirebaseTimerService } from '../../services/firebase/firebase-timer/firebase-timer.service';
 import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-timer';
 import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
+import {GameLineUp} from '../../services/firebase/game-lineup/game-lineup';
+import {map} from 'rxjs/operators';
+import {ZeldaGame} from '../../models/zelda-game';
 
 
 @Component({
@@ -25,34 +29,36 @@ export class ObsComponent implements OnInit {
   public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
   public currentRunner: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
 
-  public currentlyPlaying: CurrentlyPlayingId[];
-  public gameList: CurrentlyPlaying[] = [];
-  public swapToGame: CurrentlyPlaying;
+  public currentlyPlayingKey = 'Loading...';
+  public gameLineUp: Map<string, ZeldaGame>;
 
   constructor(private modalService: NgbModal,
               private firebaseTimerService: FirebaseTimerService,
               private runnerNameService: RunnerNameService,
+              private gameLineupService: GameLineupService,
               private currentlyPlayingService: CurrentlyPlayingService) {
-    firebaseTimerService.getCountUpTimer().subscribe(data => {
+    this.firebaseTimerService.getCountUpTimer().pipe(map(data => {
       this.countUpTimer = data;
-    });
-    runnerNameService.getRunnerName().subscribe(data => {
+    })).subscribe();
+    this.runnerNameService.getRunnerName().pipe(map(data => {
       this.runnerName = data[0];
       this.currentRunner.runnerName = data[0].runnerName;
       this.currentRunner.runnerHasTwitchAccount = data[0].runnerHasTwitchAccount;
-    });
-    currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
-      this.currentlyPlaying = data;
-    });
-    this.gameList = currentlyPlayingService.gameList;
-    this.swapToGame = null;
+    })).subscribe();
+    this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
+      this.currentlyPlayingKey = data[0].key;
+      console.log('currentlyPlayingKey', this.currentlyPlayingKey);
+    })).subscribe();
+    this.gameLineupService.getGameLineUp().pipe(map(data => {
+      this.gameLineUp = data[0].gameLineUp;
+      console.log('gameLineUp', this.gameLineUp);
+    })).subscribe();
   }
 
   ngOnInit() {
   }
 
-  onSwapGameClick(game: CurrentlyPlaying) {
-    this.swapToGame = game;
+  onSwapGameClick(game: string) {
     this.yesNoModal = this.modalService.open(this.yesNoModalDialogRef);
   }
 

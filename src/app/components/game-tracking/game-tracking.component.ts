@@ -1,8 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { GameItemService } from "../../services/firebase/game-item/game-item.service";
-import {GameItem, GameItemsId} from "../../services/firebase/game-item/game-item";
-import {CurrentlyPlayingService} from "../../services/firebase/currently-playing/currently-playing.service";
-import {GameDesc} from "../../models/game-desc";
+import {map} from 'rxjs/operators';
+import { GameItemService } from '../../services/firebase/game-item/game-item.service';
+import {GameItem, GameItemsId} from '../../services/firebase/game-item/game-item';
+import {CurrentlyPlayingService} from '../../services/firebase/currently-playing/currently-playing.service';
+import {ZeldaGame} from '../../models/zelda-game';
+import {CurrentlyPlayingId} from '../../services/firebase/currently-playing/currently-playing';
+import {GameLineupService} from '../../services/firebase/game-lineup/game-lineup.service';
+import {GameLineUp} from '../../services/firebase/game-lineup/game-lineup';
 
 @Component({
   selector: 'app-game-tracking',
@@ -10,59 +14,33 @@ import {GameDesc} from "../../models/game-desc";
   styleUrls: ['./game-tracking.component.css']
 })
 export class GameTrackingComponent implements OnInit {
-  private gameDesc: GameDesc;
+  public currentlyPlayingId: CurrentlyPlayingId;
+  private gameLineUp: Map<string, ZeldaGame>;
   public gameItemsId: GameItemsId[] = [];
   public gameItems: GameItem[] = [];
   private firestorePath: string;
 
   constructor(private gameItemService: GameItemService,
+              private gameLineUpService: GameLineupService,
               private currentlyPlayingService: CurrentlyPlayingService) {
-    this.currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
-      this.gameDesc = data[0];
-      this.getGameItems();
-    });
-    this.gameItemService.getGameItems().subscribe(data => {
-      this.gameItemsId = data;
-      this.getGameItems();
-    });
   }
 
   ngOnInit() {
+    this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
+      this.currentlyPlayingId = data[0];
+    })).subscribe();
+    this.gameLineUpService.getGameLineUp().pipe(map(data => {
+      this.gameLineUp = data[0].gameLineUp;
+      console.log('gameLineUp', this.gameLineUp);
+    })).subscribe();
+    this.gameItemService.getGameItems().pipe(map(data => {
+      this.gameItemsId = data;
+      this.getZeldaGameItems();
+    })).subscribe();
   }
 
-  getGameItems() {
-    if ( this.gameItemsId.find(i => i.id === 'MINISH-CAP') !== undefined
-      && this.gameItemsId.find(i => i.id === 'MAJORAS-MASK') !== undefined
-      && this.gameItemsId.find(i => i.id === 'SPIRIT-TRACKS') !== undefined
-      && this.gameItemsId.find(i => i.id === 'ADVENTURE-OF-LINK') !== undefined ) {
-
-      if (this.gameDesc.gameName === 'The Legend of Zelda: The Minish Cap') {
-
-        this.firestorePath = 'MINISH-CAP';
-        this.gameItems = this.gameItemsId.find(i => i.id === 'MINISH-CAP').items;
-
-      } else if (this.gameDesc.gameName === 'The Legend of Zelda: Majora\'s Mask 3D') {
-
-        this.firestorePath = 'MAJORAS-MASK';
-        this.gameItems = this.gameItemsId.find(i => i.id === 'MAJORAS-MASK').items;
-
-      } else if (this.gameDesc.gameName === 'The Legend of Zelda: Spirit Tracks') {
-
-        this.firestorePath = 'SPIRIT-TRACKS';
-        this.gameItems = this.gameItemsId.find(i => i.id === 'SPIRIT-TRACKS').items;
-
-      } else if (this.gameDesc.gameName === 'Zelda II: The Adventure of Link') {
-
-        this.firestorePath = 'ADVENTURE-OF-LINK';
-        this.gameItems = this.gameItemsId.find(i => i.id === 'ADVENTURE-OF-LINK').items;
-
-      } else {
-
-        // do fuck all
-
-      }
-
-    }
+  getZeldaGameItems() {
+    console.log('getZeldaGameItems', this.gameLineUp);
   }
 
   collectItem(gameItem: string, collected: boolean) {
@@ -71,7 +49,18 @@ export class GameTrackingComponent implements OnInit {
   }
 
   addData() {
-    this.gameItemService.addAdventureOfLinkData();
+    // this.gameItemService.addLegendOfZeldaData();        // 1986
+    // this.gameItemService.addAdventureOfLinkData();      // 1987
+    // this.gameItemService.addOcarinaOfTimeData();        // 1998
+    // this.gameItemService.addMajorasMaskData();          // 2000
+    // this.gameItemService.addMinishCapData();            // 2004
+    // this.gameItemService.addFourSwordsAdventuresData(); // 2004
+    // this.gameItemService.addSpiritTracksData();         // 2009
+    // this.gameItemService.addSkywardSwordData();         // 2011
+    // this.gameItemService.addWindWakerHdData();          // 2013
+    // this.gameItemService.addBreathOfTheWildData();      // 2017
+    // this.gameItemService.addLinksAwakeningRemakeData(); // 2017
+    alert('Importing game data...');
   }
 
 }

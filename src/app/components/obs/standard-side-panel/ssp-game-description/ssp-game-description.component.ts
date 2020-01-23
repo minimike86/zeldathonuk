@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { interval, Observable, Subscription } from "rxjs";
-import { GameDesc } from "../../../../models/game-desc";
-import { CurrentlyPlayingService } from "../../../../services/firebase/currently-playing/currently-playing.service";
+import { interval, Observable, Subscription } from 'rxjs';
+import { ZeldaGame } from '../../../../models/zelda-game';
+import { CurrentlyPlayingService } from '../../../../services/firebase/currently-playing/currently-playing.service';
+import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
 
 @Component({
   selector: 'app-ssp-game-description',
@@ -9,7 +10,8 @@ import { CurrentlyPlayingService } from "../../../../services/firebase/currently
   styleUrls: ['./ssp-game-description.component.css']
 })
 export class SspGameDescriptionComponent implements OnInit {
-  public gameDesc: GameDesc = new GameDesc('','','','','','');
+  public gameId: CurrentlyPlayingId;
+  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '');
 
   public pos: number;
   public direction: boolean;
@@ -18,8 +20,7 @@ export class SspGameDescriptionComponent implements OnInit {
 
   constructor(private currentlyPlayingService: CurrentlyPlayingService) {
     currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
-      this.gameDesc = new GameDesc('','','','','','');
-      this.gameDesc = data[0];
+      this.gameId = data[0];
     });
   }
 
