@@ -32,7 +32,7 @@ export class HomeComponent implements OnInit {
   }
 
   donateJustGiving() {
-    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast2019', '_blank');
+    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast-2020', '_blank');
   }
 
   learnAboutSpecialEffect() {
@@ -40,7 +40,7 @@ export class HomeComponent implements OnInit {
   }
 
   learnAboutGameBlast() {
-    window.open('https://www.gameblast19.org.uk/faq/', '_blank');
+    window.open('https://www.gameblast20.org.uk/about/', '_blank');
   }
 
 }

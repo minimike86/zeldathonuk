@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { JgServiceService } from "../../services/jg-service/jg-service.service";
-import { timer } from "rxjs";
+import { JgServiceService } from '../../services/jg-service/jg-service.service';
+import { timer } from 'rxjs';
 
 
 /**
@@ -17,10 +17,10 @@ export class JgDonationComponent implements OnInit {
   public displayTotal: boolean;
 
   constructor(private jgServiceService: JgServiceService) {
-    jgServiceService.getFundraisingPageDetails(1000*60).subscribe(data => {
+    jgServiceService.getFundraisingPageDetails(1000 * 60).subscribe(data => {
       this.fundraisingPageDetails = data;
     });
-    jgServiceService.getFundraisingPageDonations(1000*60).subscribe(data => {
+    jgServiceService.getFundraisingPageDonations(1000 * 60).subscribe(data => {
       this.fundraisingPageDonations = data;
     });
   }

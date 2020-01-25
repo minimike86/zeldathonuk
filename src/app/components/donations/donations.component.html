@@ -59,8 +59,15 @@
       </div>
     </ng-template>
     <ng-template [ngIf]="fundraisingPageDonations.donations.length === 0">
-      <div>
-        No donors yet! Please consider starting us off!
+      <div class="d-flex justify-content-center mt-5">
+        <div class="d-flex flex-column">
+          <h6 class="text-white-50">
+            No donors yet! Please consider starting us off!
+          </h6>
+          <button class="btn btn-lg btn-justgiving" (click)="donateJustGiving();">
+            Donate via JustGiving
+          </button>
+        </div>
       </div>
     </ng-template>
   </div>

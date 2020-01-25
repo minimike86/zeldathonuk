@@ -14,6 +14,7 @@ import { ObsComponent } from './components/obs/obs.component';
 import { ObsLayoutComponent } from './components/obs/layout/obs-layout.component';
 import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
 import { LoginComponent } from './components/login/login.component';
+import {ScheduleComponent} from './components/schedule/schedule.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -22,6 +23,7 @@ const routes: Routes = [
   { path: 'donors', component: DonationsComponent },
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },
+  { path: 'schedule', component: ScheduleComponent },
   { path: 'obs', component: ObsComponent,                         canActivate: [AuthGuard] },
   { path: 'obs/:layout', component: ObsLayoutComponent,           canActivate: [AuthGuard] },
   { path: 'tracking/:game', component: GameTrackingComponent,     canActivate: [AuthGuard] },

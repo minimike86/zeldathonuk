@@ -4,12 +4,12 @@
     <div class="spt-game-img-container">
       <img class="spt-game-img"
            [ngStyle]="{ 'top.px': pos }"
-           [src]="gameDesc.coverArt">
+           [src]="gameDesc.key">
     </div>
 
     <div class="d-flex justify-content-center align-items-center spt-game-text">
       <h1 class="text-center" style="width: 90%; overflow-wrap: break-word;">
-        {{ gameDesc.gameName | uppercase }}
+        {{ gameDesc.key | uppercase }}
       </h1>
     </div>
 
@@ -18,7 +18,7 @@
 
     <div class="d-flex justify-content-center align-items-center spt-type-text"
          style="height:30px; width: 90%;">
-      {{ gameDesc.gameType }}
+      {{ gameDesc.key }}
     </div>
 
   </div>
@@ -29,7 +29,7 @@
          style="height:30px; width: 90%;">
       <div style="width: 33%;">
         <div class="spt-platform-text br-l p-1">
-          {{ gameDesc.gamePlatform }}
+          {{ gameDesc.key }}
         </div>
         <div class="small">
           Platform
@@ -37,7 +37,7 @@
       </div>
       <div style="width: 33%;">
         <div class="spt-platform-text align-items-center br-m mx-1 p-1">
-          {{ gameDesc.gameRelYear }}
+          {{ gameDesc.key }}
         </div>
         <div class="small">
           Release Year
@@ -45,7 +45,7 @@
       </div>
       <div style="width: 33%;">
         <div class="spt-platform-text br-r p-1">
-          {{ gameDesc.gameEstimate }}
+          {{ gameDesc.key }}
         </div>
         <div class="small">
           Estimate

@@ -26,7 +26,7 @@ export class NavbarComponent implements OnInit {
   }
 
   donateJustGiving() {
-    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast2019', '_blank');
+    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast-2020', '_blank');
   }
 
   logout(){

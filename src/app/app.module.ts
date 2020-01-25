@@ -6,20 +6,20 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { CountdownModule } from "ngx-countdown";
+import { CountdownModule } from 'ngx-countdown';
 import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire';
 import { AngularFireAuthModule } from '@angular/fire/auth';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
 
 // Environment Variables
-import { environment } from "../environments/environment";
+import { environment } from '../environments/environment';
 
 /* SERVICES */
-import { AuthGuardService } from "./router/guards/auth-guard.service";
-import { JgServiceService } from "./services/jg-service/jg-service.service";
-import { GameItemService } from "./services/firebase/game-item/game-item.service";
-import { FirebaseTimerService } from "./services/firebase/firebase-timer/firebase-timer.service";
+import { AuthGuardService } from './router/guards/auth-guard.service';
+import { JgServiceService } from './services/jg-service/jg-service.service';
+import { GameItemService } from './services/firebase/game-item/game-item.service';
+import { FirebaseTimerService } from './services/firebase/firebase-timer/firebase-timer.service';
 
 /* COMPONENTS */
 import { AppComponent } from './app.component';
@@ -72,6 +72,7 @@ import { CallToActionComponent } from './components/obs/omnibar/call-to-action/c
 import { UpNextGameComponent } from './components/obs/omnibar/up-next-game/up-next-game.component';
 import { OmnibarDonationsComponent } from './components/obs/omnibar/omnibar-donations/omnibar-donations.component';
 import { OmnibarDonationPleaComponent } from './components/obs/omnibar/omnibar-donation-plea/omnibar-donation-plea.component';
+import { ScheduleComponent } from './components/schedule/schedule.component';
 
 
 @NgModule({
@@ -87,6 +88,7 @@ import { OmnibarDonationPleaComponent } from './components/obs/omnibar/omnibar-d
     CountupComponent,
     CountDateComponent,
     IncentivesComponent,
+    ScheduleComponent,
     DonationsComponent,
     ObsComponent,
     ObsLayoutComponent,

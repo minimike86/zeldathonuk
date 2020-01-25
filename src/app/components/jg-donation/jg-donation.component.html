@@ -1,14 +1,14 @@
 <div *ngIf="fundraisingPageDetails !== undefined; then displayTotal ? showDonations : showDonors else showNothing"></div>
 <ng-template #showDonations>
-  <div class="text-center text-white mt-1" style="line-height: 0.65em;">
-    <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ fundraisingPageDetails.grandTotalRaisedExcludingGiftAid | currency:fundraisingPageDetails.currencyCode }}</h6>
-    <span class="text-white-50" style="font-size: 0.65em;">Current Total (JG)</span>
+  <div class="text-center jg-text-dark mt-1" style="line-height: 0.65em;">
+    <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ fundraisingPageDetails[0].totalRaisedOnline + fundraisingPageDetails[0].offlineDonations | currency:fundraisingPageDetails[0].currencyCode }}</h6>
+    <span class="jg-text-dark" style="font-size: 0.65em;">Current Total (JG)</span>
   </div>
 </ng-template>
 <ng-template #showDonors>
-  <div class="text-center text-white mt-1" style="line-height: 0.65em;">
+  <div class="text-center jg-text-dark mt-1" style="line-height: 0.65em;">
     <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ fundraisingPageDonations !== undefined && fundraisingPageDonations !== null ? fundraisingPageDonations.donations.length : 0 }}</h6>
-    <span class="text-white-50" style="font-size: 0.65em;">Number of Donors (JG)</span>
+    <span class="jg-text-dark" style="font-size: 0.65em;">Number of Donors (JG)</span>
   </div>
 </ng-template>
 <ng-template #showNothing>

@@ -120,7 +120,7 @@
       <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
         <div class="d-flex">
           <span class="small mr-2">Currently Playing:</span>
-          <h6 class="m-0">{{ currentlyPlaying !== undefined ? currentlyPlaying[0].gameName : 'fetching...' }}</h6>
+          <h6 class="m-0">{{ gameLineUp !== undefined ? gameLineUp.get('AOL').gameName : 'fetching...' }}</h6>
         </div>
       </div>
     </div>
@@ -145,14 +145,14 @@
       <p>Are you sure you want to swap to the selected game?:</p>
       <div class="card border-secondary" style="max-height: 20vh; overflow: hidden;">
         <div class="d-flex">
-          <img class="card-img" style="width: 33%;" [src]="swapToGame.coverArt">
-          <div class="card-header" style="width: 66%;">{{ swapToGame.gameName }}</div>
+          <img class="card-img" style="width: 33%;" [src]="gameLineUp.get('AOL').coverArt">
+          <div class="card-header" style="width: 66%;">{{ gameLineUp.get('AOL').gameName }}</div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="yesNoModal.close('Cancel click')">Cancel</button>
-      <button type="button" class="btn btn-primary" (click)="swapModalBtn(swapToGame)">Swap Game</button>
+      <button type="button" class="btn btn-primary" (click)="swapModalBtn()">Swap Game</button>
     </div>
   </div>
 </ng-template>

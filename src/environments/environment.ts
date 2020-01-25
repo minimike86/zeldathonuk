@@ -19,7 +19,7 @@ export const environment = {
 export const jgEnvironment = {
   production: false,
   justgiving: {
-    pageShortName: 'zeldathonuk-testfundraising-page435',
+    pageShortName: 'zeldathonuk-gameblast-2020',
     baseUri: 'https://api.staging.justgiving.com/v1',
     httpOptions: {
       headers: new HttpHeaders({

@@ -62,8 +62,8 @@ export class ObsComponent implements OnInit {
     this.yesNoModal = this.modalService.open(this.yesNoModalDialogRef);
   }
 
-  swapModalBtn(game: CurrentlyPlaying) {
-    this.currentlyPlayingService.setCurrentlyPlaying(game);
+  swapModalBtn() {
+    this.currentlyPlayingService.setCurrentlyPlaying(null);
     this.yesNoModal.close('Game swapped');
   }
 
