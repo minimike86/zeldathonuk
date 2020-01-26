@@ -2,8 +2,11 @@
 <div class="container py-2" style="background: lightgrey;">
 
   <div class="">
-    <h1 class="text-dark pt-2">OBS Layouts</h1>
-    <div class="w-100">
+    <div class="d-flex justify-content-between">
+      <h1 class="text-dark pt-2">OBS Layouts</h1>
+      <button class="btn btn-sm btn-dark" (click)="toggleShowObsLayouts();">Show/Hide</button>
+    </div>
+    <div class="w-100" *ngIf="showObsLayouts">
       <div class="card border-secondary layout-list">
         <div class="card-header">Standard (4:3)</div>
         <img class="card-img" src="../../../assets/img/obs-bg/standard-layout-preview.PNG">
@@ -90,21 +93,21 @@
       <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
         <div class="d-flex">
           <span class="small mr-2">Currently Playing:</span>
-          <h6 class="m-0">{{ gameLineUp !== undefined ? currentlyPlayingKey : 'fetching...' }}</h6>
+          <h6 class="m-0">{{ gameLineUp !== undefined ? currentlyPlaying.index : 'fetching...' }}</h6>
         </div>
       </div>
     </div>
     <div class="d-flex">
       <ng-container *ngFor="let game of gameLineUp | keyvalue">
-        <div class="card border-secondary layout-list">
-          <div class="card-header" style="height: 97px;">{{ game.value.gameName }}</div>
-          <img class="card-img" style="height: 230px;" [src]="game.value.coverArt">
+        <div class="card border-secondary layout-list" style="max-width: 110px;" *ngIf="game.value.active">
+          <div class="card-header small">{{ game.value.gameName }}</div>
+          <img class="card-img" style="max-height: 110px; max-width: 110px;" [src]="game.value.coverArt">
           <div class="card-footer">
-            <button class="btn btn-block"
-                    [disabled]="currentlyPlayingKey === game.key"
-                    [ngClass]="currentlyPlayingKey === game.key ? 'btn-success' : 'btn-danger'"
-                    (click)="onSwapGameClick(game.key)">
-              {{ game.value !== undefined && game.value === game.value ? 'Playing' : 'Swap' }}
+            <button class="btn btn-sm btn-block"
+                    [disabled]="currentlyPlaying.index === game.key"
+                    [ngClass]="currentlyPlaying.index === game.key ? 'btn-success' : 'btn-danger'"
+                    (click)="onSwapGameClick(game)">
+              {{ game.value !== undefined && currentlyPlaying.index === game.key ? 'Playing' : 'Swap' }}
             </button>
           </div>
         </div>
@@ -120,7 +123,7 @@
       <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
         <div class="d-flex">
           <span class="small mr-2">Currently Playing:</span>
-          <h6 class="m-0">{{ gameLineUp !== undefined ? gameLineUp.get('AOL').gameName : 'fetching...' }}</h6>
+          <h6 class="m-0">{{ gameLineUp !== undefined ? gameLineUp.size !== 0 ? currentlyPlaying.index : 'No Games' : 'Fetching...' }}</h6>
         </div>
       </div>
     </div>
@@ -145,8 +148,8 @@
       <p>Are you sure you want to swap to the selected game?:</p>
       <div class="card border-secondary" style="max-height: 20vh; overflow: hidden;">
         <div class="d-flex">
-          <img class="card-img" style="width: 33%;" [src]="gameLineUp.get('AOL').coverArt">
-          <div class="card-header" style="width: 66%;">{{ gameLineUp.get('AOL').gameName }}</div>
+          <img class="card-img" style="width: 33%;" [src]="swapGameKey.value.coverArt">
+          <div class="card-header" style="width: 66%;">{{ swapGameKey.value.gameName }}</div>
         </div>
       </div>
     </div>

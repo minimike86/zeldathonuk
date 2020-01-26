@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {map} from 'rxjs/operators';
 import { GameItemService } from '../../services/firebase/game-item/game-item.service';
 import {GameItem, GameItemsId} from '../../services/firebase/game-item/game-item';
@@ -6,19 +6,18 @@ import {CurrentlyPlayingService} from '../../services/firebase/currently-playing
 import {ZeldaGame} from '../../models/zelda-game';
 import {CurrentlyPlayingId} from '../../services/firebase/currently-playing/currently-playing';
 import {GameLineupService} from '../../services/firebase/game-lineup/game-lineup.service';
-import {GameLineUp} from '../../services/firebase/game-lineup/game-lineup';
 
 @Component({
   selector: 'app-game-tracking',
   templateUrl: './game-tracking.component.html',
   styleUrls: ['./game-tracking.component.css']
 })
-export class GameTrackingComponent implements OnInit {
+export class GameTrackingComponent implements OnInit, AfterViewInit {
   public currentlyPlayingId: CurrentlyPlayingId;
+  public gameProgressKey: string;
   private gameLineUp: Map<string, ZeldaGame>;
   public gameItemsId: GameItemsId[] = [];
   public gameItems: GameItem[] = [];
-  private firestorePath: string;
 
   constructor(private gameItemService: GameItemService,
               private gameLineUpService: GameLineupService,
@@ -28,24 +27,32 @@ export class GameTrackingComponent implements OnInit {
   ngOnInit() {
     this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
       this.currentlyPlayingId = data[0];
+      // console.log('currentlyPlayingId', this.currentlyPlayingId);
     })).subscribe();
     this.gameLineUpService.getGameLineUp().pipe(map(data => {
       this.gameLineUp = data[0].gameLineUp;
-      console.log('gameLineUp', this.gameLineUp);
-    })).subscribe();
-    this.gameItemService.getGameItems().pipe(map(data => {
-      this.gameItemsId = data;
-      this.getZeldaGameItems();
+      // console.log('gameLineUp', this.gameLineUp);
+      this.gameItemService.getGameItems().pipe(map(data2 => {
+        this.gameItemsId = data2;
+        this.getZeldaGameItems(this.gameLineUp[this.currentlyPlayingId.index].gameProgressKey, this.gameItemsId);
+        // console.log('getZeldaGameItems', this.gameItemsId);
+      })).subscribe();
     })).subscribe();
   }
 
-  getZeldaGameItems() {
-    console.log('getZeldaGameItems', this.gameLineUp);
+  ngAfterViewInit(): void {
   }
 
-  collectItem(gameItem: string, collected: boolean) {
-    this.gameItems.find(item => item.name === gameItem).collected = !collected;
-    this.gameItemService.collectItem(this.firestorePath, this.gameItems);
+  getZeldaGameItems(gameProgressKey: string, gameItemsId: GameItemsId[]) {
+    // this.currentlyPlayingId.index "WWHD" === this.gameLineUp.key
+    // this.gameLineUp(key).value.gameProgressKey "WIND-WAKER-HD" === this.gameItemsId[somekey].id
+    this.gameProgressKey = gameProgressKey;
+    this.gameItems = gameItemsId.find(x => x.id === gameProgressKey).items;
+  }
+
+  collectItem(gameItem: GameItem, gameItems: GameItem[]) {
+    gameItems.find(item => item.name === gameItem.name).collected = !gameItem.collected;
+    this.gameItemService.collectItem(this.gameProgressKey, gameItems);
   }
 
   addData() {

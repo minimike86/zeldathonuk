@@ -3,5 +3,5 @@ export interface CurrentlyPlayingId extends CurrentlyPlaying {
 }
 
 export interface CurrentlyPlaying {
-  key: string;
+  index: string;
 }

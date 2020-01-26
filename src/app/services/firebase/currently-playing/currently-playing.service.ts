@@ -4,17 +4,18 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { CurrentlyPlaying, CurrentlyPlayingId } from './currently-playing';
 
+
 @Injectable({
   providedIn: 'root'
 })
 export class CurrentlyPlayingService {
   private currentlyPlayingCollection: AngularFirestoreCollection<CurrentlyPlaying>;
-  public gameList = [];
+  public currentlyPlaying: CurrentlyPlayingId[] = [];
 
   constructor(private db: AngularFirestore) {
     this.currentlyPlayingCollection = db.collection<CurrentlyPlaying>('/currently-playing');
     this.getCurrentlyPlaying().subscribe( data => {
-      this.gameList = data;
+      this.currentlyPlaying = data;
     });
   }
 

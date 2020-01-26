@@ -11,6 +11,7 @@ import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 import {GameLineUp} from '../../services/firebase/game-lineup/game-lineup';
 import {map} from 'rxjs/operators';
 import {ZeldaGame} from '../../models/zelda-game';
+import {KeyValue} from '@angular/common';
 
 
 @Component({
@@ -23,20 +24,25 @@ export class ObsComponent implements OnInit {
   private yesNoModalDialogRef: TemplateRef<any>;
   public yesNoModal: NgbActiveModal;
 
+  public showObsLayouts = false;
   public countUpTimer: CountUpTimerId[];
 
   public faTwitch = faTwitch;
   public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
   public currentRunner: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
 
-  public currentlyPlayingKey = 'Loading...';
+  public currentlyPlaying = {id: '', index: ''};
   public gameLineUp: Map<string, ZeldaGame>;
+  public swapGameKey: KeyValue<string, ZeldaGame>;
 
   constructor(private modalService: NgbModal,
               private firebaseTimerService: FirebaseTimerService,
               private runnerNameService: RunnerNameService,
               private gameLineupService: GameLineupService,
               private currentlyPlayingService: CurrentlyPlayingService) {
+  }
+
+  ngOnInit() {
     this.firebaseTimerService.getCountUpTimer().pipe(map(data => {
       this.countUpTimer = data;
     })).subscribe();
@@ -46,24 +52,22 @@ export class ObsComponent implements OnInit {
       this.currentRunner.runnerHasTwitchAccount = data[0].runnerHasTwitchAccount;
     })).subscribe();
     this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
-      this.currentlyPlayingKey = data[0].key;
-      console.log('currentlyPlayingKey', this.currentlyPlayingKey);
+      this.currentlyPlaying = data[0];
+      // console.log('currentlyPlaying', this.currentlyPlaying, data);
     })).subscribe();
     this.gameLineupService.getGameLineUp().pipe(map(data => {
       this.gameLineUp = data[0].gameLineUp;
-      console.log('gameLineUp', this.gameLineUp);
+      // console.log('gameLineUp', this.gameLineUp);
     })).subscribe();
   }
 
-  ngOnInit() {
-  }
-
-  onSwapGameClick(game: string) {
+  onSwapGameClick(gameKey: KeyValue<string, ZeldaGame>) {
+    this.swapGameKey = gameKey;
     this.yesNoModal = this.modalService.open(this.yesNoModalDialogRef);
   }
 
   swapModalBtn() {
-    this.currentlyPlayingService.setCurrentlyPlaying(null);
+    this.currentlyPlayingService.setCurrentlyPlaying({index: this.swapGameKey.key});
     this.yesNoModal.close('Game swapped');
   }
 
@@ -118,6 +122,10 @@ export class ObsComponent implements OnInit {
         'runnerName': this.runnerName.runnerName,
         runnerHasTwitchAccount: this.runnerName.runnerHasTwitchAccount
       });
+  }
+
+  toggleShowObsLayouts() {
+    this.showObsLayouts = !this.showObsLayouts;
   }
 
 }

@@ -11,7 +11,7 @@ import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playin
 })
 export class DsvGameDescriptionComponent implements OnInit {
   public gameId: CurrentlyPlayingId;
-  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '');
+  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '', '', false);
 
   public pos: number;
   public direction: boolean;

@@ -1348,4 +1348,264 @@ export class GameItemService {
         ]});
   }
 
+  public addWindWakerHdData() {
+    this.gameItemsCollection.doc('WIND-WAKER-HD').set({
+      'items':
+        [
+          {
+            'name': 'Hero\'s Sword',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Heros_Sword.png',
+            'collected': false
+          },
+          {
+            'name': 'Hero\'s Shield',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Heros_Shield_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Master Sword',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Master_Sword(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Mirror Shield',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Mirror_Shield_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Telescope',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Le_telescope.png',
+            'collected': false
+          },
+          {
+            'name': 'Sail',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Sail.png',
+            'collected': false
+          },
+          {
+            'name': 'Swift Sail',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Swift_Sail.png',
+            'collected': false
+          },
+          {
+            'name': 'Wind Waker',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/WindWaker_Large.png',
+            'collected': false
+          },
+          {
+            'name': 'Grappling Hook',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Grappling_Hook_(The_Wind_Waker).png',
+            'collected': false
+          },
+          {
+            'name': 'Tingle Bottle',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Tingle_Bottle_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Picto Box',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Picto_Box_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Deluxe Picto Box',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Deluxe_Picto_Box_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Power Bracelets',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Power_Bracelets_(WW).png',
+            'collected': false
+          },
+          {
+            'name': 'Iron Boots',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Iron_Boots_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Magic Armor',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Magicarmortww_Artwork.png',
+            'collected': false
+          },
+          {
+            'name': 'Boomerang',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/TWW_Boomerang.png',
+            'collected': false
+          },
+          {
+            'name': 'Deku Leaf',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/DekuLeaf_Large.png',
+            'collected': false
+          },
+          {
+            'name': 'Hero\'s Bow',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Heros_Bow_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Fire & Ice Arrows',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Fire_Ice_Arrows_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Light Arrows',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Light_Arrow_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Bomb',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Bomb_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Hookshot',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Hookshot_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Skull Hammer',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Skull_Hammer_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Spoils Bag',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Spoilsbag.png',
+            'collected': false
+          },
+          {
+            'name': 'Bait Bag',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Bait_Bag.png',
+            'collected': false
+          },
+          {
+            'name': 'Delivery Bag',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Delivery_Bag.png',
+            'collected': false
+          },
+          {
+            'name': 'Pirate\'s Charm',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Pirates_Charm.png',
+            'collected': false
+          },
+          {
+            'name': 'Hero\'s Charm',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Heros_Charm_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'All-Purpose Bait',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/AllPurposeBait_Large.png',
+            'collected': false
+          },
+          {
+            'name': 'Hyoi Pear',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Hyoi_Pear_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Complimentary ID',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Complimentary_ID_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Fill-Up Coupon',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Fill-Up_Coupon_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Cabana Deed',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Cabana_Deed.png',
+            'collected': false
+          },
+          {
+            'name': 'Bottle #1',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Bottle_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Bottle #2',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Bottle_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Bottle #3',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Bottle_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Bottle #4',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Bottle_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Father\'s Letter',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Father\'s_Letter.png',
+            'collected': false
+          },
+          {
+            'name': 'Din\'s Pearl',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Dins_Pearl_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Farore\'s Pearl',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Farores_Pearl_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Nayru\'s Pearl',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Nayrus_Pearl_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Ghost Ship Chart',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Ghost_Ship_Chart_Artwork_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 1',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_1_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 2',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_2_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 3',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_3_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 4',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_4_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 5',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_5_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 6',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_6_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 7',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_7_(TWW).png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce Shard 8',
+            'imgUrl': '../../../../../assets/img/game-items/wwhd/Triforce_Shard_8_(TWW).png',
+            'collected': false
+          },
+        ]});
+  }
+
+  public addData() {
+  }
+
 }
