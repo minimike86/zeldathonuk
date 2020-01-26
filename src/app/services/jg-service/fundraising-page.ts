@@ -7,7 +7,7 @@ interface FundraisingPageDetails {
   designId: number;
   companyAppealId: number;
   targetAmount: number;
-  offlineDonations: number;
+  totalRaisedOffline: number;
   totalRaisedOnline: number;
   giftAidPlusSupplement: number;
   pageImages: string[];
