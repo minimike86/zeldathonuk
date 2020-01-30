@@ -1,6 +1,6 @@
-import { Injectable, OnInit } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { jgEnvironment } from '../../../environments/environment';
 
 @Injectable({
@@ -9,13 +9,6 @@ import { jgEnvironment } from '../../../environments/environment';
 export class JgServiceService {
   private jgCampaign: string;
   private jgCharity: string;
-
-  private fundraisingPageDetailsData$ = new BehaviorSubject<FundraisingPageDetails[]>([]);
-  private fundraisingPageDonationsData$ = new BehaviorSubject<FundraisingPageDonations>({
-    donations: [],
-    pageShortName: null,
-    pagination: null
-  });
 
   constructor(private http: HttpClient) {
     this.jgCampaign = 'https://www.justgiving.com/campaign/gameblast20';
@@ -36,60 +29,14 @@ export class JgServiceService {
    * FUNDRAISING ENDPOINTS
    * Create, edit or manage fundraising pages
    */
-  getFundraisingPageDetails(interval: number): BehaviorSubject<FundraisingPageDetails[]> {
-    if (interval !== undefined) {
-      setInterval(() => {
-        this.http
-          .get<FundraisingPageDetails[]>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/`, jgEnvironment.justgiving.httpOptions)
-          .subscribe(
-            (data: any) => {
-              // console.log("GetFundraisingPages: ", data);
-              this.fundraisingPageDetailsData$.next(data);
-            },
-            (err: any) => console.error('GetFundraisingPages: ERROR'),
-            () => console.log('GetFundraisingPages: Complete')
-          );
-      }, interval);
-    }
-    this.http
-      .get<FundraisingPageDetails[]>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/`, jgEnvironment.justgiving.httpOptions)
-      .subscribe(
-        (data: any) => {
-          // console.log("GetFundraisingPages: ", data);
-          this.fundraisingPageDetailsData$.next(data);
-        },
-        (err: any) => console.error('GetFundraisingPages: ERROR'),
-        () => console.log('GetFundraisingPages: Complete')
-      );
-    return this.fundraisingPageDetailsData$;
+  getFundraisingPageDetails(): Observable<FundraisingPageDetails> {
+    return this.http.get<FundraisingPageDetails>(jgEnvironment.justgiving.baseUri
+            + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/`, jgEnvironment.justgiving.httpOptions);
   }
 
-  getFundraisingPageDonations(interval: number): BehaviorSubject<FundraisingPageDonations> {
-    if (interval !== undefined) {
-      setInterval(() => {
-        this.http
-          .get<FundraisingPageDonations>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/donations`, jgEnvironment.justgiving.httpOptions)
-          .subscribe (
-            (data: any) => {
-              // console.log("GetFundraisingPageDonations: ", data);
-              this.fundraisingPageDonationsData$.next(data);
-            },
-            (err: any) => console.error('GetFundraisingPageDonations: ERROR'),
-            () => console.log('GetFundraisingPageDonations: Complete')
-          );
-      }, interval);
-    }
-    this.http
-      .get<FundraisingPageDonations>(jgEnvironment.justgiving.baseUri + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/donations`, jgEnvironment.justgiving.httpOptions)
-      .subscribe (
-        (data: any) => {
-          // console.log("GetFundraisingPageDonations: ", data);
-          this.fundraisingPageDonationsData$.next(data);
-        },
-        (err: any) => console.error('GetFundraisingPageDonations: ERROR'),
-        () => console.log('GetFundraisingPageDonations: Complete')
-      );
-    return this.fundraisingPageDonationsData$;
+  getFundraisingPageDonations(): Observable<FundraisingPageDonations> {
+    return this.http.get<FundraisingPageDonations>(jgEnvironment.justgiving.baseUri
+            + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/donations`, jgEnvironment.justgiving.httpOptions);
   }
 
   updateOfflineAmount(pageShortName: string) {

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { interval, Observable } from "rxjs";
-import {JgServiceService} from "../../../services/jg-service/jg-service.service";
+import { interval, Observable } from 'rxjs';
+import { JgServiceService } from '../../../services/jg-service/jg-service.service';
 
 @Component({
   selector: 'app-omnibar',
@@ -8,7 +8,7 @@ import {JgServiceService} from "../../../services/jg-service/jg-service.service"
   styleUrls: ['./omnibar.component.css']
 })
 export class OmnibarComponent implements OnInit {
-  public fundraisingPageDetails: any;
+  public fundraisingPageDetails: Observable<FundraisingPageDetails>;
   public charityLogoUrl: string;
   public charityLogoSwap: boolean;
   private secondsCounter$: Observable<any>;
@@ -21,9 +21,7 @@ export class OmnibarComponent implements OnInit {
     this.charityLogoSwap = true;
     this.updateCharityLogoUrl();
     this.secondsCounter$ = interval(1000 * 15);
-    jgServiceService.getFundraisingPageDetails(1000*5).subscribe(data => {
-      this.fundraisingPageDetails = data;
-    });
+    this.fundraisingPageDetails = jgServiceService.getFundraisingPageDetails();
   }
 
   ngOnInit() {
@@ -36,7 +34,9 @@ export class OmnibarComponent implements OnInit {
   }
 
   changeOmnibarContent(): void {
-    console.log('changeOmnibarContent: ', this.showOmnibarContent1, this.showOmnibarContent2, this.showOmnibarContent3, this.showOmnibarContent4);
+    console.log('changeOmnibarContent: ',
+      this.showOmnibarContent1, this.showOmnibarContent2,
+      this.showOmnibarContent3, this.showOmnibarContent4);
     if (!this.showOmnibarContent1 && !this.showOmnibarContent2 && !this.showOmnibarContent3 && !this.showOmnibarContent4) {
       this.showOmnibarContent1 = true;
     } else if (this.showOmnibarContent1) {

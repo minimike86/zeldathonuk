@@ -110,9 +110,16 @@
     <h6 class="text-white-50">
       On behalf of everyone at the ZeldathonUK team, I would like to thank all of the donors below for their generous donations.
     </h6>
-    <ng-template [ngIf]="fundraisingPageDonations.donations.length >= 1">
+
+    <!--
+    <pre>
+      {{ (fundraisingPageDonations | async) | json }}
+    </pre>
+    -->
+
+    <ng-template [ngIf]="(fundraisingPageDonations | async)?.donations.length >= 1">
       <div>
-        <div class="d-inline-block donor-list" *ngFor="let donor of fundraisingPageDonations.donations">
+        <div class="d-inline-block donor-list" *ngFor="let donor of (fundraisingPageDonations | async)?.donations">
 
           <div class="d-flex text-white donation">
             <div class="align-items-start">
@@ -140,7 +147,7 @@
         </div>
       </div>
     </ng-template>
-    <ng-template [ngIf]="fundraisingPageDonations.donations.length === 0">
+    <ng-template [ngIf]="(fundraisingPageDonations | async)?.donations.length === 0">
       <div class="d-flex justify-content-center mt-5">
         <div class="d-flex flex-column">
           <h6 class="text-white-50">

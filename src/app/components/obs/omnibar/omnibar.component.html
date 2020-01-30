@@ -22,7 +22,7 @@
        id="donation_total_charity_logo">
     <div class="p-3">
       <h2 class="dtotal m-0">
-        {{ fundraisingPageDetails.grandTotalRaisedExcludingGiftAid | currency:fundraisingPageDetails.currencyCode }}
+        {{ ((fundraisingPageDetails | async)?.totalRaisedOnline + (fundraisingPageDetails | async)?.totalRaisedOffline) | currency:(fundraisingPageDetails | async)?.currencySymbol }}
       </h2>
     </div>
     <img [src]="getCharityLogoUrl()"

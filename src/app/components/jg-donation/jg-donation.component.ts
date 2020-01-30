@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { JgServiceService } from '../../services/jg-service/jg-service.service';
-import { timer } from 'rxjs';
+import {Observable, timer} from 'rxjs';
 
 
 /**
@@ -12,24 +12,20 @@ import { timer } from 'rxjs';
   styleUrls: ['./jg-donation.component.css']
 })
 export class JgDonationComponent implements OnInit {
-  public fundraisingPageDetails: FundraisingPageDetails[];
-  public fundraisingPageDonations: FundraisingPageDonations;
   public displayTotal: boolean;
+  public fundraisingPageDetails: Observable<FundraisingPageDetails>;
+  public fundraisingPageDonations: Observable<FundraisingPageDonations>;
 
   constructor(private jgServiceService: JgServiceService) {
-    jgServiceService.getFundraisingPageDetails(1000 * 60).subscribe(data => {
-      this.fundraisingPageDetails = data;
-    });
-    jgServiceService.getFundraisingPageDonations(1000 * 60).subscribe(data => {
-      this.fundraisingPageDonations = data;
-    });
+    this.fundraisingPageDetails = jgServiceService.getFundraisingPageDetails();
+    this.fundraisingPageDonations = jgServiceService.getFundraisingPageDonations();
   }
 
   ngOnInit() {
-    this.oberserableTimer();
+    this.observableTimer();
   }
 
-  oberserableTimer() {
+  observableTimer() {
     const interval = 10;
     const source = timer(1000, 2000);
     const countdown = source.subscribe(val => {
@@ -37,6 +33,14 @@ export class JgDonationComponent implements OnInit {
         this.displayTotal = !this.displayTotal;
       }
     });
+  }
+
+  getDonationTotal(fundraisingPageDetails: FundraisingPageDetails): number {
+    const totalRaisedOnline: number = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOnline ) !== null
+      ? fundraisingPageDetails.totalRaisedOnline : 0;
+    const totalRaisedOffline: number = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOffline ) !== null
+      ? fundraisingPageDetails.totalRaisedOffline : 0;
+    return totalRaisedOnline + totalRaisedOffline;
   }
 
 }

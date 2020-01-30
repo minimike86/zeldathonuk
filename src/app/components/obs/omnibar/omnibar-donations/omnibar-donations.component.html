@@ -1,4 +1,4 @@
-<ng-template [ngIf]="fundraisingPageDonations.donations.length >= 1">
+<ng-template [ngIf]="(fundraisingPageDonations | async).donations.length >= 1">
 
   <div class="d-inline-block">
     <div class="d-flex justify-content-center up-next-div">
@@ -8,7 +8,7 @@
   </div>
 
   <div class="donation-container">
-    <div class="donation mr-2" *ngFor="let donor of fundraisingPageDonations.donations.slice(-10)">
+    <div class="donation mr-2" *ngFor="let donor of (fundraisingPageDonations | async)?.donations.slice(-10)">
       <div class="d-flex justify-content-around text-white h-100 p-1">
         <div class="align-self-center h6 m-0">{{ donor.donorDisplayName }}</div>
         <div class="align-self-center h3 m-0">{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</div>
@@ -17,7 +17,7 @@
   </div>
 
 </ng-template>
-<ng-template [ngIf]="fundraisingPageDonations.donations.length === 0">
+<ng-template [ngIf]="(fundraisingPageDonations | async)?.donations.length === 0">
   <div>
     No donors yet! Please consider starting us off!
   </div>

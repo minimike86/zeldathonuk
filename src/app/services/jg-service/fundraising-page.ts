@@ -1,26 +1,59 @@
 interface FundraisingPageDetails {
   pageId: number;
-  pageTitle: string;
-  pageStatus: string;
-  pageShortName: string;
-  raisedAmount: number;
-  designId: number;
-  companyAppealId: number;
-  targetAmount: number;
-  totalRaisedOffline: number;
-  totalRaisedOnline: number;
-  giftAidPlusSupplement: number;
-  pageImages: string[];
-  images: JgImage[];
+  activityCharityCreated: false;
+  activityType: string;
+  activityId: number;
   eventName: string;
   eventId: number;
-  domain: string;
-  inMemoryPerson: InMemoryPerson[];
-  currencyCode: string;
   currencySymbol: string;
-  createdDate: string;
+  image: JgImage;
+  status: string;
+  owner: string;
+  ownerProfileImageUrls: {
+    OriginalSize: string;
+    Size150x150Face: string;
+  };
+  title: string;
+  showEventDate: boolean;
+  eventDate: Date;
+  showExpiryDate: boolean;
+  fundraisingTarget: number;
+  totalRaisedPercentageOfFundraisingTarget: number;
+  totalRaisedOffline: number;
+  totalRaisedOnline: number;
+  totalRaisedSms: number;
+  totalEstimatedGiftAid: number;
+  branding: {
+    buttonColour: number;
+    buttonTextColour: string;
+    headerTextColour: string;
+    thermometerBackgroundColour: string;
+    thermometerFillColour: string;
+    thermometerTextColour: string;
+  };
+  charity: {
+    id: number;
+    name: string;
+    description: string;
+    logoUrl: string;
+    logoAbsoluteUrl: string;
+    profilePageUrl: string;
+    registrationNumber: number;
+  };
+  media: {
+    images: JgImage[];
+    videos: JgVideo[];
+  };
+  story: string;
+  domain: string;
   smsCode: string;
-  charityId: number;
+  companyAppealId: number;
+  rememberedPersonSummary: string;
+  pageSummaryWhat: string;
+  pageSummaryWhy: string;
+  teams: JgTeam[];
+  pageSummary: string;
+  pageGuid: string;
 }
 
 interface FundraisingPageDonations {
@@ -62,9 +95,12 @@ interface JgImage {
   absoluteUrl: string;
 }
 
-interface InMemoryPerson {
-  FirstName: string;
-  LastName: string;
-  dateOfBirth: string;
-  dateOfDeath: string;
+interface JgVideo {
+  caption: string;
+  url: string;
+}
+
+interface JgTeam {
+  teamShortName: string;
+  teamGuid: null;
 }

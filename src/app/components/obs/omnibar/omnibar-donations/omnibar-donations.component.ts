@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import {JgServiceService} from "../../../../services/jg-service/jg-service.service";
-import TimeAgo from 'javascript-time-ago'
-import en from 'javascript-time-ago/locale/en'
+import {JgServiceService} from '../../../../services/jg-service/jg-service.service';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
+import {Observable} from 'rxjs';
 
 @Component({
   selector: 'app-omnibar-donations',
@@ -9,18 +10,16 @@ import en from 'javascript-time-ago/locale/en'
   styleUrls: ['./omnibar-donations.component.css']
 })
 export class OmnibarDonationsComponent implements OnInit {
-  public fundraisingPageDonations: FundraisingPageDonations;
+  public fundraisingPageDonations: Observable<FundraisingPageDonations>;
   public timeAgo: TimeAgo;
 
-  constructor(private jgs: JgServiceService) {
-    jgs.getFundraisingPageDonations(1000).asObservable().subscribe(data => {
-      this.fundraisingPageDonations = data;
-    });
+  constructor(private jgServiceService: JgServiceService) {
+    this.fundraisingPageDonations = jgServiceService.getFundraisingPageDonations();
   }
 
   ngOnInit() {
     TimeAgo.addLocale(en);
-    this.timeAgo = new TimeAgo('en-GB')
+    this.timeAgo = new TimeAgo('en-GB');
   }
 
 }
