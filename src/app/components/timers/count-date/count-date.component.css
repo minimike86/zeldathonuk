@@ -1,8 +1,15 @@
 .cntdwn {
-  background: -webkit-linear-gradient(-86deg, #20f0d8 5%, #15a6d3 53%, #d1ffff 91%);
+  background: -webkit-linear-gradient(-86deg, darkred 5%, red 53%, indianred 91%);
   -webkit-background-clip: text;
   -webkit-text-stroke: 0.05em #ffffff;
   color: transparent;
+}
+
+.cntdwn-blue {
+ background: -webkit-linear-gradient(-86deg, #20f0d8 5%, #15a6d3 53%, #d1ffff 91%);
+ -webkit-background-clip: text;
+ -webkit-text-stroke: 0.05em #ffffff;
+ color: transparent;
 }
 
 .gameblast {

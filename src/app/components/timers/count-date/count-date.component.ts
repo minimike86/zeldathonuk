@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {ActivatedRoute} from "@angular/router";
-import {interval, Observable, Subscription} from "rxjs";
+import {ActivatedRoute} from '@angular/router';
+import {interval, Observable, Subscription} from 'rxjs';
 
 @Component({
   selector: 'app-count-date',
@@ -10,6 +10,8 @@ import {interval, Observable, Subscription} from "rxjs";
 export class CountDateComponent implements OnInit {
   @Input() autoStart: boolean;
   private routeSub: any;
+
+  public currentDate: number = Date.now();
 
   public subscription: Subscription;
   private secondsCounter$: Observable<any>;
@@ -23,8 +25,8 @@ export class CountDateComponent implements OnInit {
   constructor(private route: ActivatedRoute) {
     this.secondsCounter$ = interval(500);
     this.routeSub = this.route.queryParamMap.subscribe(params => {
-      this.autoStart = parseInt(params.get('autoStart')) === 1;
-      this.futureDate = new Date(parseInt(params.get('futureDate')));
+      this.autoStart = parseInt(params.get('autoStart'), 0) === 1;
+      this.futureDate = new Date(parseInt(params.get('futureDate'), 0));
     });
   }
 
@@ -55,9 +57,9 @@ export class CountDateComponent implements OnInit {
   updateTimer(): void {
     const now = new Date();
     const milliseconds = this.futureDate.getTime() - now.getTime();
-    const days = Math.floor(milliseconds / (1000*60*60*24));
-    const hours = Math.floor(((milliseconds / (1000*60*60)) % 24));
-    const minutes = Math.floor(((milliseconds / (1000*60)) % 60));
+    const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(((milliseconds / (1000 * 60 * 60)) % 24));
+    const minutes = Math.floor(((milliseconds / (1000 * 60)) % 60));
     const seconds = Math.floor((milliseconds / 1000) % 60);
     console.log(milliseconds);
     if (milliseconds > 0) {
@@ -119,8 +121,8 @@ export class CountDateComponent implements OnInit {
 }
 
 export interface TimerToDate {
-  days: string,
-  hours: string,
-  minutes: string,
-  seconds: string
+  days: string;
+  hours: string;
+  minutes: string;
+  seconds: string;
 }
