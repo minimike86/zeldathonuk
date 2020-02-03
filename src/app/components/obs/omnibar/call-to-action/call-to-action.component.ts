@@ -8,6 +8,8 @@ import { Component, OnInit } from '@angular/core';
 export class CallToActionComponent implements OnInit {
   public callToAction = true;
 
+  public currentDate: number = Date.now();
+
   constructor() { }
 
   ngOnInit() {

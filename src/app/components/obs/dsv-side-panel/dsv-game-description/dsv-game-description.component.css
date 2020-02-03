@@ -71,7 +71,7 @@
   width: 500px;
   height: 100px;
   opacity: 0.5;
-  background-image: url("../../../../../assets/img/GB19_logo_for_website2.png");
+  background-image: url("../../../../../assets/img/GB_Background_nologo.png");
   background-repeat: no-repeat;
   background-position: 50% 0;
   -o-background-size: cover;
@@ -89,7 +89,7 @@
   width: 751px;
   height: 80px;
   opacity: 0.5;
-  background-image: url("../../../../../assets/img/GB19_Background_withLOGO.png");
+  background-image: url("../../../../../assets/img/GB_Background_nologo.png");
   background-repeat: no-repeat;
   background-position: 50% 0;
   -o-background-size: cover;

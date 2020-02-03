@@ -140,13 +140,13 @@ li {
 
 .btn-gameblast {
   color: #fff;
-  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  background: url('../../../assets/img/GB_Background_nologo.png') no-repeat top center #f58220;
   border-color: #f58220;
 }
 
 .btn-gameblast:hover {
   color: #fff;
-  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  background: url('../../../assets/img/GB_Background_nologo.png') no-repeat top center #f58220;
   border-color: #f58220;
 }
 
@@ -158,7 +158,7 @@ li {
 .btn-gameblast.disabled,
 .btn-gameblast:disabled {
   color: #fff;
-  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  background: url('../../../assets/img/GB_Background_nologo.png') no-repeat top center #f58220;
   border-color: #f58220;
 }
 
@@ -166,7 +166,7 @@ li {
 .btn-gameblast:not(:disabled):not(.disabled).active,
 .show > .btn-gameblast.dropdown-toggle {
   color: #fff;
-  background: url('../../../assets/img/GB19_Background_withLOGO.png') no-repeat top center #f58220;
+  background: url('../../../assets/img/GB_Background_nologo.png') no-repeat top center #f58220;
   border-color: #f58220;
 }
 

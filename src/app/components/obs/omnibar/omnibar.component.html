@@ -21,8 +21,8 @@
        style="height:56px; max-height:56px; border-left: 2px solid #50529a;"
        id="donation_total_charity_logo">
     <div class="p-3">
-      <h2 class="dtotal m-0">
-        {{ ((fundraisingPageDetails | async)?.totalRaisedOnline + (fundraisingPageDetails | async)?.totalRaisedOffline) | currency:(fundraisingPageDetails | async)?.currencySymbol }}
+      <h2 class="dtotal m-0" *ngIf="(fundraisingPageDetails | async) as frpd">
+        {{ (frpd.totalRaisedOnline + frpd.totalRaisedOffline) | currency:frpd.currencySymbol }}
       </h2>
     </div>
     <img [src]="getCharityLogoUrl()"

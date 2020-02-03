@@ -27,7 +27,7 @@ export class Ds3AdPanelComponent implements OnInit {
     if (this.charityLogoSwap) {
       this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
     } else {
-      this.charityLogoUrl = '../../../../assets/img/GB19_logo_for_website2.png';
+      this.charityLogoUrl = '../../../../assets/img/GB_Background_nologo.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
   }

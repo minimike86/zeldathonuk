@@ -53,15 +53,11 @@
   position: relative;
   height:215px;
   width:691px;
-  background: linear-gradient(-90deg,
-    rgba(80,82,154, 0.35),
-    rgba(148,64,132, 0.65)
-  ),
-  url("../../../../assets/img/GB19_Background_withLOGO.png");
+  background: linear-gradient(-80deg, rgba(39, 216, 152, 0.65), rgba(98, 192, 211, 0.35)), url("../../../../assets/img/GB_Background_nologo.png");
   background-size: cover;
   background-position: bottom;
-  opacity: 0.5;
-  top: -185px;
+  opacity: 1;
+  top: -184px;
   left: 0;
   z-index: -1;
 }
