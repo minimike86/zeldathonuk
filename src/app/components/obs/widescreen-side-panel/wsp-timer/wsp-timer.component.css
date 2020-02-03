@@ -12,7 +12,7 @@
 .timer-text {
   background: rgb(225, 225, 225);
   -webkit-background-clip: text;
-  -webkit-text-stroke: 0.025em #990000;
+  -webkit-text-stroke: 0.035em black;
   font-size: 3em;
   font-family: 'Bungee', cursive;
   color: transparent;
@@ -21,7 +21,7 @@
 
 .timer-label {
   color: #f5f5f5;
-  -webkit-text-stroke: 0em transparent;
+  -webkit-text-stroke: 0 transparent;
   font-size: small;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"
 }
