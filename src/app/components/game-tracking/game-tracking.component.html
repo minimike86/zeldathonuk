@@ -1,24 +1,34 @@
 <div class="container-fluid">
 
-  <div class="d-flex flex-wrap">
-    <ng-template ngFor let-gameItem [ngForOf]="gameItems">
-      <div class="card m-1" style="width: 10%;">
-        <div class="card-header text-truncate small p-1">
-          {{ gameItem.name }}
-        </div>
-        <div class="d-flex justify-content-center card-body p-1">
-          <img class="align-self-center card-img"
-               style="height: 3em; width: 3em;"
-               [src]="gameItem.imgUrl"
-               [alt]="gameItem.name"
-               [title]="gameItem.name"
-               [ngClass]="gameItem.collected ? '' : 'img-greyscale'"
-               (click)="collectItem(gameItem, gameItems)">
-        </div>
-      </div>
-    </ng-template>
-  </div>
+  <ng-container *ngIf="(currentlyPlayingId$ | async) && (gameLineUp$ | async)">
 
-  <!-- <button (click)="addData()">Add Data</button> -->
+    <ng-template ngFor let-tempGameItemId [ngForOf]="(gameItemsId$ | async)">
+      <ng-container *ngIf="tempGameItemId.id === gameLineUp[currentlyPlayingId.index].gameProgressKey">
+
+        <div class="d-flex flex-wrap">
+          <ng-template ngFor let-gameItem [ngForOf]="tempGameItemId.items">
+            <div class="card m-1" style="width: 10%;">
+              <div class="card-header text-truncate small p-1">
+                {{ gameItem.name }}
+              </div>
+              <div class="d-flex justify-content-center card-body p-1">
+                <img class="align-self-center card-img"
+                     style="height: 3em; width: 3em;"
+                     [src]="gameItem.imgUrl"
+                     [alt]="gameItem.name"
+                     [title]="gameItem.name"
+                     [ngClass]="gameItem.collected ? '' : 'img-greyscale'"
+                     (click)="collectItem(gameItem, tempGameItemId.items)">
+              </div>
+            </div>
+          </ng-template>
+        </div>
+
+      </ng-container>
+    </ng-template>
+
+  </ng-container>
+
+  <button class="btn btn-primary mt-4" hidden (click)="addData()">Add Data</button>
 
 </div>

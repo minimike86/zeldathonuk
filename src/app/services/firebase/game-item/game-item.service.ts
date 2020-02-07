@@ -15,12 +15,12 @@ export class GameItemService {
 
   constructor(private db: AngularFirestore) {
     this.gameItemsCollection = db.collection<GameItems>('/game-progress');
-    this.getGameItems().subscribe( data => {
+    this.getGameItemsIds().subscribe( data => {
       this.gameItemsData = data;
     });
   }
 
-  getGameItems(): Observable<GameItemsId[]> {
+  getGameItemsIds(): Observable<GameItemsId[]> {
     return this.gameItemsCollection.snapshotChanges().pipe(
       map(actions => actions.map(a => {
         const id = a.payload.doc.id;
@@ -1605,7 +1605,1344 @@ export class GameItemService {
         ]});
   }
 
-  public addData() {
+  public addSkywardSwordData() {
+    this.gameItemsCollection.doc('SKYWARD-SWORD').set({
+      'items':
+        [
+          {
+            'name': 'Practice Sword',
+            'imgUrl': '../../../../../assets/img/game-items/ss/26px-PracticeSword-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goddess Sword',
+            'imgUrl': '../../../../../assets/img/game-items/ss/26px-GoddessSword-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goddess Longsword',
+            'imgUrl': '../../../../../assets/img/game-items/ss/26px-GoddessLongsword-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goddess White Sword',
+            'imgUrl': '../../../../../assets/img/game-items/ss/26px-GoddessWhiteSword-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Master Sword',
+            'imgUrl': '../../../../../assets/img/game-items/ss/26px-MasterSword-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'false Master Sword',
+            'imgUrl': '../../../../../assets/img/game-items/ss/26px-false-Master-Sword-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Adventure Pouch',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Adventure-Pouch-Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Sailcloth',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Sailcloth-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Digging Mitts',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Digging-Mitts-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Mogma Mitts',
+            'imgUrl': '../../../../../assets/img/game-items/ss/MogmaMitts-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goddess\'s Harp',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Goddess\'sHarp-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Water Dragon Scale',
+            'imgUrl': '../../../../../assets/img/game-items/ss/WaterDragonScale-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fireshield Earrings',
+            'imgUrl': '../../../../../assets/img/game-items/ss/FireshieldEarrings-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Small Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/SmallWallet-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Medium Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/MediumWallet-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Big Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/BigWallet-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Extra Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Extra_wallet.png',
+            'collected': false
+          },
+          {
+            'name': 'Giant Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/GiantWallet-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Tycoon Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/TycoonWallet-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Bird Statuette',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Bird-Statuette-Box.png',
+            'collected': false
+          },
+          {
+            'name': 'Emerald Tablet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Emerald-Tablet.png',
+            'collected': false
+          },
+          {
+            'name': 'Ruby Tablet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Rubytablet.png',
+            'collected': false
+          },
+          {
+            'name': 'Amber Tablet',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Ambertablet.png',
+            'collected': false
+          },
+          {
+            'name': 'Life Tree Seedling',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Life-Tree-Seedling.png',
+            'collected': false
+          },
+          {
+            'name': 'Life Tree Fruit',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Life-Tree-Fruit.png',
+            'collected': false
+          },
+          {
+            'name': 'Ancient Sea Chart',
+            'imgUrl': '../../../../../assets/img/game-items/ss/44px-Ancient-Sea-Chart.png',
+            'collected': false
+          },
+          {
+            'name': 'Spirit Vessel Din',
+            'imgUrl': '../../../../../assets/img/game-items/ss/33px-Spirit-Vessel-din.png',
+            'collected': false
+          },
+          {
+            'name': 'Spirit Vessel Farore',
+            'imgUrl': '../../../../../assets/img/game-items/ss/33px-Spirit-Vessel-farore.png',
+            'collected': false
+          },
+          {
+            'name': 'Spirit Vessel Nayru',
+            'imgUrl': '../../../../../assets/img/game-items/ss/33px-Spirit-Vessel-nayru.png',
+            'collected': false
+          },
+          {
+            'name': 'Spirit Vessel',
+            'imgUrl': '../../../../../assets/img/game-items/ss/33px-Spirit-Vessel.png',
+            'collected': false
+          },
+          {
+            'name': 'Stone Trials',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Stone-Trials.png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce of Wisdom',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Triforce-Piece.png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce of Power',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Triforce-Piece.png',
+            'collected': false
+          },
+          {
+            'name': 'Triforce of Courage',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Triforce-Piece.png',
+            'collected': false
+          },
+          {
+            'name': 'Wooden Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/WoodenShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Banded Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Banded_Shield_SS.png',
+            'collected': false
+          },
+          {
+            'name': 'Braced Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/BracedShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Iron Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/IronShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Reinforced Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/ReinforcedShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fortified Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/FortifiedShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Sacred Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/65px-SacredShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Divine Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/65px-DivineShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goddess Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/65px-GoddessShield-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Hylian Shield',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Shieldss.jpg',
+            'collected': false
+          },
+          {
+            'name': 'Slingshot',
+            'imgUrl': '../../../../../assets/img/game-items/ss/61px-SkywardSwordSlingshot.png',
+            'collected': false
+          },
+          {
+            'name': 'Scattershot',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Scattershot_SS.png',
+            'collected': false
+          },
+          {
+            'name': 'Bug-Net',
+            'imgUrl': '../../../../../assets/img/game-items/ss/65px-Bug-Net-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Big-Bug-Net',
+            'imgUrl': '../../../../../assets/img/game-items/ss/73px-Big-Bug-Net-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Beetle',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-SS_Beetle.png',
+            'collected': false
+          },
+          {
+            'name': 'Hook Beetle',
+            'imgUrl': '../../../../../assets/img/game-items/ss/76px-HookBeetle-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Quick Beetle',
+            'imgUrl': '../../../../../assets/img/game-items/ss/73px-QuickBeetle-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Tough Beetle',
+            'imgUrl': '../../../../../assets/img/game-items/ss/69px-ToughBeetle-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Bombs',
+            'imgUrl': '../../../../../assets/img/game-items/ss/63px-SSBomb.png',
+            'collected': false
+          },
+          {
+            'name': 'Bow',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Bow-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Iron Bow',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-IronBow-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Sacred Bow',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-SacredBow-SS-Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Gust Bellows',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Gust_Bellow.png',
+            'collected': false
+          },
+          {
+            'name': 'Whip',
+            'imgUrl': '../../../../../assets/img/game-items/ss/SS_Whip2.png',
+            'collected': false
+          },
+          {
+            'name': 'Double Clawshots',
+            'imgUrl': '../../../../../assets/img/game-items/ss/80px-Double-Clawshots-Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Goddess Cube',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Goddess-Cube.png',
+            'collected': false
+          },
+          {
+            'name': 'Water Basin',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Water-Basin.png',
+            'collected': false
+          },
+          {
+            'name': 'Key Piece',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Piece-Key.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Carving',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Golden-Carving.png',
+            'collected': false
+          },
+          {
+            'name': 'Dragon Sculpture',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Dragon-Sculpture.png',
+            'collected': false
+          },
+          {
+            'name': 'Ancient Circuit',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Ancient-Circuit.png',
+            'collected': false
+          },
+          {
+            'name': 'Blessed Idol',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Blessed-Idol.png',
+            'collected': false
+          },
+          {
+            'name': 'Squid Carving',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Squid-Carving.png',
+            'collected': false
+          },
+          {
+            'name': 'Mysterious Crystals',
+            'imgUrl': '../../../../../assets/img/game-items/ss/Mysterious-Crystals.png',
+            'collected': false
+          },
+        ]});
+  }
+
+  public addLinksAwakeningRemakeData() {
+    this.gameItemsCollection.doc('LINKS-AWAKENING-SWITCH').set({
+      'items':
+        [
+          {
+            'name': 'Shield',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/55px-LANS_Shield_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Sword',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/26px-LANS_Sword_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Bomb',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/44px-LANS_Bomb_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Boomerang',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Boomerang_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Bow',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Bow_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Fairy Bottle',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/51px-LANS_Fairy_Bottle_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Hookshot',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Hookshot_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Koholint Sword',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/26px-LANS_Koholint_Sword_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Magic Powder',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/44px-LANS_Magic_Powder_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Magical Rod',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/24px-LANS_Magic_Rod_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Mirror Shield',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/54px-LANS_Mirror_Shield_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Ocarina',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Ocarina_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Pegasus Boots',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Pegasus_Boots_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Power Bracelet',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Power_Bracelet_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Powerful Bracelet',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Powerful_Bracelet_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Roc\'s Feather',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/42px-LANS_Roc\'s_Feather_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Shovel',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/31px-LANS_Shovel_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Angler Key',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/35px-LANS_Angler_Key_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Bird Key',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/34px-LANS_Bird_Key_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Face Key',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/32px-LANS_Face_Key_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Slime Key',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/26px-LANS_Slime_Key_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Tail Key',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/25px-LANS_Tail_Key_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Conch Horn',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Conch_Horn_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Coral Triangle',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/51px-LANS_Coral_Triangle_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Full Moon Cello',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/31px-LANS_Full_Moon_Cello_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Organ of Evening Calm',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Organ_of_Evening_Calm_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Sea Lily\'s Bell',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/42px-LANS_Sea_Lily\'s_Bell_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Surf Harp',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/53px-LANS_Surf_Harp_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Thunder Drum',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/52px-LANS_Thunder_Drum_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Wind Marimba',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/62px-LANS_Wind_Marimba_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Yoshi Doll',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/38px-LANS_Yoshi_Doll_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Yoshi Doll 🠊 Ribbon',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Ribbon_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Ribbon 🠊 Dog Food',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/62px-LANS_Dog_Food_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Dog Food 🠊 Bananas',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/60px-LANS_Bananas_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Bananas 🠊 Stick',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/23px-LANS_Stick_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Stick 🠊 Beehive',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Honeycomb_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Beehive 🠊 Pineapple',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/38px-LANS_Pineapple_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Pineapple 🠊 Hibiscus',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/62px-LANS_Hibiscus_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Hibiscus 🠊 Goat\'s Letter',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Goat\'s_Letter_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Goat\'s Letter 🠊 Broom',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/24px-LANS_Broom_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Broom 🠊 Fishing Hook',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/40px-LANS_Fishing_Hook_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Fishing Hook 🠊 Necklace',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/59px-LANS_Necklace_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Necklace 🠊 Scale',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Scale_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Scale 🠊 Magnifying Lens',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/35px-LANS_Magnifying_Lens_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Flippers',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/36px-LANS_Flippers_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Leaf #1',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Golden_Leaf_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Leaf #2',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Golden_Leaf_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Leaf #3',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Golden_Leaf_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Leaf #4',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Golden_Leaf_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Leaf #5',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Golden_Leaf_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Seashell Sensor',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/24px-LANS_Seashell_Sensor_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Secret Medicine',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Secret_Medicine_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Sleepy Toadstool',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/55px-LANS_Sleepy_Toadstool_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Middleweight Lure',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Middleweight_Lure_Model.png',
+            'collected': false
+          },
+          {
+            'name': 'Heavyweight Lure',
+            'imgUrl': '../../../../../assets/img/game-items/lasr/64px-LANS_Heavyweight_Lure_Model.png',
+            'collected': false
+          },
+        ]});
+  }
+
+  public addOcarinaOfTimeData() {
+    this.gameItemsCollection.doc('OCARINA-OF-TIME').set({
+      'items':
+        [
+          {
+            'name': 'Kokiri Tunic',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Kokiri_Tunic_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Kokiri Boots',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Kokiri_Boots_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Kokiri Sword',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Kokiri_Sword_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Deku Shield',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Deku_Shield_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Deku Stick',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Deku_Stick_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Deku Nut',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Deku_Nut_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fairy Slingshot',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Fairy_Slingshot_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Kokiri\'s Emerald',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Kokiri\'s_Emerald_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fairy Ocarina',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Fairy_Ocarina_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Weird Egg',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Weird_Egg_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Cucco',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Cucco_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Zelda\'s Letter',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Zelda\'s_Letter_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Hylian Shield',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Hylian_Shield_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Bottle',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Bottle_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goron\'s Bracelet',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Goron_Bracelet_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Bomb Bag',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Bomb_Bag_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Bomb',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Bomb_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goron\'s Ruby',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Goron\'s_Ruby_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Magic Bean',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Magic_Bean_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Silver Scale',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Silver_Scale_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Ruto\'s Letter',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Ruto\'s_Letter_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fish',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Fish_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Boomerang',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Boomerang_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Zora\'s Sapphire',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Zora\'s_Sapphire_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Ocarina of Time',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Ocarina_of_Time_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Master Sword',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Master_Sword_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Hookshot',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Hookshot_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fairy Bow',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Fairy_Bow_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Megaton Hammer',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Megaton_Hammer_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Longshot',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Longshot_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Lens of Truth',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Lens_of_Truth_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fire Arrow',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Fire_Arrow_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Ice Arrow',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Ice_Arrow_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Light Arrow',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Light_Arrow_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Din\'s Fire',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Din\'s_Fire_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Farore\'s Wind',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Farore\'s_Wind_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Nayru\'s Love',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Nayru\'s_Love_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Biggoron Sword',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Biggoron\'s_Sword_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Goron Tunic',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Goron_Tunic_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Zora Tunic',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Zora_Tunic_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Iron Boots',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Iron_Boots_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Hover Boots',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Hover_Boots_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Mirror Shield',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Mirror_Shield_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Silver Gauntlets',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Silver_Gauntlets_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Gauntlets',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Golden_Gauntlets_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Adult\'s Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Adult\'s_Wallet_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Giant\'s Wallet',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Giant\'s_Wallet_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Scale',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Golden_Scale_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Light Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Light_Medallion_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Forest Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Forest_Medallion_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Fire Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Fire_Medallion_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Water Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Water_Medallion_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Spirit Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Spirit_Medallion_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Shadow Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Shadow_Medallion_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Stone of Agony',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT_Stone_of_Agony_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Shard of Agony',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Shard_of_Agony_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Gerudo Token',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Gerudo_Token_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Skulltula Token',
+            'imgUrl': '../../../../../assets/img/game-items/oot/OoT3D_Token_Icon.png',
+            'collected': false
+          },
+        ]});
+  }
+
+  public addLinkToThePastData() {
+    this.gameItemsCollection.doc('LINK-TO-THE-PAST').set({
+      'items':
+        [
+          {
+            'name': 'Green Clothes',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Green_Clothes_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Fighter\'s Sword',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Fighter\'s_Sword_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Fighter\'s Shield',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Fighter\'s_Shield_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Bow',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Bow_&_Arrows_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Pendant of Courage',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Pendant_of_Courage_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Power Glove',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Power_Glove_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Book of Mudora',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Book_of_Mudora_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Pendant of Power',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Pendant_of_Power_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Moon Pearl',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Moon_Pearl_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Pendant of Wisdom',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Pendant_of_Wisdom_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Master Sword',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Master_Sword_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Master Sword Lv2',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Master_Sword_Lv2_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Master Sword Lv3',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Master_Sword_Lv3_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Red Shield',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Red_Shield_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Mirror Shield',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Mirror_Shield_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Blue Mail',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Blue_Mail_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Red Mail',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Red_Mail_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Pegasus Shoes',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Pegasus_Shoes_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Titan\'s Mitt',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Titan\'s_Mitt_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Zora\'s Flippers',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Zora\'s_Flippers_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Silver Arrows',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Bow_&_Silver_Arrows_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Boomerang',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Boomerang_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Magical Boomerang',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Magical_Boomerang_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Hookshot',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/Hookshot.png',
+            'collected': false
+          },
+          {
+            'name': 'Bombs',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Bomb_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Mushroom',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Mushroom_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Magic Powder',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Magic_Powder_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Fire Rod',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/FireRod.png',
+            'collected': false
+          },
+          {
+            'name': 'Ice Rod',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Ice_Rod_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Bombos Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Bombos_Medallion_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Ether Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/Ether.png',
+            'collected': false
+          },
+          {
+            'name': 'Quake Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Quake_Medallion_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Lantern',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Lantern_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Hammer',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Hammer_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Shovel',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Shovel_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Ocarina',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/Flute.png',
+            'collected': false
+          },
+          {
+            'name': 'Bug-Catching Net',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/Bug-CatchingNet.png',
+            'collected': false
+          },
+          {
+            'name': 'Magic Bottle',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Magic_Bottle_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Cane of Somaria',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Cane_of_Somaria_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Cane of Byrna',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Cane_of_Byrna_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Magic Cape',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Magic_Cape_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Magic Mirror',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Magic_Mirror_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Super Bomb',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/SuperBomb.png',
+            'collected': false
+          },
+          {
+            'name': 'Golden Bee',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/ALttP_Bee_Sprite.png',
+            'collected': false
+          },
+          {
+            'name': 'Crystal #1',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/CrystalMaiden.gif',
+            'collected': false
+          },
+          {
+            'name': 'Crystal #2',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/CrystalMaiden.gif',
+            'collected': false
+          },
+          {
+            'name': 'Crystal #3',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/CrystalMaiden.gif',
+            'collected': false
+          },
+          {
+            'name': 'Crystal #4',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/CrystalMaiden.gif',
+            'collected': false
+          },
+          {
+            'name': 'Crystal #5',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/CrystalMaiden.gif',
+            'collected': false
+          },
+          {
+            'name': 'Crystal #6',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/CrystalMaiden.gif',
+            'collected': false
+          },
+          {
+            'name': 'Crystal #7',
+            'imgUrl': '../../../../../assets/img/game-items/lttp/CrystalMaiden.gif',
+            'collected': false
+          },
+        ]});
+  }
+
+  public addBreathOfTheWildData() {
+    this.gameItemsCollection.doc('BREATH-OF-THE-WILD').set({
+      'items':
+        [
+          {
+            'name': 'Sheikah Slate',
+            'imgUrl': '../../../../../assets/img/game-items/botw/40px-BotW_Sheikah_Slate_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Round Bomb Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_Remote_Bomb_Rune_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Square Bomb Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_Remote_Bomb_Rune_Icon_2.png',
+            'collected': false
+          },
+          {
+            'name': 'Magnesis Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_Magnesis_Rune_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Stasis Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_Stasis_Rune_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Cryonis Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_Cryonis_Rune_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Camera Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_Camera_Rune_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Master Cycle Zero Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_Master_Cycle_Zero_Rune_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'amiibo Rune',
+            'imgUrl': '../../../../../assets/img/game-items/botw/64px-BotW_amiibo_Rune_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Paraglider',
+            'imgUrl': '../../../../../assets/img/game-items/botw/40px-BotW_Paraglider_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Master Sword',
+            'imgUrl': '../../../../../assets/img/game-items/botw/BotW_Master_Sword_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Bow of Light',
+            'imgUrl': '../../../../../assets/img/game-items/botw/BotW_Bow_of_Light_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Hylian Shield',
+            'imgUrl': '../../../../../assets/img/game-items/botw/BotW_Hylian_Shield_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Champion\'s Tunic',
+            'imgUrl': '../../../../../assets/img/game-items/botw/BotW_Champion\'s_Tunic_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Flamebreaker Set',
+            'imgUrl': '../../../../../assets/img/game-items/botw/96px-BotW_Link_Wearing_Flamebreaker_Set.jpg',
+            'collected': false
+          },
+          {
+            'name': 'Gerudo Set',
+            'imgUrl': '../../../../../assets/img/game-items/botw/106px-BotW_Link_Wearing_Gerudo_Set.jpg',
+            'collected': false
+          },
+          {
+            'name': 'Snowquill Set',
+            'imgUrl': '../../../../../assets/img/game-items/botw/105px-BotW_Link_Wearing_Snowquill_Set.jpg',
+            'collected': false
+          },
+          {
+            'name': 'Zora Set',
+            'imgUrl': '../../../../../assets/img/game-items/botw/103px-BotW_Link_Wearing_Zora_Set.jpg',
+            'collected': false
+          },
+          {
+            'name': 'Thunder Helm',
+            'imgUrl': '../../../../../assets/img/game-items/botw/BotW_Thunder_Helm_Key_Item_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Mipha\'s Grace',
+            'imgUrl': '../../../../../assets/img/game-items/botw/40px-BotW_Mipha\'s_Grace_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Mipha\'s Grace ＋',
+            'imgUrl': '../../../../../assets/img/game-items/botw/40px-BotW_Mipha\'s_Grace_＋_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Revali\'s Gale',
+            'imgUrl': '../../../../../assets/img/game-items/botw/50px-BotW_Revali\'s_Gale_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Revali\'s Gale ＋',
+            'imgUrl': '../../../../../assets/img/game-items/botw/50px-BotW_Revali\'s_Gale_＋_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Daruk\'s_Protection',
+            'imgUrl': '../../../../../assets/img/game-items/botw/50px-BotW_Daruk\'s_Protection_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Daruk\'s Protection ＋',
+            'imgUrl': '../../../../../assets/img/game-items/botw/50px-BotW_Daruk\'s_Protection_＋_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Urbosa\'s_Fury',
+            'imgUrl': '../../../../../assets/img/game-items/botw/50px-BotW_Urbosa\'s_Fury_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Urbosa\'s Fury ＋',
+            'imgUrl': '../../../../../assets/img/game-items/botw/50px-BotW_Urbosa\'s_Fury_＋_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Hestu\'s Maracas',
+            'imgUrl': '../../../../../assets/img/game-items/botw/40px-BotW_Hestu\'s_Maracas_Icon.png',
+            'collected': false
+          },
+          {
+            'name': 'Travel Medallion',
+            'imgUrl': '../../../../../assets/img/game-items/botw/BotW_Travel_Medallion_Icon.png',
+            'collected': false
+          },
+        ]});
   }
 
 }
