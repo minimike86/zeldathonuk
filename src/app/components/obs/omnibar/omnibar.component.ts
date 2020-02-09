@@ -34,9 +34,11 @@ export class OmnibarComponent implements OnInit {
   }
 
   changeOmnibarContent(): void {
+
     console.log('changeOmnibarContent: ',
       this.showOmnibarContent1, this.showOmnibarContent2,
       this.showOmnibarContent3, this.showOmnibarContent4);
+
     if (!this.showOmnibarContent1 && !this.showOmnibarContent2 && !this.showOmnibarContent3 && !this.showOmnibarContent4) {
       this.showOmnibarContent1 = true;
     } else if (this.showOmnibarContent1) {
@@ -54,13 +56,14 @@ export class OmnibarComponent implements OnInit {
       this.showOmnibarContent3 = false;
       this.showOmnibarContent4 = false;
     }
+
   }
 
   updateCharityLogoUrl(): void {
     if (this.charityLogoSwap) {
-      this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
-    } else {
       this.charityLogoUrl = '../../../../assets/img/GB20_logo_for_website.png';
+    } else {
+      this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
   }

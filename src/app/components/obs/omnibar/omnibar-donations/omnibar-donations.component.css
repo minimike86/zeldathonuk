@@ -73,3 +73,19 @@
   -webkit-text-fill-color: white; /* Will override color (regardless of order) */
   text-shadow: 2px 2px black;
 }
+
+.call-to-action-white {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.call-to-action-blue {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: rgb(59, 148, 224); /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}

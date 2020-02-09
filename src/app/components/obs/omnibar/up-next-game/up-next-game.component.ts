@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import {CurrentlyPlayingService} from '../../../../services/firebase/currently-playing/currently-playing.service';
+import {GameLineupService} from '../../../../services/firebase/game-lineup/game-lineup.service';
 import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
 import {ZeldaGame} from '../../../../models/zelda-game';
+import {Observable} from 'rxjs';
+import {GameLineUp} from '../../../../services/firebase/game-lineup/game-lineup';
+import {map} from 'rxjs/operators';
 
 @Component({
   selector: 'app-up-next-game',
@@ -10,26 +14,61 @@ import {ZeldaGame} from '../../../../models/zelda-game';
 })
 export class UpNextGameComponent implements OnInit {
   public showUpNextGame = true;
-  public currentlyPlaying: CurrentlyPlayingId;
-  public upNextGame: ZeldaGame;
-  public upNextGames: ZeldaGame[] = [];
+  public currentlyPlayingId: CurrentlyPlayingId;
+  public gameLineUp: Map<string, ZeldaGame>;
 
-  constructor(private currentlyPlayingService: CurrentlyPlayingService) {
-    currentlyPlayingService.getCurrentlyPlaying().subscribe(data => {
-      this.currentlyPlaying = data[0];
-      this.setNextGame(this.getGameIndex(this.currentlyPlaying.id));
-    });
+  constructor( private currentlyPlayingService: CurrentlyPlayingService,
+               private gameLineupService: GameLineupService ) {
   }
 
   ngOnInit() {
+    this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
+      this.currentlyPlayingId = data[0];
+    })).subscribe();
+    this.gameLineupService.getGameLineUp().pipe(map(data => {
+      this.gameLineUp = data[0].gameLineUp;
+    })).subscribe();
   }
 
-  getGameIndex(gameName: string): number {
-    return 0;
-  }
-
-  setNextGame(gameIndex: number): void {
-    this.upNextGame = this.upNextGames[gameIndex];
+  getNextGame(): ZeldaGame {
+    if (this.gameLineUp) {
+      switch (this.currentlyPlayingId.index) {
+        case 'WWHD':
+          return this.gameLineUp['SS'];
+        case 'SS':
+          return this.gameLineUp['LASR'];
+        case 'LASR':
+          return this.gameLineUp['OOT'];
+        case 'OOT':
+          return this.gameLineUp['LTTP'];
+        case 'LTTP':
+          return this.gameLineUp['BOTW'];
+        case 'BOTW':
+          return {
+            active: true,
+            coverArt: '',
+            gameEstimate: '',
+            gameName: 'The End',
+            gamePlatform: '',
+            gameProgressKey: '',
+            gameRelYear: '',
+            gameType: ''
+          };
+        default:
+          break;
+      }
+    } else {
+      return {
+        active: true,
+        coverArt: '',
+        gameEstimate: '',
+        gameName: 'Loading...',
+        gamePlatform: '',
+        gameProgressKey: '',
+        gameRelYear: '',
+        gameType: ''
+      };
+    }
   }
 
 }

@@ -13,7 +13,7 @@ export class OmnibarDonationsComponent implements OnInit {
   public fundraisingPageDonations: Observable<FundraisingPageDonations>;
   public timeAgo: TimeAgo;
 
-  constructor(private jgServiceService: JgServiceService) {
+  constructor( private jgServiceService: JgServiceService ) {
     this.fundraisingPageDonations = jgServiceService.getFundraisingPageDonations();
   }
 

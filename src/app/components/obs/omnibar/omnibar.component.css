@@ -16,7 +16,7 @@
 .dtotal {
   background: white;
   -webkit-background-clip: text;
-  -webkit-text-stroke: 0.025em #313539;
+  -webkit-text-stroke: 0.035em royalblue;
   font-size: 3em;
   font-family: 'Bungee', cursive;
   color: transparent;

@@ -1,13 +1,13 @@
 <ng-template [ngIf]="callToAction">
   <div class="d-flex align-items-center">
     <div class="h1 call-to-action-white mr-3 mb-0">
-      Donate at
+      Consider making a donation at
     </div>
-    <div class="h1 call-to-action-purple mr-3 mb-0">
-      https://www.zeldathon.co.uk
+    <div class="h1 call-to-action-blue mr-3 mb-0">
+      donate.zeldathon.co.uk
     </div>
     <div class="h1 call-to-action-orange mb-0">
-      #GameBlast19
+      #GameBlast{{ currentDate | date:'yyyy' }}
     </div>
   </div>
 </ng-template>

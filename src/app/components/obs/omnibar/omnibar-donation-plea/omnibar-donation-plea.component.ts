@@ -7,6 +7,7 @@ import { Component, OnInit } from '@angular/core';
 })
 export class OmnibarDonationPleaComponent implements OnInit {
   public callToAction = true;
+  public currentDate: number = Date.now();
 
   constructor() { }
 

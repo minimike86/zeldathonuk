@@ -8,17 +8,24 @@
   </div>
 
   <div class="donation-container">
-    <div class="donation mr-2" *ngFor="let donor of (fundraisingPageDonations | async)?.donations.slice(-10)">
-      <div class="d-flex justify-content-around text-white h-100 p-1">
-        <div class="align-self-center h6 m-0">{{ donor.donorDisplayName }}</div>
-        <div class="align-self-center h3 m-0">{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</div>
+    <ng-container *ngIf="(fundraisingPageDonations | async) as fpd">
+      <div class="donation mr-2" *ngFor="let donor of fpd.donations.slice(-10)">
+        <div class="d-flex justify-content-around text-white h-100 p-1">
+          <div class="align-self-center h6 m-0">{{ donor.donorDisplayName }}</div>
+          <div class="align-self-center h3 m-0">{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</div>
+        </div>
       </div>
-    </div>
+    </ng-container>
   </div>
 
 </ng-template>
 <ng-template [ngIf]="(fundraisingPageDonations | async)?.donations.length === 0">
-  <div>
-    No donors yet! Please consider starting us off!
+  <div class="d-flex align-items-center">
+    <div class="h1 call-to-action-white mr-3 mb-0">
+      No donors yet!
+    </div>
+    <div class="h1 call-to-action-blue mr-3 mb-0">
+      donate.zeldathon.co.uk
+    </div>
   </div>
 </ng-template>
