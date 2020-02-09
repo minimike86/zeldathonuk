@@ -17,7 +17,7 @@ export class GameTrackingComponent implements OnInit {
   public currentlyPlayingId: CurrentlyPlayingId;
   public currentlyPlayingId$: Observable<CurrentlyPlayingId>;
   private gameLineUp: Map<string, ZeldaGame>;
-  private gameLineUp$: Observable<Map<string, ZeldaGame>>;
+  public gameLineUp$: Observable<Map<string, ZeldaGame>>;
   public gameItemsId: GameItemsId[] = [];
   public gameItemsId$: Observable<GameItemsId[]>;
   public gameProgressKey: string;
