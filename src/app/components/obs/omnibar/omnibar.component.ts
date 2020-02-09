@@ -60,7 +60,7 @@ export class OmnibarComponent implements OnInit {
     if (this.charityLogoSwap) {
       this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
     } else {
-      this.charityLogoUrl = '../../../../assets/img/GB_Background_nologo.png';
+      this.charityLogoUrl = '../../../../assets/img/GB20_logo_for_website.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
   }

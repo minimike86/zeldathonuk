@@ -21,42 +21,49 @@
     </div>
   </div>
 
-  <h2 class="text-white my-5">Challenges</h2>
+  <h2 class="text-white my-5">Prizes</h2>
   <div class="d-flex my-2">
 
     <div class="d-inline-flex flex-fill">
 
-      <div class="card text-white bg-secondary w-25 mr-2">
+      <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let prize of prizes">
         <div class="card-header">
-          <h5>EXERCISE</h5> <span class="badge badge-success mr-1">Team</span> <span class="badge badge-warning">During certain hours</span>
+          {{ prize.name }}
         </div>
-        <img class="card-img" style="width: 275px; height: 275px;" src="../../../assets/img/challenges/exercise.jpg">
-        <div class="card-body">
-          You donate and we have to exercise. Push-ups, sit-ups, <a class="font-weight-bold text-white" href="https://clips.twitch.tv/SolidFamousLaptopOSsloth" target="_blank">backflips</a>...
+        <div class="d-flex justify-content-center" style="height: 250px; background: dimgrey;">
+          <img class="card-img align-self-center" [alt]="prize.name" [src]="prize.imageUrl">
         </div>
+        <div class="card-body" [innerHTML]="prize.description"></div>
         <div class="card-footer small">
-          Donation Total: <b>Any</b>
+          <div class="d-flex justify-content-between">
+            <div>
+              Quantity: <b>{{ prize.quantity }}</b>
+            </div>
+            <div>
+              <span class="badge badge-success p-1" *ngIf="prize.won">WON</span>
+            </div>
+          </div>
         </div>
       </div>
 
     </div>
   </div>
 
-  <h2 class="text-white my-5">Prizes</h2>
+  <h2 class="text-white my-5">Challenges</h2>
   <div class="d-flex my-2">
 
     <div class="d-inline-flex flex-fill">
 
-      <div class="card text-white bg-secondary w-25 mr-2">
+      <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let incentive of donationIncentives">
         <div class="card-header">
-          Ocarina of Time 3DS Promo Item
+          <h5>{{ incentive.name }}</h5>
+          <span class="badge mr-1" [ngClass]="incentive.typeColour">{{ incentive.type }}</span>
+          <span class="badge" [ngClass]="incentive.constraintColour">{{ incentive.constraint }}</span>
         </div>
-        <img class="card-img" style="width: 275px; height: 275px;" src="../../../assets/img/prizes/s-l300.jpg">
-        <div class="card-body">
-          <span class="font-weight-bold text-danger">Nintendo UK</span> have given us multiple Legend of Zelda promotional items for our prize winners to win!
-        </div>
+        <img class="card-img" style="height: 250px;" [alt]="incentive.name" [src]="incentive.imageUrl">
+        <div class="card-body" [innerHTML]="incentive.description"></div>
         <div class="card-footer small">
-          Quantity: <b>30</b>
+          Donate: <b>{{ incentive.donationAmount | currency:'GBP' }}</b>
         </div>
       </div>
 

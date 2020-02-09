@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {CountupService} from "../../../../services/countup-service/countup.service";
+import {CountupService} from '../../../../services/countup-service/countup.service';
 
 @Component({
   selector: 'app-wsp-timer',

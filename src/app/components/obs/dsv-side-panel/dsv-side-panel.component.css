@@ -1,5 +1,5 @@
 .side-panel {
-  border-right: 2px solid #50529a;
+  border-right: 2px solid rgb(9, 98, 224);
   height:1024px;
   width:751px;
   max-height:1024px;
@@ -45,9 +45,9 @@
 }
 
 .ds-top-screen {
-  border-left: 2px solid #50529a;
-  border-bottom: 2px solid #50529a;
-  border-right: 2px solid #50529a;
+  border-left: 2px solid rgb(9, 98, 224);
+  border-bottom: 2px solid rgb(9, 98, 224);
+  border-right: 2px solid rgb(9, 98, 224);
   background-color: #28a745;
   height: 489px;
   width: 650px;
@@ -63,7 +63,7 @@
 }
 
 .ds-bottom-screen {
-  border: 2px solid #50529a;
+  border: 2px solid rgb(9, 98, 224);
   background-color: #28a745;
   height: 488px;
   width: 650px;

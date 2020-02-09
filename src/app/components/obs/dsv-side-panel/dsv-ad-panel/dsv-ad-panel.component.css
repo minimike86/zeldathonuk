@@ -43,7 +43,7 @@
   color: darkgrey;
   opacity: 0.8;
   background: -webkit-linear-gradient(-45deg, #212529, #313539);
-  border: 1px solid #50529a;
+  border: 1px solid rgb(9, 98, 224);
   z-index: 1;
 }
 

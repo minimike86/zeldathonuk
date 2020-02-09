@@ -81,6 +81,10 @@ export class WspAdPanelComponent implements OnInit {
     imageUrls.push('url("../../../../../assets/img/obs-bg/Zelda-DLC-header.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-bg/Zelda-header.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-bg/oot2_bg.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-bg/EQFV1P4U4AEMBhG.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-bg/EQFV2QoU8AAsiGM.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-bg/EQFVz-PVUAEGpUM.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-bg/HEvAqqv.png")');
     // SPECIAL EFFECT IMAGES
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/5hfgyufk8.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/1310-1024x576.jpg")');

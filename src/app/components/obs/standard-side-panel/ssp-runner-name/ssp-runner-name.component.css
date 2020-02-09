@@ -1,6 +1,6 @@
 .runner-name {
   width: 90%;
-  border-top: 2px solid #50529a;
+  border-top: 2px solid rgb(9, 98, 224);
   background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%, #371276);
   color: rgb(225, 225, 225);
   -webkit-text-stroke: 0.025em #270266;

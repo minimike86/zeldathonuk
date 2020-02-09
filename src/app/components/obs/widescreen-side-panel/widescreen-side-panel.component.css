@@ -1,5 +1,5 @@
 .side-panel {
-  border-right: 2px solid #50529a;
+  border-right: 2px solid rgb(9, 98, 224);
   height:1024px;
   width:479px;
   max-height:1024px;
@@ -25,7 +25,7 @@
 }
 
 .adv-panel {
-  border-top: 2px solid #50529a;
+  border-top: 1px solid rgb(9, 98, 224);
   height:550px;
   width:479px;
   max-height:550px;
@@ -33,7 +33,7 @@
 }
 
 .bottom-panel {
-  border-top: 2px solid #50529a;
+  border-top: 2px solid rgb(9, 98, 224);
   height:215px;
   width:1442px;
   max-height:215px;
@@ -41,7 +41,7 @@
 }
 
 .name-timer-panel {
-  border-right: 2px solid #50529a;
+  border-right: 2px solid rgb(9, 98, 224);
   height:215px;
   width:691px;
   max-height:215px;
@@ -53,7 +53,7 @@
   position: relative;
   height:215px;
   width:691px;
-  background: linear-gradient(-80deg, rgba(39, 216, 152, 0.65), rgba(98, 192, 211, 0.35)), url("../../../../assets/img/GB_Background_nologo.png");
+  background: linear-gradient(-80deg, rgba(9, 98, 224, 0.65), rgba(116, 158, 253, 0.65)), url("https://38.media.tumblr.com/041f3fe0747f8d674825488a4579d316/tumblr_nkilh6Fbl41r85hlio1_500.gif");
   background-size: cover;
   background-position: bottom;
   opacity: 1;

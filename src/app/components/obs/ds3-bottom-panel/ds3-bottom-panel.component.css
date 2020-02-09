@@ -1,5 +1,5 @@
 .side-panel {
-  border-right: 2px solid #50529a;
+  border-right: 2px solid rgb(9, 98, 224);
   height:1024px;
   width:554px;
   max-height:1024px;
@@ -17,7 +17,7 @@
 
 .camera-panel {
   background-color: #28a745;
-  border-top: 2px solid #50529a;
+  border-top: 2px solid rgb(9, 98, 224);
   height:417px;
   width:554px;
   max-height:417px;
@@ -31,7 +31,7 @@
   top: 0;
   left: 0;
   background-color: #28a745;
-  border-bottom: 2px solid #50529a;
+  border-bottom: 2px solid rgb(9, 98, 224);
   height:415px;
   width:554px;
   max-height:415px;
@@ -40,7 +40,7 @@
 }
 
 .adv-panel {
-  border-top: 2px solid #50529a;
+  border-top: 2px solid rgb(9, 98, 224);
   height:203px;
   width:554px;
   max-height:204px;
@@ -48,7 +48,7 @@
 }
 
 .bottom-panel {
-  border-top: 2px solid #50529a;
+  border-top: 2px solid rgb(9, 98, 224);
   height:204px;
   width:1366px;
   max-height:204px;
@@ -56,7 +56,7 @@
 }
 
 .name-timer-panel {
-  border-right: 2px solid #50529a;
+  border-right: 2px solid rgb(9, 98, 224);
   height:204px;
   width:615px;
   max-height:204px;
