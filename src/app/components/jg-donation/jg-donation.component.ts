@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { JgServiceService } from '../../services/jg-service/jg-service.service';
 import {Observable, timer} from 'rxjs';
+import {FundraisingPageDetails, FundraisingPageDonations} from '../../services/jg-service/fundraising-page';
+import {map} from 'rxjs/operators';
 
 
 /**
@@ -17,12 +19,18 @@ export class JgDonationComponent implements OnInit {
   public fundraisingPageDonations: Observable<FundraisingPageDonations>;
 
   constructor(private jgServiceService: JgServiceService) {
-    this.fundraisingPageDetails = jgServiceService.getFundraisingPageDetails();
-    this.fundraisingPageDonations = jgServiceService.getFundraisingPageDonations();
   }
 
   ngOnInit() {
     this.observableTimer();
+
+    this.fundraisingPageDetails = this.jgServiceService.getFundraisingPageDetails().pipe(map(fpDetails => {
+      return fpDetails;
+    }));
+    this.fundraisingPageDonations = this.jgServiceService.getFundraisingPageDonations().pipe(map(fpDonations => {
+      return fpDonations;
+    }));
+
   }
 
   observableTimer() {

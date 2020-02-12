@@ -1,4 +1,4 @@
-interface FundraisingPageDetails {
+export interface FundraisingPageDetails {
   pageId: number;
   activityCharityCreated: false;
   activityType: string;
@@ -56,13 +56,13 @@ interface FundraisingPageDetails {
   pageGuid: string;
 }
 
-interface FundraisingPageDonations {
+export interface FundraisingPageDonations {
   donations: Donation[];
   pageShortName: string;
   pagination: Pagination;
 }
 
-interface Donation {
+export interface Donation {
   amount: string;
   currencyCode: string;
   donationDate: string;
@@ -81,7 +81,7 @@ interface Donation {
   charityId: number;
 }
 
-interface Pagination {
+export interface Pagination {
   pageNumber: number;
   pageSizeRequested: number;
   pageSizeReturned: number;
@@ -89,18 +89,18 @@ interface Pagination {
   totalResults: number;
 }
 
-interface JgImage {
+export interface JgImage {
   caption: string;
   url: string;
   absoluteUrl: string;
 }
 
-interface JgVideo {
+export interface JgVideo {
   caption: string;
   url: string;
 }
 
-interface JgTeam {
+export interface JgTeam {
   teamShortName: string;
   teamGuid: null;
 }

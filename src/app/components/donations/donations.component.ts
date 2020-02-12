@@ -3,6 +3,7 @@ import {JgServiceService} from '../../services/jg-service/jg-service.service';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import {Observable} from 'rxjs';
+import {FundraisingPageDonations} from '../../services/jg-service/fundraising-page';
 
 
 /**

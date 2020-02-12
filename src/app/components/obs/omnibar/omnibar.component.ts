@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { interval, Observable } from 'rxjs';
 import { JgServiceService } from '../../../services/jg-service/jg-service.service';
+import { Donation, FundraisingPageDonations } from '../../../services/jg-service/fundraising-page';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-omnibar',
@@ -8,7 +10,7 @@ import { JgServiceService } from '../../../services/jg-service/jg-service.servic
   styleUrls: ['./omnibar.component.css']
 })
 export class OmnibarComponent implements OnInit {
-  public fundraisingPageDetails: Observable<FundraisingPageDetails>;
+  public fundraisingPageDonations: Observable<FundraisingPageDonations>;
   public charityLogoUrl: string;
   public charityLogoSwap: boolean;
   private secondsCounter$: Observable<any>;
@@ -21,7 +23,6 @@ export class OmnibarComponent implements OnInit {
     this.charityLogoSwap = true;
     this.updateCharityLogoUrl();
     this.secondsCounter$ = interval(1000 * 15);
-    this.fundraisingPageDetails = jgServiceService.getFundraisingPageDetails();
   }
 
   ngOnInit() {
@@ -31,6 +32,25 @@ export class OmnibarComponent implements OnInit {
         this.changeOmnibarContent();
       }
     });
+
+    this.fundraisingPageDonations = this.jgServiceService.getFundraisingPageDonations().pipe(map(fpd => {
+      console.log('jgServiceService.getFundraisingPageDonations:', fpd);
+      return fpd;
+    }));
+
+  }
+
+  /**
+   * ADDING THIS METHOD BECAUSE JUSTGIVING ARE A BUNCH OF USELESS CUNTS AND DONT DISPLAY THIS
+   * DATA ON THE GetFundraisingPageDetails API ENDPOINT ANYMORE....... WHYYYYYYYYYYYYYYYYY?
+   * https://api.justgiving.com/docs/resources/v1/Fundraising/GetFundraisingPageDetails
+   */
+  getDonationTotal(donations: Donation[]): number {
+    let total = 0;
+    for (const donation of donations) {
+      total = total + parseInt(donation.amount, 0);
+    }
+    return total;
   }
 
   changeOmnibarContent(): void {

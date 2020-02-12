@@ -1,30 +1,128 @@
 .donation-container {
-  white-space: nowrap;
-  width: 1370px;
-  margin-left: 1370px;
-  margin-right: 1370px;
+  width: 100%;
+  height: 56px;
+  max-height:56px;
   position: relative;
-  top: -12px;
-  -webkit-animation-timing-function: linear;
-  -webkit-animation: mymove 45s linear 2s infinite alternate; /* Safari 4.0 - 8.0 */
-  animation: mymove 45s linear 2s infinite alternate;
-}
-@-webkit-keyframes mymove {
-   from {left: 1370px;}
-   to {left: -5000px;}
-}
-@keyframes mymove {
-  from {left: 1370px;}
-  to {left: -5000px;}
+  display: inline-block;
+  left: calc(-45%/2);
+  left: calc(45%/2 + 24px + 8px);
 }
 
+.slide-in-right-out-left-blurred {
+  -webkit-animation:
+    slide-in-blurred-right 0.45s cubic-bezier(0.230, 1.000, 0.320, 1.000) 4.45s 1 both,
+    slide-out-blurred-left 0.45s cubic-bezier(0.755, 0.050, 0.855, 0.060) 8.45s 1 both;
+  animation:
+    slide-in-blurred-right 0.45s cubic-bezier(0.230, 1.000, 0.320, 1.000) 4.45s 1 both,
+    slide-out-blurred-left 0.45s cubic-bezier(0.755, 0.050, 0.855, 0.060) 8.45s 1 both;
+}
+
+/**
+ * ----------------------------------------
+ * animation slide-in-blurred-right
+ * ----------------------------------------
+ */
+@-webkit-keyframes slide-in-blurred-right {
+  0% {
+    -webkit-transform: translateX(1000px) scaleX(2.5) scaleY(0.2);
+    transform: translateX(1000px) scaleX(2.5) scaleY(0.2);
+    -webkit-transform-origin: 0% 50%;
+    transform-origin: 0% 50%;
+    -webkit-filter: blur(40px);
+    filter: blur(40px);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateX(0) scaleY(1) scaleX(1);
+    transform: translateX(0) scaleY(1) scaleX(1);
+    -webkit-transform-origin: 50% 50%;
+    transform-origin: 50% 50%;
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+@keyframes slide-in-blurred-right {
+  0% {
+    -webkit-transform: translateX(1000px) scaleX(2.5) scaleY(0.2);
+    transform: translateX(1000px) scaleX(2.5) scaleY(0.2);
+    -webkit-transform-origin: 0% 50%;
+    transform-origin: 0% 50%;
+    -webkit-filter: blur(40px);
+    filter: blur(40px);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateX(0) scaleY(1) scaleX(1);
+    transform: translateX(0) scaleY(1) scaleX(1);
+    -webkit-transform-origin: 50% 50%;
+    transform-origin: 50% 50%;
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+/**
+ * ----------------------------------------
+ * animation slide-out-blurred-left
+ * ----------------------------------------
+ */
+@-webkit-keyframes slide-out-blurred-left {
+  0% {
+    -webkit-transform: translateX(0) scaleY(1) scaleX(1);
+    transform: translateX(0) scaleY(1) scaleX(1);
+    -webkit-transform-origin: 50% 50%;
+    transform-origin: 50% 50%;
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px) scaleX(2) scaleY(0.2);
+    transform: translateX(-1000px) scaleX(2) scaleY(0.2);
+    -webkit-transform-origin: 100% 50%;
+    transform-origin: 100% 50%;
+    -webkit-filter: blur(40px);
+    filter: blur(40px);
+    opacity: 0;
+  }
+}
+@keyframes slide-out-blurred-left {
+  0% {
+    -webkit-transform: translateX(0) scaleY(1) scaleX(1);
+    transform: translateX(0) scaleY(1) scaleX(1);
+    -webkit-transform-origin: 50% 50%;
+    transform-origin: 50% 50%;
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px) scaleX(2) scaleY(0.2);
+    transform: translateX(-1000px) scaleX(2) scaleY(0.2);
+    -webkit-transform-origin: 100% 50%;
+    transform-origin: 100% 50%;
+    -webkit-filter: blur(40px);
+    filter: blur(40px);
+    opacity: 0;
+  }
+}
+
+
 .donation {
-  display: inline-block;
-  background: #56437b;
-  border: #3C0C78 solid 1px;
-  border-radius: 0.5em;
-  width: 300px;
-  height: 50px;
+  background: rgba(9, 98, 224, 0.5); /* linear-gradient(-45deg, gold, goldenrod); */
+  background-size: 400% 400%;
+  border-radius: 5px;
+  max-width: 45%;
+  height: 44px;
+  margin-top: 6px;
+}
+
+.donation-text {
+  color: #f5f5f5;
+  -webkit-text-stroke: 0.035em rgba(9, 98, 224, 0.85);
+  font-family: 'Passion One', cursive;
 }
 
 .up-next-div {
@@ -43,13 +141,13 @@
   left: 0;
   border-style: solid;
   border-width: 28px 0 28px 24px;
-  border-color: transparent transparent transparent #270266;
+  border-color: transparent transparent transparent rgb(9, 98, 224);
   z-index: 2;
 }
 
 .up-next {
   display: inline-block;
-  background: #270266;
+  background: rgb(9, 98, 224);
   width: 350px;
   height: 56px;
   text-align: center;
@@ -57,7 +155,7 @@
   font-size: 1.95em;
   padding-top: 5px;
   color: white;
-  -webkit-text-stroke: 0.075em black;
+  -webkit-text-stroke: 0.035em royalblue;
   z-index: 1;
 }
 

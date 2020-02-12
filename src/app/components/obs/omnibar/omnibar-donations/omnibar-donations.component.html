@@ -1,31 +1,36 @@
-<ng-template [ngIf]="(fundraisingPageDonations | async).donations.length >= 1">
+<ng-container *ngIf="(fundraisingPageDonations | async) as fpd">
 
-  <div class="d-inline-block">
-    <div class="d-flex justify-content-center up-next-div">
-      <div class="align-self-center up-next">LAST 10 DONORS</div>
-      <div class="up-next-div-triangle"></div>
+  <ng-template [ngIf]="fpd.donations.length >= 1">
+    <div class="d-inline-block">
+      <div class="d-flex justify-content-center up-next-div">
+        <div class="align-self-center up-next">LAST 10 DONORS</div>
+        <div class="up-next-div-triangle"></div>
+      </div>
     </div>
-  </div>
-
-  <div class="donation-container">
-    <ng-container *ngIf="(fundraisingPageDonations | async) as fpd">
-      <div class="donation mr-2" *ngFor="let donor of fpd.donations.slice(-10)">
-        <div class="d-flex justify-content-around text-white h-100 p-1">
-          <div class="align-self-center h6 m-0">{{ donor.donorDisplayName }}</div>
-          <div class="align-self-center h3 m-0">{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</div>
+    <div class="donation-container slide-in-right-out-left-blurred">
+      <div class="donation" *ngFor="let donor of fpd.donations.slice(-10)">
+        <div class="d-flex justify-content-start donation-text h-100 p-1">
+          <div class="align-self-center">
+            <img src="../../../../../assets/img/obs-bg/tingle-kaloo-limpah.gif" alt="tingle" style="height: 56px;">
+          </div>
+          <div class="d-flex flex-fill justify-content-between">
+            <h1 class="align-self-center text-truncate donation-text m-0">{{ donor.donorDisplayName }}</h1>
+            <h1 class="align-self-center donation-text m-0 mr-2">{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</h1>
+          </div>
         </div>
       </div>
-    </ng-container>
-  </div>
+    </div>
+  </ng-template>
 
-</ng-template>
-<ng-template [ngIf]="(fundraisingPageDonations | async)?.donations.length === 0">
-  <div class="d-flex align-items-center">
-    <div class="h1 call-to-action-white mr-3 mb-0">
-      No donors yet!
+  <ng-template [ngIf]="fpd.donations.length === 0">
+    <div class="d-flex align-items-center">
+      <div class="h1 call-to-action-white mr-3 mb-0">
+        No donors yet!
+      </div>
+      <div class="h1 call-to-action-blue mr-3 mb-0">
+        donate.zeldathon.co.uk
+      </div>
     </div>
-    <div class="h1 call-to-action-blue mr-3 mb-0">
-      donate.zeldathon.co.uk
-    </div>
-  </div>
-</ng-template>
+  </ng-template>
+
+</ng-container>
