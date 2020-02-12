@@ -1,4 +1,4 @@
-<ng-container *ngIf="(fundraisingPageDonations | async) as fpd">
+<ng-container *ngIf="testPageDonations as fpd">
 
   <ng-template [ngIf]="fpd.donations.length >= 1">
     <div class="d-inline-block">
@@ -7,7 +7,7 @@
         <div class="up-next-div-triangle"></div>
       </div>
     </div>
-    <div class="donation-container slide-in-right-out-left-blurred">
+    <div class="donation-container">
       <div class="donation" *ngFor="let donor of fpd.donations.slice(-10)">
         <div class="d-flex justify-content-start donation-text h-100 p-1">
           <div class="align-self-center">

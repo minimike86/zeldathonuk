@@ -25,11 +25,17 @@
        style="height:56px; max-height:56px; border-left: 2px solid rgb(9, 98, 224);"
        id="donation_total_charity_logo">
     <div class="p-3">
+      <h2 class="dtotal m-0" *ngIf="testPageDonations as frpd">
+        {{ getDonationTotal(frpd.donations) | currency:frpd.donations.length >= 1 ? frpd.donations[0].currencyCode : 'GBP' }}
+      </h2>
+      <!--
       <h2 class="dtotal m-0" *ngIf="(fundraisingPageDonations | async) as frp">
         {{ getDonationTotal(frp.donations) | currency:frp.donations[0].currencyCode }}
       </h2>
+      -->
     </div>
     <img [src]="getCharityLogoUrl()"
+         alt="charity logo"
          class="pl-1 pr-3"
          style="max-width: 120px;" />
   </div>

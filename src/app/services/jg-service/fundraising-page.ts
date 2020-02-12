@@ -57,28 +57,29 @@ export interface FundraisingPageDetails {
 }
 
 export interface FundraisingPageDonations {
+  id?: string;
   donations: Donation[];
   pageShortName: string;
   pagination: Pagination;
 }
 
 export interface Donation {
-  amount: string;
+  amount: string | number;
   currencyCode: string;
   donationDate: string;
   donationRef: string;
   donorDisplayName: string;
-  donorLocalAmount: string;
+  donorLocalAmount: string | number;
   donorLocalCurrencyCode: string;
-  donorRealName: string;
-  estimatedTaxReclaim: number;
-  id: number;
+  donorRealName?: string;
+  estimatedTaxReclaim: string | number;
+  id: string | number;
   image: string;
   message: string;
   source: string;
-  status: string;
+  status?: string;
   thirdPartyReference: string;
-  charityId: number;
+  charityId: string | number;
 }
 
 export interface Pagination {

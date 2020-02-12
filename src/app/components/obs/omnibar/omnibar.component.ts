@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, Injectable, OnInit} from '@angular/core';
 import { interval, Observable } from 'rxjs';
 import { JgServiceService } from '../../../services/jg-service/jg-service.service';
 import { Donation, FundraisingPageDonations } from '../../../services/jg-service/fundraising-page';
@@ -9,8 +9,13 @@ import { map } from 'rxjs/operators';
   templateUrl: './omnibar.component.html',
   styleUrls: ['./omnibar.component.css']
 })
+@Injectable({
+  providedIn: 'root',
+})
 export class OmnibarComponent implements OnInit {
   public fundraisingPageDonations: Observable<FundraisingPageDonations>;
+  public testPageDonations: FundraisingPageDonations;
+
   public charityLogoUrl: string;
   public charityLogoSwap: boolean;
   private secondsCounter$: Observable<any>;
@@ -38,6 +43,68 @@ export class OmnibarComponent implements OnInit {
       return fpd;
     }));
 
+    this.testPageDonations = {
+      donations: [
+        {
+          amount: '2.0000',
+          currencyCode: 'GBP',
+          donationDate: '/Date(1581460637000+0000)/',
+          donationRef: null,
+          donorDisplayName: 'first',
+          donorLocalAmount: '2.000000',
+          donorLocalCurrencyCode: 'GBP',
+          estimatedTaxReclaim: 0.5,
+          id: 1047294036,
+          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
+          message: 'first',
+          source: 'SponsorshipDonations',
+          thirdPartyReference: null,
+          charityId: 184054
+        },
+        {
+          amount: '2.0000',
+          currencyCode: 'GBP',
+          donationDate: '/Date(1581460637000+0000)/',
+          donationRef: null,
+          donorDisplayName: 'second',
+          donorLocalAmount: '2.000000',
+          donorLocalCurrencyCode: 'GBP',
+          estimatedTaxReclaim: 0.5,
+          id: 1047294036,
+          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
+          message: 'second',
+          source: 'SponsorshipDonations',
+          thirdPartyReference: null,
+          charityId: 184054
+        },
+        {
+          amount: '2.0000',
+          currencyCode: 'GBP',
+          donationDate: '/Date(1581460637000+0000)/',
+          donationRef: null,
+          donorDisplayName: 'third',
+          donorLocalAmount: '2.000000',
+          donorLocalCurrencyCode: 'GBP',
+          estimatedTaxReclaim: 0.5,
+          id: 1047294036,
+          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
+          message: 'third',
+          source: 'SponsorshipDonations',
+          thirdPartyReference: null,
+          charityId: 184054
+        }
+      ],
+      id: 'zeldathonuk-gameblast-2020',
+      pageShortName: 'zeldathonuk-gameblast-2020',
+      pagination: {
+        pageNumber: 1,
+        pageSizeRequested: 25,
+        pageSizeReturned: 1,
+        totalPages: 1,
+        totalResults: 1
+      }
+    };
+
   }
 
   /**
@@ -48,7 +115,11 @@ export class OmnibarComponent implements OnInit {
   getDonationTotal(donations: Donation[]): number {
     let total = 0;
     for (const donation of donations) {
-      total = total + parseInt(donation.amount, 0);
+      if (typeof donation.amount === 'string') {
+        total = total + parseInt(donation.amount, 0);
+      } else {
+        total = total + donation.amount;
+      }
     }
     return total;
   }

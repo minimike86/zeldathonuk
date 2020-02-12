@@ -1,7 +1,7 @@
 /* MODULES */
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule }   from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -142,7 +142,11 @@ import { ScheduleComponent } from './components/schedule/schedule.component';
     AngularFireAuthModule,
     AngularFirestoreModule,
   ],
-  providers: [AuthGuardService, JgServiceService, GameItemService, FirebaseTimerService],
+  providers: [
+    AuthGuardService,
+    GameItemService,
+    FirebaseTimerService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

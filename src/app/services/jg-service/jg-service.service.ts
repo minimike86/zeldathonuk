@@ -1,13 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {BehaviorSubject, Observable, of, ReplaySubject} from 'rxjs';
 import { jgEnvironment } from '../../../environments/environment';
-import { FundraisingPageDetails, FundraisingPageDonations } from './fundraising-page';
+import {Donation, FundraisingPageDetails, FundraisingPageDonations} from './fundraising-page';
 
 @Injectable({
   providedIn: 'root'
 })
 export class JgServiceService {
+  private _testDonations: ReplaySubject<Donation[]> = new ReplaySubject<Donation[]>();
+
   private jgCampaign: string;
   private jgCharity: string;
 

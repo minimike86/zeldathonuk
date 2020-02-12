@@ -1,23 +1,25 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import {Component, Injectable, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import { CurrentlyPlayingService } from '../../services/firebase/currently-playing/currently-playing.service';
 import {GameLineupService} from '../../services/firebase/game-lineup/game-lineup.service';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { CurrentlyPlaying } from '../../services/firebase/currently-playing/currently-playing';
 import { FirebaseTimerService } from '../../services/firebase/firebase-timer/firebase-timer.service';
 import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-timer';
 import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
-import {GameLineUp} from '../../services/firebase/game-lineup/game-lineup';
 import {map} from 'rxjs/operators';
 import {ZeldaGame} from '../../models/zelda-game';
 import {KeyValue} from '@angular/common';
+import {JgServiceService} from '../../services/jg-service/jg-service.service';
 
 
 @Component({
   selector: 'app-obs',
   templateUrl: './obs.component.html',
   styleUrls: ['./obs.component.css']
+})
+@Injectable({
+  providedIn: 'root',
 })
 export class ObsComponent implements OnInit {
   @ViewChild('yesNoModalDialog', {static: false})
@@ -37,6 +39,7 @@ export class ObsComponent implements OnInit {
 
   constructor(private modalService: NgbModal,
               private firebaseTimerService: FirebaseTimerService,
+              private jgServiceService: JgServiceService,
               private runnerNameService: RunnerNameService,
               private gameLineupService: GameLineupService,
               private currentlyPlayingService: CurrentlyPlayingService) {

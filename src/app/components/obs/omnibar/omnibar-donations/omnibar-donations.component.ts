@@ -13,6 +13,7 @@ import {map} from 'rxjs/operators';
 })
 export class OmnibarDonationsComponent implements OnInit {
   public fundraisingPageDonations: Observable<FundraisingPageDonations>;
+  public testPageDonations: FundraisingPageDonations;
   public timeAgo: TimeAgo;
 
   constructor( private jgServiceService: JgServiceService ) {
@@ -26,6 +27,67 @@ export class OmnibarDonationsComponent implements OnInit {
       return fpd;
     }));
 
+    this.testPageDonations = {
+      donations: [
+        {
+          amount: '2.0000',
+          currencyCode: 'GBP',
+          donationDate: '/Date(1581460637000+0000)/',
+          donationRef: null,
+          donorDisplayName: 'first',
+          donorLocalAmount: '2.000000',
+          donorLocalCurrencyCode: 'GBP',
+          estimatedTaxReclaim: 0.5,
+          id: 1047294036,
+          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
+          message: 'first',
+          source: 'SponsorshipDonations',
+          thirdPartyReference: null,
+          charityId: 184054
+        },
+        {
+          amount: '2.0000',
+          currencyCode: 'GBP',
+          donationDate: '/Date(1581460637000+0000)/',
+          donationRef: null,
+          donorDisplayName: 'second',
+          donorLocalAmount: '2.000000',
+          donorLocalCurrencyCode: 'GBP',
+          estimatedTaxReclaim: 0.5,
+          id: 1047294036,
+          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
+          message: 'second',
+          source: 'SponsorshipDonations',
+          thirdPartyReference: null,
+          charityId: 184054
+        },
+        {
+          amount: '2.0000',
+          currencyCode: 'GBP',
+          donationDate: '/Date(1581460637000+0000)/',
+          donationRef: null,
+          donorDisplayName: 'third',
+          donorLocalAmount: '2.000000',
+          donorLocalCurrencyCode: 'GBP',
+          estimatedTaxReclaim: 0.5,
+          id: 1047294036,
+          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
+          message: 'third',
+          source: 'SponsorshipDonations',
+          thirdPartyReference: null,
+          charityId: 184054
+        }
+      ],
+      id: 'zeldathonuk-gameblast-2020',
+      pageShortName: 'zeldathonuk-gameblast-2020',
+      pagination: {
+        pageNumber: 1,
+        pageSizeRequested: 25,
+        pageSizeReturned: 1,
+        totalPages: 1,
+        totalResults: 1
+      }
+    };
   }
 
 }
