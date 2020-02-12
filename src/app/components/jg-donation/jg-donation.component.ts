@@ -25,9 +25,11 @@ export class JgDonationComponent implements OnInit {
     this.observableTimer();
 
     this.fundraisingPageDetails = this.jgServiceService.getFundraisingPageDetails().pipe(map(fpDetails => {
+      console.log('fpDetails', fpDetails);
       return fpDetails;
     }));
     this.fundraisingPageDonations = this.jgServiceService.getFundraisingPageDonations().pipe(map(fpDonations => {
+      console.log('fpDonations', fpDonations);
       return fpDonations;
     }));
 
@@ -44,11 +46,11 @@ export class JgDonationComponent implements OnInit {
   }
 
   getDonationTotal(fundraisingPageDetails: FundraisingPageDetails): number {
-    const totalRaisedOnline: number = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOnline ) !== null
-      ? fundraisingPageDetails.totalRaisedOnline : 0;
-    const totalRaisedOffline: number = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOffline ) !== null
-      ? fundraisingPageDetails.totalRaisedOffline : 0;
-    return totalRaisedOnline + totalRaisedOffline;
+    const totalRaisedOnline = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOnline ) !== null
+      ? fundraisingPageDetails.totalRaisedOnline : '0';
+    const totalRaisedOffline = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOffline ) !== null
+      ? fundraisingPageDetails.totalRaisedOffline : '0';
+    return parseInt(totalRaisedOnline, 0) + parseInt(totalRaisedOffline, 0);
   }
 
 }

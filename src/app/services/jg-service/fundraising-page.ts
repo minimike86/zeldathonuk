@@ -17,12 +17,12 @@ export interface FundraisingPageDetails {
   showEventDate: boolean;
   eventDate: Date;
   showExpiryDate: boolean;
-  fundraisingTarget: number;
-  totalRaisedPercentageOfFundraisingTarget: number;
-  totalRaisedOffline: number;
-  totalRaisedOnline: number;
-  totalRaisedSms: number;
-  totalEstimatedGiftAid: number;
+  fundraisingTarget: string;
+  totalRaisedPercentageOfFundraisingTarget: string;
+  totalRaisedOffline: string;
+  totalRaisedOnline: string;
+  totalRaisedSms: string;
+  totalEstimatedGiftAid: string;
   branding: {
     buttonColour: number;
     buttonTextColour: string;
