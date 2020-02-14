@@ -8,14 +8,14 @@
       </div>
     </div>
     <div class="donation-container">
-      <div class="donation" *ngFor="let donor of fpd.donations.slice(-10)">
+      <div class="donation">
         <div class="d-flex justify-content-start donation-text h-100 p-1">
           <div class="align-self-center">
             <img src="../../../../../assets/img/obs-bg/tingle-kaloo-limpah.gif" alt="tingle" style="height: 56px;">
           </div>
-          <div class="d-flex flex-fill justify-content-between">
-            <h1 class="align-self-center text-truncate donation-text m-0">{{ donor.donorDisplayName }}</h1>
-            <h1 class="align-self-center donation-text m-0 mr-2">{{ donor.donorLocalAmount | currency:donor.donorLocalCurrencyCode }}</h1>
+          <div class="d-flex justify-content-between flex-fill">
+            <h1 class="align-self-center text-truncate donation-text m-0">{{ highlightedDonation.donorDisplayName }}</h1>
+            <h1 class="align-self-center donation-text m-0 mr-2">{{ highlightedDonation.donorLocalAmount | currency:highlightedDonation.donorLocalCurrencyCode }}</h1>
           </div>
         </div>
       </div>

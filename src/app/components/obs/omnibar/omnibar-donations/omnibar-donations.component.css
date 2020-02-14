@@ -1,10 +1,10 @@
 .donation-container {
-  width: 100%;
+  width: calc(100% - 326px);
   height: 56px;
   max-height:56px;
   position: relative;
   display: inline-block;
-  left: calc(-45%/2);
+  left: 326px; /*calc(-45%/2);*/
 }
 
 .donation {
@@ -12,16 +12,18 @@
   background: rgba(9, 98, 224, 0.5); /* linear-gradient(-45deg, gold, goldenrod); */
   background-size: 400% 400%;
   border-radius: 5px;
-  width: 30%;
+  width: 50%;
   height: 44px;
   margin-top: 6px;
   margin-right: 8px;
+  margin-left: 25%;
 }
 
 .donation-text {
   color: #f5f5f5;
   -webkit-text-stroke: 0.035em rgba(9, 98, 224, 0.85);
   font-family: 'Passion One', cursive;
+  margin-top: 0.2em;
 }
 
 .up-next-div {

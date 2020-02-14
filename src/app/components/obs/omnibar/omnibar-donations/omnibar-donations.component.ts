@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {JgServiceService} from '../../../../services/jg-service/jg-service.service';
-import {FundraisingPageDonations} from '../../../../services/jg-service/fundraising-page';
+import {Donation, FundraisingPageDonations} from '../../../../services/jg-service/fundraising-page';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import {Observable} from 'rxjs';
@@ -14,6 +14,8 @@ import {map} from 'rxjs/operators';
 export class OmnibarDonationsComponent implements OnInit {
   public fundraisingPageDonations: Observable<FundraisingPageDonations>;
   public testPageDonations: FundraisingPageDonations;
+  public highlightedDonation: Donation;
+
   public timeAgo: TimeAgo;
 
   constructor( private jgServiceService: JgServiceService ) {
@@ -88,6 +90,9 @@ export class OmnibarDonationsComponent implements OnInit {
         totalResults: 1
       }
     };
+
+    this.highlightedDonation = this.testPageDonations.donations[0];
+
   }
 
 }

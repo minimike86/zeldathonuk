@@ -22,7 +22,7 @@ export class NavbarComponent implements OnInit {
   }
 
   donateFacebook() {
-    window.open('https://www.facebook.com/donate/235288154058664/', '_blank');
+    window.open('https://www.facebook.com/donate/655011391974449/', '_blank');
   }
 
   donateJustGiving() {

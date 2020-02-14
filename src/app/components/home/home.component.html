@@ -1,22 +1,39 @@
 <div class="container-fluid">
 
   <div class="d-block card card-header mt-2 p-0">
-    <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
-      <!--
-      <iframe
-        src="https://player.twitch.tv/?channel=zeldathonuk&autoplay=false"
-        frameborder="0"
-        scrolling="no"
-        allowfullscreen>
-      </iframe>
-      -->
-      <iframe
-        src="https://www.youtube-nocookie.com/embed/uZgV1GPlpE4"
-        frameborder="0"
-        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen>
+    <div class="d-flex flex-row">
+      <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
+        <iframe
+          src="https://player.twitch.tv/?channel=zeldathonuk&autoplay=false"
+          frameborder="0"
+          scrolling="no"
+          allowfullscreen>
+        </iframe>
+        <!--
+        <iframe
+          src="https://www.youtube-nocookie.com/embed/uZgV1GPlpE4"
+          frameborder="0"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+        -->
+      </div>
+      <iframe *ngIf="innerWidth >= 750"
+              frameborder="0"
+              scrolling="no"
+              id="chat_embed_widescreen"
+              src="https://www.twitch.tv/embed/zeldathonuk/chat?darkpopout"
+              width="33.5%">
       </iframe>
     </div>
+    <iframe *ngIf="innerWidth < 750"
+            frameborder="0"
+            scrolling="no"
+            id="chat_embed_mobile"
+            src="https://www.twitch.tv/embed/zeldathonuk/chat?darkpopout"
+            height="250px"
+            width="100%">
+    </iframe>
   </div>
 
   <div class="d-block card card-header bg-dark my-2 p-1">
@@ -25,10 +42,10 @@
         <li class="d-inline"><a class="small text-white" href="https://www.twitch.tv/zeldathonuk/" target="_blank"><fa-icon [icon]="faTwitch"></fa-icon>{{innerWidth < 750 ? ' Twitch' : ' ZeldathonUK on Twitch'}}</a></li>
       </div>
       <div class="w-25">
-        <li><a class="small text-white" href="https://www.facebook.com/ZeldathonUK/" target="_blank"><fa-icon [icon]="faFacebook"></fa-icon>{{innerWidth < 750 ? ' Facebook' : ' ZeldathonUK on Facebook'}}</a></li>
+        <li><a class="small text-white" href="https://twitter.com/ZeldathonUK/" target="_blank"><fa-icon [icon]="faTwitter"></fa-icon>{{innerWidth < 750 ? ' Twitter' : ' @ZeldathonUK on Twitter'}}</a></li>
       </div>
       <div class="w-25">
-        <li><a class="small text-white" href="https://twitter.com/ZeldathonUK/" target="_blank"><fa-icon [icon]="faTwitter"></fa-icon>{{innerWidth < 750 ? ' Twitter' : ' @ZeldathonUK on Twitter'}}</a></li>
+        <li><a class="small text-white" href="https://www.facebook.com/ZeldathonUK/" target="_blank"><fa-icon [icon]="faFacebook"></fa-icon>{{innerWidth < 750 ? ' Facebook' : ' ZeldathonUK on Facebook'}}</a></li>
       </div>
       <div class="w-25">
         <li><a class="small text-white" href="https://www.youtube.com/channel/UCATOYdh-Ww9sfTQji9M1SEg/" target="_blank"><fa-icon [icon]="faYoutube"></fa-icon>{{innerWidth < 750 ? ' YouTube' : ' ZeldathonUK on YouTube'}}</a></li>
@@ -54,11 +71,11 @@
 
       <div class="w-25 px-1">
         <button class="btn btn-block btn-justgiving" [ngClass]="innerWidth > 750 ? ' h-100' : 'h-75'" (click)="donateJustGiving();">
-          <h4 class="d-block" *ngIf="innerWidth > 750">Donate via <img src="../../../assets/img/justgiving-g.svg" style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"> JustGiving</h4>
-          <h6 class="d-block" *ngIf="innerWidth <= 750">Donate via <img src="../../../assets/img/justgiving-g.svg" style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"></h6>
+          <h4 class="d-block" *ngIf="innerWidth > 750">Donate via <img src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo" style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"> JustGiving</h4>
+          <h6 class="d-block" *ngIf="innerWidth <= 750">Donate via <img src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo" style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"></h6>
           <div class="small text-white" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.5em'} : null">
-            <span class="d-block" *ngIf="innerWidth > 750"><fa-icon [icon]="faInfoCircle"></fa-icon> JustGiving deducts a 5% fee from each donation made through the site.</span>
-            <span class="">95% of the donations go to the charity.</span>
+            <span class="d-block" *ngIf="innerWidth > 750"><fa-icon [icon]="faInfoCircle"></fa-icon> JustGiving deducts a 1.9% + £0.20p fee from each donation made through the site, and take an optional 5% reclaim &amp; processing fee.</span>
+            <span class="">Between 93.1%-98.1% of the donations go to the charity.</span>
           </div>
         </button>
         <a class="small text-white" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.6em'} : null" href="https://www.justgiving.com/info/fees" target="_blank">{{innerWidth < 750 ? 'More info' : 'More info on JustGiving Fundraising Fees'}}</a>
@@ -66,17 +83,21 @@
 
       <div class="w-25 pl-1">
         <button class="btn btn-block btn-specialeffect" [ngClass]="innerWidth > 750 ? ' h-100' : 'h-75'" (click)="learnAboutSpecialEffect();">
-          <h4 class="d-block"><img src="../../../assets/img/logo-specialeffect.png" style="max-width: 80%;"></h4>
-          <span class="d-block small text-white" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.45em'} : null">{{innerWidth < 750 ? 'Making video games accessible to people with physical disabilities' : 'SpecialEffect put fun and inclusion back into the lives of people with physical disabilities'}}</span>
+          <h4 class="d-block"><img src="../../../assets/img/specialeffect-logo.svg" alt="special effect logo" style="max-width: 60%;"></h4>
+          <div class="d-flex justify-content-center">
+            <span class="small text-white w-75" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.45em'} : null">{{innerWidth < 750 ? 'Making video games accessible to people with physical disabilities' : 'SpecialEffect put fun and inclusion back into the lives of people with physical disabilities'}}</span>
+          </div>
         </button>
       </div>
 
       <div class="w-25 px-1">
         <button class="btn btn-block btn-gameblast" [ngClass]="innerWidth > 750 ? ' h-100' : 'h-75'" (click)="learnAboutGameBlast();">
-          <h4 class="d-block"><img src="../../../assets/img/GB20_logo_for_website.png" style="max-width: 70%;"></h4>
-          <div class="small text-white" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.45em'} : null">
-            <span class="d-block">Can you imagine life without games? Neither can we.</span>
-            <span class="" *ngIf="innerWidth > 750">But there are thousands of people who are desperate to share our passion for games, and their disabilities stop them playing.</span>
+          <h4 class="d-block"><img src="../../../assets/img/GB20_logo_for_website.png" alt="gameblast logo" style="max-width: 60%;"></h4>
+          <div class="d-flex justify-content-center">
+            <div class="small text-white w-75" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.45em'} : null">
+              <span class="d-block">Can you imagine life without games? Neither can we.</span>
+              <span class="" *ngIf="innerWidth > 750">But there are thousands of people who are desperate to share our passion for games, and their disabilities stop them playing.</span>
+            </div>
           </div>
         </button>
       </div>
