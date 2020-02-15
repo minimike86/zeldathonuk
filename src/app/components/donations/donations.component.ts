@@ -28,7 +28,7 @@ export class DonationsComponent implements OnInit {
   }
 
   donateFacebook() {
-    window.open('https://www.facebook.com/donate/655011391974449/', '_blank');
+    window.open('https://www.facebook.com/donate/655011391974449/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
   }
 
   donateJustGiving() {

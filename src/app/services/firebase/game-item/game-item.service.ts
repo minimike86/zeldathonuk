@@ -11,8 +11,6 @@ export class GameItemService {
   private gameItemsCollection: AngularFirestoreCollection<GameItems>;
   private gameItemsData: GameItemsId[];
 
-  // TODO: Refactor into seperate firebase service
-
   constructor(private db: AngularFirestore) {
     this.gameItemsCollection = db.collection<GameItems>('/game-progress');
     this.getGameItemsIds().subscribe( data => {

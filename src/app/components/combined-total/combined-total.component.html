@@ -1,0 +1,23 @@
+<ng-container *ngIf="(facebookFundraisingPage | async) as ffp">
+  <ng-container *ngIf="(justgivingFundraisingPageDetails | async) as jgfp_dtls">
+    <ng-container *ngIf="(justgivingFundraisingPageDonations | async) as jgfp_dnts">
+
+      <div *ngIf="jgfp_dtls !== undefined; then displayTotal ? showDonations : showDonors else showNothing"></div>
+      <ng-template #showDonations>
+        <div class="text-center jg-text-dark mt-1" style="line-height: 0.65em;">
+          <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ getDonationTotal(jgfp_dtls, ffp) | currency:'GBP' }}</h6>
+          <span class="jg-text-dark" style="font-size: 0.65em;" title="Combined Facebook & JustGiving Donations Total">Current Total (COMBINED)</span>
+        </div>
+      </ng-template>
+      <ng-template #showDonors>
+        <div class="text-center jg-text-dark mt-1" style="line-height: 0.65em;">
+          <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ getDonorCount(jgfp_dnts, ffp) }}</h6>
+          <span class="jg-text-dark" style="font-size: 0.65em;" title="Combined Facebook & JustGiving Donor Count">Number of Donors (COMBINED)</span>
+        </div>
+      </ng-template>
+      <ng-template #showNothing>
+      </ng-template>
+
+    </ng-container>
+  </ng-container>
+</ng-container>

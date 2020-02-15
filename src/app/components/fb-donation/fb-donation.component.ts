@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { timer } from "rxjs";
-import {FbServiceService} from "../../services/fb-service/fb-service.service";
+import { Observable, timer } from 'rxjs';
+import { FbServiceService } from '../../services/fb-service/fb-service.service';
+import { FacebookFundraisingPage } from '../../services/fb-service/facebook-fundraising-page';
+import {map} from 'rxjs/operators';
 
 @Component({
   selector: 'app-fb-donation',
@@ -8,22 +10,21 @@ import {FbServiceService} from "../../services/fb-service/fb-service.service";
   styleUrls: ['./fb-donation.component.css']
 })
 export class FbDonationComponent implements OnInit {
-
-  public fbTotal: number;
   public displayTotal: boolean;
+  public facebookFundraisingPage: Observable<FacebookFundraisingPage>;
 
-  constructor(fbServiceService: FbServiceService) {
-    fbServiceService.getDonationTotal().subscribe(data => {
-      this.fbTotal = data;
-    });
+  constructor(private fbServiceService: FbServiceService) {
+    this.observableTimer();
   }
 
   ngOnInit() {
-    this.fbTotal = 0;
-    this.oberserableTimer();
+    this.facebookFundraisingPage = this.fbServiceService.getFacebookFundraisingPage().pipe(map(fbDonations => {
+      console.log('fbDonations', fbDonations);
+      return fbDonations[0];
+    }));
   }
 
-  oberserableTimer() {
+  observableTimer() {
     const interval = 10;
     const source = timer(1000, 2000);
     const countdown = source.subscribe(val => {

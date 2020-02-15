@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'
-import { faFacebook, faTwitch, faYoutube, faTwitter } from '@fortawesome/free-brands-svg-icons'
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faFacebook, faTwitch, faYoutube, faTwitter } from '@fortawesome/free-brands-svg-icons';
 
 @Component({
   selector: 'app-home',
@@ -28,7 +28,7 @@ export class HomeComponent implements OnInit {
   }
 
   donateFacebook() {
-    window.open('https://www.facebook.com/donate/655011391974449/', '_blank');
+    window.open('https://www.facebook.com/donate/655011391974449/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
   }
 
   donateJustGiving() {

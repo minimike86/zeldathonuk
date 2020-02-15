@@ -73,6 +73,7 @@ import { UpNextGameComponent } from './components/obs/omnibar/up-next-game/up-ne
 import { OmnibarDonationsComponent } from './components/obs/omnibar/omnibar-donations/omnibar-donations.component';
 import { OmnibarDonationPleaComponent } from './components/obs/omnibar/omnibar-donation-plea/omnibar-donation-plea.component';
 import { ScheduleComponent } from './components/schedule/schedule.component';
+import { CombinedTotalComponent } from './components/combined-total/combined-total.component';
 
 
 @NgModule({
@@ -127,7 +128,8 @@ import { ScheduleComponent } from './components/schedule/schedule.component';
     CallToActionComponent,
     UpNextGameComponent,
     OmnibarDonationsComponent,
-    OmnibarDonationPleaComponent
+    OmnibarDonationPleaComponent,
+    CombinedTotalComponent
   ],
   imports: [
     BrowserModule,
