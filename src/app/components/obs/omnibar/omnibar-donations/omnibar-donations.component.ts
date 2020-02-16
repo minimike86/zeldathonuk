@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
-import { JgServiceService } from '../../../../services/jg-service/jg-service.service';
+import { JgService } from '../../../../services/jg-service/jg-service.service';
 import { Donation, FundraisingPageDonations } from '../../../../services/jg-service/fundraising-page';
 import {
   trigger,
@@ -13,6 +13,7 @@ import {
   transition,
   keyframes,
 } from '@angular/animations';
+import {OmnibarContentService} from '../../../../services/omnibar-content-service/omnibar-content-service.service';
 
 @Component({
   selector: 'app-omnibar-donations',
@@ -54,13 +55,17 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   public timeAgo: TimeAgo;
   public currentState = 'slideInFromRight';
 
-  constructor( private jgServiceService: JgServiceService ) {
+  public currentOmnibarContentId$: Observable<number>;
+
+  constructor( private jgService: JgService,
+               private omnibarContentService: OmnibarContentService ) {
+    this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
   }
 
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.fundraisingPageDonations$ = this.jgServiceService.getFundraisingPageDonations().pipe(map(fpd => {
+    this.fundraisingPageDonations$ = this.jgService.getFundraisingPageDonations().pipe(map(fpd => {
       this.lastTenDonations = fpd.donations.slice(-10);
       return fpd;
     }));
@@ -76,23 +81,27 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
 
   displayDonations() {
     let index = 0;
-    setInterval(() => {
+
+    const displayDonationsInterval = setInterval(() => {
       this.highlightedDonation = this.lastTenDonations[index];
       setTimeout(() => {
-        // console.log('showing donation', index, donations[index]);
+        console.log('showing donation', index, this.lastTenDonations[index]);
         this.changeState();
         setTimeout(() => {
           setTimeout(() => {
-          this.changeState();
-          if (index < this.lastTenDonations.length - 1) {
-            index++;
-          } else {
-            index = 0;
-          }
-          }, 500);  // slideOutToLeft => slideInFromRight
+            this.changeState();
+            if (index < this.lastTenDonations.length - 1) {
+              index++;
+            } else {
+              clearInterval(displayDonationsInterval);
+              this.omnibarContentService.setCurrentOmnibarContentId(4, (this.lastTenDonations.length * 10000) + 2000);
+            }
+            console.log('hiding donation', index, this.lastTenDonations[index]);
+          }, 1000);  // slideOutToLeft => slideInFromRight
         }, 5000);   // time to show donation for
-      }, 1000);     // slideInFromRight => slideOutToLeft
-    }, 6500 + 2000);    // total time to complete donation animation + delay between next donation
+      }, 2000);     // slideInFromRight => slideOutToLeft
+    }, 10000);    // total time to complete donation animation + delay between next donation
+
   }
 
 }

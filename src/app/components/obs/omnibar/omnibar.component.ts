@@ -1,8 +1,9 @@
-import { Component, Injectable, OnInit } from '@angular/core';
+import { AfterViewInit, Component, Injectable, OnInit } from '@angular/core';
 import { combineLatest, interval, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { JgServiceService } from '../../../services/jg-service/jg-service.service';
-import { FbServiceService } from '../../../services/fb-service/fb-service.service';
+import { OmnibarContentService } from '../../../services/omnibar-content-service/omnibar-content-service.service';
+import { JgService } from '../../../services/jg-service/jg-service.service';
+import { FbService } from '../../../services/fb-service/fb-service.service';
 import { FundraisingPageDetails } from '../../../services/jg-service/fundraising-page';
 import { FacebookFundraisingPage } from '../../../services/fb-service/facebook-fundraising-page';
 
@@ -14,7 +15,7 @@ import { FacebookFundraisingPage } from '../../../services/fb-service/facebook-f
 @Injectable({
   providedIn: 'root',
 })
-export class OmnibarComponent implements OnInit {
+export class OmnibarComponent implements OnInit, AfterViewInit {
   public fundraisingPageDetails$: Observable<FundraisingPageDetails>;
   public facebookFundraisingPage$: Observable<FacebookFundraisingPage>;
   private secondsCounter$: Observable<any>;
@@ -22,17 +23,15 @@ export class OmnibarComponent implements OnInit {
   public currentDonationTotal = 0.00;
   public loadedDonationTotal: boolean;
 
+  public currentOmnibarContentId$: Observable<number>;
   public charityLogoUrl: string;
   public charityLogoSwap = true;
 
-  public showOmnibarContent1 = false;
-  public showOmnibarContent2 = false;
-  public showOmnibarContent3 = false;
-  public showOmnibarContent4 = false;
-
-  constructor(private fbServiceService: FbServiceService,
-              private jgServiceService: JgServiceService) {
+  constructor( private omnibarContentService: OmnibarContentService,
+               private fbService: FbService,
+               private jgService: JgService ) {
     this.secondsCounter$ = interval(1000 * 15);
+    this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
   }
 
   ngOnInit() {
@@ -40,18 +39,22 @@ export class OmnibarComponent implements OnInit {
     this.secondsCounter$.subscribe(n => {
       this.updateCharityLogoUrl();
     });
-    this.facebookFundraisingPage$ = this.fbServiceService.getFacebookFundraisingPage().pipe(map(fbDonations => {
+    this.facebookFundraisingPage$ = this.fbService.getFacebookFundraisingPage().pipe(map(fbDonations => {
       return fbDonations[0];
     }));
-    this.fundraisingPageDetails$ = this.jgServiceService.getFundraisingPageDetails().pipe(map(fpd => {
+    this.fundraisingPageDetails$ = this.jgService.getFundraisingPageDetails().pipe(map(fpd => {
       return fpd;
     }));
     this.loadedDonationTotal = false;
     this.donationTotal$ = combineLatest([this.facebookFundraisingPage$, this.fundraisingPageDetails$]).pipe(map(combinedDonations => {
       console.log('combinedDonations:', combinedDonations);
       this.loadedDonationTotal = true;
+      this.omnibarContentService.setCurrentOmnibarContentId(1, 500);
       return this.getCombinedDonationTotal(combinedDonations[0], combinedDonations[1]);
     }));
+  }
+
+  ngAfterViewInit(): void {
   }
 
   getCombinedDonationTotal(facebookFundraisingPage: FacebookFundraisingPage, fundraisingPageDetails: FundraisingPageDetails): number {
@@ -82,32 +85,6 @@ export class OmnibarComponent implements OnInit {
     const secondIsZero = parseInt(decimals[1], 0) === 0;
     const thirdRoundDown = parseInt(decimals[2], 0) < 5;
     return (secondIsZero && thirdRoundDown) ? 1 : 2;
-  }
-
-  changeOmnibarContent(): void {
-
-    console.log('changeOmnibarContent: ',
-      this.showOmnibarContent1, this.showOmnibarContent2,
-      this.showOmnibarContent3, this.showOmnibarContent4);
-
-    if (!this.showOmnibarContent1 && !this.showOmnibarContent2 && !this.showOmnibarContent3 && !this.showOmnibarContent4) {
-      this.showOmnibarContent1 = true;
-    } else if (this.showOmnibarContent1) {
-      this.showOmnibarContent1 = false;
-      this.showOmnibarContent2 = true;
-    } else if (this.showOmnibarContent2) {
-      this.showOmnibarContent2 = false;
-      this.showOmnibarContent3 = true;
-    } else if (this.showOmnibarContent3) {
-      this.showOmnibarContent3 = false;
-      this.showOmnibarContent4 = true;
-    } else if (this.showOmnibarContent4) {
-      this.showOmnibarContent1 = false;
-      this.showOmnibarContent2 = false;
-      this.showOmnibarContent3 = false;
-      this.showOmnibarContent4 = false;
-    }
-
   }
 
   updateCharityLogoUrl(): void {

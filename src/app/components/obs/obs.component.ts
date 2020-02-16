@@ -10,7 +10,7 @@ import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 import {map} from 'rxjs/operators';
 import {ZeldaGame} from '../../models/zelda-game';
 import {KeyValue} from '@angular/common';
-import {JgServiceService} from '../../services/jg-service/jg-service.service';
+import {JgService} from '../../services/jg-service/jg-service.service';
 
 
 @Component({
@@ -39,7 +39,7 @@ export class ObsComponent implements OnInit {
 
   constructor(private modalService: NgbModal,
               private firebaseTimerService: FirebaseTimerService,
-              private jgServiceService: JgServiceService,
+              private jgService: JgService,
               private runnerNameService: RunnerNameService,
               private gameLineupService: GameLineupService,
               private currentlyPlayingService: CurrentlyPlayingService) {

@@ -1,16 +1,21 @@
 .omnibar {
-  background: -webkit-linear-gradient(-90deg, #313539, #414549);
   border-top: 2px solid rgb(9, 98, 224);
+  background: -webkit-linear-gradient(-90deg, #313539, #414549);
 }
 
 .omnibar-brand {
+  height:56px;
+  max-height:56px;
+  width:180px;
+  max-width:180px;
   background: rgb(9, 98, 224);
-  z-index: 1;
+  border-right: 2px solid rgb(9, 98, 224);
+  z-index: 5;
 }
 
 .omnibar-donation-total {
   background: rgb(9, 98, 224);
-  z-index: 1;
+  z-index: 5;
 }
 
 .dtotal {
@@ -20,6 +25,7 @@
   font-size: 3em;
   font-family: 'Bungee', cursive;
   color: transparent;
+  z-index: 5;
 }
 
 .dtotal-odometer-div {
@@ -38,6 +44,14 @@
   color: white;
   font-weight: 900;
   font-family: 'Bungee', cursive;
+}
+
+#donation_total_charity_logo {
+  z-index: 15;
+}
+
+.getCharityLogoUrl {
+  z-index: 15;
 }
 
 .omnibar-content {

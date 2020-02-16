@@ -6,6 +6,7 @@ import {ZeldaGame} from '../../../../models/zelda-game';
 import {Observable} from 'rxjs';
 import {GameLineUp} from '../../../../services/firebase/game-lineup/game-lineup';
 import {map} from 'rxjs/operators';
+import {OmnibarContentService} from '../../../../services/omnibar-content-service/omnibar-content-service.service';
 
 @Component({
   selector: 'app-up-next-game',
@@ -17,8 +18,12 @@ export class UpNextGameComponent implements OnInit {
   public currentlyPlayingId: CurrentlyPlayingId;
   public gameLineUp: Map<string, ZeldaGame>;
 
-  constructor( private currentlyPlayingService: CurrentlyPlayingService,
+  public currentOmnibarContentId$: Observable<number>;
+
+  constructor( private omnibarContentService: OmnibarContentService,
+               private currentlyPlayingService: CurrentlyPlayingService,
                private gameLineupService: GameLineupService ) {
+    this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
   }
 
   ngOnInit() {
@@ -28,6 +33,7 @@ export class UpNextGameComponent implements OnInit {
     this.gameLineupService.getGameLineUp().pipe(map(data => {
       this.gameLineUp = data[0].gameLineUp;
     })).subscribe();
+    this.omnibarContentService.setCurrentOmnibarContentId(2, 1000 * 15 * 2);
   }
 
   getNextGame(): ZeldaGame {

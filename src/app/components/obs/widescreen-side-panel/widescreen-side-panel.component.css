@@ -50,6 +50,8 @@
 }
 
 .name-timer-panel {
+  border-top: 1px solid rgb(9, 98, 224);
+  border-bottom: 2px solid rgb(9, 98, 224);
   border-right: 2px solid rgb(9, 98, 224);
   height:215px;
   width:691px;

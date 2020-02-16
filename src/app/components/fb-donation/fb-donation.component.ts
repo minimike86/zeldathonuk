@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable, timer } from 'rxjs';
-import { FbServiceService } from '../../services/fb-service/fb-service.service';
+import { FbService } from '../../services/fb-service/fb-service.service';
 import { FacebookFundraisingPage } from '../../services/fb-service/facebook-fundraising-page';
 import {map} from 'rxjs/operators';
 
@@ -13,12 +13,12 @@ export class FbDonationComponent implements OnInit {
   public displayTotal: boolean;
   public facebookFundraisingPage: Observable<FacebookFundraisingPage>;
 
-  constructor(private fbServiceService: FbServiceService) {
+  constructor(private fbService: FbService) {
     this.observableTimer();
   }
 
   ngOnInit() {
-    this.facebookFundraisingPage = this.fbServiceService.getFacebookFundraisingPage().pipe(map(fbDonations => {
+    this.facebookFundraisingPage = this.fbService.getFacebookFundraisingPage().pipe(map(fbDonations => {
       console.log('fbDonations', fbDonations);
       return fbDonations[0];
     }));

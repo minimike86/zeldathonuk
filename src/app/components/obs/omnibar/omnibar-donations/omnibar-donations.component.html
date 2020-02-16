@@ -1,24 +1,29 @@
 <ng-container *ngIf="(this.fundraisingPageDonations$ | async)">
 
   <ng-template [ngIf]="lastTenDonations.length >= 1">
-    <div class="d-inline-block">
-      <div class="d-flex justify-content-center up-next-div">
-        <div class="align-self-center up-next">LAST {{ lastTenDonations.length >= 10 ? '10 DONORS' :
-                                                       lastTenDonations.length == 1 ? 'DONOR' :
-                                                       lastTenDonations.length + 'DONORS' }}</div>
-        <div class="up-next-div-triangle"></div>
-      </div>
-    </div>
-    <div class="donation-container">
+    <div class="d-flex justify-content-between">
 
-      <div class="donation" [@showDonation]=currentState>
-        <div class="d-flex justify-content-start donation-text h-100 p-1">
-          <div class="align-self-center">
-            <img src="../../../../../assets/img/obs-bg/tingle-kaloo-limpah.gif" alt="tingle" style="height: 56px;">
-          </div>
-          <div class="d-flex justify-content-between flex-fill">
-            <h1 class="align-self-center text-truncate donation-text m-0">{{ highlightedDonation?.donorDisplayName }}</h1>
-            <h1 class="align-self-center donation-text m-0 mr-2">{{ highlightedDonation?.donorLocalAmount | currency:highlightedDonation?.donorLocalCurrencyCode }}</h1>
+      <div id="last-donors-text">
+        <div class="d-flex justify-content-start up-next-div slide-in-left">
+          <div class="up-next">LAST {{ lastTenDonations.length >= 10 ? '10 DONORS' :
+                                                         lastTenDonations.length == 1 ? 'DONOR' :
+                                                         lastTenDonations.length + 'DONORS' }}</div>
+          <div class="up-next-div-triangle"></div>
+        </div>
+      </div>
+
+      <div id="donations" class="flex-grow-1">
+        <div class="donation-container mx-2">
+          <div class="donation" [@showDonation]=currentState>
+            <div class="d-flex flex-row donation-text h-100 p-1">
+              <div class="align-self-center">
+                <img src="../../../../../assets/img/obs-bg/tingle-kaloo-limpah.gif" alt="tingle" style="height: 56px;">
+              </div>
+              <div class="d-flex justify-content-between flex-fill">
+                <h1 class="align-self-center text-truncate donation-text mt-3">{{ highlightedDonation?.donorDisplayName }}</h1>
+                <h1 class="align-self-center donation-text mt-2 mr-2">{{ highlightedDonation?.donorLocalAmount | currency:highlightedDonation?.donorLocalCurrencyCode }}</h1>
+              </div>
+            </div>
           </div>
         </div>
       </div>

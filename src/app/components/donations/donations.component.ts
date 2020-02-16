@@ -1,5 +1,5 @@
 import {AfterViewInit, Component, OnInit} from '@angular/core';
-import {JgServiceService} from '../../services/jg-service/jg-service.service';
+import {JgService} from '../../services/jg-service/jg-service.service';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import {Observable} from 'rxjs';
@@ -18,13 +18,13 @@ export class DonationsComponent implements OnInit {
   public timeAgo: TimeAgo;
   public fundraisingPageDonations: Observable<FundraisingPageDonations>;
 
-  constructor(private jgServiceService: JgServiceService) {
+  constructor(private jgService: JgService) {
   }
 
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.fundraisingPageDonations = this.jgServiceService.getFundraisingPageDonations();
+    this.fundraisingPageDonations = this.jgService.getFundraisingPageDonations();
   }
 
   donateFacebook() {

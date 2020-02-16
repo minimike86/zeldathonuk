@@ -1,14 +1,20 @@
 <ng-template [ngIf]="showUpNextGame">
+  <div class="d-flex justify-content-between" style="height:56px; max-height:56px;">
 
-  <div class="d-inline-block">
-    <div class="d-flex justify-content-center up-next-div">
-      <div class="align-self-center up-next">UP NEXT</div>
-      <div class="up-next-div-triangle"></div>
+    <div class="">
+      <div class="d-flex justify-content-start up-next-div slide-in-left">
+        <div class="align-self-center up-next">UP NEXT</div>
+        <div class="up-next-div-triangle"></div>
+      </div>
     </div>
-  </div>
 
-  <div class="d-inline-block h1 call-to-action-white mr-3 mb-0">
-    {{ getNextGame().gameName }}
-  </div>
+    <div class="flex-grow-1">
+      <div class="d-flex justify-content-center align-self-center">
+        <h1 class="call-to-action-white fade-in mt-1 mb-0">
+          {{ getNextGame().gameName }}
+        </h1>
+      </div>
+    </div>
 
+  </div>
 </ng-template>

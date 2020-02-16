@@ -7,7 +7,7 @@ import {Donation, FundraisingPageDetails, FundraisingPageDonations} from './fund
 @Injectable({
   providedIn: 'root'
 })
-export class JgServiceService {
+export class JgService {
   private _testDonations: ReplaySubject<Donation[]> = new ReplaySubject<Donation[]>();
 
   private jgCampaign: string;

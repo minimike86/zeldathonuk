@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
-import { JgServiceService } from './jg-service.service';
+import { JgService } from './jg-service.service';
 
-describe('JgServiceService', () => {
+describe('JgService', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
 
   it('should be created', () => {
-    const service: JgServiceService = TestBed.get(JgServiceService);
+    const service: JgService = TestBed.get(JgService);
     expect(service).toBeTruthy();
   });
 });

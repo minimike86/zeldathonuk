@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import {FbServiceService} from '../../services/fb-service/fb-service.service';
+import {FbService} from '../../services/fb-service/fb-service.service';
 import {Observable, timer} from 'rxjs';
 import {FacebookFundraisingPage} from '../../services/fb-service/facebook-fundraising-page';
 import {map} from 'rxjs/operators';
 import {FundraisingPageDetails, FundraisingPageDonations} from '../../services/jg-service/fundraising-page';
-import {JgServiceService} from '../../services/jg-service/jg-service.service';
+import {JgService} from '../../services/jg-service/jg-service.service';
 
 @Component({
   selector: 'app-combined-total',
@@ -21,21 +21,21 @@ export class CombinedTotalComponent implements OnInit {
   public totalRaised: number;
   public donorCount: number;
 
-  constructor(private fbServiceService: FbServiceService,
-              private jgServiceService: JgServiceService) {
+  constructor(private fbService: FbService,
+              private jgService: JgService) {
     this.observableTimer();
   }
 
   ngOnInit() {
-    this.facebookFundraisingPage = this.fbServiceService.getFacebookFundraisingPage().pipe(map(fbDonations => {
+    this.facebookFundraisingPage = this.fbService.getFacebookFundraisingPage().pipe(map(fbDonations => {
       console.log('fbDonations', fbDonations);
       return fbDonations[0];
     }));
-    this.justgivingFundraisingPageDetails = this.jgServiceService.getFundraisingPageDetails().pipe(map(fpDetails => {
+    this.justgivingFundraisingPageDetails = this.jgService.getFundraisingPageDetails().pipe(map(fpDetails => {
       console.log('fpDetails', fpDetails);
       return fpDetails;
     }));
-    this.justgivingFundraisingPageDonations = this.jgServiceService.getFundraisingPageDonations().pipe(map(fpDonations => {
+    this.justgivingFundraisingPageDonations = this.jgService.getFundraisingPageDonations().pipe(map(fpDonations => {
       console.log('fpDonations', fpDonations);
       return fpDonations;
     }));

@@ -6,7 +6,7 @@ import { FacebookFundraisingPage } from './facebook-fundraising-page';
 @Injectable({
   providedIn: 'root'
 })
-export class FbServiceService {
+export class FbService {
 
   private url = 'https://us-central1-zeldathonuk.cloudfunctions.net/getFacebookDonations';
 
