@@ -64,7 +64,7 @@
   font-size: 1.95em;
   padding-top: 5px;
   color: white;
-  -webkit-text-stroke: 0.075em black;
+  -webkit-text-stroke: 0.035em royalblue;
   z-index: 1;
 }
 
@@ -75,6 +75,15 @@
   font-weight: bold;
   font-size: 1.95em;
   text-align: left;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+
+.call-to-action-white {
+  font-weight: bold;
   font-family: 'Mukta', sans-serif;
   color: black;
   -webkit-text-fill-color: white; /* Will override color (regardless of order) */

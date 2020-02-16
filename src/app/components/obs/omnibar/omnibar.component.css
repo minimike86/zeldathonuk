@@ -22,6 +22,24 @@
   color: transparent;
 }
 
+.dtotal-odometer-div {
+  position: relative;
+  top: -6px;
+}
+
+.dtotal-odometer-pound {
+  position: relative;
+  top: 6px;
+  font-weight: 900;
+  color: white;
+}
+
+.dtotal-odometer {
+  color: white;
+  font-weight: 900;
+  font-family: 'Bungee', cursive;
+}
+
 .omnibar-content {
   background: -webkit-linear-gradient(-90deg, #313539, #414549);
   /*

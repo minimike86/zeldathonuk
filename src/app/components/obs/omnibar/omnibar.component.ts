@@ -1,8 +1,10 @@
-import {Component, Injectable, OnInit} from '@angular/core';
-import { interval, Observable } from 'rxjs';
-import { JgServiceService } from '../../../services/jg-service/jg-service.service';
-import { Donation, FundraisingPageDonations } from '../../../services/jg-service/fundraising-page';
+import { Component, Injectable, OnInit } from '@angular/core';
+import { combineLatest, interval, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { JgServiceService } from '../../../services/jg-service/jg-service.service';
+import { FbServiceService } from '../../../services/fb-service/fb-service.service';
+import { FundraisingPageDetails } from '../../../services/jg-service/fundraising-page';
+import { FacebookFundraisingPage } from '../../../services/fb-service/facebook-fundraising-page';
 
 @Component({
   selector: 'app-omnibar',
@@ -13,115 +15,73 @@ import { map } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class OmnibarComponent implements OnInit {
-  public fundraisingPageDonations: Observable<FundraisingPageDonations>;
-  public testPageDonations: FundraisingPageDonations;
+  public fundraisingPageDetails$: Observable<FundraisingPageDetails>;
+  public facebookFundraisingPage$: Observable<FacebookFundraisingPage>;
+  private secondsCounter$: Observable<any>;
+  public donationTotal$: Observable<number>;
+  public currentDonationTotal = 0.00;
+  public loadedDonationTotal: boolean;
 
   public charityLogoUrl: string;
-  public charityLogoSwap: boolean;
-  private secondsCounter$: Observable<any>;
+  public charityLogoSwap = true;
+
   public showOmnibarContent1 = false;
   public showOmnibarContent2 = false;
   public showOmnibarContent3 = false;
   public showOmnibarContent4 = false;
 
-  constructor(private jgServiceService: JgServiceService) {
-    this.charityLogoSwap = true;
-    this.updateCharityLogoUrl();
+  constructor(private fbServiceService: FbServiceService,
+              private jgServiceService: JgServiceService) {
     this.secondsCounter$ = interval(1000 * 15);
   }
 
   ngOnInit() {
+    this.updateCharityLogoUrl();
     this.secondsCounter$.subscribe(n => {
       this.updateCharityLogoUrl();
-      if ( n % 5 === 0 ) {
-        this.changeOmnibarContent();
-      }
     });
-
-    this.fundraisingPageDonations = this.jgServiceService.getFundraisingPageDonations().pipe(map(fpd => {
-      console.log('jgServiceService.getFundraisingPageDonations:', fpd);
+    this.facebookFundraisingPage$ = this.fbServiceService.getFacebookFundraisingPage().pipe(map(fbDonations => {
+      return fbDonations[0];
+    }));
+    this.fundraisingPageDetails$ = this.jgServiceService.getFundraisingPageDetails().pipe(map(fpd => {
       return fpd;
     }));
-
-    this.testPageDonations = {
-      donations: [
-        {
-          amount: '2.0000',
-          currencyCode: 'GBP',
-          donationDate: '/Date(1581460637000+0000)/',
-          donationRef: null,
-          donorDisplayName: 'first',
-          donorLocalAmount: '2.000000',
-          donorLocalCurrencyCode: 'GBP',
-          estimatedTaxReclaim: 0.5,
-          id: 1047294036,
-          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
-          message: 'first',
-          source: 'SponsorshipDonations',
-          thirdPartyReference: null,
-          charityId: 184054
-        },
-        {
-          amount: '2.0000',
-          currencyCode: 'GBP',
-          donationDate: '/Date(1581460637000+0000)/',
-          donationRef: null,
-          donorDisplayName: 'second',
-          donorLocalAmount: '2.000000',
-          donorLocalCurrencyCode: 'GBP',
-          estimatedTaxReclaim: 0.5,
-          id: 1047294036,
-          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
-          message: 'second',
-          source: 'SponsorshipDonations',
-          thirdPartyReference: null,
-          charityId: 184054
-        },
-        {
-          amount: '2.0000',
-          currencyCode: 'GBP',
-          donationDate: '/Date(1581460637000+0000)/',
-          donationRef: null,
-          donorDisplayName: 'third',
-          donorLocalAmount: '2.000000',
-          donorLocalCurrencyCode: 'GBP',
-          estimatedTaxReclaim: 0.5,
-          id: 1047294036,
-          image: 'https://images.justgiving.com/image/31652f97-914c-419f-92ce-0d0c1f68e6f9.jpg?template=profilesummary',
-          message: 'third',
-          source: 'SponsorshipDonations',
-          thirdPartyReference: null,
-          charityId: 184054
-        }
-      ],
-      id: 'zeldathonuk-gameblast-2020',
-      pageShortName: 'zeldathonuk-gameblast-2020',
-      pagination: {
-        pageNumber: 1,
-        pageSizeRequested: 25,
-        pageSizeReturned: 1,
-        totalPages: 1,
-        totalResults: 1
-      }
-    };
-
+    this.loadedDonationTotal = false;
+    this.donationTotal$ = combineLatest([this.facebookFundraisingPage$, this.fundraisingPageDetails$]).pipe(map(combinedDonations => {
+      console.log('combinedDonations:', combinedDonations);
+      this.loadedDonationTotal = true;
+      return this.getCombinedDonationTotal(combinedDonations[0], combinedDonations[1]);
+    }));
   }
 
-  /**
-   * ADDING THIS METHOD BECAUSE JUSTGIVING ARE A BUNCH OF USELESS CUNTS AND DONT DISPLAY THIS
-   * DATA ON THE GetFundraisingPageDetails API ENDPOINT ANYMORE....... WHYYYYYYYYYYYYYYYYY?
-   * https://api.justgiving.com/docs/resources/v1/Fundraising/GetFundraisingPageDetails
-   */
-  getDonationTotal(donations: Donation[]): number {
-    let total = 0;
-    for (const donation of donations) {
-      if (typeof donation.amount === 'string') {
-        total = total + parseInt(donation.amount, 0);
-      } else {
-        total = total + donation.amount;
-      }
-    }
-    return total;
+  getCombinedDonationTotal(facebookFundraisingPage: FacebookFundraisingPage, fundraisingPageDetails: FundraisingPageDetails): number {
+    const totalRaisedOnline = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOnline ) !== null
+      ? fundraisingPageDetails.totalRaisedOnline : '0';
+    const totalRaisedOffline = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOffline ) !== null
+      ? fundraisingPageDetails.totalRaisedOffline : '0';
+    const newDonationTotal = parseFloat(totalRaisedOnline) +
+                             parseFloat(totalRaisedOffline) +
+                             facebookFundraisingPage.amountRaised;
+    this.transitionCurrentDonationTotal(newDonationTotal);
+    return (newDonationTotal);
+  }
+
+  transitionCurrentDonationTotal(newDonationTotal: number): void {
+    console.log('transitionCurrentDonationTotal:', this.currentDonationTotal, newDonationTotal);
+    this.currentDonationTotal = newDonationTotal;
+  }
+
+  testDonation() {
+    const randomAmount = Math.random() * 100;
+    this.transitionCurrentDonationTotal(this.currentDonationTotal + randomAmount);
+  }
+
+  countDecimals(value: number): number {
+    if (Math.floor(value) === value) { return 0; }
+    const decimals = value.toString().split('.')[1];
+    const secondIsZero = parseInt(decimals[1], 0) === 0;
+    const thirdRoundDown = parseInt(decimals[2], 0) < 5;
+    return (secondIsZero && thirdRoundDown) ? 1 : 2;
   }
 
   changeOmnibarContent(): void {

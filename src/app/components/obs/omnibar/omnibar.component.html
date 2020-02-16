@@ -6,33 +6,39 @@
     <img alt="zeldathonuk_brand_logo"
          src="../../../../assets/img/Zeldathon-Logo-WW-white.svg"
          class="px-3 py-2"
+         (click)="testDonation()"
          style="max-width: 90%;" />
   </div>
   <div class="d-flex flex-grow-1 justify-content-center align-items-center omnibar-content"
        style="height:56px; max-height:56px;"
        id="omnibar_content">
 
-    <app-omnibar-donations class="w-100" style="max-height: 56px;"></app-omnibar-donations>
-    <!--
-    <app-call-to-action *ngIf="showOmnibarContent1"></app-call-to-action>
-    <app-up-next-game *ngIf="showOmnibarContent2"></app-up-next-game>
+    <app-up-next-game *ngIf="showOmnibarContent1"></app-up-next-game>
+    <app-call-to-action *ngIf="showOmnibarContent2"></app-call-to-action>
     <app-omnibar-donations style="max-width: 1370px;" *ngIf="showOmnibarContent3"></app-omnibar-donations>
     <app-omnibar-donation-plea *ngIf="showOmnibarContent4"></app-omnibar-donation-plea>
-    -->
 
   </div>
   <div class="d-flex justify-content-center align-items-center omnibar-donation-total"
        style="height:56px; max-height:56px; border-left: 2px solid rgb(9, 98, 224);"
        id="donation_total_charity_logo">
-    <div class="p-3">
-      <h2 class="dtotal m-0" *ngIf="testPageDonations as frpd">
-        {{ getDonationTotal(frpd.donations) | currency:frpd.donations.length >= 1 ? frpd.donations[0].currencyCode : 'GBP' }}
-      </h2>
-      <!--
-      <h2 class="dtotal m-0" *ngIf="(fundraisingPageDonations | async) as frp">
-        {{ getDonationTotal(frp.donations) | currency:frp.donations[0].currencyCode }}
-      </h2>
-      -->
+    <div class="dtotal p-3">
+      <ng-container *ngIf="(donationTotal$ | async); else loadingDonationTotal;">
+        <div class="dtotal-odometer-div">
+          <span class="dtotal-odometer-pound mr-1">&pound;</span>
+          <ng-odometer class="dtotal-odometer"
+                       [number]="currentDonationTotal"
+                       [animation]="'slide'"
+                       [duration]="3000"
+                       [format]="'(,ddd).dd'"
+                       [auto]="true"></ng-odometer>
+          <span class="dtotal-odometer-pound" *ngIf="countDecimals(currentDonationTotal) == 0">.00</span>
+          <span class="dtotal-odometer-pound" *ngIf="countDecimals(currentDonationTotal) == 1">0</span>
+        </div>
+      </ng-container>
+      <ng-template #loadingDonationTotal>
+        <span>&pound;0.00</span>
+      </ng-template>
     </div>
     <img [src]="getCharityLogoUrl()"
          alt="charity logo"

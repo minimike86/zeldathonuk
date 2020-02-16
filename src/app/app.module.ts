@@ -11,6 +11,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire';
 import { AngularFireAuthModule } from '@angular/fire/auth';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
+import { NgOdometerModule } from 'ng8-odometer';
 
 // Environment Variables
 import { environment } from '../environments/environment';
@@ -140,6 +141,7 @@ import { CombinedTotalComponent } from './components/combined-total/combined-tot
     NgbModule,
     FontAwesomeModule,
     CountdownModule,
+    NgOdometerModule.forRoot(),
     AngularFireModule.initializeApp(environment.firebase, 'zeldathonuk'),
     AngularFireAuthModule,
     AngularFirestoreModule,
