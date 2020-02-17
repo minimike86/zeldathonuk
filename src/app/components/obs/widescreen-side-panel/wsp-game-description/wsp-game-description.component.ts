@@ -29,13 +29,13 @@ export class WspGameDescriptionComponent implements OnInit {
       if (this.gameLineUp) {
         this.gameDesc = this.gameLineUp[this.gameId.index];
       }
-      console.log('this.gameId', this.gameId);
+      // console.log('this.gameId', this.gameId);
     })).subscribe();
 
     this.gameLineupService.getGameLineUp().pipe(map(data => {
       this.gameLineUp = data[0].gameLineUp;
       this.gameDesc = this.gameLineUp[this.gameId.index];
-      console.log('gameLineUp', this.gameLineUp);
+      // console.log('gameLineUp', this.gameLineUp);
     })).subscribe();
 
   }

@@ -85,7 +85,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
     const displayDonationsInterval = setInterval(() => {
       this.highlightedDonation = this.lastTenDonations[index];
       setTimeout(() => {
-        console.log('showing donation', index, this.lastTenDonations[index]);
+        // console.log('showing donation', index, this.lastTenDonations[index]);
         this.changeState();
         setTimeout(() => {
           setTimeout(() => {
@@ -96,7 +96,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
               clearInterval(displayDonationsInterval);
               this.omnibarContentService.setCurrentOmnibarContentId(4, (this.lastTenDonations.length * 10000) + 2000);
             }
-            console.log('hiding donation', index, this.lastTenDonations[index]);
+            // console.log('hiding donation', index, this.lastTenDonations[index]);
           }, 1000);  // slideOutToLeft => slideInFromRight
         }, 5000);   // time to show donation for
       }, 2000);     // slideInFromRight => slideOutToLeft

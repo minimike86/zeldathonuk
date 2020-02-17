@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, Injectable, OnInit } from '@angular/core';
-import { combineLatest, interval, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import {combineLatest, interval, Observable, of, timer} from 'rxjs';
+import {map, switchMap, take} from 'rxjs/operators';
 import { OmnibarContentService } from '../../../services/omnibar-content-service/omnibar-content-service.service';
 import { JgService } from '../../../services/jg-service/jg-service.service';
 import { FbService } from '../../../services/fb-service/fb-service.service';
@@ -21,7 +21,6 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
   private secondsCounter$: Observable<any>;
   public donationTotal$: Observable<number>;
   public currentDonationTotal = 0.00;
-  public loadedDonationTotal: boolean;
 
   public currentOmnibarContentId$: Observable<number>;
   public charityLogoUrl: string;
@@ -39,19 +38,33 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
     this.secondsCounter$.subscribe(n => {
       this.updateCharityLogoUrl();
     });
-    this.facebookFundraisingPage$ = this.fbService.getFacebookFundraisingPage().pipe(map(fbDonations => {
+
+    this.omnibarContentService.setCurrentOmnibarContentId(1, 500);
+
+    this.facebookFundraisingPage$ = this.fbService.getFacebookFundraisingPage().pipe(take(1), map(fbDonations => {
+      // console.log('facebook donation updated');
       return fbDonations[0];
     }));
-    this.fundraisingPageDetails$ = this.jgService.getFundraisingPageDetails().pipe(map(fpd => {
+    this.facebookFundraisingPage$.subscribe();
+
+    this.fundraisingPageDetails$ = this.jgService.getFundraisingPageDetails().pipe(take(1), map(fpd => {
+      // console.log('justgiving donation updated');
       return fpd;
     }));
-    this.loadedDonationTotal = false;
+    this.fundraisingPageDetails$.subscribe();
+
     this.donationTotal$ = combineLatest([this.facebookFundraisingPage$, this.fundraisingPageDetails$]).pipe(map(combinedDonations => {
-      console.log('combinedDonations:', combinedDonations);
-      this.loadedDonationTotal = true;
-      this.omnibarContentService.setCurrentOmnibarContentId(1, 500);
+      // console.log('combinedDonations:', combinedDonations);
       return this.getCombinedDonationTotal(combinedDonations[0], combinedDonations[1]);
     }));
+    this.donationTotal$.subscribe();
+    setInterval(() => {
+      // console.log('omnibar setInterval fired');
+      this.facebookFundraisingPage$.subscribe();
+      this.fundraisingPageDetails$.subscribe();
+      this.donationTotal$.subscribe();
+    }, 0.5 * 60 * 1000);
+
   }
 
   ngAfterViewInit(): void {
@@ -70,9 +83,28 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
   }
 
   transitionCurrentDonationTotal(newDonationTotal: number): void {
-    console.log('transitionCurrentDonationTotal:', this.currentDonationTotal, newDonationTotal);
-    this.currentDonationTotal = newDonationTotal;
+    if (newDonationTotal > this.currentDonationTotal + 1) {
+      console.log('transitionCurrentDonationTotal:', this.currentDonationTotal, newDonationTotal);
+      this.currentDonationTotal = newDonationTotal;
+      this.playDonationGetAudio();
+    }
   }
+
+  playDonationGetAudio() {
+    const donationAlert = new Audio();
+    donationAlert.src = '../../../assets/audio/BOTW_Fanfare_Item.wav';
+    donationAlert.load();
+    if ( !this.isPlaying(donationAlert) ) { donationAlert.play(); }
+  }
+
+  isPlaying(audio: HTMLAudioElement): boolean {
+    return audio
+      && audio.currentTime > 0
+      && !audio.paused
+      && !audio.ended
+      && audio.readyState > 2;
+  }
+
 
   testDonation() {
     const randomAmount = Math.random() * 100;

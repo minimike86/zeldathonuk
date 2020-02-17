@@ -24,22 +24,15 @@
          style="height:56px; max-height:56px; border-left: 2px solid rgb(9, 98, 224);"
          id="donation_total_charity_logo">
       <div class="dtotal p-3">
-        <ng-container *ngIf="(donationTotal$ | async); else loadingDonationTotal;">
-          <div class="dtotal-odometer-div">
-            <span class="dtotal-odometer-pound mr-1">&pound;</span>
-            <ng-odometer class="dtotal-odometer"
-                         [number]="currentDonationTotal"
-                         [animation]="'slide'"
-                         [duration]="3000"
-                         [format]="'(,ddd).dd'"
-                         [auto]="true"></ng-odometer>
-            <span class="dtotal-odometer-pound" *ngIf="countDecimals(currentDonationTotal) == 0">.00</span>
-            <span class="dtotal-odometer-pound" *ngIf="countDecimals(currentDonationTotal) == 1">0</span>
-          </div>
-        </ng-container>
-        <ng-template #loadingDonationTotal>
-          <span>&pound;0.00</span>
-        </ng-template>
+        <div class="dtotal-odometer-div">
+          <span class="dtotal-odometer-pound mr-1">&pound;</span>
+          <ng-odometer class="dtotal-odometer"
+                       [number]="currentDonationTotal"
+                       [animation]="'slide'"
+                       [duration]="3000"
+                       [format]="'(,ddd).dd'"
+                       [auto]="true"></ng-odometer>
+        </div>
       </div>
       <img [src]="getCharityLogoUrl()"
            alt="charity logo"

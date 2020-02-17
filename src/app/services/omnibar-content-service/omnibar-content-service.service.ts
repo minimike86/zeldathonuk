@@ -16,7 +16,7 @@ export class OmnibarContentService {
   }
 
   setCurrentOmnibarContentId(id: number, timeout: number): void {
-    console.log('switching to next Omnibar Content Id', id);
+    // console.log('switching to next Omnibar Content Id', id);
     setTimeout(() => {
       return this.currentOmnibarContentId.next(id);
     }, timeout);
