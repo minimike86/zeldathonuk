@@ -38,12 +38,32 @@
   <hr class="hr">
 
   <div class="mb-3">
-    <div class="d-flex">
+    <div class="d-flex flex-column">
       <h1 class="text-dark pt-2 mr-3">Timer</h1>
+      <div class="d-flex justify-content-start align-items-center mt-2">
+        <div class="d-flex align-items-center m-1 w-25">
+          <span class="timer-label ml-2">Time&nbsp;Played:</span>
+        </div>
+        <div class="d-flex justify-content-start align-items-center w-50">
+          <h1 class="timer-text">{{ this.timer$ | async }}</h1>
+        </div>
+      </div>
       <div class="m-3">
-        <button class="btn btn-success mx-1" (click)="start()">{{ countUpTimer === undefined ? 'Loading...' : countUpTimer[0].isStarted === false && countUpTimer[0].hasPaused === false ? 'start' : 'resume' }}</button>
-        <button class="btn btn-warning mx-1" (click)="reset()">reset</button>
-        <button class="btn btn-danger mx-1" (click)="stop()">stop</button>
+        <button class="btn btn-success mx-1" (click)="start()">
+          {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'started'
+                                                      : countUpData[0].hasPaused === true ? 'resume + catchup'
+                                                      : countUpData[0].isStopped === true ? 'start' : '' }}
+        </button>
+        <button class="btn btn-warning mx-1" (click)="reset()">
+          {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'reset'
+                                                      : countUpData[0].hasPaused === true ? 'resume + reset'
+                                                      : countUpData[0].isStopped === true ? 'reset' : '' }}
+        </button>
+        <button class="btn btn-danger mx-1" (click)="stop()">
+          {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'pause'
+                                                      : countUpData[0].hasPaused === true ? 'stop'
+                                                      : countUpData[0].isStopped === true ? 'stopped' : '' }}
+        </button>
       </div>
     </div>
   </div>

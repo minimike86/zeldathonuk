@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from "@angular/fire/firestore";
-import { CountUpTimer, CountUpTimerId } from "./count-up-timer";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
-import * as firebase from 'firebase/app'
-import 'firebase/firestore'
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { CountUpTimer, CountUpTimerId } from './count-up-timer';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import * as firebase from 'firebase/app';
+import 'firebase/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -31,24 +31,24 @@ export class FirebaseTimerService {
   }
 
   setCountUpTimerStartDate(data: Date): void {
-    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'startDate':firebase.firestore.Timestamp.fromDate(data)});
+    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'startDate': firebase.firestore.Timestamp.fromDate(data)});
   }
 
   setCountUpTimerStopDate(data: Date): void {
-    data === undefined || data === null ? this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'stopDate':null})
-      : this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'stopDate':firebase.firestore.Timestamp.fromDate(data)});
+    data === undefined || data === null ? this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'stopDate': null})
+      : this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'stopDate': firebase.firestore.Timestamp.fromDate(data)});
   }
 
   setCountUpTimerIsStarted(data: boolean): void {
-    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'isStarted':data});
+    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'isStarted': data});
   }
 
   setCountUpTimerHasPaused(data: boolean): void {
-    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'hasPaused':data});
+    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'hasPaused': data});
   }
 
   setCountUpTimerIsStopped(data: boolean): void {
-    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'isStopped':data});
+    this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'isStopped': data});
   }
 
 }

@@ -1,7 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {ActivatedRoute} from "@angular/router";
-import {CountupService} from "../../../services/countup-service/countup.service";
-import {Observable} from "rxjs";
+import {ActivatedRoute} from '@angular/router';
+import {CountupService} from '../../../services/countup-service/countup.service';
+import {Observable} from 'rxjs';
 
 
 @Component({

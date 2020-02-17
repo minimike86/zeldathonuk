@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, interval, Observable, Subscription} from "rxjs";
-import {FirebaseTimerService} from "../firebase/firebase-timer/firebase-timer.service";
-import {CountUpTimerId} from "../firebase/firebase-timer/count-up-timer";
+import {BehaviorSubject, interval, Observable, Subscription} from 'rxjs';
+import {FirebaseTimerService} from '../firebase/firebase-timer/firebase-timer.service';
+import {CountUpTimerId} from '../firebase/firebase-timer/count-up-timer';
 
 
 @Injectable({
@@ -17,7 +17,7 @@ export class CountupService {
   public minutes: number;
   public seconds: number;
   public milliseconds: number;
-  public timer$ = new BehaviorSubject<string>('00:00:00');
+  public timer$: BehaviorSubject<string> = new BehaviorSubject<string>('00:00:00');
 
   constructor(private firebaseTimerService: FirebaseTimerService) {
     this.firebaseTimerService.getCountUpTimer().subscribe(data => {
@@ -51,7 +51,9 @@ export class CountupService {
         }
       } else if (this.getHasPaused() && this.countUpData[0].stopDate !== null) {
         // @ts-ignore: IDE does not detect seconds variable from firebase.firestore.Timestamp
-        this.nowDate = new Date(new Date(this.countUpData[0].stopDate.seconds * 1000).getTime() - new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
+        this.nowDate = new Date(
+          new Date(this.countUpData[0].stopDate.seconds * 1000).getTime() -
+          new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
         this.hours = this.nowDate.getUTCHours();
         this.minutes = this.nowDate.getUTCMinutes();
         this.seconds = this.nowDate.getUTCSeconds();
@@ -88,6 +90,47 @@ export class CountupService {
 
   setIncludeMillisecs(value: boolean): void {
     this.includeMillisecs = value;
+  }
+
+  startNewTimer() {
+    this.firebaseTimerService.setCountUpTimerStartDate(new Date());
+    this.firebaseTimerService.setCountUpTimerStopDate(null);
+    this.firebaseTimerService.setCountUpTimerIsStarted(true);
+    this.firebaseTimerService.setCountUpTimerHasPaused(false);
+    this.firebaseTimerService.setCountUpTimerIsStopped(false);
+  }
+
+  continueExistingTimer() {
+    this.firebaseTimerService.setCountUpTimerIsStarted(true);
+    this.firebaseTimerService.setCountUpTimerHasPaused(false);
+  }
+
+  resetStoppedTimer() {
+    this.firebaseTimerService.setCountUpTimerStartDate(new Date());
+    this.firebaseTimerService.setCountUpTimerStopDate(null);
+    this.firebaseTimerService.setCountUpTimerIsStopped(true);
+    this.firebaseTimerService.setCountUpTimerIsStarted(false);
+    this.firebaseTimerService.setCountUpTimerHasPaused(false);
+    this.timer$.next('00:00:00');
+  }
+
+  resetCurrentTimer() {
+    this.firebaseTimerService.setCountUpTimerStartDate(new Date());
+    this.firebaseTimerService.setCountUpTimerStopDate(null);
+    this.firebaseTimerService.setCountUpTimerIsStarted(true);
+    this.firebaseTimerService.setCountUpTimerHasPaused(false);
+  }
+
+  pauseTimer() {
+    this.firebaseTimerService.setCountUpTimerIsStarted(false);
+    this.firebaseTimerService.setCountUpTimerHasPaused(true);
+  }
+
+  stopTimer() {
+    this.firebaseTimerService.setCountUpTimerStopDate(new Date());
+    this.firebaseTimerService.setCountUpTimerIsStopped(true);
+    this.firebaseTimerService.setCountUpTimerIsStarted(false);
+    this.firebaseTimerService.setCountUpTimerHasPaused(false);
   }
 
   zeroPad(num: number, maxLen: number): string {
