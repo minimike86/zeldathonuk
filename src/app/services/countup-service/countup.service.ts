@@ -33,7 +33,6 @@ export class CountupService {
   updateTimer(): void {
     if (this.countUpData !== undefined && this.countUpData[0] !== undefined) {
       if (this.getIsStarted()) {
-        // @ts-ignore: IDE does not detect seconds variable from firebase.firestore.Timestamp
         this.nowDate = new Date(new Date().getTime() - new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
         this.hours = this.nowDate.getUTCHours();
         this.minutes = this.nowDate.getUTCMinutes();
@@ -50,7 +49,6 @@ export class CountupService {
             this.zeroPad(this.seconds, 2));
         }
       } else if (this.getHasPaused() && this.countUpData[0].stopDate !== null) {
-        // @ts-ignore: IDE does not detect seconds variable from firebase.firestore.Timestamp
         this.nowDate = new Date(
           new Date(this.countUpData[0].stopDate.seconds * 1000).getTime() -
           new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
@@ -68,6 +66,8 @@ export class CountupService {
             this.zeroPad(this.minutes, 2) + ':' +
             this.zeroPad(this.seconds, 2));
         }
+      } else if (this.getIsStopped()) {
+        this.timer$.next('00:00:00');
       }
     }
   }
@@ -111,7 +111,6 @@ export class CountupService {
     this.firebaseTimerService.setCountUpTimerIsStopped(true);
     this.firebaseTimerService.setCountUpTimerIsStarted(false);
     this.firebaseTimerService.setCountUpTimerHasPaused(false);
-    this.timer$.next('00:00:00');
   }
 
   resetCurrentTimer() {
