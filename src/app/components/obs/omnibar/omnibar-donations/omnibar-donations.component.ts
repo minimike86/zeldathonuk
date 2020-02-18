@@ -67,9 +67,12 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationId().pipe(map(trackedDonations => {
-      this.lastTenDonations = trackedDonations.slice(-10);
-      return trackedDonations;
+    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationId().pipe(map(trackedDonationIds => {
+      trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
+        b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime()
+      );
+      this.lastTenDonations = trackedDonationIds.slice(-10);
+      return trackedDonationIds;
     }));
   }
 

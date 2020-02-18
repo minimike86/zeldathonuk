@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import {Observable} from 'rxjs';
+import {map} from 'rxjs/operators';
 import {DonationTrackingService} from '../../services/firebase/donation-tracking/donation-tracking.service';
 import {TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
 
@@ -24,7 +25,11 @@ export class DonationsComponent implements OnInit {
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationId();
+    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationId().pipe(map(trackedDonationIds => {
+      return trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
+        b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime()
+      );
+    }));
   }
 
   donateFacebook() {
