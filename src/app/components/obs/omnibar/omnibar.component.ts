@@ -85,8 +85,8 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
   transitionCurrentDonationTotal(newDonationTotal: number): void {
     if (newDonationTotal > this.currentDonationTotal + 1) {
       console.log('transitionCurrentDonationTotal:', this.currentDonationTotal, newDonationTotal);
-      this.currentDonationTotal = newDonationTotal;
       this.playDonationGetAudio();
+      this.currentDonationTotal = newDonationTotal;
     }
   }
 
@@ -94,7 +94,7 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
     const donationAlert = new Audio();
     donationAlert.src = '../../../assets/audio/BOTW_Fanfare_Item.wav';
     donationAlert.load();
-    if ( !this.isPlaying(donationAlert) ) { donationAlert.play(); }
+    if ( !this.isPlaying(donationAlert) && this.currentDonationTotal !== 0.00 ) { donationAlert.play(); }
   }
 
   isPlaying(audio: HTMLAudioElement): boolean {

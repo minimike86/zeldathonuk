@@ -24,12 +24,12 @@ const routes: Routes = [
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },
   { path: 'schedule', component: ScheduleComponent },
-  { path: 'obs', component: ObsComponent,                         canActivate: [AuthGuard] },
-  { path: 'obs/:layout', component: ObsLayoutComponent },
-  { path: 'tracking/:game', component: GameTrackingComponent,     canActivate: [AuthGuard] },
-  { path: 'api/timers', component: TimersComponent,               canActivate: [AuthGuard] },
-  { path: 'api/count-up', component: CountupComponent,            canActivate: [AuthGuard] },
-  { path: 'api/count-to-date', component: CountDateComponent },
+  { path: 'obs', component: ObsComponent },
+  { path: 'obs/layout/:layout', component: ObsLayoutComponent },
+  { path: 'obs/countdown', component: CountDateComponent },
+  { path: 'tracking/:game', component: GameTrackingComponent },
+  { path: 'api/timers', component: TimersComponent },
+  { path: 'api/count-up', component: CountupComponent },
   { path: '**', component: PageNotFoundComponent }
 ];
 
