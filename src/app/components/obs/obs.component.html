@@ -38,8 +38,11 @@
   <hr class="hr">
 
   <div class="mb-3">
-    <div class="d-flex flex-column">
-      <h1 class="text-dark pt-2 mr-3">Timer</h1>
+    <div class="d-flex justify-content-between">
+      <h1 class="text-dark pt-2">Timer</h1>
+      <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();">Show/Hide</button>
+    </div>
+    <div class="d-flex flex-column" *ngIf="showTimer">
       <div class="d-flex justify-content-start align-items-center mt-2">
         <div class="d-flex align-items-center m-1 w-25">
           <span class="timer-label ml-2">Time&nbsp;Played:</span>
@@ -71,16 +74,19 @@
   <hr class="hr">
 
   <div class="mb-3">
-    <div class="d-flex">
-      <h1 class="text-dark pt-2 mr-3">Runner Name</h1>
-      <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
-        <div class="d-flex">
-          <span class="small mr-2">Current Runner:</span>
-          <h6 class="m-0">{{ currentRunner !== undefined ? currentRunner.runnerName + ' (Twitch: ' + currentRunner.runnerHasTwitchAccount + ')' : 'fetching...' }}</h6>
+    <div class="d-flex justify-content-between mb-3">
+      <div class="d-flex justify-content-start">
+        <h1 class="text-dark pt-2 mr-3">Runner Name</h1>
+        <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
+          <div class="d-flex flex-row">
+            <span class="small mr-2">Current Runner:</span>
+            <h6 class="m-0">{{ currentRunner !== undefined ? currentRunner.runnerName + ' (Twitch: ' + currentRunner.runnerHasTwitchAccount + ')' : 'fetching...' }}</h6>
+          </div>
         </div>
       </div>
+      <button class="btn btn-sm btn-dark" (click)="toggleShowRunnerName();">Show/Hide</button>
     </div>
-    <div class="d-flex">
+    <div class="d-flex" *ngIf="showRunnerName">
 
       <div class="input-group input-group-lg">
 
@@ -108,16 +114,99 @@
   <hr class="hr">
 
   <div class="mb-3">
-    <div class="d-flex">
-      <h1 class="text-dark pt-2 mr-3">Select Game</h1>
-      <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
-        <div class="d-flex">
-          <span class="small mr-2">Currently Playing:</span>
-          <h6 class="m-0">{{ gameLineUp !== undefined ? currentlyPlaying.index : 'fetching...' }}</h6>
+    <div class="d-flex justify-content-between">
+      <h1 class="text-dark pt-2 mr-3">Add Donation</h1>
+      <button class="btn btn-sm btn-dark" (click)="toggleShowAddDonation();">Show/Hide</button>
+    </div>
+    <div class="d-flex justify-content-center" *ngIf="showAddDonation">
+      <form class="w-50">
+
+        <div class="form-group">
+          <label for="name">Name:</label>
+          <input id="name" name="name" type="text" placeholder="Name" class="form-control form-control-sm"
+                 [(ngModel)]="tempTrackedDonation.name">
+        </div>
+
+        <div class="form-group">
+          <label for="imgUrl">Image Url:</label>
+          <input id="imgUrl" name="imgUrl" type="text" placeholder="https://image.url/image.jpg" class="form-control form-control-sm"
+                 [(ngModel)]="tempTrackedDonation.imgUrl">
+        </div>
+
+        <div class="form-group">
+          <label for="message">Donation Message:</label>
+          <textarea id="message" name="message" placeholder="Donation Message" class="form-control form-control-sm"
+                    [(ngModel)]="tempTrackedDonation.message"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="currency">Currency:</label>
+          <select id="currency" name="currency" class="form-control form-control-sm"
+                  [(ngModel)]="tempTrackedDonation.currency">
+            <option [ngValue]="'GBP'" selected="selected">GBP</option>
+            <option [ngValue]="'EUR'">EUR</option>
+            <option [ngValue]="'USD'">USD</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="donationAmount">Donation Amount:</label>
+          <input id="donationAmount" name="donationAmount" type="number" value="0.00" class="form-control form-control-sm"
+                 [(ngModel)]="tempTrackedDonation.donationAmount">
+        </div>
+
+        <div class="form-group">
+          <label for="giftAidAmount">GiftAid Amount:</label>
+          <input id="giftAidAmount" name="giftAidAmount" type="number" value="0.00" class="form-control form-control-sm"
+                 [(ngModel)]="tempTrackedDonation.giftAidAmount">
+        </div>
+
+        <div class="form-group">
+          <label for="donationSource">Donation Source:</label>
+          <select id="donationSource" name="donationSource" class="form-control form-control-sm"
+                  [(ngModel)]="tempTrackedDonation.donationSource">
+            <option [ngValue]="'Facebook'" selected="selected">Facebook</option>
+            <option [ngValue]="'JustGiving'">JustGiving</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="donationDate">Date:</label>
+          <input id="donationDate" name="donationDate" type="date" class="form-control form-control-sm"
+                 [(ngModel)]="donationDate">
+        </div>
+
+        <div class="form-group">
+          <label for="donationTime">Time:</label>
+          <input id="donationTime" name="donationTime" type="time" class="form-control form-control-sm"
+                 [(ngModel)]="donationTime">
+        </div>
+
+        <div class="d-flex justify-content-center">
+          <button type="submit" class="btn btn-primary mb-2 mr-2 w-75" (click)="submitTrackedDonation()">Add Donation</button>
+          <button type="submit" class="btn btn-secondary mb-2 w-25" (click)="clearTrackedDonation()">Clear</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <hr class="hr">
+
+  <div class="mb-3">
+    <div class="d-flex justify-content-between">
+      <div class="d-flex justify-content-start">
+        <h1 class="text-dark pt-2 mr-3">Select Game</h1>
+        <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
+          <div class="d-flex flex-row">
+            <span class="small mr-2">Currently Playing:</span>
+            <h6 class="m-0">{{ gameLineUp !== undefined ? currentlyPlaying.index : 'fetching...' }}</h6>
+          </div>
         </div>
       </div>
+      <button class="btn btn-sm btn-dark" (click)="toggleShowGameSelect();">Show/Hide</button>
     </div>
-    <div class="d-flex">
+    <div class="d-flex" *ngIf="showGameSelect">
       <ng-container *ngFor="let game of gameLineUp | keyvalue">
         <div class="card border-secondary layout-list" style="max-width: 110px;" *ngIf="game.value.active">
           <div class="card-header small">{{ game.value.gameName }}</div>
@@ -138,16 +227,19 @@
   <hr class="hr">
 
   <div class="mb-5">
-    <div class="d-flex">
-      <h1 class="text-dark pt-2 mr-3">Track Game Items</h1>
-      <div class="align-self-end card border-secondary bg-warning mb-2 p-1 h-25">
-        <div class="d-flex">
-          <span class="small mr-2">Currently Playing:</span>
-          <h6 class="m-0">{{ gameLineUp !== undefined ? gameLineUp.size !== 0 ? currentlyPlaying.index : 'No Games' : 'Fetching...' }}</h6>
+    <div class="d-flex justify-content-between">
+      <div class="d-flex justify-content-start">
+        <h1 class="text-dark pt-2 mr-3">Track Game Items</h1>
+        <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
+          <div class="d-flex flex-row">
+            <span class="small mr-2">Currently Playing:</span>
+            <h6 class="m-0">{{ gameLineUp !== undefined ? gameLineUp.size !== 0 ? currentlyPlaying.index : 'No Games' : 'Fetching...' }}</h6>
+          </div>
         </div>
       </div>
+      <button class="btn btn-sm btn-dark" (click)="toggleShowGameTracking();">Show/Hide</button>
     </div>
-    <div class="d-flex">
+    <div class="d-flex" *ngIf="showGameTracking">
       <app-game-tracking></app-game-tracking>
     </div>
   </div>

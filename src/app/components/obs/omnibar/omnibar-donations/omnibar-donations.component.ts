@@ -14,6 +14,8 @@ import {
   keyframes,
 } from '@angular/animations';
 import {OmnibarContentService} from '../../../../services/omnibar-content-service/omnibar-content-service.service';
+import {DonationTrackingService} from '../../../../services/firebase/donation-tracking/donation-tracking.service';
+import {TrackedDonationId} from '../../../../services/firebase/donation-tracking/tracked-donation';
 
 @Component({
   selector: 'app-omnibar-donations',
@@ -49,15 +51,15 @@ import {OmnibarContentService} from '../../../../services/omnibar-content-servic
   ],
 })
 export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
-  public fundraisingPageDonations$: Observable<FundraisingPageDonations>;
-  public lastTenDonations: Donation[] = [];
-  public highlightedDonation: Donation;
+  public trackedDonationIds$: Observable<TrackedDonationId[]>;
+  public lastTenDonations: TrackedDonationId[] = [];
+  public highlightedDonation: TrackedDonationId;
   public timeAgo: TimeAgo;
   public currentState = 'slideInFromRight';
 
   public currentOmnibarContentId$: Observable<number>;
 
-  constructor( private jgService: JgService,
+  constructor( private donationTrackingService: DonationTrackingService,
                private omnibarContentService: OmnibarContentService ) {
     this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
   }
@@ -65,9 +67,9 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.fundraisingPageDonations$ = this.jgService.getFundraisingPageDonations().pipe(map(fpd => {
-      this.lastTenDonations = fpd.donations.slice(-10);
-      return fpd;
+    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationId().pipe(map(trackedDonations => {
+      this.lastTenDonations = trackedDonations.slice(-10);
+      return trackedDonations;
     }));
   }
 

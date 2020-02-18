@@ -9,11 +9,14 @@ import { RunnerNameService } from '../../services/firebase/runner-name/runner-na
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 import { map } from 'rxjs/operators';
 import { ZeldaGame } from '../../models/zelda-game';
-import { KeyValue } from '@angular/common';
+import {KeyValue, Time} from '@angular/common';
 import { JgService } from '../../services/jg-service/jg-service.service';
-import {CountupService} from '../../services/countup-service/countup.service';
-import {Observable} from 'rxjs';
-
+import { CountupService } from '../../services/countup-service/countup.service';
+import { Observable } from 'rxjs';
+import { TrackedDonation } from '../../services/firebase/donation-tracking/tracked-donation';
+import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
+import * as firebase from 'firebase';
+import Timestamp = firebase.firestore.Timestamp;
 
 @Component({
   selector: 'app-obs',
@@ -29,26 +32,46 @@ export class ObsComponent implements OnInit {
   public yesNoModal: NgbActiveModal;
 
   public showObsLayouts = false;
-
-  public faTwitch = faTwitch;
-  public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
-  public currentRunner: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
-
-  public currentlyPlaying = {id: '', index: ''};
-  public gameLineUp: Map<string, ZeldaGame>;
-  public swapGameKey: KeyValue<string, ZeldaGame>;
+  public showTimer = false;
+  public showRunnerName = false;
+  public showAddDonation = false;
+  public showGameSelect = false;
+  public showGameTracking = false;
 
   public countUpData: CountUpTimerId[];
   public timer$: Observable<string>;
   public timer: string;
 
+  public faTwitch = faTwitch;
+  public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
+  public currentRunner: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
+
+  public tempTrackedDonation: TrackedDonation;
+  public donationDate: string;
+  public donationTime: string;
+
+  public currentlyPlaying = {id: '', index: ''};
+  public gameLineUp: Map<string, ZeldaGame>;
+  public swapGameKey: KeyValue<string, ZeldaGame>;
+
   constructor( private modalService: NgbModal,
                private countupService: CountupService,
                private firebaseTimerService: FirebaseTimerService,
+               private donationTrackingService: DonationTrackingService,
                private jgService: JgService,
                private runnerNameService: RunnerNameService,
                private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService ) {
+    this.tempTrackedDonation = {
+      name: '',
+      imgUrl: '',
+      message: '',
+      currency: 'GBP',
+      donationAmount: 0.00,
+      giftAidAmount: 0.00,
+      donationSource: 'Facebook',
+      donationDate: null
+    };
   }
 
   ngOnInit() {
@@ -114,8 +137,46 @@ export class ObsComponent implements OnInit {
       });
   }
 
+  submitTrackedDonation() {
+    this.tempTrackedDonation.donationDate = Timestamp.fromDate(new Date(this.donationDate + 'T' + this.donationTime));
+    this.donationTrackingService.addTrackedDonation(this.tempTrackedDonation);
+  }
+
+  clearTrackedDonation() {
+    this.tempTrackedDonation = {
+      name: '',
+      imgUrl: '',
+      message: '',
+      currency: 'GBP',
+      donationAmount: 0.00,
+      giftAidAmount: 0.00,
+      donationSource: 'Facebook',
+      donationDate: null
+    };
+  }
+
   toggleShowObsLayouts() {
     this.showObsLayouts = !this.showObsLayouts;
+  }
+
+  toggleShowTimer() {
+    this.showTimer = !this.showTimer;
+  }
+
+  toggleShowRunnerName() {
+    this.showRunnerName = !this.showRunnerName;
+  }
+
+  toggleShowAddDonation() {
+    this.showAddDonation = !this.showAddDonation;
+  }
+
+  toggleShowGameSelect() {
+    this.showGameSelect = !this.showGameSelect;
+  }
+
+  toggleShowGameTracking() {
+    this.showGameTracking = !this.showGameTracking;
   }
 
 }
