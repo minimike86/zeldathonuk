@@ -29,7 +29,7 @@ const routes: Routes = [
   { path: 'tracking/:game', component: GameTrackingComponent,     canActivate: [AuthGuard] },
   { path: 'api/timers', component: TimersComponent,               canActivate: [AuthGuard] },
   { path: 'api/count-up', component: CountupComponent,            canActivate: [AuthGuard] },
-  { path: 'api/count-to-date', component: CountDateComponent,     canActivate: [AuthGuard] },
+  { path: 'api/count-to-date', component: CountDateComponent },
   { path: '**', component: PageNotFoundComponent }
 ];
 
