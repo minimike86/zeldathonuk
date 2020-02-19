@@ -10,8 +10,6 @@ import {timer} from 'rxjs';
 export class NavbarComponent implements OnInit {
   public isCollapsed = true;
   public displayCombinedTotal: boolean;
-  @Input() showJgDonationComponent: boolean;
-  @Input() showFbDonationComponent: boolean;
   public user: any;
 
   constructor(private auth: AuthService) {

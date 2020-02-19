@@ -1,10 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import {FbService} from '../../services/fb-service/fb-service.service';
-import {Observable, timer} from 'rxjs';
-import {FacebookFundraisingPage} from '../../services/fb-service/facebook-fundraising-page';
-import {map} from 'rxjs/operators';
-import {FundraisingPageDetails, FundraisingPageDonations} from '../../services/jg-service/fundraising-page';
-import {JgService} from '../../services/jg-service/jg-service.service';
+import {Component, OnInit} from '@angular/core';
+import {tap} from 'rxjs/operators';
+import {DonationTrackingService} from '../../services/firebase/donation-tracking/donation-tracking.service';
+import {TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
+import {Observable} from 'rxjs';
 
 @Component({
   selector: 'app-combined-total',
@@ -12,55 +10,30 @@ import {JgService} from '../../services/jg-service/jg-service.service';
   styleUrls: ['./combined-total.component.css']
 })
 export class CombinedTotalComponent implements OnInit {
-  public displayTotal: boolean;
+  public trackedDonationIds$: Observable<TrackedDonationId[]>;
+  public trackedDonationIds: TrackedDonationId[];
+  public total = 0;
 
-  public facebookFundraisingPage: Observable<FacebookFundraisingPage>;
-  public justgivingFundraisingPageDetails: Observable<FundraisingPageDetails>;
-  public justgivingFundraisingPageDonations: Observable<FundraisingPageDonations>;
-
-  public totalRaised: number;
-  public donorCount: number;
-
-  constructor(private fbService: FbService,
-              private jgService: JgService) {
-    this.observableTimer();
+  constructor( private donationTrackingService: DonationTrackingService ) {
   }
 
   ngOnInit() {
-    this.facebookFundraisingPage = this.fbService.getFacebookFundraisingPage().pipe(map(fbDonations => {
-      console.log('fbDonations', fbDonations);
-      return fbDonations[0];
-    }));
-    this.justgivingFundraisingPageDetails = this.jgService.getFundraisingPageDetails().pipe(map(fpDetails => {
-      console.log('fpDetails', fpDetails);
-      return fpDetails;
-    }));
-    this.justgivingFundraisingPageDonations = this.jgService.getFundraisingPageDonations().pipe(map(fpDonations => {
-      console.log('fpDonations', fpDonations);
-      return fpDonations;
-    }));
-  }
+    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(tap(trackedDonationIds => {
+      this.trackedDonationIds = trackedDonationIds;
 
-  observableTimer() {
-    const interval = 10;
-    const source = timer(1000, 2000);
-    const countdown = source.subscribe(val => {
-      if (val % interval === 0) {
-        this.displayTotal = !this.displayTotal;
-      }
-    });
-  }
+      let total = 0;
+      this.trackedDonationIds.forEach(trackedDonationId => {
+        if (trackedDonationId.currency === 'GBP') {
+          total = total + trackedDonationId.donationAmount;
+        } else if (trackedDonationId.currency === 'USD') {
+          total = total + (trackedDonationId.donationAmount * 0.7740);
+        } else if (trackedDonationId.currency === 'EUR') {
+          total = total + (trackedDonationId.donationAmount * 0.8354);
+        }
+      });
+      this.total = total;
 
-  getDonationTotal(fundraisingPageDetails: FundraisingPageDetails, facebookFundraisingPage: FacebookFundraisingPage): number {
-    const totalRaisedOnline = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOnline ) !== null
-      ? fundraisingPageDetails.totalRaisedOnline : '0';
-    const totalRaisedOffline = (fundraisingPageDetails && fundraisingPageDetails.totalRaisedOffline ) !== null
-      ? fundraisingPageDetails.totalRaisedOffline : '0';
-    return parseInt(totalRaisedOnline, 0) + parseInt(totalRaisedOffline, 0) + facebookFundraisingPage.amountRaised;
-  }
-
-  getDonorCount(fundraisingPageDonations: FundraisingPageDonations, facebookFundraisingPage: FacebookFundraisingPage): number {
-    return fundraisingPageDonations.donations.length + facebookFundraisingPage.donorCount;
+    }));
   }
 
 }

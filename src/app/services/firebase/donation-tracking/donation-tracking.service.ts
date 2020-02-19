@@ -14,12 +14,12 @@ export class DonationTrackingService {
 
   constructor( private db: AngularFirestore ) {
     this.trackedDonationCollection = db.collection<TrackedDonation>('/donations');
-    this.getTrackedDonationId().subscribe( data => {
+    this.getTrackedDonationIds().subscribe( data => {
       this.trackedDonationIds = data;
     });
   }
 
-  getTrackedDonationId(): Observable<TrackedDonationId[]> {
+  getTrackedDonationIds(): Observable<TrackedDonationId[]> {
     return this.trackedDonationCollection.snapshotChanges().pipe(
       map(actions => actions.map(a => {
         const id = a.payload.doc.id;
