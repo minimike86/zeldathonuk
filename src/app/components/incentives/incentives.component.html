@@ -7,6 +7,39 @@
     </h6>
   </div>
 
+
+  <div class="border-bottom border-light">
+    &nbsp;
+  </div>
+
+
+  <h2 class="text-white mt-4">Activities / Challenges</h2>
+  <h6 class="text-white-50 mb-3">
+    Activites and challenges are designed to help you get us to DO something
+  </h6>
+  <div class="d-flex my-2">
+
+    <div class="d-inline-flex flex-fill">
+
+      <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let incentive of donationIncentives">
+        <div class="card-header">
+          <h5>{{ incentive.name }}</h5>
+          <span class="badge mr-1" [ngClass]="incentive.typeColour">{{ incentive.type }}</span>
+          <span class="badge" [ngClass]="incentive.constraintColour">{{ incentive.constraint }}</span>
+        </div>
+        <a [href]="incentive.imageHrefUrl" target="_blank">
+          <img class="card-img" style="height: 250px;" [alt]="incentive.name" [src]="incentive.imageSrcUrl">
+        </a>
+        <div class="card-body" [innerHTML]="incentive.description"></div>
+        <div class="card-footer small">
+          Donate: <b>{{ incentive.donationAmount | currency:'GBP' }}</b>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
   <div class="text-center card card-header">
     <div class="d-flex justify-content-center p-3">
       <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
@@ -21,7 +54,17 @@
     </div>
   </div>
 
-  <h2 class="text-white my-5">Prizes</h2>
+
+  <div class="border-bottom border-light">
+    &nbsp;
+  </div>
+
+
+  <h2 class="text-white mt-4">Raffle Prizes</h2>
+  <h6 class="text-white-50 mb-3">
+    We will be raffling off all these prizes in exchange for your participation. Eg: donating, raiding or hosting the stream, sharing the stream and otherwise just getting involved in the chat.
+    These we be announced on stream when the raffles are active throughout the zelda marathon so stay tuned in to win!
+  </h6>
   <div class="d-flex my-2">
 
     <div class="d-inline-flex flex-fill">
@@ -49,25 +92,20 @@
     </div>
   </div>
 
-  <h2 class="text-white my-5">Challenges</h2>
-  <div class="d-flex my-2">
 
-    <div class="d-inline-flex flex-fill">
-
-      <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let incentive of donationIncentives">
-        <div class="card-header">
-          <h5>{{ incentive.name }}</h5>
-          <span class="badge mr-1" [ngClass]="incentive.typeColour">{{ incentive.type }}</span>
-          <span class="badge" [ngClass]="incentive.constraintColour">{{ incentive.constraint }}</span>
-        </div>
-        <img class="card-img" style="height: 250px;" [alt]="incentive.name" [src]="incentive.imageUrl">
-        <div class="card-body" [innerHTML]="incentive.description"></div>
-        <div class="card-footer small">
-          Donate: <b>{{ incentive.donationAmount | currency:'GBP' }}</b>
-        </div>
-      </div>
-
+  <div class="text-center card card-header">
+    <div class="d-flex justify-content-center p-3">
+      <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
+    </div>
+    <div class="d-inline">
+      <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+        Donate via Facebook
+      </button>
+      <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
+        Donate via JustGiving
+      </button>
     </div>
   </div>
+
 
 </div>

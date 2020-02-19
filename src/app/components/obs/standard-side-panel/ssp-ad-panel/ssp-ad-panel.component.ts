@@ -39,6 +39,16 @@ export class SspAdPanelComponent implements OnInit {
 
   getBackgroundImageUrls(): String[] {
     const imageUrls: String[] = [];
+    // ZELDATHON TEAM
+    imageUrls.push('url("../../../../../assets/img/obs-team/304033_174345772646092_2089677901_n.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/470559_287752961305372_1293519474_o.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/901591_455444951202838_207106665_o.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/903837_455445134536153_340454438_o.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/15940510_1232235973523728_1243498660112768403_n.png")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/20190122_023316.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/52797088_2087154738031843_4432511626494607360_o.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/D0N20WEWkAIoQR9.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-team/MikeWarnerjpggallery.jpg")');
     // ZELDA ARTWORK IMAGES
     imageUrls.push('url("../../../../../assets/img/obs-bg/botw_jeremy_fenske.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-bg/loz_ghibli.jpg")');
@@ -99,6 +109,12 @@ export class SspAdPanelComponent implements OnInit {
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/specialeffectcontr_610.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/Xbox-Adaptive-Controller-Microsoft-experimenta-4-800x675.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/zephyrus3.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-specialeffect/4635A86700000578-0-Special_Effect_use_technology_to_help_people_with_physical_disab-a-41_1510332144579.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-specialeffect/derrydsgadfgsdfhfgikdtyhusdfbcvbdstyweb.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-specialeffect/hqdegfhfghfghrtykjuluolkfault.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-specialeffect/im-a-gamer-now-meet-the-charity-thats-helping-the-disabled-get-into-gaming-501-body-image-1445522988-size_1000.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-specialeffect/sdcpojwpeioutrqoingvadftgerbookJumbo.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-specialeffect/specialeffehfgkhjkljgklghjkfgnfgvbsdying.jpg")');
     return imageUrls;
   }
 

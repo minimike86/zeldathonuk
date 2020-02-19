@@ -5,7 +5,8 @@ export interface DonationIncentive {
   typeColour: string;
   constraint: string;
   constraintColour: string;
-  imageUrl: string;
+  imageSrcUrl: string;
+  imageHrefUrl: string;
   description: string;
   donationAmount: number;
 }

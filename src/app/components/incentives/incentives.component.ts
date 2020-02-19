@@ -17,15 +17,55 @@ export class IncentivesComponent implements OnInit {
 
     this.donationIncentives.push(
       {
-        name: 'EXERCISE',
-        type: 'Team',
+        name: 'Twitch Viewership',
+        type: 'Audience',
         typeColour: 'badge-success',
-        constraint: 'Daylight Hours Only',
-        constraintColour: 'badge-warning',
-        imageUrl: '../../../assets/img/challenges/exercise.jpg',
-        description: 'You donate and we have to exercise. Push-ups, sit-ups, ' +
-          '<a class="bg-dark text-warning font-weight-bold px-1" href="https://clips.twitch.tv/SolidFamousLaptopOSsloth" target="_blank">backflips</a>...',
+        constraint: '',
+        constraintColour: '',
+        imageSrcUrl: '../../../assets/img/challenges/twitch-views.jpg',
+        imageHrefUrl: '../../../assets/img/challenges/twitch-views.jpg',
+        description: '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Raid</a>, <a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Host</a>, ' +
+          '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Share</a>, and <a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Watch</a> the stream is the best thing ' +
+          'you can do to support us! More views means we appear higher in the search which leads to more views and hopefully more donations for ' +
+          '<a href="https://www.specialeffect.org.uk/what-we-do" target="_blank" class="bg-dark text-light font-weight-bold px-1">SpecialEffect</a>',
+        donationAmount: 0
+      },
+      {
+        name: 'EXERCISE',
+        type: 'ZeldathonUK Team',
+        typeColour: 'badge-success',
+        constraint: '',
+        constraintColour: '',
+        imageSrcUrl: '../../../assets/img/challenges/exercise.jpg',
+        imageHrefUrl: '../../../assets/img/challenges/exercise.jpg',
+        description: '<span class="bg-dark text-success font-weight-bold px-1">Donate £20</span> and you can request that one of us has to exercise. Push-ups, sit-ups, we have even done ' +
+          '<a class="bg-dark text-white font-weight-bold px-1" href="https://clips.twitch.tv/SolidFamousLaptopOSsloth" target="_blank">backflips</a> in the past!',
         donationAmount: 20
+      },
+      {
+        name: 'Commission Henry',
+        type: 'Henry',
+        typeColour: 'badge-success',
+        constraint: 'When Henry\'s On-stream',
+        constraintColour: 'badge-warning',
+        imageSrcUrl: '../../../assets/img/challenges/majoras-mask-pen.jpg',
+        imageHrefUrl: '../../../assets/img/challenges/majoras-mask-pen.jpg',
+        description: '<span class="bg-dark text-success font-weight-bold px-1">Donate £50</span> and you can commission some beautiful artwork from Heennnrrrryyyyyyyyy!',
+        donationAmount: 50
+      },
+      {
+        name: 'Cryptocurrency',
+        type: 'MSec',
+        typeColour: 'badge-success',
+        constraint: 'Free Money!',
+        constraintColour: 'badge-info',
+        imageSrcUrl: '../../../assets/img/challenges/coinbase-ad.jpg',
+        imageHrefUrl: 'https://www.coinbase.com/join/warner_p5',
+        description: '<p class="text-justify"><a href="https://www.twitch.tv/msec" target="_blank" class="bg-dark text-warning font-weight-bold px-1">msec</a>' +
+          ' is tracking a couple crypto-currencies over the weekend, any gains will be donated at the end!</p><p>You can add £7.74 ($10 USD) to ' +
+          'our Bitcoin amount by <a class="bg-dark text-success font-weight-bold px-1" href="https://www.coinbase.com/join/warner_p5" ' +
+          'target="_blank">creating a coinbase account</a> and buying or selling at least £77.43 ($100 USD).</p><p>Better yet you’ll also receive £7.74 in Bitcoin!</p>',
+        donationAmount: 7.43
       },
     );
 
