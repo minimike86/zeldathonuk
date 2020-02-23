@@ -71,7 +71,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
       trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
         b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime()
       );
-      this.lastTenDonations = trackedDonationIds.slice(-10);
+      this.lastTenDonations = trackedDonationIds.slice(0, 10);
       return trackedDonationIds;
     }));
   }
