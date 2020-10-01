@@ -11,15 +11,15 @@ import {SspAdPanelComponent} from './ssp-ad-panel/ssp-ad-panel.component';
   styleUrls: ['./standard-side-panel.component.css']
 })
 export class StandardSidePanelComponent implements OnInit, AfterViewInit {
-  @ViewChild(SspGameDescriptionComponent, {static: false})
+  @ViewChild(SspGameDescriptionComponent)
   private gameDescriptionComponent: SspGameDescriptionComponent;
-  @ViewChild(SspCameraComponent, {static: false})
+  @ViewChild(SspCameraComponent)
   private cameraComponent: SspCameraComponent;
-  @ViewChild(SspRunnerNameComponent, {static: false})
+  @ViewChild(SspRunnerNameComponent)
   private runnerNameComponent: SspRunnerNameComponent;
-  @ViewChild(SspTimerComponent, {static: false})
+  @ViewChild(SspTimerComponent)
   private sspTimerComponent: SspTimerComponent;
-  @ViewChild(SspAdPanelComponent, {static: false})
+  @ViewChild(SspAdPanelComponent)
   private adPanelComponent: SspAdPanelComponent;
 
   constructor() {

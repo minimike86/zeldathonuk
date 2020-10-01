@@ -27,7 +27,7 @@ export class DonationsComponent implements OnInit {
     this.timeAgo = new TimeAgo('en-GB');
     this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(map(trackedDonationIds => {
       return trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
-        b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime()
+        b.donationDate.getTime() - a.donationDate.getTime()
       );
     }));
   }

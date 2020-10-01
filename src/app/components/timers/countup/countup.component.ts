@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {CountupService} from '../../../services/countup-service/countup.service';
+import {CountUpService} from '../../../services/countup-service/countup.service';
 import {Observable} from 'rxjs';
 
 
@@ -16,7 +16,7 @@ export class CountupComponent implements OnInit {
   public timer$: Observable<string>;
 
   constructor(private route: ActivatedRoute,
-              public ts: CountupService) {
+              public ts: CountUpService) {
     this.routeSub = this.route.queryParamMap.subscribe(params => {
       this.activityName = params.get('activityName');
     });

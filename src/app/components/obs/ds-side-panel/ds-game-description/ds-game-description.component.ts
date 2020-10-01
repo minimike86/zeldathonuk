@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import {ZeldaGame} from '../../../../models/zelda-game';
-import {interval, Observable, Subscription} from 'rxjs';
-import {CurrentlyPlayingService} from '../../../../services/firebase/currently-playing/currently-playing.service';
-import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
+import { ZeldaGame} from '../../../../models/zelda-game';
+import { interval, Observable, Subscription } from 'rxjs';
+import { CurrentlyPlayingService } from '../../../../services/firebase/currently-playing/currently-playing.service';
+import { CurrentlyPlayingId } from '../../../../services/firebase/currently-playing/currently-playing';
 
 @Component({
   selector: 'app-ds-game-description',

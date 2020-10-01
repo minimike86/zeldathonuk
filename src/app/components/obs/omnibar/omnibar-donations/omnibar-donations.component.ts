@@ -1,10 +1,8 @@
-import {AfterViewInit, Component, OnInit} from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
-import { JgService } from '../../../../services/jg-service/jg-service.service';
-import { Donation, FundraisingPageDonations } from '../../../../services/jg-service/fundraising-page';
 import {
   trigger,
   state,
@@ -69,7 +67,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
     this.timeAgo = new TimeAgo('en-GB');
     this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(map(trackedDonationIds => {
       trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
-        b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime()
+        b.donationDate.getTime() - a.donationDate.getTime()
       );
       this.lastTenDonations = trackedDonationIds.slice(0, 10);
       return trackedDonationIds;

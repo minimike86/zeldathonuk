@@ -1,6 +1,6 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {AuthService} from '../../services/firebase/auth/auth.service';
-import {timer} from 'rxjs';
+import { Component, OnInit } from '@angular/core';
+import { AuthService } from '../../services/firebase/auth/auth.service';
+import { timer } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',

@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, Injectable, OnInit } from '@angular/core';
-import {combineLatest, interval, Observable, of, timer} from 'rxjs';
-import {map, switchMap, take} from 'rxjs/operators';
+import { combineLatest, interval, Observable } from 'rxjs';
+import { map, take} from 'rxjs/operators';
 import { OmnibarContentService } from '../../../services/omnibar-content-service/omnibar-content-service.service';
 import { JgService } from '../../../services/jg-service/jg-service.service';
 import { FbService } from '../../../services/fb-service/fb-service.service';
@@ -35,7 +35,7 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.updateCharityLogoUrl();
-    this.secondsCounter$.subscribe(n => {
+    this.secondsCounter$.subscribe(() => {
       this.updateCharityLogoUrl();
     });
 
@@ -94,7 +94,7 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
     const donationAlert = new Audio();
     donationAlert.src = '../../../assets/audio/BOTW_Fanfare_Item.wav';
     donationAlert.load();
-    if ( !this.isPlaying(donationAlert) && this.currentDonationTotal !== 0.00 ) { donationAlert.play(); }
+    if ( !this.isPlaying(donationAlert) && this.currentDonationTotal !== 0.00 ) { donationAlert.play().then(); }
   }
 
   isPlaying(audio: HTMLAudioElement): boolean {

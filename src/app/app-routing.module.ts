@@ -15,11 +15,17 @@ import { ObsLayoutComponent } from './components/obs/layout/obs-layout.component
 import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
 import { LoginComponent } from './components/login/login.component';
 import { ScheduleComponent } from './components/schedule/schedule.component';
+import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
+import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: '', redirectTo: '/',  pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
+  { path: 'privacy', component: PrivacyPolicyComponent },
+  { path: 'privacy-policy', component: PrivacyPolicyComponent },
+  { path: 'terms', component: TermsOfUseComponent },
+  { path: 'terms-of-service', component: TermsOfUseComponent },
   { path: 'donors', component: DonationsComponent },
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },

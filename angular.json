@@ -19,6 +19,13 @@
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "src/tsconfig.app.json",
+            "allowedCommonJsDependencies": [
+              "ng9-odometer",
+              "@angular/fire/firestore",
+              "@firebase/auth",
+              "@firebase/app",
+              "javascript-time-ago/locale/en"
+            ],
             "assets": [
               "src/favicon.ico",
               "src/assets"
