@@ -13,11 +13,19 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "aot": true,
             "outputPath": "dist/zeldathonuk",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "src/tsconfig.app.json",
+            "allowedCommonJsDependencies": [
+              "ng9-odometer",
+              "@angular/fire/firestore",
+              "@firebase/auth",
+              "@firebase/app",
+              "javascript-time-ago/locale/en"
+            ],
             "assets": [
               "src/favicon.ico",
               "src/assets"
@@ -29,6 +37,12 @@
           },
           "configurations": {
             "production": {
+              "budgets": [
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb"
+                }
+              ],
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

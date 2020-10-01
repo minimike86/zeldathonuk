@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
-import { CountupService } from './countup.service';
+import { CountUpService } from './countup.service';
 
-describe('CountupService', () => {
+describe('CountUpService', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
 
   it('should be created', () => {
-    const service: CountupService = TestBed.get(CountupService);
+    const service: CountUpService = TestBed.get(CountUpService);
     expect(service).toBeTruthy();
   });
 });

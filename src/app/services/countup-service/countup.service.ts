@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, interval, Observable, Subscription} from 'rxjs';
-import {FirebaseTimerService} from '../firebase/firebase-timer/firebase-timer.service';
-import {CountUpTimerId} from '../firebase/firebase-timer/count-up-timer';
+import { BehaviorSubject, interval, Observable, Subscription } from 'rxjs';
+import { FirebaseTimerService } from '../firebase/firebase-timer/firebase-timer.service';
+import { CountUpTimerId } from '../firebase/firebase-timer/count-up-timer';
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class CountupService {
+export class CountUpService {
   public subscription: Subscription;
   private secondsCounter$: Observable<any>;
   private countUpData: CountUpTimerId[];
@@ -33,7 +33,7 @@ export class CountupService {
   updateTimer(): void {
     if (this.countUpData !== undefined && this.countUpData[0] !== undefined) {
       if (this.getIsStarted()) {
-        this.nowDate = new Date(new Date().getTime() - new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
+        this.nowDate = new Date(new Date().getTime() - new Date(this.countUpData[0].startDate.getSeconds() * 1000).getTime());
         this.hours = this.nowDate.getUTCHours();
         this.minutes = this.nowDate.getUTCMinutes();
         this.seconds = this.nowDate.getUTCSeconds();
@@ -50,8 +50,8 @@ export class CountupService {
         }
       } else if (this.getHasPaused() && this.countUpData[0].stopDate !== null) {
         this.nowDate = new Date(
-          new Date(this.countUpData[0].stopDate.seconds * 1000).getTime() -
-          new Date(this.countUpData[0].startDate.seconds * 1000).getTime());
+          new Date(this.countUpData[0].stopDate.getSeconds() * 1000).getTime() -
+          new Date(this.countUpData[0].startDate.getSeconds() * 1000).getTime());
         this.hours = this.nowDate.getUTCHours();
         this.minutes = this.nowDate.getUTCMinutes();
         this.seconds = this.nowDate.getUTCSeconds();

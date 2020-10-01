@@ -1,9 +1,12 @@
 import { Injectable } from '@angular/core';
-import {AngularFirestore, AngularFirestoreCollection} from '@angular/fire/firestore';
-import {TrackedDonation, TrackedDonationId} from './tracked-donation';
-import {Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
-import * as firebase from 'firebase';
+
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+
+import { TrackedDonation, TrackedDonationId } from './tracked-donation';
+
 
 @Injectable({
   providedIn: 'root'
@@ -31,7 +34,7 @@ export class DonationTrackingService {
 
   addTrackedDonation(trackedDonation: TrackedDonation): void {
     console.log('addTrackedDonation: ', trackedDonation);
-    this.trackedDonationCollection.add(trackedDonation);
+    this.trackedDonationCollection.add(trackedDonation).then();
   }
 
 }

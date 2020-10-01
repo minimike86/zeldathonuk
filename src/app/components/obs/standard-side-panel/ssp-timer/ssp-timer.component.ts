@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CountupService } from '../../../../services/countup-service/countup.service';
+import { CountUpService } from '../../../../services/countup-service/countup.service';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 
@@ -14,11 +14,11 @@ export class SspTimerComponent implements OnInit {
   public timeToShow = 'local';
   public count = 0;
 
-  constructor(private countupService: CountupService) {
+  constructor(private countUpService: CountUpService) {
   }
 
   ngOnInit() {
-    this.countUpTimer$ = this.countupService.getTimer().pipe(map(countUpTimer => {
+    this.countUpTimer$ = this.countUpService.getTimer().pipe(map(countUpTimer => {
       return this.countUpTimer = countUpTimer;
     }));
 

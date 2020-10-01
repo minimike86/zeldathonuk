@@ -11,14 +11,13 @@ import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire';
 import { AngularFireAuthModule } from '@angular/fire/auth';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
-import { NgOdometerModule } from 'ng8-odometer';
+import { Ng9OdometerModule } from 'ng9-odometer';
 
 // Environment Variables
 import { environment } from '../environments/environment';
 
 /* SERVICES */
 import { AuthGuardService } from './router/guards/auth-guard.service';
-import { JgService } from './services/jg-service/jg-service.service';
 import { GameItemService } from './services/firebase/game-item/game-item.service';
 import { FirebaseTimerService } from './services/firebase/firebase-timer/firebase-timer.service';
 
@@ -75,6 +74,8 @@ import { OmnibarDonationsComponent } from './components/obs/omnibar/omnibar-dona
 import { OmnibarDonationPleaComponent } from './components/obs/omnibar/omnibar-donation-plea/omnibar-donation-plea.component';
 import { ScheduleComponent } from './components/schedule/schedule.component';
 import { CombinedTotalComponent } from './components/combined-total/combined-total.component';
+import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
+import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
 
 
 @NgModule({
@@ -130,7 +131,9 @@ import { CombinedTotalComponent } from './components/combined-total/combined-tot
     UpNextGameComponent,
     OmnibarDonationsComponent,
     OmnibarDonationPleaComponent,
-    CombinedTotalComponent
+    CombinedTotalComponent,
+    PrivacyPolicyComponent,
+    TermsOfUseComponent
   ],
   imports: [
     BrowserModule,
@@ -141,7 +144,7 @@ import { CombinedTotalComponent } from './components/combined-total/combined-tot
     NgbModule,
     FontAwesomeModule,
     CountdownModule,
-    NgOdometerModule.forRoot(),
+    Ng9OdometerModule.forRoot(),
     AngularFireModule.initializeApp(environment.firebase, 'zeldathonuk'),
     AngularFireAuthModule,
     AngularFirestoreModule,

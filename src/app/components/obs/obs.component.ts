@@ -1,22 +1,26 @@
 import { Component, Injectable, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { KeyValue } from '@angular/common';
+
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+
+import { faTwitch } from '@fortawesome/free-brands-svg-icons';
+
 import { CurrentlyPlayingService } from '../../services/firebase/currently-playing/currently-playing.service';
 import { GameLineupService } from '../../services/firebase/game-lineup/game-lineup.service';
-import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { FirebaseTimerService } from '../../services/firebase/firebase-timer/firebase-timer.service';
 import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-timer';
-import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
-import { map } from 'rxjs/operators';
-import { ZeldaGame } from '../../models/zelda-game';
-import {KeyValue, Time} from '@angular/common';
 import { JgService } from '../../services/jg-service/jg-service.service';
-import { CountupService } from '../../services/countup-service/countup.service';
-import { Observable } from 'rxjs';
+import { CountUpService } from '../../services/countup-service/countup.service';
 import { TrackedDonation } from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
-import * as firebase from 'firebase';
-import Timestamp = firebase.firestore.Timestamp;
+
+import { ZeldaGame } from '../../models/zelda-game';
+
 
 @Component({
   selector: 'app-obs',
@@ -27,7 +31,7 @@ import Timestamp = firebase.firestore.Timestamp;
   providedIn: 'root',
 })
 export class ObsComponent implements OnInit {
-  @ViewChild('yesNoModalDialog', {static: false})
+  @ViewChild('yesNoModalDialog')
   private yesNoModalDialogRef: TemplateRef<any>;
   public yesNoModal: NgbActiveModal;
 
@@ -55,7 +59,7 @@ export class ObsComponent implements OnInit {
   public swapGameKey: KeyValue<string, ZeldaGame>;
 
   constructor( private modalService: NgbModal,
-               private countupService: CountupService,
+               private countUpService: CountUpService,
                private firebaseTimerService: FirebaseTimerService,
                private donationTrackingService: DonationTrackingService,
                private jgService: JgService,
@@ -91,7 +95,7 @@ export class ObsComponent implements OnInit {
     this.firebaseTimerService.getCountUpTimer().subscribe(data => {
       this.countUpData = data;
     });
-    this.timer$ = this.countupService.getTimer().pipe(map(timer => {
+    this.timer$ = this.countUpService.getTimer().pipe(map(timer => {
       return this.timer = timer;
     }));
   }
@@ -108,25 +112,25 @@ export class ObsComponent implements OnInit {
 
   start() {
     if (this.countUpData[0].isStarted === false && this.countUpData[0].hasPaused === false) {
-      this.countupService.startNewTimer();
+      this.countUpService.startNewTimer();
     } else {
-      this.countupService.continueExistingTimer();
+      this.countUpService.continueExistingTimer();
     }
   }
 
   reset() {
     if (this.countUpData[0].isStopped === true) {
-      this.countupService.resetStoppedTimer();
+      this.countUpService.resetStoppedTimer();
     } else {
-      this.countupService.resetCurrentTimer();
+      this.countUpService.resetCurrentTimer();
     }
   }
 
   stop() {
     if (this.countUpData[0].isStarted === true && this.countUpData[0].hasPaused === false) {
-      this.countupService.pauseTimer();
+      this.countUpService.pauseTimer();
     } else {
-      this.countupService.stopTimer();
+      this.countUpService.stopTimer();
     }
   }
 
@@ -138,7 +142,7 @@ export class ObsComponent implements OnInit {
   }
 
   submitTrackedDonation() {
-    this.tempTrackedDonation.donationDate = Timestamp.fromDate(new Date(this.donationDate + 'T' + this.donationTime));
+    this.tempTrackedDonation.donationDate = new Date(this.donationDate + 'T' + this.donationTime);
     this.donationTrackingService.addTrackedDonation(this.tempTrackedDonation);
   }
 

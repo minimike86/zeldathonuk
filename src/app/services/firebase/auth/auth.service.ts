@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
-import { app, auth, User } from 'firebase/app';
+import { Router } from '@angular/router';
+
+import { Observable, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+
 import { AngularFirestore, AngularFirestoreDocument } from '@angular/fire/firestore';
 import { AngularFireAuth } from '@angular/fire/auth';
-import { Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
-import { first, switchMap } from 'rxjs/operators';
+import { auth, User } from 'firebase/app';
 
 
 @Injectable({
@@ -40,7 +42,7 @@ export class AuthService {
     console.log('logging in');
     switch (provider) {
       case 'google':
-        this.afAuth.auth.signInWithPopup(new auth.GoogleAuthProvider())
+        this.afAuth.signInWithPopup(new auth.GoogleAuthProvider())
           .then((credential) => {
             this.updateUserData(credential.user);
           });
@@ -59,7 +61,7 @@ export class AuthService {
 
   logout() {
     console.log('logged out');
-    this.afAuth.auth.signOut().then(() => {
+    this.afAuth.signOut().then(() => {
       this.router.navigate(['/']);
     });
   }

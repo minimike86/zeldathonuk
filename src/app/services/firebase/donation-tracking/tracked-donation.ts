@@ -1,5 +1,3 @@
-import * as firebase from 'firebase';
-import Timestamp = firebase.firestore.Timestamp;
 
 export interface TrackedDonationId extends TrackedDonation {
   id: string;
@@ -13,5 +11,5 @@ export interface TrackedDonation {
   donationAmount: number;
   giftAidAmount: number | null;
   donationSource: string;
-  donationDate: Timestamp;
+  donationDate: Date;
 }
