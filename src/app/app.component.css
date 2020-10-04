@@ -1,8 +1,0 @@
-
-.bg-wind-waker {
-  background-image:     url('../assets/img/ww-wave1.png'),
-  linear-gradient(-0deg, rgba(132, 222, 255, 1), rgba(132, 222, 255, 0.75));
-  background-repeat:    no-repeat, no-repeat;
-  background-attachment: fixed, fixed;
-  background-position:  bottom left, center;
-}
