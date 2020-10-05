@@ -3,8 +3,10 @@
 </ng-template>
 
 <ng-template #notApiCall>
-  <div class="d-flex flex-column flex-grow-1">
-    <app-navbar></app-navbar>
+  <div class="header">
+    <app-navbar class=""></app-navbar>
+  </div>
+  <div class="overflow-auto">
     <router-outlet></router-outlet>
   </div>
   <app-footer class="mt-auto"></app-footer>

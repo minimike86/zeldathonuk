@@ -22,7 +22,7 @@ body {
                                          rgba(29, 117, 43, 1) 85%,
                                          rgba(49, 97, 43, 1) 90%,
                                          rgba(77, 104, 37, 1) 100%
-                              ) no-repeat;
+                              ) no-repeat rgba(77, 104, 37, 1);
   background-size: 100% 120%;
   backdrop-filter: blur(0.8rem);
 
