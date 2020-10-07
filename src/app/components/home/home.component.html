@@ -53,7 +53,7 @@
 
       <div class="w-25">
         <div class="d-flex align-items-center h-100 btn btnfacebook" (click)="donateFacebook();" title="Donate via Facebook">
-          <div class="d-flex flex-column align-self-center">
+          <div class="d-flex flex-column justify-content-center w-100">
             <h4 class="text-center" *ngIf="innerWidth > 750">Donate via <fa-icon [icon]="faFacebook"></fa-icon> Facebook</h4>
             <h6 class="text-center" *ngIf="innerWidth <= 750">Donate via <fa-icon [icon]="faFacebook"></fa-icon></h6>
             <div class="small text-white" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.5em'} : null">
@@ -71,7 +71,7 @@
           </div>
         </div>
         <div class="d-flex align-items-center h-100 btn btn-justgiving" (click)="donateJustGiving();" title="Donate via JustGiving">
-          <div class="d-flex flex-column align-self-center">
+          <div class="d-flex flex-column justify-content-center w-100">
             <h4 class="text-center" *ngIf="innerWidth > 750">Donate via <img src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo" style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"> JustGiving</h4>
             <h6 class="text-center" *ngIf="innerWidth <= 750">Donate via <img src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo" style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"></h6>
             <div class="small text-white" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.5em'} : null">
@@ -86,7 +86,7 @@
 
       <div class="w-25 mr-2">
         <div class="d-flex align-items-center h-100 btn btn-specialeffect" (click)="learnAboutSpecialEffect();" title="Find out more about our chosen charity SpecialEffect">
-          <div class="d-flex flex-column align-self-center">
+          <div class="d-flex flex-column justify-content-center w-100">
             <h4 class="text-center"><img src="../../../assets/img/specialeffect-logo.svg" alt="special effect logo" style="max-width: 60%;"></h4>
             <div class="d-flex justify-content-center">
               <span class="small text-white w-75" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.45em'} : null">{{innerWidth < 750 ? 'Making video games accessible to people with physical disabilities' : 'SpecialEffect put fun and inclusion back into the lives of people with physical disabilities'}}</span>
@@ -97,7 +97,7 @@
 
       <div class="w-25">
         <div class="d-flex align-items-center h-100 btn btn-gameblast" (click)="learnAboutGameBlast();" title="Find out more about the GameBlast event">
-          <div class="d-flex flex-column align-self-center">
+          <div class="d-flex flex-column justify-content-center w-100">
             <h4 class="text-center"><img src="../../../assets/img/GB20_logo_for_website.png" alt="gameblast logo" style="max-width: 60%;"></h4>
             <div class="d-flex justify-content-center">
               <div class="small text-white" style="width: 85%;" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.45em'} : null">
@@ -120,7 +120,7 @@
         </div>
       </div>
 
-      <div class="w-25">
+      <div class="w-25 mx-2">
         <div class="d-flex justify-content-between" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.6em'} : null">
           <div class="text-truncate">
             <a class="small text-muted" href="https://www.justgiving.com/info/fees" target="_blank"
@@ -133,7 +133,7 @@
         </div>
       </div>
 
-      <div class="w-25">
+      <div class="w-25 mr-2">
         <div class="d-flex justify-content-center" [ngStyle]="innerWidth <= 750 ? {'font-size': '0.6em'} : null">
           <div class="text-truncate">
             <a class="small text-muted" href="https://www.specialeffect.org.uk/what-we-do" target="_blank"
