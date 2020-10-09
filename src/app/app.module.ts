@@ -76,6 +76,7 @@ import { ScheduleComponent } from './components/schedule/schedule.component';
 import { CombinedTotalComponent } from './components/combined-total/combined-total.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
+import { AudioVisualizerComponent } from './components/audio-visualizer/audio-visualizer.component';
 
 
 @NgModule({
@@ -133,7 +134,8 @@ import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.comp
     OmnibarDonationPleaComponent,
     CombinedTotalComponent,
     PrivacyPolicyComponent,
-    TermsOfUseComponent
+    TermsOfUseComponent,
+    AudioVisualizerComponent
   ],
   imports: [
     BrowserModule,

@@ -17,6 +17,7 @@ import { LoginComponent } from './components/login/login.component';
 import { ScheduleComponent } from './components/schedule/schedule.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
+import {AudioVisualizerComponent} from './components/audio-visualizer/audio-visualizer.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -33,6 +34,7 @@ const routes: Routes = [
   { path: 'obs', component: ObsComponent },
   { path: 'obs/layout/:layout', component: ObsLayoutComponent },
   { path: 'obs/countdown', component: CountDateComponent },
+  { path: 'obs/audio-countdown', component: AudioVisualizerComponent },
   { path: 'tracking/:game', component: GameTrackingComponent },
   { path: 'api/timers', component: TimersComponent },
   { path: 'api/count-up', component: CountupComponent },

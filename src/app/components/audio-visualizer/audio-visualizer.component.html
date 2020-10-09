@@ -1,0 +1,21 @@
+<div class="d-flex justify-content-center audio-viz-bg">
+  <div class="d-flex align-items-center">
+    <div class="d-flex flex-column">
+      <div class="d-flex justify-content-center vw-100">
+        <img src="./assets/img/Zeldathon-Logo.png" class="d-inline-block w-25 mb-5" style="opacity: 0.65;">
+      </div>
+      <div class="d-flex justify-content-center vw-100">
+        <canvas #canvas id="canvas" class="audio-viz-container" (click)="onCanvasClick()"></canvas>
+      </div>
+      <div class="d-flex justify-content-center vw-100">
+        <div class="d-flex justify-content-end w-75">
+          <div class="d-flex flex-column">
+            <p class="text-white-50 mb-1">{{ audioLibrary[playingLibraryIndex].songName }}</p>
+            <p class="font-italic text-white-50 small">{{ audioLibrary[playingLibraryIndex].songAuthor }}</p>
+          </div>
+        </div>
+      </div>
+      <div #audioElement></div>
+    </div>
+  </div>
+</div>

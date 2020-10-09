@@ -1,0 +1,9 @@
+.audio-viz-bg {
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+.audio-viz-container {
+  height: 50vh;
+  width: 75vh;
+}
