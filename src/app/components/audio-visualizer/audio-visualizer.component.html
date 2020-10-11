@@ -20,7 +20,35 @@
       </div>
       <div class="time-remaining text-center w-100">
         <h5 class="text-white-50">Stream Starting In:</h5>
-        <h1 class="text-white time-remaining-h1">{{ timeRemaining }}</h1>
+
+        <ng-container *ngIf="timeRemaining.days >= 1; else hoursRemaining">
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.days, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">d</h2>
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">h</h2>
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">m</h2>
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50">s</h2>
+        </ng-container>
+        <ng-template #hoursRemaining>
+          <ng-container *ngIf="timeRemaining.hours >= 1; else minutesRemaining">
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">h</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">m</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50">s</h2>
+          </ng-container>
+          <ng-template #minutesRemaining>
+            <ng-container *ngIf="timeRemaining.minutes >= 1; else secondsRemaining">
+              <h1 class="d-inline-block text-warning time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-warning mr-4">m</h2>
+              <h1 class="d-inline-block text-warning time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-warning" style="opacity: 0.5;">s</h2>
+            </ng-container>
+            <ng-template #secondsRemaining>
+              <ng-container *ngIf="timeRemaining.seconds >= 1; else timesUp">
+                <h1 class="d-inline-block text-danger time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-danger" style="opacity: 0.5;">s</h2>
+              </ng-container>
+              <ng-template #timesUp>
+                <h1 class="d-inline-block text-white time-remaining-h1">WAKE UP LINK!</h1>
+              </ng-template>
+            </ng-template>
+          </ng-template>
+        </ng-template>
+
       </div>
       <div class="d-flex justify-content-center mt-5 vw-100">
         <div class="d-flex justify-content-end w-75">
