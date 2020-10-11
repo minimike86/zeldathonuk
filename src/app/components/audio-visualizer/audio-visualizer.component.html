@@ -1,17 +1,32 @@
 <div class="d-flex justify-content-center audio-viz-bg">
   <div class="d-flex align-items-center">
     <div class="d-flex flex-column">
-      <div class="d-flex justify-content-center vw-100">
-        <img src="./assets/img/Zeldathon-Logo.png" class="d-inline-block w-25 mb-5" style="opacity: 0.65;">
+      <div class="d-flex justify-content-center w-100">
+        <div class="d-flex justify-content-around w-75">
+          <img src="./assets/img/Zeldathon-Logo.png" class="d-inline-block w-50" style="opacity: 0.65;">
+          <div class="d-flex justify-content-around w-25">
+            <div class="d-inline-block w-50 mr-5">
+              <h6 class="text-white-50">Benefiting:</h6>
+              <img src="./assets/img/specialeffect-logo.svg" class="" style="min-height: 80px; min-width: 200px; opacity: 0.65;">
+            </div>
+            <img src="./assets/img/GB21_logo_for_website.png" class="d-inline-block w-50 mt-4" style="max-height: 60px; opacity: 0.65;">
+          </div>
+        </div>
       </div>
       <div class="d-flex justify-content-center vw-100">
+        <canvas #canvasBeatLeft id="canvasBeatLeft" class="audio-viz-beat"></canvas>
         <canvas #canvas id="canvas" class="audio-viz-container" (click)="onCanvasClick()"></canvas>
+        <canvas #canvasBeatRight id="canvasBeatRight" class="audio-viz-beat"></canvas>
       </div>
-      <div class="d-flex justify-content-center vw-100">
+      <div class="time-remaining text-center w-100">
+        <h5 class="text-white-50">Stream Starting In:</h5>
+        <h1 class="text-white time-remaining-h1">{{ timeRemaining }}</h1>
+      </div>
+      <div class="d-flex justify-content-center mt-5 vw-100">
         <div class="d-flex justify-content-end w-75">
-          <div class="d-flex flex-column">
-            <p class="text-white-50 mb-1">{{ audioLibrary[playingLibraryIndex].songName }}</p>
-            <p class="font-italic text-white-50 small">{{ audioLibrary[playingLibraryIndex].songAuthor }}</p>
+          <div class="d-flex flex-column" (click)="playNextSong()">
+            <h3 class="text-white-50 mb-1">{{ audioLibrary[playingLibraryIndex].songName }}</h3>
+            <h4 class="font-italic text-white-50">{{ audioLibrary[playingLibraryIndex].songAuthor }}</h4>
           </div>
         </div>
       </div>

@@ -68,7 +68,7 @@ export class CountDateComponent implements OnInit {
         hours: this.zeroPad(hours, 2),
         minutes: this.zeroPad(minutes, 2),
         seconds: this.zeroPad(seconds, 2),
-      }
+      };
     } else {
       this.finished = true;
     }

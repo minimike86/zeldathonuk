@@ -2,3 +2,11 @@
   display: block;
   top: 0!important;
 }
+
+.router-outlet {
+  max-height: calc(100vh - 58.33px - 25px);
+}
+
+.router-outlet-obs {
+  max-height: calc(100vh);
+}

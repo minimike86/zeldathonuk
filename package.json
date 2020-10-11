@@ -33,6 +33,7 @@
     "bootstrap": "^4.5.2",
     "codelyzer": "^5.1.2",
     "core-js": "^3.6.5",
+    "firebase": "^7.23.0",
     "font-awesome": "^4.7.0",
     "g": "^2.0.1",
     "javascript-time-ago": "^2.0.13",

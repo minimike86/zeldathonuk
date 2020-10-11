@@ -4,6 +4,23 @@
 }
 
 .audio-viz-container {
-  height: 50vh;
-  width: 75vh;
+  max-height: 50vh;
+  width: 50vw;
+}
+
+.audio-viz-beat {
+  max-height: 50vh;
+  width: 25vw;
+  margin-top: 90px;
+}
+
+.time-remaining {
+  position: absolute;
+  top: calc(50vh - ((300px) * 0.388));
+}
+
+.time-remaining-h1 {
+  font-size: 200px;
+  font-family: 'VT323', monospace;
+  font-weight: lighter;
 }
