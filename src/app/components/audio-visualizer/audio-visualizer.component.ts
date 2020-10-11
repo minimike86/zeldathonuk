@@ -45,6 +45,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     this.playRandomSong();
     // Define audio element
     this.audio = new Audio();
+    this.audio.crossOrigin = 'anonymous';
     this.audio.src = this.audioLibrary[this.playingLibraryIndex].url;
     this.audio.autoplay = false;
     this.audio.controls = false;
@@ -418,12 +419,168 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songAuthor: 'by Qumu'
     };
     this.audioLibrary.push(qumuKassTheme);
+    const qumuOutsetIsland = {
+      url: './assets/audio/The Legend of Zelda_ The Wind Waker - Outset Island [Remix].mp3',
+      songName: 'The Legend of Zelda: The Wind Waker - Outset Island [Remix]',
+      songAuthor: 'by Qumu'
+    };
+    this.audioLibrary.push(qumuOutsetIsland);
+    const qumuKoumeAndKotake = {
+      url: './assets/audio/The Legend of Zelda_ Ocarina of Time - Koume and Kotake (Twinrova).mp3',
+      songName: 'The Legend of Zelda: Ocarina of Time - Koume and Kotake (Twinrova)',
+      songAuthor: 'by Qumu'
+    };
+    this.audioLibrary.push(qumuKoumeAndKotake);
+    const qumuCallingFourGiants = {
+      url: './assets/audio/Legend of Zelda_ Majora_Calling the Four Giants_Qumu.mp3',
+      songName: 'Legend of Zelda: Majora\'s Mask - Calling the Four Giants - Reorchestrated',
+      songAuthor: 'by Qumu'
+    };
+    this.audioLibrary.push(qumuCallingFourGiants);
+    const qumuHyruleField = {
+      url: './assets/audio/Legend of Zelda - Ocarina of Time  - Hyrule Field [Remix].mp3',
+      songName: 'Legend of Zelda: Ocarina of Time - Hyrule Field [Remix]',
+      songAuthor: 'by Qumu'
+    };
+    this.audioLibrary.push(qumuHyruleField);
+    const qumuZeldasLullabyLofi = {
+      url: './assets/audio/Zelda\'s Lullaby [Lofi _ Chill Remix].mp3',
+      songName: 'Zelda\'s Lullaby [Lofi / Chill Remix]',
+      songAuthor: 'by Qumu'
+    };
+    this.audioLibrary.push(qumuZeldasLullabyLofi);
+    const qumuLaOverworld = {
+      url: './assets/audio/The Legend of Zelda - Link\'s Awakening - Overworld [Remix].mp3',
+      songName: 'The Legend of Zelda: Link\'s Awakening - Overworld [Remix]',
+      songAuthor: 'by Qumu'
+    };
+    this.audioLibrary.push(qumuLaOverworld);
+    const qumuMidnasLament = {
+      url: './assets/audio/Qumu Legend of Zelda Twilight Princess - Midna.mp3',
+      songName: 'Legend of Zelda Twilight Princess - Midna\'s Lament - Remix',
+      songAuthor: 'by Qumu'
+    };
+    this.audioLibrary.push(qumuMidnasLament);
     const robMirandaSpiritFlute = {
       url: './assets/audio/Spirit Flute (The Legend Of Zelda Spirit Tracks Cover).mp3',
       songName: 'Spirit Flute (The Legend Of Zelda Spirit Tracks Cover)',
       songAuthor: 'by Rob Miranda'
     };
     this.audioLibrary.push(robMirandaSpiritFlute);
+    const vgrSongOfStorms = {
+      url: './assets/audio/VGR The Legend Of Zelda - Song Of Storms (Remix).mp3',
+      songName: 'The Legend Of Zelda - Song Of Storms (Remix)',
+      songAuthor: 'by Video Game Remixes'
+    };
+    this.audioLibrary.push(vgrSongOfStorms);
+    const jukeRemixMinishVillage = {
+      url: './assets/audio/JukeRemix_Zelda_ The Minish Cap - Minish Village [Remake].mp3',
+      songName: 'Zelda: The Minish Cap - Minish Village [Remake]',
+      songAuthor: 'by Juke Remix'
+    };
+    this.audioLibrary.push(jukeRemixMinishVillage);
+    const jonnyDesutoroiyaMinishWoods = {
+      url: './assets/audio/The Legend Of Zelda The Minish Cap - Minish Woods (Jonny Desutoroiyā Remix).mp3',
+      songName: 'The Legend Of Zelda The Minish Cap - Minish Woods (Jonny Desutoroiyā Remix)',
+      songAuthor: 'by Jonny Desutoroiyā'
+    };
+    this.audioLibrary.push(jonnyDesutoroiyaMinishWoods);
+    const jakenVaatisRevenge = {
+      url: './assets/audio/The Elemental Sanctuary (Vaati\'s Revenge Minish Cap Remix).mp3',
+      songName: 'The Elemental Sanctuary (Vaati\'s Revenge Minish Cap Remix)',
+      songAuthor: 'by JAKEN'
+    };
+    this.audioLibrary.push(jakenVaatisRevenge);
+    const nintilinkDarkHyruleCastle = {
+      url: './assets/audio/Legend of Zelda The Minish Cap - Dark Hyrule Castle _ by Nintilink.mp3',
+      songName: 'Legend of Zelda The Minish Cap - Dark Hyrule Castle',
+      songAuthor: 'by Nintilink'
+    };
+    this.audioLibrary.push(nintilinkDarkHyruleCastle);
+    const tirianMassotHouseHyruleTownPicoriFestivalMinigame = {
+      url: './assets/audio/The Legend of Zelda_ The Minish Cap - Part 2_ House, Hyrule Town, Picori Festival & Minigame.mp3',
+      songName: 'The Legend of Zelda: The Minish Cap - Part 2: House, Hyrule Town, Picori Festival & Minigame',
+      songAuthor: 'by Tirian Massot'
+    };
+    this.audioLibrary.push(tirianMassotHouseHyruleTownPicoriFestivalMinigame);
+    const smoothMcGrooveTpLakeHylia = {
+      url: './assets/audio/Zelda_ Twilight Princess - Lake Hylia Smooth McGroove Acapella.mp3',
+      songName: 'Zelda: Twilight Princess - Lake Hylia Acapella',
+      songAuthor: 'by Smooth McGroove'
+    };
+    this.audioLibrary.push(smoothMcGrooveTpLakeHylia);
+    const hotlineSehwaniSacredGrove = {
+      url: './assets/audio/ZELDA_ Sacred Grove ｌｏｆｉ恩ぞス【_ＲＥＭＩＸ】Legend of Zelda Twilight Princess.mp3',
+      songName: 'ZELDA: Sacred Grove ｌｏｆｉ恩ぞス【﻿ＲＥＭＩＸ】Legend of Zelda Twilight Princess',
+      songAuthor: 'by Hotline Sehwani'
+    };
+    this.audioLibrary.push(hotlineSehwaniSacredGrove);
+    const supershigiFisThemeVocal = {
+      url: './assets/audio/Supershigi Legend of Zelda  Skyward Sword - Fi.mp3',
+      songName: 'Legend of Zelda Skyward Sword - Fi\'s Theme (vocal remix)',
+      songAuthor: 'by Supershigi'
+    };
+    this.audioLibrary.push(supershigiFisThemeVocal);
+    const polasterBambooIslandLofi = {
+      url: './assets/audio/Polaster Zelda Skyward Sword - Bamboo Island (Lofi Hip Hop Remix).mp3',
+      songName: 'Zelda Skyward Sword - Bamboo Island (Lofi Hip Hop Remix)',
+      songAuthor: 'by Polaster'
+    };
+    this.audioLibrary.push(polasterBambooIslandLofi);
+    const mindshiftLanayruMiningFacility = {
+      url: './assets/audio/Zelda Skyward Sword - Lanayru Mining Facility (MindShift Remix).mp3',
+      songName: 'Zelda Skyward Sword - Lanayru Mining Facility (MindShift Remix)',
+      songAuthor: 'by ıllıllı m̷i̷n̷d̷s̷h̷i̷f̷t̷ ıllıllı'
+    };
+    this.audioLibrary.push(mindshiftLanayruMiningFacility);
+    const jukeRemixSkyloft = {
+      url: './assets/audio/Juke Remix Zelda_ Skyward Sword - Skyloft [Remake].mp3',
+      songName: 'Zelda: Skyward Sword - Skyloft [Remake]',
+      songAuthor: 'by Juke Remix'
+    };
+    this.audioLibrary.push(jukeRemixSkyloft);
+    const xoraSkywardSwordBazaar = {
+      url: './assets/audio/TLoZ Skyward Sword - Bazaar (Xora Remix).mp3',
+      songName: 'TLoZ Skyward Sword - Bazaar (Xora Remix)',
+      songAuthor: 'by Xora'
+    };
+    this.audioLibrary.push(xoraSkywardSwordBazaar);
+    const jukeRemixIslandInTheSky = {
+      url: './assets/audio/Juke Remix Zelda_ Skyward Sword - Island In The Sky [Remake].mp3',
+      songName: 'Zelda: Skyward Sword - Island In The Sky [Remake]',
+      songAuthor: 'by Juke Remix'
+    };
+    this.audioLibrary.push(jukeRemixIslandInTheSky);
+    const djJoMolgeraBattleTheme = {
+      url: './assets/audio/Molgera Battle Theme (Dubstep Remix).mp3',
+      songName: 'Molgera Battle Theme (Dubstep Remix)',
+      songAuthor: 'by dj-Jo'
+    };
+    this.audioLibrary.push(djJoMolgeraBattleTheme);
+    const smoothMcGrooveHyruleTemple = {
+      url: './assets/audio/Smooth McGroove Hyrule Temple (Legend of Zelda Remix).mp3',
+      songName: 'Hyrule Temple (Legend of Zelda Remix)',
+      songAuthor: 'by dj-Jo and Smooth McGroove'
+    };
+    this.audioLibrary.push(smoothMcGrooveHyruleTemple);
+    const vgrSpiritTracksSacredDuet = {
+      url: './assets/audio/VGR The Legend Of Zelda Spirit Tracks - Sacred Duet (Remix).mp3',
+      songName: 'The Legend Of Zelda Spirit Tracks - Sacred Duet (Remix)',
+      songAuthor: 'by Video Game Remixes'
+    };
+    this.audioLibrary.push(vgrSpiritTracksSacredDuet);
+    const dagustSkywardSwordFisTheme = {
+      url: './assets/audio/VGR Dagust The Legend of Zelda (Skyward Sword) - Fi.mp3',
+      songName: 'The Legend of Zelda (Skyward Sword) - Fi\'s Theme (Dasgust Remix)',
+      songAuthor: 'by Dagust'
+    };
+    this.audioLibrary.push(dagustSkywardSwordFisTheme);
+    const jeeshHeroOfTime = {
+      url: './assets/audio/Hero Of Time - The Legend Of Zelda Remix  - Jeesh.mp3',
+      songName: 'Hero Of Time - The Legend Of Zelda Remix - Jeesh',
+      songAuthor: 'by Jeesh'
+    };
+    this.audioLibrary.push(jeeshHeroOfTime);
   }
 
   onCanvasClick() {
