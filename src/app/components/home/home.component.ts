@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-import { faFacebook, faTwitch, faYoutube, faTwitter } from '@fortawesome/free-brands-svg-icons';
+import { faDiscord, faFacebook, faTwitch, faYoutube, faTwitter } from '@fortawesome/free-brands-svg-icons';
 
 @Component({
   selector: 'app-home',
@@ -10,6 +10,7 @@ import { faFacebook, faTwitch, faYoutube, faTwitter } from '@fortawesome/free-br
 export class HomeComponent implements OnInit {
   innerWidth: any;
 
+  faDiscord = faDiscord;
   faFacebook = faFacebook;
   faTwitch = faTwitch;
   faTwitter = faTwitter;

@@ -23,7 +23,7 @@
               "ng9-odometer",
               "@angular/fire/firestore",
               "@firebase/auth",
-              "@firebase/app",
+              "firebase/app",
               "javascript-time-ago/locale/en"
             ],
             "assets": [

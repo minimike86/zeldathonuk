@@ -8,6 +8,42 @@ li {
 }
 
 
+.fees-corner {
+  display: inline-block;
+  position: absolute;
+  transform: translateX(-7%) translateY(61%) rotate(-25deg) ;
+}
+
+.fees-corner-text {
+  display: inline-block;
+  position: relative;
+  font-size: 11px;
+  color: whitesmoke;
+  background-color: deeppink;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.fees-corner::before {
+  content: "";
+  display: inline-block;
+  position: relative;
+  top: 4px;
+  border-style: solid;
+  border-width: 0 0 16px 8px;
+  border-color: transparent transparent deeppink transparent;
+}
+
+.fees-corner::after {
+  content: "";
+  display: inline-block;
+  position: relative;
+  top: 4px;
+  border-style: solid;
+  border-width: 16px 0 0 36px;
+  border-color: transparent transparent transparent deeppink;
+}
+
 
 
 .btnfacebook {
@@ -18,8 +54,8 @@ li {
 
 .btnfacebook:hover {
   color: #fff;
-  background-color: #485595;
-  border-color: #415998;
+  background-color: #5865A5;
+  border-color: #5169A8;
 }
 
 .btnfacebook:focus,
@@ -59,8 +95,9 @@ li {
 
 .btn-justgiving:hover {
   color: #fff;
-  background-color: #a020b0;
-  border-color: #a020b0;
+  background-color: #B030C0;
+  border-color: #B030C0;
+  filter: opacity(85%);
 }
 
 .btn-justgiving:focus,
@@ -97,13 +134,13 @@ li {
 
 .btn-specialeffect {
   color: #fff;
-  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  background: radial-gradient(at top left, #1f3e7e 0%, #1f3e7e 60%, rgba(0, 12, 36, 0.5) 100%) no-repeat top center #1f3e7e;
   border-color: #101c34;
 }
 
 .btn-specialeffect:hover {
   color: #fff;
-  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  background: radial-gradient(at top left, rgba(31, 62, 126, 0.5) 0%, rgba(31, 62, 126, 0.5) 60%, rgba(0, 12, 36, 0.5) 100%) no-repeat top center #385595;
   border-color: #101c34;
 }
 
@@ -115,7 +152,7 @@ li {
 .btn-specialeffect.disabled,
 .btn-specialeffect:disabled {
   color: #fff;
-  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  background: radial-gradient(at top left, #1f3e7e 0%, #1f3e7e 60%, rgba(0, 12, 36, 0.5) 100%) no-repeat top center #1f3e7e;
   border-color: #101c34;
 }
 
@@ -123,7 +160,7 @@ li {
 .btn-specialeffect:not(:disabled):not(.disabled).active,
 .show > .btn-specialeffect.dropdown-toggle {
   color: #fff;
-  background: url('https://www.specialeffect.org.uk/img/background-top2.jpg') no-repeat top center #000c24;
+  background: radial-gradient(at top left, #1f3e7e 0%, #1f3e7e 60%, rgba(0, 12, 36, 0.5) 100%) no-repeat top center #1f3e7e;
   border-color: #101c34;
 }
 
@@ -148,6 +185,7 @@ li {
   color: #fff;
   background: url('../../../assets/img/GB_Background_nologo.png') no-repeat top center #f58220;
   border-color: #f58220;
+  filter: opacity(80%);
 }
 
 .btn-gameblast:focus,

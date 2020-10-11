@@ -26,9 +26,12 @@ export class DonationsComponent implements OnInit {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
     this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(map(trackedDonationIds => {
-      return trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
-        b.donationDate.getTime() - a.donationDate.getTime()
-      );
+      console.log('trackedDonationIds:', trackedDonationIds);
+      if (trackedDonationIds) {
+        return trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
+          b.donationAmount - a.donationAmount
+        );
+      }
     }));
   }
 

@@ -1,112 +1,130 @@
 <div class="container p-3" style="background-color: #606060;">
 
   <div class="py-2">
+
     <h3 class="text-white">Donate</h3>
     <h6 class="text-white-50" style="line-height: 1.4em;">
       We are fundraising for a charity called SpecialEffect, a UK based charity which uses video games and technology to enhance the quality of life of people with disabilities.
       It specializes in helping physically disabled people play video games as well as working with developers to create specialized game control devices as well as make their games more accessible.
     </h6>
-    <div class="text-center card card-header">
-      <div class="d-flex justify-content-center p-3">
-        <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
+
+    <div class="d-flex justify-content-between">
+
+      <div class="d-flex flex-column">
+
+        <div class="text-center card card-header d-inline-block position-sticky">
+          <div class="embed-responsive-16by9">
+            <iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=PLHsLVX3Ok858h4N9ca2SuQjhqDJQga_cg" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>
+          <div class="d-flex justify-content-center p-3">
+            <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
+          </div>
+          <div class="d-flex justify-content-around">
+            <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+              Donate via Facebook
+            </button>
+            <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
+              Donate via JustGiving
+            </button>
+          </div>
+        </div>
+
       </div>
-      <table class="table table-hover table-striped table-dark">
-        <thead>
-        <tr>
-          <th scope="col">Amount</th>
-          <th scope="col"></th>
-          <th scope="col">Benefit</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-          <td>&pound;5</td>
-          <td>
-            <img src="https://static.dezeen.com/uploads/2018/05/xbox-controller-technology-games-design_dezeen_2364_col_23.jpg"
-                 alt="Xbox Adaptive Controller Mount" style="max-width: 75px; max-height: 75px;">
-          </td>
-          <td>
-            <div class="d-flex justify-content-between">
-              <span class="align-self-center">Can buy flexible fixings to enable a correct and firm hold of controller, joystick or button for safe and comfortable use.</span>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>&pound;10</td>
-          <td>
-            <img src="https://hedaroart.files.wordpress.com/2016/05/infinity4ps-thumbstick-heights.jpg?w=428&h=161"
-                 alt="Joystick Extensions" style="max-width: 75px; max-height: 100px;">
-          </td>
-          <td>
-            <div class="d-flex justify-content-between">
-              <span class="align-self-center">Could purchase joystick extensions, to potentially enable greater control of a thumbstick, with its increased leverage.</span>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>&pound;25</td>
-          <td>
-            <img src="https://www.specialeffect.org.uk/images/sasha_1000.jpg"
-                 alt="Sasha's Adaptive Gaming Setup" style="max-width: 75px; max-height: 75px;">
-          </td>
-          <td>
-            <div class="d-flex justify-content-between">
-              <span class="align-self-center">Will enable us to deliver an adapted gaming setup quickly and directly to someone who needs it.</span>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>&pound;50</td>
-          <td>
-            <img src="http://permobilus.com/wp-content/uploads/2016/11/2_ALT_MiniJoystick-min.jpg"
-                 alt="Low Force Joysticks" style="max-width: 75px; max-height: 75px;">
-          </td>
-          <td>
-            <div class="d-flex justify-content-between">
-              <span class="align-self-center">Will buy a gamepad to be modified in the workshop with low force joysticks and buttons for a gamer with weak hand muscles to use.</span>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>&pound;100</td>
-          <td>
-            <img src="https://i1.wp.com/meru.org.uk/wp-content/uploads/2019/08/mounted-to-chair-in-use.jpg?fit=1184%2C888&ssl=1"
-                 alt="Mounting System" style="max-width: 75px; max-height: 75px;">
-          </td>
-          <td>
-            <div class="d-flex justify-content-between">
-              <span class="align-self-center">Can enable us to buy a mounting system which will hold a joystick and position it for optimum use by a gamer to control it.</span>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>&pound;200</td>
-          <td>
-            <img src="https://www.evilcontrollers.com/media/pages/gaming/img_01.jpg"
-                 alt="Single Handed Controller" style="max-width: 75px; max-height: 75px;">
-          </td>
-          <td>
-            <div class="d-flex justify-content-between">
-              <span class="align-self-center">Could buy a single handed controller to enable a disabled gamer to play with just one hand.</span>
-            </div>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-      <div class="d-inline">
-        <button class="btn btn-lg btnfacebook mr-3" (click)="donateFacebook();">
-          Donate via Facebook
-        </button>
-        <button class="btn btn-lg btn-justgiving" (click)="donateJustGiving();">
-          Donate via JustGiving
-        </button>
+
+      <div class="d-flex flex-column ml-2">
+        <table class="table table-hover table-striped table-dark small">
+          <thead>
+          <tr>
+            <th scope="col">Amount</th>
+            <th scope="col"></th>
+            <th scope="col">Benefit</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>&pound;5</td>
+            <td>
+              <img src="https://static.dezeen.com/uploads/2018/05/xbox-controller-technology-games-design_dezeen_2364_col_23.jpg"
+                   alt="Xbox Adaptive Controller Mount" style="max-width: 75px; max-height: 75px;">
+            </td>
+            <td>
+              <div class="d-flex justify-content-between">
+                <span class="align-self-center">Can buy flexible fixings to enable a correct and firm hold of controller, joystick or button for safe and comfortable use.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>&pound;10</td>
+            <td>
+              <img src="https://hedaroart.files.wordpress.com/2016/05/infinity4ps-thumbstick-heights.jpg?w=428&h=161"
+                   alt="Joystick Extensions" style="max-width: 75px; max-height: 100px;">
+            </td>
+            <td>
+              <div class="d-flex justify-content-between">
+                <span class="align-self-center">Could purchase joystick extensions, to potentially enable greater control of a thumbstick, with its increased leverage.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>&pound;25</td>
+            <td>
+              <img src="https://www.specialeffect.org.uk/images/sasha_1000.jpg"
+                   alt="Sasha's Adaptive Gaming Setup" style="max-width: 75px; max-height: 75px;">
+            </td>
+            <td>
+              <div class="d-flex justify-content-between">
+                <span class="align-self-center">Will enable us to deliver an adapted gaming setup quickly and directly to someone who needs it.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>&pound;50</td>
+            <td>
+              <img src="http://permobilus.com/wp-content/uploads/2016/11/2_ALT_MiniJoystick-min.jpg"
+                   alt="Low Force Joysticks" style="max-width: 75px; max-height: 75px;">
+            </td>
+            <td>
+              <div class="d-flex justify-content-between">
+                <span class="align-self-center">Will buy a gamepad to be modified in the workshop with low force joysticks and buttons for a gamer with weak hand muscles to use.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>&pound;100</td>
+            <td>
+              <img src="https://i1.wp.com/meru.org.uk/wp-content/uploads/2019/08/mounted-to-chair-in-use.jpg?fit=1184%2C888&ssl=1"
+                   alt="Mounting System" style="max-width: 75px; max-height: 75px;">
+            </td>
+            <td>
+              <div class="d-flex justify-content-between">
+                <span class="align-self-center">Can enable us to buy a mounting system which will hold a joystick and position it for optimum use by a gamer to control it.</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>&pound;200</td>
+            <td>
+              <img src="https://www.evilcontrollers.com/media/pages/gaming/img_01.jpg"
+                   alt="Single Handed Controller" style="max-width: 75px; max-height: 75px;">
+            </td>
+            <td>
+              <div class="d-flex justify-content-between">
+                <span class="align-self-center">Could buy a single handed controller to enable a disabled gamer to play with just one hand.</span>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
       </div>
+
     </div>
+
   </div>
 
 
   <div class="py-2">
-    <h3 class="text-white mb-3">Donations</h3>
+    <h3 class="text-white mb-3">Thank you to all our generous donors!</h3>
     <h6 class="text-white-50">
       On behalf of everyone at the ZeldathonUK team, I would like to thank all of the donors below for their generous donations.
     </h6>

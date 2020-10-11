@@ -1,12 +1,21 @@
 <nav class="navbar navbar-expand-lg navbar-dark">
+
   <a class="navbar-brand" routerLink="/" routerLinkActive="active-link">
-    <img src="../../../assets/img/Zeldathon-Logo-WW-white.svg" style="min-width: 120px; max-height: 1.5em; filter: opacity(0.95)" title="ZeldathonUK" alt="ZeldathonUK">
+    <img src="../../../assets/img/1gxaef91xpst0u.png" class="position-absolute"
+         style="max-width: 32px; max-height: 32px; top: 8px; left: 115px; filter: opacity(0.75); transform: rotate(10deg);"
+         title="GB Flag" alt="GB Flag">
+    <img src="../../../assets/img/Zeldathon-Logo-WW-white.svg" style="min-width: 120px; max-height: 1.5em; filter: opacity(0.95);" title="ZeldathonUK" alt="ZeldathonUK">
   </a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent" (click)="isCollapsed = !isCollapsed" aria-expanded="false" aria-label="Toggle navigation">
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggleExternalContent"
+          aria-controls="navbarToggleExternalContent" (click)="isCollapsed = !isCollapsed"
+          aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
+
   <div class="collapse navbar-collapse" id="navbarToggleExternalContent" [ngbCollapse]="isCollapsed">
     <div class="d-flex flex-fill justify-content-around">
+
       <div class="d-flex flex-shrink-0 justify-content-center">
         <ul class="navbar-nav">
           <li class="nav-item">
@@ -52,6 +61,8 @@
           </li>
         </ul>
       </div>
+
     </div>
   </div>
+
 </nav>
