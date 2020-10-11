@@ -596,6 +596,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
 
   playRandomSong() {
     this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length));
+    this.playNextSong();
   }
 
   getAudioContext() {
