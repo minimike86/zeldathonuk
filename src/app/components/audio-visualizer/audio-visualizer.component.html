@@ -8,7 +8,7 @@
 
       <div class="d-flex justify-content-center w-100">
         <div class="d-flex justify-content-around w-75">
-          <img src="./assets/img/Zeldathon-Logo.png" class="d-inline-block w-50" style="opacity: 0.65;">
+          <img src="./assets/img/Zeldathon-Logo.png" class="zeldathon-logo d-inline-block w-50" style="opacity: 0.65;">
           <div class="d-flex justify-content-around w-25">
             <div class="d-inline-block w-50 mr-5">
               <h6 class="text-white-50">Benefitting:</h6>
@@ -29,16 +29,16 @@
         <h5 class="text-white-50">Stream Starting In:</h5>
 
         <ng-container *ngIf="timeRemaining.days >= 1; else hoursRemaining">
-          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.days, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">d</h2>
-          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">h</h2>
-          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">m</h2>
-          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50">s</h2>
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.days, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">d</h2>
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">h</h2>
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">m</h2>
+          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2">s</h2>
         </ng-container>
         <ng-template #hoursRemaining>
           <ng-container *ngIf="timeRemaining.hours >= 1; else minutesRemaining">
-            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">h</h2>
-            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50 mr-4">m</h2>
-            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-white-50">s</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">h</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">m</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2">s</h2>
           </ng-container>
           <ng-template #minutesRemaining>
             <ng-container *ngIf="timeRemaining.minutes >= 1; else secondsRemaining">

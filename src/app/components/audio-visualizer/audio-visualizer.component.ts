@@ -1,5 +1,4 @@
 import {AfterViewInit, Component, ElementRef, OnInit, Renderer2, ViewChild} from '@angular/core';
-import {DomSanitizer} from '@angular/platform-browser';
 
 
 @Component({
@@ -48,8 +47,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
 
   public beatColour: string | CanvasGradient;
 
-  constructor(private renderer: Renderer2,
-              public sanitizer: DomSanitizer) {
+  constructor(private renderer: Renderer2) {
   }
 
   ngOnInit(): void {
@@ -148,7 +146,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'The Legend of Zelda - Tarrey Town (Lofi Hip-Hop Remix)',
       songAuthor: 'by Tiny Drum',
       beatColour: 'rgba(160, 82, 45, 0.5)',
-      youtubeId: 'UqeKNyHaA3g'
+      youtubeId: 'lL0ZQOJJ-6c'
     };
     this.audioLibrary.push(tinyDrumTarreyTown);
     const blueBrewMusicShiekahTower = {
@@ -196,7 +194,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Calm Grind In Tarrey Town',
       songAuthor: 'by Wizard of Loneliness',
       beatColour: 'rgba(120, 55, 55, 0.75)',
-      youtubeId: 'UqeKNyHaA3g'
+      youtubeId: 'lL0ZQOJJ-6c'
     };
     this.audioLibrary.push(wizardOfLonelinessCalmGrindTarreyTown);
     const kenkuraExtendedStay = {
@@ -276,7 +274,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Zelda: Wind Waker ▸ Outset Island ~ Coffee Date Lofi Remix',
       songAuthor: 'by Coffee Date',
       beatColour: 'rgba(65, 105, 225, 0.75)',
-      youtubeId: 'ajndmZ5B3a8'
+      youtubeId: 'YRBw3snk970'
     };
     this.audioLibrary.push(coffeeDateOutsetIsland);
     const gameChopsSmoothMcGrooveOutsetIsland = {
@@ -364,7 +362,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Zelda: Skyward Sword ▸ Gate of Time ~ Chewie Lofi Hip Hop Remix',
       songAuthor: 'by Chewie',
       beatColour: 'rgba(147, 112, 219, 0.5)',
-      youtubeId: 'ZROB4TnYH_I'
+      youtubeId: 'NnHfPqGRMDw'
     };
     this.audioLibrary.push(chewieGateOfTime);
     const vectorUTalTalHeights = {
@@ -502,7 +500,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'The Legend of Zelda: The Wind Waker - Dragon Roost Island [Remix]',
       songAuthor: 'by Qumu',
       beatColour: 'rgba(220, 20, 60, 0.85)',
-      youtubeId: 'ajndmZ5B3a8'
+      youtubeId: 'Phh-CEOA7fc'
     };
     this.audioLibrary.push(qumuDragonRoost);
     const qumuHatenoVillage = {
@@ -534,7 +532,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'The Legend of Zelda: The Wind Waker - Outset Island [Remix]',
       songAuthor: 'by Qumu',
       beatColour: 'rgba(0, 255, 255, 0.5)',
-      youtubeId: 'ajndmZ5B3a8'
+      youtubeId: '2TRE55puZoc'
     };
     this.audioLibrary.push(qumuOutsetIsland);
     const qumuKoumeAndKotake = {
@@ -558,7 +556,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Legend of Zelda: Ocarina of Time - Hyrule Field [Remix]',
       songAuthor: 'by Qumu',
       beatColour: 'rgba(34, 139, 34, 0.75)',
-      youtubeId: 'HnV4uOhuaw4'
+      youtubeId: 'RYlAR6e2YKs'
     };
     this.audioLibrary.push(qumuHyruleField);
     const qumuZeldasLullabyLofi = {
@@ -654,7 +652,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'ZELDA: Sacred Grove ｌｏｆｉ恩ぞス【﻿ＲＥＭＩＸ】Legend of Zelda Twilight Princess',
       songAuthor: 'by Hotline Sehwani',
       beatColour: 'rgba(250, 250, 50, 0.5)',
-      youtubeId: 'fa_lGwlsLao'
+      youtubeId: 'rfWVa0KuV1I'
     };
     this.audioLibrary.push(hotlineSehwaniSacredGrove);
     const supershigiFisThemeVocal = {
@@ -662,7 +660,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Legend of Zelda Skyward Sword - Fi\'s Theme (vocal remix)',
       songAuthor: 'by Supershigi',
       beatColour: 'rgba(0, 100, 255, 0.5)',
-      youtubeId: 't6eVkWEcBCQ'
+      youtubeId: 'YakHbkChQaI'
     };
     this.audioLibrary.push(supershigiFisThemeVocal);
     const polasterBambooIslandLofi = {
@@ -678,7 +676,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Zelda Skyward Sword - Lanayru Mining Facility (MindShift Remix)',
       songAuthor: 'by ıllıllı m̷i̷n̷d̷s̷h̷i̷f̷t̷ ıllıllı',
       beatColour: 'rgba(194, 178, 128, 0.5)',
-      youtubeId: 'uVcMjjU7J5w'
+      youtubeId: 'v_ZQI2XQl9o'
     };
     this.audioLibrary.push(mindshiftLanayruMiningFacility);
     const jukeRemixSkyloft = {
@@ -734,7 +732,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'The Legend of Zelda (Skyward Sword) - Fi\'s Theme (Dasgust Remix)',
       songAuthor: 'by Dagust',
       beatColour: 'rgba(75, 100, 255, 0.5)',
-      youtubeId: '1-tJnmNP5ow'
+      youtubeId: 'm9ADFcIJE7U'
     };
     this.audioLibrary.push(dagustSkywardSwordFisTheme);
     const jeeshHeroOfTime = {
@@ -793,6 +791,30 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       youtubeId: 'Gf969TVazxE'
     };
     this.audioLibrary.push(raisiSuperMario3XZeldaPatience);
+    const sloppypoopyMajorasMaskClocktown = {
+      url: './assets/audio/Theophany - Time Clock Town.mp3',
+      songName: 'Theophany - Time\'s End I: Majora\'s Mask Remixed - Clocktown',
+      songAuthor: 'by Theophany',
+      beatColour: 'rgba(255, 0, 255, 0.5)',
+      youtubeId: 'V7-OhJE6K8A'
+    };
+    this.audioLibrary.push(sloppypoopyMajorasMaskClocktown);
+    const sloppypoopyMajorasMaskBackBeginning = {
+      url: './assets/audio/Theopany Back to the Beginning.mp3',
+      songName: 'Theophany - Time\'s End II: Majora\'s Mask Remixed - Back to the Beginning',
+      songAuthor: 'by Theophany',
+      beatColour: 'rgba(255, 0, 255, 0.5)',
+      youtubeId: 'WfCdWJSdWow'
+    };
+    this.audioLibrary.push(sloppypoopyMajorasMaskBackBeginning);
+    const jukeRemixOrdonVillage = {
+      url: './assets/audio/Twilight Princess - Ordon Village [Remake].mp3',
+      songName: 'Twilight Princess - Ordon Village [Remake]',
+      songAuthor: 'by Juke Remix',
+      beatColour: 'rgba(55, 255, 55, 0.5)',
+      youtubeId: 'Od8Na2KpYyI'
+    };
+    this.audioLibrary.push(jukeRemixOrdonVillage);
   }
 
   onCanvasClick() {
@@ -820,7 +842,8 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       this.youtubeIFrame = this.renderer.createElement('iframe');
       this.youtubeIFrame.className = 'audio-viz-video-bg';
       this.youtubeIFrame.frameBorder = '0';
-      this.youtubeIFrame.src = `https://youtube.com/embed/${this.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0`;
+      this.youtubeId = Math.random() < 0.9 ? this.youtubeId : 'ofDtIFz8gUQ';
+      this.youtubeIFrame.src = `https://youtube.com/embed/${this.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${this.youtubeId}&controls=0&showinfo=0`;
       this.renderer.appendChild(this.youtubeElement.nativeElement, this.youtubeIFrame);
     }
   }
