@@ -25,6 +25,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   public audio: HTMLAudioElement;
 
   public audioLibrary: AudioLibraryItem[] = [];
+  public playedLibrary: number[] = [];
   public playingLibraryIndex: number;
 
   @ViewChild('youtubeEmbed', {static: false})
@@ -154,7 +155,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'The Legend of Zelda: Breath of the Wild - Shiekah Tower [Remix]',
       songAuthor: 'by Blue Brew Music',
       beatColour: 'rgba(230, 230, 250, 0.65)',
-      youtubeId: 'UqeKNyHaA3g'
+      youtubeId: 'htsX0oAWbZc'
     };
     this.audioLibrary.push(blueBrewMusicShiekahTower);
     const turtleSchoolSilentPrincess = {
@@ -162,7 +163,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'silent princess (zelda\'s lullaby lofi beat)',
       songAuthor: 'by turtleschool',
       beatColour: 'rgba(186, 85, 211, 0.5)',
-      youtubeId: 'UqeKNyHaA3g'
+      youtubeId: 'fmSB8nrnMQg'
     };
     this.audioLibrary.push(turtleSchoolSilentPrincess);
     const ezekielusZorasDomain = {
@@ -282,7 +283,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Zelda Windwaker ▸ Outset Island ▸ Grimecraft and CG5 Remix',
       songAuthor: 'by Smooth McGroove & GameChops',
       beatColour: 'rgba(0, 100, 255, 0.75)',
-      youtubeId: 'ajndmZ5B3a8'
+      youtubeId: 'CRfwX_UdomA'
     };
     this.audioLibrary.push(gameChopsSmoothMcGrooveOutsetIsland);
     const jonasDuzzledLoFiOfTheGoddess = {
@@ -660,7 +661,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Legend of Zelda Skyward Sword - Fi\'s Theme (vocal remix)',
       songAuthor: 'by Supershigi',
       beatColour: 'rgba(0, 100, 255, 0.5)',
-      youtubeId: 'YakHbkChQaI'
+      youtubeId: 'm9ADFcIJE7U'
     };
     this.audioLibrary.push(supershigiFisThemeVocal);
     const polasterBambooIslandLofi = {
@@ -815,19 +816,45 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       youtubeId: 'Od8Na2KpYyI'
     };
     this.audioLibrary.push(jukeRemixOrdonVillage);
+    const kukikoCrimsonLoftwing = {
+      url: './assets/audio/kukikoCrimsonLoftwing.mp3',
+      songName: 'Crimson Loftwing',
+      songAuthor: 'by Kukiko',
+      beatColour: 'rgba(255, 35, 35, 0.65)',
+      youtubeId: '5c_Ttqd-iUY'
+    };
+    this.audioLibrary.push(kukikoCrimsonLoftwing);
+    const rickAstlyNeverGonnaGiveYouUp = {
+      url: './assets/audio/martycanfly Never Gonna Give You Up (Rick Astley Cover).mp3',
+      songName: 'Never Gonna Give You Up (Rick Astley Cover)',
+      songAuthor: 'by martycanfly',
+      beatColour: this.getRainbowGradient(),
+      youtubeId: 'dQw4w9WgXcQ'
+    };
+    this.audioLibrary.push(rickAstlyNeverGonnaGiveYouUp);
   }
 
   onCanvasClick() {
     this.canvasToggle = !this.canvasToggle;
   }
 
-  playNextSong() {
-    this.playingLibraryIndex < this.audioLibrary.length - 1 ? this.playingLibraryIndex++ : this.playingLibraryIndex = 0;
-    this.source.mediaElement.src = this.audioLibrary[this.playingLibraryIndex].url;
+  playRandomSong() {
+    this.playedLibrary.push(this.playingLibraryIndex);
+    if (this.playedLibrary.length === this.audioLibrary.length) {
+      this.playedLibrary = [];
+    }
+    do {
+      this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length));
+    } while (this.playedLibrary.includes(this.playingLibraryIndex));
+    this.updateSourceMediaElement();
+  }
+
+  updateSourceMediaElement() {
+    this.updateYoutubeVideo();
     this.beatColour = this.audioLibrary[this.playingLibraryIndex].beatColour;
+    this.source.mediaElement.src = this.audioLibrary[this.playingLibraryIndex].url;
     this.source.mediaElement.load();
     this.source.mediaElement.play().then();
-    this.updateYoutubeVideo();
   }
 
   updateYoutubeVideo() {
@@ -842,15 +869,12 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       this.youtubeIFrame = this.renderer.createElement('iframe');
       this.youtubeIFrame.className = 'audio-viz-video-bg';
       this.youtubeIFrame.frameBorder = '0';
-      this.youtubeId = Math.random() < 0.9 ? this.youtubeId : 'ofDtIFz8gUQ';
+      if (this.youtubeId !== 'dQw4w9WgXcQ' && this.youtubeId !== 'FuX5_OWObA0') { // rickroll or rainbow road
+        this.youtubeId = Math.random() < 0.9 ? this.youtubeId : 'ofDtIFz8gUQ';
+      }
       this.youtubeIFrame.src = `https://youtube.com/embed/${this.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${this.youtubeId}&controls=0&showinfo=0`;
       this.renderer.appendChild(this.youtubeElement.nativeElement, this.youtubeIFrame);
     }
-  }
-
-  playRandomSong() {
-    this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length));
-    this.playNextSong();
   }
 
   getAudioContext() {
@@ -858,7 +882,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     this.analyser = this.audioCtx.createAnalyser();
     this.source = this.audioCtx.createMediaElementSource(this.audio);
     this.source.mediaElement.onended = () => {
-      this.playNextSong();
+      this.playRandomSong();
     };
     this.source.mediaElement.play().then();
     this.source.connect(this.analyser);
