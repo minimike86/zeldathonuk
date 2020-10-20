@@ -485,7 +485,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'The Legend of Zelda: Spirit Tracks - Realm Overworld [Remix]',
       songAuthor: 'by Qumu',
       beatColour: 'rgba(255, 127, 80, 0.75)',
-      youtubeId: '1-tJnmNP5ow'
+      youtubeId: 'qJ0EkT7SqLk'
     };
     this.audioLibrary.push(qumuSpiritTracksOverworld);
     const qumuSwordSearch = {
@@ -505,7 +505,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     };
     this.audioLibrary.push(qumuDragonRoost);
     const qumuHatenoVillage = {
-      url: './assets/audio/The Legend of Zelda - The Wind Waker - Dragon Roost Island [Remix].mp3',
+      url: './assets/audio/The Legend of Zelda - Breath of the Wild - Hateno Village [Lofi _ Chill Remix].mp3',
       songName: 'The Legend of Zelda - Breath of the Wild - Hateno Village [Lofi / Chill Remix]',
       songAuthor: 'by Qumu',
       beatColour: 'rgba(165, 42, 42, 0.85)',
@@ -832,6 +832,14 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       youtubeId: 'dQw4w9WgXcQ'
     };
     this.audioLibrary.push(rickAstlyNeverGonnaGiveYouUp);
+    const qumuStarFoxCorneriaRemix = {
+      url: './assets/audio/StarFox - Corneria - Remix.mp3',
+      songName: 'StarFox - Corneria - Remix',
+      songAuthor: 'by Qumu',
+      beatColour: 'rgba(0, 165, 255, 0.75)',
+      youtubeId: 'X2SOUEJwYJ8'
+    };
+    this.audioLibrary.push(qumuStarFoxCorneriaRemix);
   }
 
   onCanvasClick() {
