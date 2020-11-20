@@ -25,8 +25,9 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   public audio: HTMLAudioElement;
 
   public audioLibrary: AudioLibraryItem[] = [];
-  public playedLibrary: number[] = [];
+  public playedLibrary: AudioLibraryItem[] = [];
   public playingLibraryIndex: number;
+  public specialEffectPlayedIndex: number = null;
 
   @ViewChild('youtubeEmbed', {static: false})
   youtubeElement: ElementRef;
@@ -76,7 +77,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   calcTimeRemaining() {
     setInterval(() => {
       const now = new Date();
-      const gameBlastStartDate = new Date(Date.parse('15 Feb 2021 08:00:00 GMT'));
+      const gameBlastStartDate = new Date(Date.parse('20 Feb 2021 09:00:00 GMT'));
       const milliseconds = gameBlastStartDate.getTime() - now.getTime();
       const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
       const hours = Math.floor(((milliseconds / (1000 * 60 * 60)) % 24));
@@ -840,6 +841,214 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       youtubeId: 'X2SOUEJwYJ8'
     };
     this.audioLibrary.push(qumuStarFoxCorneriaRemix);
+    const sygmxSongOfHealing = {
+      url: './assets/audio/Sygmx - The Legend Of Zelda - Song Of Healing (Music Box Remix).mp3',
+      songName: 'Sygmx - The Legend Of Zelda - Song Of Healing (Music Box Remix)',
+      songAuthor: 'by Sygmx',
+      beatColour: 'rgba(165, 0, 100, 0.75)',
+      youtubeId: '1KFtfEY-l1o'
+    };
+    this.audioLibrary.push(sygmxSongOfHealing);
+    const goblinsFromMarsZeldaOnCrack = {
+      url: './assets/audio/Zelda On Crack (Original Mix) [FREE DOWNLOAD].mp3',
+      songName: 'Zelda On Crack (Original Mix)',
+      songAuthor: 'by Goblins from Mars',
+      beatColour: 'rgba(180, 0, 20, 0.75)',
+      youtubeId: 'OrV4KAb9Ebs'
+    };
+    this.audioLibrary.push(goblinsFromMarsZeldaOnCrack);
+    const sharaxHyruleSymphony = {
+      url: './assets/audio/[Zelda Remix] SharaX - Hyrule Symphony.mp3',
+      songName: '[Zelda Remix] SharaX - Hyrule Symphony',
+      songAuthor: 'by ☠️SʜᴀʀᴀX Oғғɪᴄɪᴀʟ☠️',
+      beatColour: 'rgba(0, 180, 20, 0.75)',
+      youtubeId: 'UHtEsL_PJFs'
+    };
+    this.audioLibrary.push(sharaxHyruleSymphony);
+    const waltRibeiroOverworld = {
+      url: './assets/audio/The Legend Of Zelda Overworld For Orchestra.mp3',
+      songName: 'The Legend Of Zelda \'Overworld\' For Orchestra',
+      songAuthor: 'by Walt Ribeiro',
+      beatColour: 'rgba(0, 180, 20, 0.75)',
+      youtubeId: 'OJZDonlykCE'
+    };
+    this.audioLibrary.push(waltRibeiroOverworld);
+    const holderGerudoValley80s = {
+      url: './assets/audio/The Legend of Zelda - Gerudo Valley 80.mp3',
+      songName: 'The Legend of Zelda - Gerudo Valley 80\'s Version',
+      songAuthor: 'by Holder',
+      beatColour: 'rgba(210, 210, 20, 0.75)',
+      youtubeId: '_OUia4-uSd8'
+    };
+    this.audioLibrary.push(holderGerudoValley80s);
+    const secondNarratorColorDungeon = {
+      url: './assets/audio/Color Dungeon - The Legend of Zelda_ Link.mp3',
+      songName: 'Color Dungeon - The Legend of Zelda: Link\'s Awakening - Orchestral Arrangement',
+      songAuthor: 'by The Second Narrator',
+      beatColour: 'rgba(210, 210, 20, 0.75)',
+      youtubeId: 'PpOiaaN6uGA'
+    };
+    this.audioLibrary.push(secondNarratorColorDungeon);
+    const mborchestrationRevaliTheme = {
+      url: './assets/audio/Zelda Breath Of The Wild - Revali Theme.mp3',
+      songName: 'Zelda Breath Of The Wild - Revali Theme [Piano]',
+      songAuthor: 'by mborchestration',
+      beatColour: 'rgba(70, 160, 220, 0.75)',
+      youtubeId: '67zUl3oPbdk'
+    };
+    this.audioLibrary.push(mborchestrationRevaliTheme);
+    const littleVMillsGanondorfTheme = {
+      url: './assets/audio/Zelda Twilight Princess - Ganondorf Theme _Epic Metal_ Cover.mp3',
+      songName: 'Zelda Twilight Princess - Ganondorf Theme "Epic Metal" Cover',
+      songAuthor: 'by Little V Mills',
+      beatColour: 'rgba(250, 130, 10, 0.75)',
+      youtubeId: 'IH4vu9Gp8is'
+    };
+    this.audioLibrary.push(littleVMillsGanondorfTheme);
+    const BVGMusicHorseRace = {
+      url: './assets/audio/The Legend of Zelda_ Ocarina of Time - Horse Race _BVG euro arrange_.mp3',
+      songName: 'The Legend of Zelda: Ocarina of Time - Horse Race ~BVG euro arrange~',
+      songAuthor: 'by BVG music',
+      beatColour: 'rgba(50, 130, 10, 0.75)',
+      youtubeId: 'PHuoWnOoBTo'
+    };
+    this.audioLibrary.push(BVGMusicHorseRace);
+    const gamlielZafranaMonkMazKoshia = {
+      url: './assets/audio/Monk Maz Koshia Remix - Gamliel Zafrana.mp3',
+      songName: 'Monk Maz Koshia Remix',
+      songAuthor: 'by Gamliel Zafrana',
+      beatColour: 'rgba(250, 200, 60, 0.75)',
+      youtubeId: '1tG8oXvqHGw'
+    };
+    this.audioLibrary.push(gamlielZafranaMonkMazKoshia);
+    const holderZeldasLullaby80s = {
+      url: './assets/audio/The Legend of Zelda - Zeldas Lullaby 80s Version.mp3',
+      songName: 'The Legend of Zelda - Zelda\'s Lullaby 80\'s Version',
+      songAuthor: 'by Holder',
+      beatColour: 'rgba(50, 180, 220, 0.75)',
+      youtubeId: 'QIzqy4KVY6c'
+    };
+    this.audioLibrary.push(holderZeldasLullaby80s);
+    const hylianCreedWindWakerAncientHero = {
+      url: './assets/audio/Legend of Zelda The Wind Waker Ancient Hero (OC).mp3',
+      songName: 'Legend of Zelda The Wind Waker Ancient Hero (OC)',
+      songAuthor: 'by HylianCreed',
+      beatColour: 'rgba(60, 100, 250, 0.75)',
+      youtubeId: 'OxqASlKJJ00'
+    };
+    this.audioLibrary.push(hylianCreedWindWakerAncientHero);
+    const zeldaAndChill2ZeldaLullaby = {
+      url: './assets/audio/1. Zelda & Chill 2 - Zelda\'s Lullaby.mp3',
+      songName: 'Zelda & Chill 2 - Zelda\'s Lullaby',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'BXHWbf1Et8A'
+    };
+    this.audioLibrary.push(zeldaAndChill2ZeldaLullaby);
+    const zeldaAndChill2TheGreatSea = {
+      url: './assets/audio/2. Zelda & Chill 2 - The Great Sea.mp3',
+      songName: 'Zelda & Chill 2 - The Great Sea',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'QhDDo6K6OSg'
+    };
+    this.audioLibrary.push(zeldaAndChill2TheGreatSea);
+    const zeldaAndChill2KorokForest = {
+      url: './assets/audio/3. Zelda & Chill 2 - Korok Forest.mp3',
+      songName: 'Zelda & Chill 2 - Korok Forest',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'CvNwiNDVG_A'
+    };
+    this.audioLibrary.push(zeldaAndChill2KorokForest);
+    const zeldaAndChill2KassTheme = {
+      url: './assets/audio/4. Zelda & Chill 2 - Kass\' Theme.mp3',
+      songName: 'Zelda & Chill 2 - Kass\' Theme',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: '2TRE55puZoc'
+    };
+    this.audioLibrary.push(zeldaAndChill2KassTheme);
+    const zeldaAndChill2SerenadeOfWater = {
+      url: './assets/audio/5. Zelda & Chill 2 - Serenade of Water.mp3',
+      songName: 'Zelda & Chill 2 - Serenade of Water',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'QlPij-6cXsE'
+    };
+    this.audioLibrary.push(zeldaAndChill2SerenadeOfWater);
+    const zeldaAndChill2HyruleCastle = {
+      url: './assets/audio/6. Zelda & Chill 2 - Hyrule Castle.mp3',
+      songName: 'Zelda & Chill 2 - Hyrule Castle',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'wMTEPTuvMdQ'
+    };
+    this.audioLibrary.push(zeldaAndChill2HyruleCastle);
+    const zeldaAndChill2SongOfHealing = {
+      url: './assets/audio/7. Zelda & Chill 2 - Song of Healing.mp3',
+      songName: 'Zelda & Chill 2 - Song of Healing',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'vAOqwt_Qd7g'
+    };
+    this.audioLibrary.push(zeldaAndChill2SongOfHealing);
+    const zeldaAndChill2RevalisTheme = {
+      url: './assets/audio/8. Zelda & Chill 2 - Revali\'s Theme.mp3',
+      songName: 'Zelda & Chill 2 - Revali\'s Theme',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'qG1JNlUU9w4'
+    };
+    this.audioLibrary.push(zeldaAndChill2RevalisTheme);
+    const zeldaAndChill2OutsetIsland = {
+      url: './assets/audio/9. Zelda & Chill 2 - Outset Island.mp3',
+      songName: 'Zelda & Chill 2 - Outset Island',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: '2TRE55puZoc'
+    };
+    this.audioLibrary.push(zeldaAndChill2OutsetIsland);
+    const zeldaAndChill2SpiritTracks = {
+      url: './assets/audio/10. Zelda & Chill 2 - Spirit Tracks.mp3',
+      songName: 'Zelda & Chill 2 - Spirit Tracks',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'X4FRZNaLEXU'
+    };
+    this.audioLibrary.push(zeldaAndChill2SpiritTracks);
+    const zeldaAndChill2MidnasLament = {
+      url: './assets/audio/11. Zelda & Chill 2 - Midna\'s Lament.mp3',
+      songName: 'Zelda & Chill 2 - Midna\'s Lament',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: '37chgnVh7do'
+    };
+    this.audioLibrary.push(zeldaAndChill2MidnasLament);
+    const zeldaAndChill2TalTalHeights = {
+      url: './assets/audio/12. Zelda & Chill 2 - Tal Tal Heights.mp3',
+      songName: 'Zelda & Chill 2 - Tal Tal Heights',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: '5tW8uftvino'
+    };
+    this.audioLibrary.push(zeldaAndChill2TalTalHeights);
+    const zeldaAndChill2TheLegendaryHero = {
+      url: './assets/audio/13. Zelda & Chill 2 - The Legendary Hero.mp3',
+      songName: 'Zelda & Chill 2 - The Legendary Hero',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'r02etMXRNYk'
+    };
+    this.audioLibrary.push(zeldaAndChill2TheLegendaryHero);
+    const zeldaAndChill2FisTheme = {
+      url: './assets/audio/14. Zelda & Chill 2 - Fi\'s Theme.mp3',
+      songName: 'Zelda & Chill 2 - Fi\'s Theme',
+      songAuthor: 'by GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'krhDSqSE1Fk'
+    };
+    this.audioLibrary.push(zeldaAndChill2FisTheme);
   }
 
   onCanvasClick() {
@@ -847,14 +1056,15 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   }
 
   playRandomSong() {
-    this.playedLibrary.push(this.playingLibraryIndex);
+    this.playedLibrary.push(this.audioLibrary[this.playingLibraryIndex]);
     if (this.playedLibrary.length === this.audioLibrary.length) {
       this.playedLibrary = [];
     }
     do {
       this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length));
-    } while (this.playedLibrary.includes(this.playingLibraryIndex));
+    } while (this.playedLibrary.includes(this.audioLibrary[this.playingLibraryIndex]));
     this.updateSourceMediaElement();
+    this.clearSpecialEffectFlag();
   }
 
   updateSourceMediaElement() {
@@ -873,15 +1083,31 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
         this.renderer.removeChild(this.youtubeElement.nativeElement, child);
       }
       // Add new child element
-      this.youtubeId = this.audioLibrary[this.playingLibraryIndex].youtubeId;
       this.youtubeIFrame = this.renderer.createElement('iframe');
       this.youtubeIFrame.className = 'audio-viz-video-bg';
       this.youtubeIFrame.frameBorder = '0';
-      if (this.youtubeId !== 'dQw4w9WgXcQ' && this.youtubeId !== 'FuX5_OWObA0') { // rickroll or rainbow road
-        this.youtubeId = Math.random() < 0.9 ? this.youtubeId : 'ofDtIFz8gUQ';
-      }
+      this.youtubeId = this.checkPlaySpecialEffectVideoInstead();
       this.youtubeIFrame.src = `https://youtube.com/embed/${this.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${this.youtubeId}&controls=0&showinfo=0`;
       this.renderer.appendChild(this.youtubeElement.nativeElement, this.youtubeIFrame);
+    }
+  }
+
+  checkPlaySpecialEffectVideoInstead(): string {
+    if (this.youtubeId !== 'ofDtIFz8gUQ'
+      && this.youtubeId !== 'dQw4w9WgXcQ' // don't replace on rickroll
+      && this.youtubeId !== 'FuX5_OWObA0' // don't replace on rainbow road
+      && ((this.playedLibrary.length + 1) % 10 === 0) || this.playedLibrary.length + 1 === 1) {
+      this.specialEffectPlayedIndex = this.playedLibrary.length;
+      return 'ofDtIFz8gUQ';
+    } else {
+      return this.audioLibrary[this.playingLibraryIndex].youtubeId;
+    }
+  }
+
+  clearSpecialEffectFlag() {
+    if (this.specialEffectPlayedIndex !== null && this.playedLibrary.length - 1 === this.specialEffectPlayedIndex) {
+      this.playedLibrary = this.playedLibrary.filter(x => x !== this.playedLibrary[this.specialEffectPlayedIndex]);
+      this.specialEffectPlayedIndex = null;
     }
   }
 

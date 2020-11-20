@@ -33,7 +33,7 @@ export class HomeComponent implements OnInit {
   }
 
   donateJustGiving() {
-    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast-2020', '_blank');
+    window.open('https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec', '_blank');
   }
 
   learnAboutSpecialEffect() {
@@ -41,7 +41,7 @@ export class HomeComponent implements OnInit {
   }
 
   learnAboutGameBlast() {
-    window.open('https://www.gameblast20.org.uk/about/', '_blank');
+    window.open('https://www.gameblast.org.uk/about/', '_blank');
   }
 
 }

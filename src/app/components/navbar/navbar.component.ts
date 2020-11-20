@@ -28,7 +28,7 @@ export class NavbarComponent implements OnInit {
   }
 
   donateJustGiving() {
-    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast-2020', '_blank');
+    window.open('https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec', '_blank');
   }
 
   logout() {

@@ -28,6 +28,7 @@ const routes: Routes = [
   { path: 'terms', component: TermsOfUseComponent },
   { path: 'terms-of-service', component: TermsOfUseComponent },
   { path: 'donors', component: DonationsComponent },
+  { path: 'donate', component: DonationsComponent },
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },
   { path: 'schedule', component: ScheduleComponent },
@@ -45,7 +46,9 @@ const routes: Routes = [
   imports: [
     RouterModule.forRoot(
       routes,
-      { enableTracing: false }
+      {
+        enableTracing: false,
+      }
     )
   ],
   exports: [RouterModule]

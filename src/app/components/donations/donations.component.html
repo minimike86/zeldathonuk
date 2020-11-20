@@ -12,7 +12,7 @@
 
       <div class="d-flex flex-column">
 
-        <div class="text-center card card-header d-inline-block position-sticky">
+        <div class="text-center card card-header d-inline-block position-sticky mb-3">
           <div class="embed-responsive-16by9">
             <iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=PLHsLVX3Ok858h4N9ca2SuQjhqDJQga_cg" frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -22,11 +22,24 @@
           </div>
           <div class="d-flex justify-content-around">
             <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
-              Donate via Facebook
+              Donate via Facebook<br/>
+              <span class="small text-white-50">*no fees</span>
             </button>
             <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-              Donate via JustGiving
+              Donate via JustGiving<br/>
+              <span class="small text-warning">*adds fees to donation!</span>
             </button>
+          </div>
+        </div>
+
+        <div class="card card-header d-inline-block position-sticky">
+          <div class="d-flex flex-column">
+            <span class="text-white-50">Facebook Fundraisers Page:</span>
+            <a class="text-warning" href="https://www.facebook.com/donate/655011391974449/" target="_blank">Pending... (Will be added Dec 2020)</a>
+          </div>
+          <div class="d-flex flex-column">
+            <span class="text-white-50">JustGiving Page:</span>
+            <a class="card-link text-success text-break" href="https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec" target="_blank">https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec</a>
           </div>
         </div>
 
@@ -180,14 +193,25 @@
       </ng-template>
 
       <ng-template [ngIf]="tds.length === 0">
-        <div class="d-flex justify-content-center mt-5">
+        <div class="d-flex justify-content-center my-5 py-5">
           <div class="d-flex flex-column">
-            <h6 class="text-white-50">
+            <h6 class="text-white-50 mb-3">
               No donors yet! Please consider starting us off!
             </h6>
-            <button class="btn btn-lg btn-justgiving" (click)="donateJustGiving();">
-              Donate via JustGiving
-            </button>
+            <div class="d-flex justify-content-around">
+              <div class="d-flex flex-column">
+                <button class="btn btn-lg btnfacebook mr-3" (click)="donateFacebook();">
+                  Donate via Facebook<br/>
+                  <span class="small text-white-50">*no fees</span>
+                </button>
+              </div>
+              <div class="d-flex flex-column">
+                <button class="btn btn-lg btn-justgiving" (click)="donateJustGiving();">
+                  Donate via JustGiving<br/>
+                  <span class="small text-warning">*adds fees to donation!</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </ng-template>

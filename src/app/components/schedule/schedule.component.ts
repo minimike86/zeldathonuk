@@ -19,7 +19,7 @@ export class ScheduleComponent implements OnInit {
   getGames(): Game[] {
     const games: Game[] = [];
     const skywardSword = {
-      startDate: new Date('2021-02-15 09:00:00'),
+      startDate: new Date('2021-02-20 09:00:00'),
       console: 'Wii',
       timeline: 'Original',
       name: 'The Legend of Zelda: Skyward Sword',
@@ -419,7 +419,7 @@ export class ScheduleComponent implements OnInit {
         },
         {
           type: 'badge-info',
-          text: '16 Hours',
+          text: '20 Hours',
           url: 'https://howlongtobeat.com/game?id=82895'
         }],
       runners: [{
@@ -443,7 +443,7 @@ export class ScheduleComponent implements OnInit {
       },
         {
           type: 'badge-info',
-          text: '14 Hours',
+          text: '18 Hours',
           url: 'https://howlongtobeat.com/game?id=38019'
         }],
       runners: [{
@@ -452,6 +452,36 @@ export class ScheduleComponent implements OnInit {
       }],
     };
     games.push(breathOfTheWild);
+
+    const linkToThePastSuperMetroidRandomizer = {
+      startDate: new Date((games[games.length - 1].startDate.getTime() +
+        (parseInt(games[games.length - 1].extraBadges.find(x => x.text.endsWith('Hours')).text.split(' ')[0], 10) * 60 * 60 * 1000))),
+      console: 'SNES',
+      timeline: 'Crossover',
+      name: 'Super Metroid & A Link to the Past Crossover Item Randomizer',
+      releaseDate: 1992,
+      boxArt: '../../../assets/img/cover-art/250px-Zelda_SNES_Metroid.jpg',
+      extraBadges: [{
+        type: 'badge-primary',
+        text: 'Multiplayer Any%'
+      },
+        {
+          type: 'badge-danger',
+          text: 'Randomizer',
+          url: 'https://github.com/tewtal/SMZ3Randomizer'
+        },
+        {
+          type: 'badge-info',
+          text: '14 Hours',
+          url: 'https://howlongtobeat.com/game?id=10028'
+        }],
+      runners: [{
+        name: 'MSec',
+        channelUrl: 'https://www.twitch.tv/msec'
+      }],
+    };
+    games.push(linkToThePastSuperMetroidRandomizer);
+
     return games;
   }
 

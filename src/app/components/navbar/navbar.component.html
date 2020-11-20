@@ -41,14 +41,14 @@
           <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
             <div class="align-self-center">
               <button class="btn btn-sm btnfacebook" (click)="donateFacebook();">
-                Donate via Facebook
+                Donate via Facebook <span class="small text-white-50">*no fees</span>
               </button>
             </div>
           </li>
           <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
             <div class="align-self-center">
               <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-                Donate via JustGiving
+                Donate via JustGiving <span class="small text-warning">*adds fees!</span>
               </button>
             </div>
           </li>

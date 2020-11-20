@@ -5,8 +5,11 @@
     <h6 class="text-white-50">
       We have a number of donor incentives to help inspire and motivate more people to start donating, give larger donations than they normally would, and engage long-term with our chosen charity.
     </h6>
+    <div class="d-flex justify-content-around">
+      <a class="btn btn-secondary" (click)="scrollToActivities()">Activities / Challenges</a>
+      <a class="btn btn-secondary" (click)="scrollToRaffle()">Raffle Prizes</a>
+    </div>
   </div>
-
 
   <div class="border-bottom border-light">
     &nbsp;
@@ -18,7 +21,6 @@
     Activites and challenges are designed to help you get us to DO something
   </h6>
   <div class="d-flex my-2">
-
     <div class="d-inline-flex flex-fill">
 
       <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let incentive of donationIncentives">
@@ -28,7 +30,7 @@
           <span class="badge" [ngClass]="incentive.constraintColour">{{ incentive.constraint }}</span>
         </div>
         <a [href]="incentive.imageHrefUrl" target="_blank">
-          <img class="card-img" style="height: 250px;" [alt]="incentive.name" [src]="incentive.imageSrcUrl">
+          <img class="card-img" style="height: 120px; object-fit: cover;" [alt]="incentive.name" [src]="incentive.imageSrcUrl">
         </a>
         <div class="card-body" [innerHTML]="incentive.description"></div>
         <div class="card-footer small">
@@ -46,13 +48,17 @@
     </div>
     <div class="d-inline">
       <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
-        Donate via Facebook
+        Donate via Facebook<br/>
+        <span class="small text-white-50">*no fees</span>
       </button>
       <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-        Donate via JustGiving
+        Donate via JustGiving<br/>
+        <span class="small text-warning">*adds fees to donation!</span>
       </button>
     </div>
   </div>
+
+  <span #activities></span>
 
 
   <div class="border-bottom border-light">
@@ -66,7 +72,6 @@
     These we be announced on stream when the raffles are active throughout the zelda marathon so stay tuned in to win!
   </h6>
   <div class="d-flex my-2">
-
     <div class="d-inline-flex flex-fill">
 
       <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let prize of prizes">
@@ -99,13 +104,16 @@
     </div>
     <div class="d-inline">
       <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
-        Donate via Facebook
+        Donate via Facebook<br/>
+        <span class="small text-white-50">*no fees</span>
       </button>
       <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-        Donate via JustGiving
+        Donate via JustGiving<br/>
+        <span class="small text-warning">*adds fees to donation!</span>
       </button>
     </div>
   </div>
 
+  <span #raffle></span>
 
 </div>
