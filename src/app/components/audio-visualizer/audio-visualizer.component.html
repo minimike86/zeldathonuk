@@ -26,7 +26,7 @@
       </div>
 
       <div class="time-remaining text-center w-100">
-        <h5 class="text-white-50">Stream Starting In:</h5>
+        <h5 class="text-white-50">312-Hour Zelda Marathon for SpecialEffect Charity Starting In:</h5>
 
         <ng-container *ngIf="timeRemaining.days >= 1; else hoursRemaining">
           <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.days, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">d</h2>
@@ -69,7 +69,7 @@
             <marquee behavior="scroll" direction="left">
               <h3 class="font-italic text-white-50 song-name mb-1">{{ audioLibrary[playingLibraryIndex].songName }}</h3>
             </marquee>
-            <h5 class="font-italic text-white-50 text-right">{{ audioLibrary[playingLibraryIndex].songAuthor }}</h5>
+            <h5 class="font-italic donate-link text-right" style="opacity: 0.6;">{{ audioLibrary[playingLibraryIndex].songAuthor }}</h5>
           </div>
         </div>
       </div>

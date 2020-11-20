@@ -55,7 +55,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.calcTimeRemaining();
     // Define audio files
-    this.getAudioLibrary();
+    this.populateAudioLibrary();
     this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length));
     // Define audio element
     this.audio = new Audio();
@@ -110,7 +110,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     }
   }
 
-  getAudioLibrary() {
+  populateAudioLibrary() {
     const ianAislingTogether = {
       url: './assets/audio/Ian%20Aisling%20-%20Together%20-%20A%20Zelda%20Animation%20OST%20-%2005%20Fi\'s%20Theme%20Reimagined.mp3',
       songName: 'Together - A Zelda Animation OST',
@@ -1269,17 +1269,17 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   drawLineSegment(ctx, x, y, width, isEven, i, length) {
     ctx.lineWidth = 1; // how thick the line is
     if (i < (length / 7)) {
-      ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)'; // what color our line is
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)'; // what color our line is
     } else if (i < (length / 7) * 2) {
-      ctx.strokeStyle = 'rgba(150, 255, 255, 0.5)'; // what color our line is
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.75)'; // what color our line is
     } else if (i < (length / 7) * 3) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // what color our line is
+      ctx.strokeStyle = 'rgba(207, 181, 59, 0.5)'; // what color our line is
     } else if (i < (length / 7) * 4) {
-      ctx.strokeStyle = 'rgba(255, 200, 255, 0.5)'; // what color our line is
+      ctx.strokeStyle = 'rgba(207, 181, 59, 0.75)'; // what color our line is
     } else if (i < (length / 7) * 5) {
-      ctx.strokeStyle = 'rgba(255, 150, 255, 0.5)'; // what color our line is
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)'; // what color our line is
     } else if (i < (length / 7) * 6) {
-      ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)'; // what color our line is
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.75)'; // what color our line is
     }
     ctx.beginPath();
     y = isEven ? y : -y;
