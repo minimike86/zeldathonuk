@@ -24,33 +24,63 @@
   margin-top: 90px;
 }
 
+.bebas-neue {
+  font-family: 'Bebas Neue', cursive;
+}
+
 .time-remaining {
   position: absolute;
   top: calc(50vh - ((300px) * 0.388));
 }
 
+.time-remaining-title {
+  font-size: 32px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
 .time-remaining-h1 {
   font-size: 200px;
-  font-family: 'VT323', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-weight: lighter;
   text-shadow: 8px 8px rgba(20, 20, 20, 0.6);
 }
 
 .time-remaining-h2 {
   font-size: 160px;
-  font-family: 'VT323', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-weight: lighter;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255, 225, 30, 0.25);
+}
+
+.benefitting-text {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.raising-money-text {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.consider-donation-text {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .donate-link {
-  font-size: 1.3em;
+  font-size: 32px;
   font-weight: bold;
   color: rgba(255, 225, 30, 0.65);
 }
 
 .song-name {
+  font-size: 32px;
   width: 30vw;
   max-width: 30vw;
-  opacity: 0.6;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.song-author {
+  font-size: 28px;
+  color: rgba(255, 225, 30, 0.65);
 }
