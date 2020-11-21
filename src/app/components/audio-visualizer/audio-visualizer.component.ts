@@ -5,7 +5,7 @@ import { faMusic } from '@fortawesome/free-solid-svg-icons';
 @Component({
   selector: 'app-audio-visualizer',
   templateUrl: './audio-visualizer.component.html',
-  styleUrls: ['./audio-visualizer.component.css']
+  styleUrls: ['./audio-visualizer.component.scss']
 })
 export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   faMusic = faMusic;
@@ -36,11 +36,15 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   public youtubeIFrame: HTMLIFrameElement;
   public youtubeId: string;
 
+  @ViewChild('timeRemainingTitle', {static: false})
+  public timeRemainingTitleRef: ElementRef;
+  public timeRemainingTitleText = '312-Hour Zelda Marathon for SpecialEffect Charity Starting In:';
   public timeRemaining: TimeRemaining = {
     days: 0,
     hours: 0,
     minutes: 0,
-    seconds: 0
+    seconds: 0,
+    milliseconds: 0
   };
 
   public audioCtx: AudioContext;
@@ -74,6 +78,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       this.getAudioContext();
     }, 1000);
     this.updateYoutubeVideo();
+    this.animateTimeRemainingTitle();
   }
 
   calcTimeRemaining() {
@@ -85,13 +90,25 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       const hours = Math.floor(((milliseconds / (1000 * 60 * 60)) % 24));
       const minutes = Math.floor(((milliseconds / (1000 * 60)) % 60));
       const seconds = Math.floor((milliseconds / 1000) % 60);
+      const mseconds = milliseconds.toString();
       this.timeRemaining = {
         days: days,
         hours: hours,
         minutes: minutes,
-        seconds: seconds
+        seconds: seconds,
+        milliseconds: parseInt(mseconds.substring(mseconds.length - 3, mseconds.length), 10)
       };
-    }, 1000);
+    }, 10);
+  }
+
+  animateTimeRemainingTitle() {
+    Array.from(this.timeRemainingTitleText).forEach((char, i) => {
+      const charDiv = this.renderer.createElement('div');
+      const charText = this.renderer.createText(char);
+      this.renderer.setAttribute(charDiv, 'class', char === ' ' ? 'px-1 jumping' : 'jumping');
+      this.renderer.appendChild(charDiv, charText);
+      this.renderer.appendChild(this.timeRemainingTitleRef.nativeElement, charDiv);
+    });
   }
 
   zeroPad(num: number, maxLen: number): string {
@@ -1098,6 +1115,9 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     if (this.youtubeId !== 'ofDtIFz8gUQ'
       && this.youtubeId !== 'dQw4w9WgXcQ' // don't replace on rickroll
       && this.youtubeId !== 'FuX5_OWObA0' // don't replace on rainbow road
+      && this.youtubeId !== 'NdpaJH0ZEuU' // don't replace on koopas road
+      && this.youtubeId !== 'X2SOUEJwYJ8' // don't replace on starfox
+      && this.youtubeId !== 'kNzDhsgRJxI' // don't replace on diddy kong racing
       && ((this.playedLibrary.length + 1) % 10 === 0) || this.playedLibrary.length + 1 === 1) {
       this.specialEffectPlayedIndex = this.playedLibrary.length;
       return 'ofDtIFz8gUQ';
@@ -1299,6 +1319,7 @@ interface TimeRemaining {
   hours: number;
   minutes: number;
   seconds: number;
+  milliseconds: number;
 }
 
 
