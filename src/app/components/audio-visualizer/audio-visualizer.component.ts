@@ -1,4 +1,5 @@
 import {AfterViewInit, Component, ElementRef, OnInit, Renderer2, ViewChild} from '@angular/core';
+import { faMusic } from '@fortawesome/free-solid-svg-icons';
 
 
 @Component({
@@ -7,6 +8,7 @@ import {AfterViewInit, Component, ElementRef, OnInit, Renderer2, ViewChild} from
   styleUrls: ['./audio-visualizer.component.css']
 })
 export class AudioVisualizerComponent implements OnInit, AfterViewInit {
+  faMusic = faMusic;
 
   @ViewChild('canvas', {static: false})
   canvas: ElementRef<HTMLCanvasElement>;

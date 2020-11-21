@@ -69,7 +69,7 @@
             <marquee behavior="scroll" direction="left">
               <h3 class="song-name bebas-neue mb-1">{{ audioLibrary[playingLibraryIndex].songName }}</h3>
             </marquee>
-            <h5 class="song-author bebas-neue text-right" style="opacity: 0.6;">{{ audioLibrary[playingLibraryIndex].songAuthor }}</h5>
+            <h5 class="song-author bebas-neue text-right" style="opacity: 0.6;"><fa-icon [icon]="faMusic" class="pr-3"></fa-icon>{{ audioLibrary[playingLibraryIndex].songAuthor }}</h5>
           </div>
         </div>
       </div>
