@@ -18,7 +18,6 @@
     "@angular/core": "^10.1.4",
     "@angular/fire": "^6.0.3",
     "@angular/forms": "^10.1.4",
-    "@angular/http": "^7.2.16",
     "@angular/platform-browser": "^10.1.4",
     "@angular/platform-browser-dynamic": "^10.1.4",
     "@angular/router": "^10.1.4",
@@ -53,7 +52,7 @@
     "zone.js": "~0.10.2"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "~0.1001.3",
+    "@angular-devkit/build-angular": "^0.1100.2",
     "@angular/compiler-cli": "^10.1.4",
     "@angular/language-service": "^10.1.4",
     "@types/jasmine": "^3.5.14",

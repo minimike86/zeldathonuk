@@ -10,19 +10,19 @@ import { faMusic } from '@fortawesome/free-solid-svg-icons';
 export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   faMusic = faMusic;
 
-  @ViewChild('canvas', {static: false})
+  @ViewChild('canvas', {static: true})
   canvas: ElementRef<HTMLCanvasElement>;
 
-  @ViewChild('canvasBeatLeft', {static: false})
+  @ViewChild('canvasBeatLeft', {static: true})
   canvasBeatLeft: ElementRef<HTMLCanvasElement>;
 
-  @ViewChild('canvasBeatRight', {static: false})
+  @ViewChild('canvasBeatRight', {static: true})
   canvasBeatRight: ElementRef<HTMLCanvasElement>;
 
   public ctx: CanvasRenderingContext2D;
   public canvasToggle = false;
 
-  @ViewChild('audioElement', {static: false})
+  @ViewChild('audioElement', {static: true})
   audioElement: ElementRef;
   public audio: HTMLAudioElement;
 
@@ -31,12 +31,12 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
   public playingLibraryIndex: number;
   public specialEffectPlayedIndex: number = null;
 
-  @ViewChild('youtubeEmbed', {static: false})
+  @ViewChild('youtubeEmbed', {static: true})
   youtubeElement: ElementRef;
   public youtubeIFrame: HTMLIFrameElement;
   public youtubeId: string;
 
-  @ViewChild('timeRemainingTitle', {static: false})
+  @ViewChild('timeRemainingTitle', {static: true})
   public timeRemainingTitleRef: ElementRef;
   public timeRemainingTitleText = '312-Hour Zelda Marathon for SpecialEffect Charity Starting In:';
   public timeRemaining: TimeRemaining = {
@@ -44,7 +44,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     hours: 0,
     minutes: 0,
     seconds: 0,
-    milliseconds: 0
+    // milliseconds: 0
   };
 
   public audioCtx: AudioContext;
@@ -90,15 +90,15 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       const hours = Math.floor(((milliseconds / (1000 * 60 * 60)) % 24));
       const minutes = Math.floor(((milliseconds / (1000 * 60)) % 60));
       const seconds = Math.floor((milliseconds / 1000) % 60);
-      const mseconds = milliseconds.toString();
+      // const mseconds = milliseconds.toString();
       this.timeRemaining = {
         days: days,
         hours: hours,
         minutes: minutes,
         seconds: seconds,
-        milliseconds: parseInt(mseconds.substring(mseconds.length - 3, mseconds.length), 10)
+        // milliseconds: parseInt(mseconds.substring(mseconds.length - 3, mseconds.length), 10)
       };
-    }, 10);
+    }, 1000);
   }
 
   animateTimeRemainingTitle() {
@@ -968,7 +968,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       url: './assets/audio/2. Zelda & Chill 2 - The Great Sea.mp3',
       songName: 'Zelda & Chill 2 - The Great Sea',
       songAuthor: 'by GameChops',
-      beatColour: 'rgba(50, 200, 50, 0.75)',
+      beatColour: 'rgba(50, 200, 250, 0.75)',
       youtubeId: 'QhDDo6K6OSg'
     };
     this.audioLibrary.push(zeldaAndChill2TheGreatSea);
@@ -992,7 +992,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       url: './assets/audio/5. Zelda & Chill 2 - Serenade of Water.mp3',
       songName: 'Zelda & Chill 2 - Serenade of Water',
       songAuthor: 'by GameChops',
-      beatColour: 'rgba(50, 200, 50, 0.75)',
+      beatColour: 'rgba(150, 200, 250, 0.75)',
       youtubeId: 'QlPij-6cXsE'
     };
     this.audioLibrary.push(zeldaAndChill2SerenadeOfWater);
@@ -1016,7 +1016,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       url: './assets/audio/8. Zelda & Chill 2 - Revali\'s Theme.mp3',
       songName: 'Zelda & Chill 2 - Revali\'s Theme',
       songAuthor: 'by GameChops',
-      beatColour: 'rgba(50, 200, 50, 0.75)',
+      beatColour: 'rgba(50, 100, 250, 0.75)',
       youtubeId: 'qG1JNlUU9w4'
     };
     this.audioLibrary.push(zeldaAndChill2RevalisTheme);
@@ -1024,7 +1024,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       url: './assets/audio/9. Zelda & Chill 2 - Outset Island.mp3',
       songName: 'Zelda & Chill 2 - Outset Island',
       songAuthor: 'by GameChops',
-      beatColour: 'rgba(50, 200, 50, 0.75)',
+      beatColour: 'rgba(50, 200, 250, 0.75)',
       youtubeId: '2TRE55puZoc'
     };
     this.audioLibrary.push(zeldaAndChill2OutsetIsland);
@@ -1064,10 +1064,82 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       url: './assets/audio/14. Zelda & Chill 2 - Fi\'s Theme.mp3',
       songName: 'Zelda & Chill 2 - Fi\'s Theme',
       songAuthor: 'by GameChops',
-      beatColour: 'rgba(50, 200, 50, 0.75)',
+      beatColour: 'rgba(120, 140, 250, 0.75)',
       youtubeId: 'krhDSqSE1Fk'
     };
     this.audioLibrary.push(zeldaAndChill2FisTheme);
+    const derekDaleyDungeonTheme = {
+      url: './assets/audio/Zelda - Dungeon Theme [Synthwave].mp3',
+      songName: 'Zelda - Dungeon Theme [Synthwave]',
+      songAuthor: 'by Derek Daley',
+      beatColour: 'rgba(210, 150, 0, 0.75)',
+      youtubeId: 'OWXuMpVJNWo'
+    };
+    this.audioLibrary.push(derekDaleyDungeonTheme);
+    const switchedOnIntroAndOpening = {
+      url: './assets/audio/Switched On A Link to the Past - Intro and Opening.mp3',
+      songName: '[Switched On] A Link to the Past - Intro and Opening',
+      songAuthor: 'by Switched On',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'M235KsEroh4'
+    };
+    this.audioLibrary.push(switchedOnIntroAndOpening);
+    const estebanCaballeroMainThemeSythnwaveRemix = {
+      url: './assets/audio/The Legend Of Zelda - Main Theme (Sythnwave Remix) Esteban Caballero.mp3',
+      songName: 'The Legend Of Zelda - Main Theme (Sythnwave Remix)',
+      songAuthor: 'by Esteban Caballero',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'OWXuMpVJNWo'
+    };
+    this.audioLibrary.push(estebanCaballeroMainThemeSythnwaveRemix);
+    const switchedOnZeldaRescue = {
+      url: './assets/audio/Switched On A Link to the Past - Zelda Rescue.mp3',
+      songName: '[Switched On] Zelda Rescue',
+      songAuthor: 'by Switched On',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'S8xIqNtDGRE'
+    };
+    this.audioLibrary.push(switchedOnZeldaRescue);
+    const switchedOnEnding = {
+      url: './assets/audio/Switched On A Link to the Past - Ending.mp3',
+      songName: '[Switched On] Ending',
+      songAuthor: 'by Switched On',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: '8JU0C_l4aac'
+    };
+    this.audioLibrary.push(switchedOnEnding);
+    const switchedOnDarkMountain = {
+      url: './assets/audio/Switched On A Link to the Past - Dark Mountain.mp3',
+      songName: '[Switched On] Dark Mountain',
+      songAuthor: 'by Switched On',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 't5ToHperQQk'
+    };
+    this.audioLibrary.push(switchedOnDarkMountain);
+    const switchedOnLostWoods = {
+      url: './assets/audio/Switched On A Link to the Past - Lost Woods.mp3',
+      songName: '[Switched On] Lost Woods',
+      songAuthor: 'by Switched On',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'wPgay4ZcrS4'
+    };
+    this.audioLibrary.push(switchedOnLostWoods);
+    const switchedOnKakariko = {
+      url: './assets/audio/Switched On A Link to the Past - Kakariko.mp3',
+      songName: '[Switched On] Kakariko',
+      songAuthor: 'by Switched On',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'h9_saKI0Umw'
+    };
+    this.audioLibrary.push(switchedOnKakariko);
+    const ryanimalTempleOfTimeSynthwaveRemix = {
+      url: './assets/audio/Zelda - Temple of Time - Synthwave Remix.mp3',
+      songName: 'Temple of Time - Synthwave Remix',
+      songAuthor: 'by Ryanimal',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'nFqbXIdLBzw'
+    };
+    this.audioLibrary.push(ryanimalTempleOfTimeSynthwaveRemix);
   }
 
   onCanvasClick() {
@@ -1319,7 +1391,7 @@ interface TimeRemaining {
   hours: number;
   minutes: number;
   seconds: number;
-  milliseconds: number;
+  milliseconds?: number;
 }
 
 
