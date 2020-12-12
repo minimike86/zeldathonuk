@@ -2,35 +2,26 @@
 
   <div class="py-2">
     <h3 class="text-white">Stream Schedule</h3>
-    <h6 class="text-white-50">
-      Check the line up below to see what time your favourite zelda games are likely to be played.
-    </h6>
+
+    <div class="alert alert-warning" role="alert">
+      <h4 class="alert-heading">ZELDATHONUK 10 YEAR ANNIVERSARY!</h4>
+      <div class="d-flex justify-content-around my-2">
+        <img style="max-height: 150px; filter: sepia(75%);" src="https://images.justgiving.com/image/292f8261-199e-439a-847a-a5f4ad270b07.jpg" alt="team1" title="Zeldathon For GamesAid #1 (2011)">
+        <img style="max-height: 150px; filter: sepia(75%);" src="https://images.justgiving.com/image/9d54ff22-3185-4a7b-812a-66df7c774ce6.jpg" alt="team2" title="Zeldathon For GamesAid #1 (2011)">
+        <img style="max-height: 150px; filter: sepia(75%);" src="https://news.bournemouth.ac.uk/wp-content/uploads/2013/05/Zelda.jpg" alt="team3" title="Zeldathon For GamesAid #2 (2012)">
+        <img style="max-height: 150px; filter: sepia(75%);" src="https://www.bournemouthecho.co.uk/resources/images/9466146.jpg" alt="team4" title="ZeldathonUK #GameBlast20 (2020)">
+      </div>
+      <p>Since the first Zeldathon "for GamesAid" on 11th November 2011 in the week prior to Skywards Sword's launch, we have been fundraising for the awesome <a class="text-warning" href="https://www.specialeffect.org.uk/what-we-do">SpecialEffect</a> charity. Together with your support we have raised over £6,000+ for them.</p>
+      <p>As a thank you to everyone who has donated over the past decade we will be playing every main title in the Zelda timeline. Hopefully with your continued support during this years <a class="text-warning" href="https://www.gameblast.org.uk/about/">#GameBlast21</a> event we can raise even more!</p>
+    </div>
+
+    <p class="text-white-50">
+      Check the schedule below to see what day and time your favourite zelda games are likely to be played so you don't miss out!
+    </p>
 
     <div class="d-flex justify-content-between">
 
-      <div class="d-flex flex-column">
-
-        <div class="text-center card card-header d-inline-block position-sticky">
-          <div class="embed-responsive-16by9">
-            <iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=PLHsLVX3Ok858h4N9ca2SuQjhqDJQga_cg" frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-          </div>
-          <div class="d-flex justify-content-center p-3">
-            <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
-          </div>
-          <div class="d-flex justify-content-around">
-            <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
-              Donate via Facebook
-            </button>
-            <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-              Donate via JustGiving
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="d-flex flex-column flex-fill ml-2">
+      <div class="d-flex flex-column flex-fill">
 
         <div class="table-responsive">
           <table class="table table-hover table-striped table-dark" style="font-size: 14px;">
@@ -39,6 +30,7 @@
                 <th scope="col">Day</th>
                 <th scope="col">Time</th>
                 <th scope="col">Console</th>
+                <th scope="col">Timeline</th>
                 <th scope="col">Game</th>
                 <th scope="col">Runner(s)</th>
               </tr>
@@ -66,8 +58,14 @@
                 </td>
 
                 <td class="align-middle text-center">
-                  <div class="badge badge-pill badge-light p-2">
+                  <div class="badge badge-pill badge-secondary p-2">
                     {{ game.console }}
+                  </div>
+                </td>
+
+                <td class="align-middle text-center">
+                  <div class="badge badge-pill badge-light p-2">
+                    {{ game.timeline }}
                   </div>
                 </td>
 

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { DonationIncentive, Prize } from '../../models/prize-incentives';
 
 @Component({
@@ -7,6 +7,9 @@ import { DonationIncentive, Prize } from '../../models/prize-incentives';
   styleUrls: ['./incentives.component.css']
 })
 export class IncentivesComponent implements OnInit {
+
+  @ViewChild('activities') public activitiesRef: ElementRef;
+  @ViewChild('raffle') public raffleRef: ElementRef;
 
   public donationIncentives: DonationIncentive[] = [];
   public prizes: Prize[] = [];
@@ -26,7 +29,7 @@ export class IncentivesComponent implements OnInit {
         imageHrefUrl: '../../../assets/img/challenges/twitch-views.jpg',
         description: '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Raid</a>, <a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Host</a>, ' +
           '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Share</a>, and <a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Watch</a> the stream is the best thing ' +
-          'you can do to support us! More views means we appear higher in the search which leads to more views and hopefully more donations for ' +
+          'you can do to support us! More views = more donations for ' +
           '<a href="https://www.specialeffect.org.uk/what-we-do" target="_blank" class="bg-dark text-light font-weight-bold px-1">SpecialEffect</a>',
         donationAmount: 0
       },
@@ -52,20 +55,6 @@ export class IncentivesComponent implements OnInit {
         imageHrefUrl: '../../../assets/img/challenges/majoras-mask-pen.jpg',
         description: '<span class="bg-dark text-success font-weight-bold px-1">Donate £50</span> and you can commission some beautiful artwork from Heennnrrrryyyyyyyyy!',
         donationAmount: 50
-      },
-      {
-        name: 'Cryptocurrency',
-        type: 'MSec',
-        typeColour: 'badge-success',
-        constraint: 'Free Money!',
-        constraintColour: 'badge-info',
-        imageSrcUrl: '../../../assets/img/challenges/coinbase-ad.jpg',
-        imageHrefUrl: 'https://www.coinbase.com/join/warner_p5',
-        description: '<p class="text-justify"><a href="https://www.twitch.tv/msec" target="_blank" class="bg-dark text-warning font-weight-bold px-1">msec</a>' +
-          ' is tracking a couple crypto-currencies over the weekend, any gains will be donated at the end!</p><p>You can add £7.74 ($10 USD) to ' +
-          'our Bitcoin amount by <a class="bg-dark text-success font-weight-bold px-1" href="https://www.coinbase.com/join/warner_p5" ' +
-          'target="_blank">creating a coinbase account</a> and buying or selling at least £77.43 ($100 USD).</p><p>Better yet you’ll also receive £7.74 in Bitcoin!</p>',
-        donationAmount: 7.43
       },
     );
 
@@ -107,11 +96,23 @@ export class IncentivesComponent implements OnInit {
   }
 
   donateFacebook() {
-    window.open('https://www.facebook.com/donate/655011391974449/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
+    window.open('https://www.facebook.com/donate/855003971855785/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
   }
 
   donateJustGiving() {
     window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast-2020', '_blank');
+  }
+
+  scrollToActivities() {
+    setTimeout(() => {
+      this.activitiesRef.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'start' });
+    }, 100);
+  }
+
+  scrollToRaffle() {
+    setTimeout(() => {
+      this.raffleRef.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'start' });
+    }, 100);
   }
 
 }
