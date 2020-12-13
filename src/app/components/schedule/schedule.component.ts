@@ -1,5 +1,7 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {NgbCarousel, NgbSlideEvent, NgbSlideEventSource} from '@ng-bootstrap/ng-bootstrap';
+import {Router} from '@angular/router';
+import {TwitchService} from '../../services/twitch-service/twitch-service.service';
 
 
 @Component({
@@ -25,13 +27,36 @@ export class ScheduleComponent implements OnInit {
   public pauseOnIndicator = false;
   public pauseOnHover = true;
   public pauseOnFocus = true;
-
   @ViewChild('carousel', {static : true}) carousel: NgbCarousel;
 
-  constructor() { }
+  public now: Date;
+
+  public isLive: boolean;
+
+  constructor(private router: Router,
+              private twitchService: TwitchService) {
+    this.twitchService.getSearchChannels('zeldathonuk', 1, false).subscribe(data => {
+      this.isLive = data.is_live;
+      console.log(data);
+    });
+  }
 
   ngOnInit() {
+    this.now = new Date();
     this.gameList = this.getGames();
+  }
+
+  routeToLiveView() {
+    this.router.navigate(['']).then();
+  }
+
+  isCurrentlyPlaying(index: number): boolean {
+    return (this.gameList[index].startDate.getTime() <= this.now.getTime() &&
+      this.gameList[index + 1].startDate.getTime() > this.now.getTime());
+  }
+
+  hasBeenPlayed(index: number): boolean {
+    return (this.gameList[index].startDate.getTime() <= this.now.getTime());
   }
 
   togglePaused() {

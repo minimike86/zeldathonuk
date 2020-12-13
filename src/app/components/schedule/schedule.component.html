@@ -7,7 +7,10 @@
 
         <div class="text-center card bg-dark d-inline-block mb-3" style="width: 22rem;">
           <div class="text-center card card-header bg-dark text-light">
-            <h5 class="card-title mb-0">Watch Live</h5>
+            <h5 class="card-title mb-0">
+              Watch Live
+              <div *ngIf="isLive" class="d-inline-block live-circle ml-1"></div>
+            </h5>
           </div>
           <div class="card-body">
             <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
@@ -75,8 +78,9 @@
     <div class="py-2">
       <h3 class="text-white">Stream Schedule</h3>
 
-      <p class="text-white-50">
-        Check the schedule below to see what day and time your favourite zelda games are likely to be played so you don't miss out!
+      <p class="text-light">
+        This year our line up will be following the <a class="text-info" href="https://www.zelda.com/about/" target="_blank">Official Zelda Timeline</a> as closely as possible.
+        Check the dates and times below to see when (roughly) we will be playing your favourite titles so that you won't miss out!
       </p>
 
       <div class="d-flex justify-content-between">
@@ -97,7 +101,7 @@
               </thead>
               <tbody>
 
-              <tr *ngFor="let game of gameList">
+              <tr *ngFor="let game of gameList; let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
 
                 <td class="align-middle">
                   <div class="">
@@ -136,7 +140,22 @@
                            [title]="game.name + ' Cover Art'">
                     </div>
                     <div class="text-center w-100">
-                      <p class="mb-1">{{ game.name }} ({{ game.releaseDate }})</p>
+                      <p class="mb-1">
+                        {{ game.name }} ({{ game.releaseDate }})
+                        <ng-container *ngIf="hasBeenPlayed(i) && !isCurrentlyPlaying(i)">
+                            <span class="badge badge-warning m-2">
+                              COMPLETED
+                            </span>
+                        </ng-container>
+                        <ng-container *ngIf="isCurrentlyPlaying(i) && isLive">
+                          <div class="d-inline-block m-2" (click)="routeToLiveView()">
+                            <span class="badge badge-danger" style="cursor: pointer;" title="Watch Livestream">
+                              LIVE
+                            </span>
+                            <div class="d-inline-block live-circle ml-1"></div>
+                          </div>
+                        </ng-container>
+                      </p>
                       <ng-container *ngFor="let badge of game.extraBadges">
                         <ng-container *ngIf="badge.url">
                             <span class="badge m-2" [ngClass]="badge.type">
