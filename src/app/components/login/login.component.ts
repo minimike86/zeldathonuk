@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { User } from 'firebase/app';
-
 import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 
 import { AuthService } from '../../services/firebase/auth/auth.service';
+
+import firebase from 'firebase/app';
+import 'firebase/auth';
 
 
 @Component({
@@ -14,7 +15,7 @@ import { AuthService } from '../../services/firebase/auth/auth.service';
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
-  private currentUser: User;
+  private currentUser: firebase.User;
   public faGoogle = faGoogle;
 
   constructor(private authService: AuthService,
