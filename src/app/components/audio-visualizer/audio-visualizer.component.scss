@@ -6,8 +6,11 @@
 
 .audio-viz-bg {
   height: 100vh;
-  background: rgb(0,0,0);
-  background: radial-gradient(closest-side, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.95) 95%, rgba(0,0,0,1) 95%, rgba(0,0,0,1) 100%);
+  background: rgba(255, 225, 30, 0.45);
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55) 40%,
+                                            rgba(0, 0, 0, 0.95) 95%,
+                                            rgba(0, 0, 0, 1) 95%,
+                                            rgba(0, 0, 0, 1) 100%);
 }
 
 .zeldathon-logo {
@@ -15,7 +18,7 @@
 
 .audio-viz-container {
   max-height: 50vh;
-  width: 50vw;
+  width: 100vw;
 }
 
 .audio-viz-beat {

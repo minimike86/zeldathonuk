@@ -62,7 +62,9 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     this.calcTimeRemaining();
     // Define audio files
     this.populateAudioLibrary();
-    this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length));
+    this.playingLibraryIndex = this.audioLibrary.findIndex(x =>
+      x.songName === '[Switched On] A Link to the Past - Intro and Opening'); // start on specific song
+    // this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length)); // start on random song
     // Define audio element
     this.audio = new Audio();
     this.audio.src = this.audioLibrary[this.playingLibraryIndex].url;
@@ -1140,6 +1142,87 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       youtubeId: 'nFqbXIdLBzw'
     };
     this.audioLibrary.push(ryanimalTempleOfTimeSynthwaveRemix);
+    // Legend of Synthwave
+    const legendOfSynthwaveFairyFountain = {
+      url: './assets/audio/Fairy Fountain - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Fairy Fountain - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveFairyFountain);
+    const legendOfSynthwaveLostWoods = {
+      url: './assets/audio/Lost Woods - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Lost Woods - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveLostWoods);
+    const legendOfSynthwaveDarkWorld = {
+      url: './assets/audio/Dark World - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Dark World - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveDarkWorld);
+    const legendOfSynthwavePrinceSidon = {
+      url: './assets/audio/Prince Sidon - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Prince Sidon - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 100, 250, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwavePrinceSidon);
+    const legendOfSynthwaveMiphasGrace = {
+      url: './assets/audio/Miphas Grace - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Mipha\'s Grace - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 100, 250, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveMiphasGrace);
+    const legendOfSynthwaveSacredGrove = {
+      url: './assets/audio/Sacred Grove - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Sacred Grove - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveSacredGrove);
+    const legendOfSynthwaveBambooIsland = {
+      url: './assets/audio/Bamboo Island - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Bamboo Island - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveBambooIsland);
+    const legendOfSynthwaveHyruleField = {
+      url: './assets/audio/Hyrule Field - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Hyrule Field - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveHyruleField);
+    const legendOfSynthwaveTarryTown = {
+      url: './assets/audio/Tarrey Town - Legend of Synthwave - Helynt.mp3',
+      songName: 'Tarrey Town - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveTarryTown);
+    const legendOfSynthwaveLegendOfZelda = {
+      url: './assets/audio/Legend of Zelda - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Legend of Zelda - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveLegendOfZelda);
   }
 
   onCanvasClick() {
@@ -1214,7 +1297,10 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     };
     this.source.mediaElement.play().then();
     this.source.connect(this.analyser);
-    this.analyser.fftSize = 2048;
+    this.analyser.minDecibels = -90;
+    this.analyser.maxDecibels = -10;
+    this.analyser.smoothingTimeConstant = 0.85;
+    this.analyser.fftSize = 256;
     this.fftLen = this.analyser.frequencyBinCount;
     this.fft = new Uint8Array(this.fftLen);
     this.analyser.connect(this.audioCtx.destination);
@@ -1231,56 +1317,57 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       }
       const filtered = this.getFilteredRawData(dataArray);
       const normalised = this.getNormalisedAudioData(filtered);
-      this.draw(normalised);
-      this.renderBeat(this.canvasBeatLeft.nativeElement);
-      this.renderBeat(this.canvasBeatRight.nativeElement);
+      const mirrored = this.getMirroredFilteredData(normalised);
+      this.draw(mirrored);
+      // this.renderBeat(this.canvasBeatLeft.nativeElement);
+      // this.renderBeat(this.canvasBeatRight.nativeElement);
     }, 30 / 1000);
   }
 
-  renderBeat(canvas) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // renderBeat(canvas) {
+  //   const ctx = canvas.getContext('2d');
+  //   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  //
+  //   ctx.lineWidth = 6;
+  //   ctx.strokeStyle = this.beatColour;
+  //   ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  //   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  //
+  //   // fill FFT buffer
+  //   this.analyser.getByteFrequencyData(this.fft);
+  //
+  //   // average data from some bands
+  //   const v = (this.fft[1] + this.fft[2]) / 512;
+  //
+  //   const cx = canvas.width * 0.5;
+  //   const cy = canvas.height * 0.5;
+  //   const radiusMax = Math.min(cx, cy) - 20;
+  //   const radiusMin = radiusMax * 0.1;
+  //
+  //   // draw arc using interpolated range with exp. of v
+  //   ctx.beginPath();
+  //   ctx.arc(cx, cy, radiusMin + (radiusMax - radiusMin) * v * v * v * v, 0, 6.28);
+  //   ctx.closePath();
+  //   ctx.stroke();
+  //
+  //   // feedback effect
+  //   ctx.drawImage(canvas, -8, -8,
+  //     canvas.width + 16, canvas.height + 16);
+  // }
 
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = this.beatColour;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // visualizeAudioStatic(url) {
+  //   fetch(url)
+  //     .then(response => response.arrayBuffer())
+  //     .then(arrayBuffer => this.audioCtx?.decodeAudioData(arrayBuffer))
+  //     .then(audioBuffer => {
+  //       const filtered = this.getFilteredAudioData(audioBuffer);
+  //       const normalised = this.getNormalisedAudioData(filtered);
+  //       this.draw(normalised);
+  //     });
+  // }
 
-    // fill FFT buffer
-    this.analyser.getByteFrequencyData(this.fft);
-
-    // average data from some bands
-    const v = (this.fft[1] + this.fft[2]) / 512;
-
-    const cx = canvas.width * 0.5;
-    const cy = canvas.height * 0.5;
-    const radiusMax = Math.min(cx, cy) - 20;
-    const radiusMin = radiusMax * 0.1;
-
-    // draw arc using interpolated range with exp. of v
-    ctx.beginPath();
-    ctx.arc(cx, cy, radiusMin + (radiusMax - radiusMin) * v * v * v * v, 0, 6.28);
-    ctx.closePath();
-    ctx.stroke();
-
-    // feedback effect
-    ctx.drawImage(canvas, -8, -8,
-      canvas.width + 16, canvas.height + 16);
-  }
-
-  visualizeAudioStatic(url) {
-    fetch(url)
-      .then(response => response.arrayBuffer())
-      .then(arrayBuffer => this.audioCtx?.decodeAudioData(arrayBuffer))
-      .then(audioBuffer => {
-        const filtered = this.getFilteredAudioData(audioBuffer);
-        const normalised = this.getNormalisedAudioData(filtered);
-        this.draw(normalised);
-      });
-  }
-
-  getFilteredRawData(rawData: Float32Array | Uint8Array): any[] {
-    const samples = 64; // Number of samples we want to have in our final data set
+  getFilteredRawData(rawData: Float32Array | Uint8Array): number[] {
+    const samples = 127; // Number of samples we want to have in our final data set
     const blockSize = Math.floor(rawData.length / samples); // the number of samples in each subdivision
     const filteredData = [];
     for (let i = 0; i < samples; i++) {
@@ -1294,28 +1381,36 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     return filteredData;
   }
 
-  getFilteredAudioData(audioBuffer: AudioBuffer): any[] {
-    const rawData: Float32Array = audioBuffer?.getChannelData(0);  // We only need to work with one channel of data
-    const samples = 256; // Number of samples we want to have in our final data set
-    const blockSize = Math.floor(rawData?.length / samples); // the number of samples in each subdivision
-    const filteredData = [];
-    for (let i = 0; i < samples; i++) {
-      const blockStart = blockSize * i; // the location of the first sample in the block
-      let sum = 0;
-      for (let j = 0; j < blockSize; j++) {
-        sum = sum + Math.abs(rawData[blockStart + j]); // find the sum of all the samples in the block
-      }
-      filteredData.push(sum / blockSize); // divide the sum by the block size to get the average
-    }
-    return filteredData;
-  }
+  // getFilteredAudioData(audioBuffer: AudioBuffer): number[] {
+  //   const rawData: Float32Array = audioBuffer?.getChannelData(0);  // We only need to work with one channel of data
+  //   const samples = 256; // Number of samples we want to have in our final data set
+  //   const blockSize = Math.floor(rawData?.length / samples); // the number of samples in each subdivision
+  //   const filteredData = [];
+  //   for (let i = 0; i < samples; i++) {
+  //     const blockStart = blockSize * i; // the location of the first sample in the block
+  //     let sum = 0;
+  //     for (let j = 0; j < blockSize; j++) {
+  //       sum = sum + Math.abs(rawData[blockStart + j]); // find the sum of all the samples in the block
+  //     }
+  //     filteredData.push(sum / blockSize); // divide the sum by the block size to get the average
+  //   }
+  //   return filteredData;
+  // }
 
-  getNormalisedAudioData(filteredData: any): any[] {
+  getNormalisedAudioData(filteredData: number[]): number[] {
     const multiplier = Math.pow(Math.max(...filteredData), -1);
     return filteredData.map(n => n * multiplier);
   }
 
-  draw(normalizedData) {
+  getMirroredFilteredData(filteredData: number[]): number[] {
+    const mirroredFilteredData: number[] = filteredData;
+    for (let i = filteredData.length; i >= filteredData.length / 2; i--) {
+      mirroredFilteredData[i] = filteredData[filteredData.length - i];
+    }
+    return mirroredFilteredData;
+  }
+
+  draw(normalizedData: number[]) {
     this.ctx = this.canvas.nativeElement.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     const padding = 20;
@@ -1326,7 +1421,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
 
     // draw the line segments
     const width = this.canvas.nativeElement.offsetWidth / normalizedData.length;
-    // console.log('normalizedData:', normalizedData);
+    console.log('normalizedData:', normalizedData);
     for (let i = 0; i < normalizedData.length; i++) {
       const x = width * i;
       let height = normalizedData[i] * this.canvas.nativeElement.offsetHeight - padding;
