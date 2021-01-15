@@ -46,6 +46,11 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     seconds: 0,
     // milliseconds: 0
   };
+  public gameBlastStartDate = new Date(Date.parse('20 Feb 2021 09:00:00 GMT'));
+
+  @ViewChild('welcomeToZeldathon', {static: true})
+  public welcomeToZeldathonRef: ElementRef;
+  public introComplete = false;
 
   public audioCtx: AudioContext;
   public source: MediaElementAudioSourceNode;
@@ -62,11 +67,14 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     this.calcTimeRemaining();
     // Define audio files
     this.populateAudioLibrary();
-    this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length));
+    this.playingLibraryIndex = this.audioLibrary.findIndex(x =>
+      x.songName === '[Switched On] A Link to the Past - Intro and Opening'); // start on specific song
+    // this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length)); // start on random song
     // Define audio element
     this.audio = new Audio();
     this.audio.src = this.audioLibrary[this.playingLibraryIndex].url;
     this.beatColour = this.audioLibrary[this.playingLibraryIndex].beatColour;
+    this.audio.volume = 0.35;
     this.audio.autoplay = false;
     this.audio.controls = false;
   }
@@ -78,14 +86,16 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       this.getAudioContext();
     }, 1000);
     this.updateYoutubeVideo();
-    this.animateTimeRemainingTitle();
+    if (this.timeRemaining.days >= 0 && this.timeRemaining.hours >= 0
+      && this.timeRemaining.minutes >= 0 && this.timeRemaining.seconds >= 0) {
+      this.animateTimeRemainingTitle();
+    }
   }
 
   calcTimeRemaining() {
     setInterval(() => {
       const now = new Date();
-      const gameBlastStartDate = new Date(Date.parse('20 Feb 2021 09:00:00 GMT'));
-      const milliseconds = gameBlastStartDate.getTime() - now.getTime();
+      const milliseconds = this.gameBlastStartDate.getTime() - now.getTime();
       const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
       const hours = Math.floor(((milliseconds / (1000 * 60 * 60)) % 24));
       const minutes = Math.floor(((milliseconds / (1000 * 60)) % 60));
@@ -98,6 +108,22 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
         seconds: seconds,
         // milliseconds: parseInt(mseconds.substring(mseconds.length - 3, mseconds.length), 10)
       };
+      if (this.timeRemaining.days === 0 && this.timeRemaining.hours === 0 && this.timeRemaining.minutes === 0
+        && (this.timeRemaining.seconds >= 13 && this.timeRemaining.seconds <= 14)) {
+        if (this.source.mediaElement.src !== './assets/audio/Link_Obtains_the_Master_Sword_TP.oga') {
+          this.introComplete = true;
+          this.updateYoutubeVideo();
+          this.source.mediaElement.src = './assets/audio/Link_Obtains_the_Master_Sword_TP.oga';
+          this.source.mediaElement.load();
+          this.source.mediaElement.play().then();
+        }
+      }
+      if (this.timeRemaining.days === 0 && this.timeRemaining.hours === 0
+        && this.timeRemaining.minutes === 0 && this.timeRemaining.seconds === 0) {
+        setTimeout(() => {
+          this.animateWelcomeMessage(['Welcome', 'to', 'ZeldathonUK', '2021!']);
+        }, 5000);
+      }
     }, 1000);
   }
 
@@ -108,6 +134,26 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       this.renderer.setAttribute(charDiv, 'class', char === ' ' ? 'px-1 jumping' : 'jumping');
       this.renderer.appendChild(charDiv, charText);
       this.renderer.appendChild(this.timeRemainingTitleRef.nativeElement, charDiv);
+    });
+  }
+
+  animateWelcomeMessage(welcomeMsg: string[]) {
+    // clear old elements
+    const childElements = this.welcomeToZeldathonRef.nativeElement.children;
+    for (const child of childElements) {
+      this.renderer.removeChild(this.welcomeToZeldathonRef.nativeElement, child);
+    }
+    // add new elements
+    welcomeMsg.forEach((word, i) => {
+      if (i === 2) {
+        const wordBr = this.renderer.createElement('br');
+        this.renderer.appendChild(this.welcomeToZeldathonRef.nativeElement, wordBr);
+      }
+      const wordDiv = this.renderer.createElement('div');
+      const wordText = this.renderer.createText(word);
+      this.renderer.setAttribute(wordDiv, 'class', 'd-inline welcome-animation roll-in-blurred-left px-3');
+      this.renderer.appendChild(wordDiv, wordText);
+      this.renderer.appendChild(this.welcomeToZeldathonRef.nativeElement, wordDiv);
     });
   }
 
@@ -1140,6 +1186,103 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       youtubeId: 'nFqbXIdLBzw'
     };
     this.audioLibrary.push(ryanimalTempleOfTimeSynthwaveRemix);
+    // Legend of Synthwave
+    const legendOfSynthwaveFairyFountain = {
+      url: './assets/audio/Fairy Fountain - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Fairy Fountain - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveFairyFountain);
+    const legendOfSynthwaveLostWoods = {
+      url: './assets/audio/Lost Woods - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Lost Woods - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveLostWoods);
+    const legendOfSynthwaveDarkWorld = {
+      url: './assets/audio/Dark World- Legend Of Synthwave - Helynt.mp3',
+      songName: 'Dark World - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveDarkWorld);
+    const legendOfSynthwavePrinceSidon = {
+      url: './assets/audio/Prince Sidon - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Prince Sidon - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 100, 250, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwavePrinceSidon);
+    const legendOfSynthwaveMiphasGrace = {
+      url: './assets/audio/Miphas Grace - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Mipha\'s Grace - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 100, 250, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveMiphasGrace);
+    const legendOfSynthwaveSacredGrove = {
+      url: './assets/audio/Sacred Grove - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Sacred Grove - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveSacredGrove);
+    const legendOfSynthwaveBambooIsland = {
+      url: './assets/audio/Bamboo Island - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Bamboo Island - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveBambooIsland);
+    const legendOfSynthwaveHyruleField = {
+      url: './assets/audio/Hyrule Field - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Hyrule Field - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveHyruleField);
+    const legendOfSynthwaveTarryTown = {
+      url: './assets/audio/Tarrey Town - Legend of Synthwave - Helynt.mp3',
+      songName: 'Tarrey Town - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveTarryTown);
+    const legendOfSynthwaveLegendOfZelda = {
+      url: './assets/audio/Legend of Zelda - Legend Of Synthwave - Helynt.mp3',
+      songName: 'Legend of Zelda - Legend of Synthwave',
+      songAuthor: 'by Helynt / GameChops',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(legendOfSynthwaveLegendOfZelda);
+    const zelda2OpeningThemeMagicDance = {
+      url: './assets/audio/A Real Adventure (Zelda II Opening Theme - 80s Synth Version) [Bonus Track].mp3',
+      songName: 'A Real Adventure (Zelda II Opening Theme - 80s Synth Version)',
+      songAuthor: 'by Magic Dance',
+      beatColour: 'rgba(50, 200, 50, 0.75)',
+      youtubeId: 'l73HhX78fRg'
+    };
+    this.audioLibrary.push(zelda2OpeningThemeMagicDance);
+    const duckTalesTheMoonMagicDance = {
+      url: './assets/audio/DuckTales - The Moon (80s Synth Version) [Bonus Track].mp3',
+      songName: 'DuckTales - The Moon (80s Synth Version)',
+      songAuthor: 'by Magic Dance',
+      beatColour: 'rgba(150, 150, 250, 0.75)',
+      youtubeId: 'IVZqakWnBB0'
+    };
+    this.audioLibrary.push(duckTalesTheMoonMagicDance);
   }
 
   onCanvasClick() {
@@ -1158,6 +1301,21 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     this.clearSpecialEffectFlag();
   }
 
+  playPreviousSong() {
+    if (this.playedLibrary.length > 0) {
+      this.playingLibraryIndex = this.audioLibrary.findIndex(x =>
+        x.songName === this.playedLibrary[this.playedLibrary.length - 1].songName);
+    } else {
+      this.playingLibraryIndex = this.audioLibrary.findIndex(x =>
+        x.songName === '[Switched On] A Link to the Past - Intro and Opening');
+    }
+    if (this.playedLibrary.length > 0) {
+      this.playedLibrary.pop();
+    }
+    this.updateSourceMediaElement();
+    return false;
+  }
+
   updateSourceMediaElement() {
     this.updateYoutubeVideo();
     this.beatColour = this.audioLibrary[this.playingLibraryIndex].beatColour;
@@ -1168,11 +1326,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
 
   updateYoutubeVideo() {
     if (this.youtubeElement) {
-      // Remove existing child elements
-      const childElements = this.youtubeElement.nativeElement.children;
-      for (const child of childElements) {
-        this.renderer.removeChild(this.youtubeElement.nativeElement, child);
-      }
+      this.removeYoutubeElements();
       // Add new child element
       this.youtubeIFrame = this.renderer.createElement('iframe');
       this.youtubeIFrame.className = 'audio-viz-video-bg';
@@ -1183,13 +1337,24 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     }
   }
 
+  removeYoutubeElements() {
+    // Remove existing child elements
+    const childElements = this.youtubeElement.nativeElement.children;
+    for (const child of childElements) {
+      this.renderer.removeChild(this.youtubeElement.nativeElement, child);
+    }
+  }
+
   checkPlaySpecialEffectVideoInstead(): string {
-    if (this.youtubeId !== 'ofDtIFz8gUQ'
+    if (this.introComplete) {
+      return 'AjWfY7SnMBI';
+    } else if (this.youtubeId !== 'ofDtIFz8gUQ' // don't replace on specialeffect
       && this.youtubeId !== 'dQw4w9WgXcQ' // don't replace on rickroll
       && this.youtubeId !== 'FuX5_OWObA0' // don't replace on rainbow road
       && this.youtubeId !== 'NdpaJH0ZEuU' // don't replace on koopas road
       && this.youtubeId !== 'X2SOUEJwYJ8' // don't replace on starfox
       && this.youtubeId !== 'kNzDhsgRJxI' // don't replace on diddy kong racing
+      && this.youtubeId !== 'IVZqakWnBB0' // don't replace on duck tales
       && ((this.playedLibrary.length + 1) % 10 === 0) || this.playedLibrary.length + 1 === 1) {
       this.specialEffectPlayedIndex = this.playedLibrary.length;
       return 'ofDtIFz8gUQ';
@@ -1205,16 +1370,29 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     }
   }
 
+  increaseVolume() {
+    this.audio.volume = this.audio.volume + 0.05 >= 1 ? 1 : this.audio.volume += 0.05;
+  }
+
+  decreaseVolume() {
+    this.audio.volume = this.audio.volume - 0.05 <= 0 ? 0 : this.audio.volume -= 0.05;
+  }
+
   getAudioContext() {
     this.audioCtx = new AudioContext();
     this.analyser = this.audioCtx.createAnalyser();
     this.source = this.audioCtx.createMediaElementSource(this.audio);
     this.source.mediaElement.onended = () => {
-      this.playRandomSong();
+      if (!this.introComplete) {
+        this.playRandomSong();
+      }
     };
     this.source.mediaElement.play().then();
     this.source.connect(this.analyser);
-    this.analyser.fftSize = 2048;
+    this.analyser.minDecibels = -90;
+    this.analyser.maxDecibels = -10;
+    this.analyser.smoothingTimeConstant = 0.85;
+    this.analyser.fftSize = 256;
     this.fftLen = this.analyser.frequencyBinCount;
     this.fft = new Uint8Array(this.fftLen);
     this.analyser.connect(this.audioCtx.destination);
@@ -1231,56 +1409,57 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       }
       const filtered = this.getFilteredRawData(dataArray);
       const normalised = this.getNormalisedAudioData(filtered);
-      this.draw(normalised);
-      this.renderBeat(this.canvasBeatLeft.nativeElement);
-      this.renderBeat(this.canvasBeatRight.nativeElement);
+      const mirrored = this.getMirroredFilteredData(normalised);
+      this.draw(mirrored);
+      // this.renderBeat(this.canvasBeatLeft.nativeElement);
+      // this.renderBeat(this.canvasBeatRight.nativeElement);
     }, 30 / 1000);
   }
 
-  renderBeat(canvas) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // renderBeat(canvas) {
+  //   const ctx = canvas.getContext('2d');
+  //   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  //
+  //   ctx.lineWidth = 6;
+  //   ctx.strokeStyle = this.beatColour;
+  //   ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  //   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  //
+  //   // fill FFT buffer
+  //   this.analyser.getByteFrequencyData(this.fft);
+  //
+  //   // average data from some bands
+  //   const v = (this.fft[1] + this.fft[2]) / 512;
+  //
+  //   const cx = canvas.width * 0.5;
+  //   const cy = canvas.height * 0.5;
+  //   const radiusMax = Math.min(cx, cy) - 20;
+  //   const radiusMin = radiusMax * 0.1;
+  //
+  //   // draw arc using interpolated range with exp. of v
+  //   ctx.beginPath();
+  //   ctx.arc(cx, cy, radiusMin + (radiusMax - radiusMin) * v * v * v * v, 0, 6.28);
+  //   ctx.closePath();
+  //   ctx.stroke();
+  //
+  //   // feedback effect
+  //   ctx.drawImage(canvas, -8, -8,
+  //     canvas.width + 16, canvas.height + 16);
+  // }
 
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = this.beatColour;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // visualizeAudioStatic(url) {
+  //   fetch(url)
+  //     .then(response => response.arrayBuffer())
+  //     .then(arrayBuffer => this.audioCtx?.decodeAudioData(arrayBuffer))
+  //     .then(audioBuffer => {
+  //       const filtered = this.getFilteredAudioData(audioBuffer);
+  //       const normalised = this.getNormalisedAudioData(filtered);
+  //       this.draw(normalised);
+  //     });
+  // }
 
-    // fill FFT buffer
-    this.analyser.getByteFrequencyData(this.fft);
-
-    // average data from some bands
-    const v = (this.fft[1] + this.fft[2]) / 512;
-
-    const cx = canvas.width * 0.5;
-    const cy = canvas.height * 0.5;
-    const radiusMax = Math.min(cx, cy) - 20;
-    const radiusMin = radiusMax * 0.1;
-
-    // draw arc using interpolated range with exp. of v
-    ctx.beginPath();
-    ctx.arc(cx, cy, radiusMin + (radiusMax - radiusMin) * v * v * v * v, 0, 6.28);
-    ctx.closePath();
-    ctx.stroke();
-
-    // feedback effect
-    ctx.drawImage(canvas, -8, -8,
-      canvas.width + 16, canvas.height + 16);
-  }
-
-  visualizeAudioStatic(url) {
-    fetch(url)
-      .then(response => response.arrayBuffer())
-      .then(arrayBuffer => this.audioCtx?.decodeAudioData(arrayBuffer))
-      .then(audioBuffer => {
-        const filtered = this.getFilteredAudioData(audioBuffer);
-        const normalised = this.getNormalisedAudioData(filtered);
-        this.draw(normalised);
-      });
-  }
-
-  getFilteredRawData(rawData: Float32Array | Uint8Array): any[] {
-    const samples = 64; // Number of samples we want to have in our final data set
+  getFilteredRawData(rawData: Float32Array | Uint8Array): number[] {
+    const samples = 127; // Number of samples we want to have in our final data set
     const blockSize = Math.floor(rawData.length / samples); // the number of samples in each subdivision
     const filteredData = [];
     for (let i = 0; i < samples; i++) {
@@ -1294,28 +1473,36 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     return filteredData;
   }
 
-  getFilteredAudioData(audioBuffer: AudioBuffer): any[] {
-    const rawData: Float32Array = audioBuffer?.getChannelData(0);  // We only need to work with one channel of data
-    const samples = 256; // Number of samples we want to have in our final data set
-    const blockSize = Math.floor(rawData?.length / samples); // the number of samples in each subdivision
-    const filteredData = [];
-    for (let i = 0; i < samples; i++) {
-      const blockStart = blockSize * i; // the location of the first sample in the block
-      let sum = 0;
-      for (let j = 0; j < blockSize; j++) {
-        sum = sum + Math.abs(rawData[blockStart + j]); // find the sum of all the samples in the block
-      }
-      filteredData.push(sum / blockSize); // divide the sum by the block size to get the average
-    }
-    return filteredData;
-  }
+  // getFilteredAudioData(audioBuffer: AudioBuffer): number[] {
+  //   const rawData: Float32Array = audioBuffer?.getChannelData(0);  // We only need to work with one channel of data
+  //   const samples = 256; // Number of samples we want to have in our final data set
+  //   const blockSize = Math.floor(rawData?.length / samples); // the number of samples in each subdivision
+  //   const filteredData = [];
+  //   for (let i = 0; i < samples; i++) {
+  //     const blockStart = blockSize * i; // the location of the first sample in the block
+  //     let sum = 0;
+  //     for (let j = 0; j < blockSize; j++) {
+  //       sum = sum + Math.abs(rawData[blockStart + j]); // find the sum of all the samples in the block
+  //     }
+  //     filteredData.push(sum / blockSize); // divide the sum by the block size to get the average
+  //   }
+  //   return filteredData;
+  // }
 
-  getNormalisedAudioData(filteredData: any): any[] {
+  getNormalisedAudioData(filteredData: number[]): number[] {
     const multiplier = Math.pow(Math.max(...filteredData), -1);
     return filteredData.map(n => n * multiplier);
   }
 
-  draw(normalizedData) {
+  getMirroredFilteredData(filteredData: number[]): number[] {
+    const mirroredFilteredData: number[] = filteredData;
+    for (let i = filteredData.length; i >= filteredData.length / 2; i--) {
+      mirroredFilteredData[i] = filteredData[filteredData.length - i];
+    }
+    return mirroredFilteredData;
+  }
+
+  draw(normalizedData: number[]) {
     this.ctx = this.canvas.nativeElement.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     const padding = 20;

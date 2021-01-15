@@ -1,31 +1,95 @@
-<div class="container p-3" style="background-color: #606060;">
+<div class="d-flex flex-row">
 
-  <div class="py-2">
-    <h3 class="text-white">Stream Schedule</h3>
+  <div class="p-3" style="width: 25%;">
+    <div class="d-flex flex-column">
 
-    <div class="alert alert-warning" role="alert">
-      <h4 class="alert-heading">ZELDATHONUK 10 YEAR ANNIVERSARY!</h4>
-      <div class="d-flex justify-content-around my-2">
-        <img style="max-height: 150px; filter: sepia(75%);" src="https://images.justgiving.com/image/292f8261-199e-439a-847a-a5f4ad270b07.jpg" alt="team1" title="Zeldathon For GamesAid #1 (2011)">
-        <img style="max-height: 150px; filter: sepia(75%);" src="https://images.justgiving.com/image/9d54ff22-3185-4a7b-812a-66df7c774ce6.jpg" alt="team2" title="Zeldathon For GamesAid #1 (2011)">
-        <img style="max-height: 150px; filter: sepia(75%);" src="https://news.bournemouth.ac.uk/wp-content/uploads/2013/05/Zelda.jpg" alt="team3" title="Zeldathon For GamesAid #2 (2012)">
-        <img style="max-height: 150px; filter: sepia(75%);" src="https://www.bournemouthecho.co.uk/resources/images/9466146.jpg" alt="team4" title="ZeldathonUK #GameBlast20 (2020)">
+      <div class="position-absolute">
+
+        <div class="text-center card bg-dark d-inline-block mb-3" style="width: 22rem;">
+          <div class="text-center card card-header bg-dark text-light">
+            <h5 class="card-title mb-0">
+              Watch Live
+              <div *ngIf="isLive" class="d-inline-block live-circle ml-1"></div>
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
+              <iframe
+                src="https://player.twitch.tv/?channel=zeldathonuk&parent=www.zeldathon.co.uk&autoplay=false"
+                frameborder="0"
+                scrolling="no"
+                allowfullscreen>
+              </iframe>
+            </div>
+            <div class="d-flex justify-content-center p-3">
+              <a href="https://www.specialeffect.org.uk/" target="_blank">
+                <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo"></a>
+            </div>
+            <div class="text-light small">
+              <a class="text-info" href="https://www.specialeffect.org.uk/" target="_blank">SpecialEffect</a> are a charity putting fun and inclusion
+              back into the lives of people with physical disabilities
+              by helping them play video games to the very best
+              of their abilities. They match or modify technology to
+              create and truly personalised gaming control setups,
+              and back this up with lifelong support. They’re also
+              working with developers to help make gaming as
+              accessible as possible to everyone around the world.
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="d-flex justify-content-around">
+              <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+                Donate via Facebook<br/>
+                <span class="small text-white-50">*no fees</span>
+              </button>
+              <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
+                Donate via JustGiving<br/>
+                <span class="small text-warning">*adds fees to donation!</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-dark mb-2" style="width: 22rem;">
+          <div class="card-header d-inline-block position-sticky">
+            <div class="d-flex flex-column">
+              <span class="text-white-50">Facebook Fundraisers Page:</span>
+              <a class="text-light text-break small" href="https://www.facebook.com/donate/855003971855785/" target="_blank">https://www.facebook.com/donate/855003971855785/</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-dark" style="width: 22rem;">
+          <div class="card-header d-inline-block position-sticky">
+            <div class="d-flex flex-column">
+              <span class="text-white-50">JustGiving Page:</span>
+              <a class="text-light text-break small" href="https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec" target="_blank">https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec</a>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <p>Since the first Zeldathon "for GamesAid" on 11th November 2011 in the week prior to Skywards Sword's launch, we have been fundraising for the awesome <a class="text-warning" href="https://www.specialeffect.org.uk/what-we-do">SpecialEffect</a> charity. Together with your support we have raised over £6,000+ for them.</p>
-      <p>As a thank you to everyone who has donated over the past decade we will be playing every main title in the Zelda timeline. Hopefully with your continued support during this years <a class="text-warning" href="https://www.gameblast.org.uk/about/">#GameBlast21</a> event we can raise even more!</p>
+
     </div>
+  </div>
 
-    <p class="text-white-50">
-      Check the schedule below to see what day and time your favourite zelda games are likely to be played so you don't miss out!
-    </p>
+  <div class="container p-3" style="background-color: #606060;">
 
-    <div class="d-flex justify-content-between">
+    <div class="py-2">
+      <h3 class="text-white">Stream Schedule</h3>
 
-      <div class="d-flex flex-column flex-fill">
+      <p class="text-light">
+        This year our line up will be following the <a class="text-info" href="https://www.zelda.com/about/" target="_blank">Official Zelda Timeline</a> as closely as possible.
+        Check the dates and times below to see when (roughly) we will be playing your favourite titles so that you won't miss out!
+      </p>
 
-        <div class="table-responsive">
-          <table class="table table-hover table-striped table-dark" style="font-size: 14px;">
-            <thead>
+      <div class="d-flex justify-content-between">
+
+        <div class="d-flex flex-column flex-fill">
+
+          <div class="table-responsive">
+            <table class="table table-hover table-striped table-dark" style="font-size: 14px;">
+              <thead>
               <tr>
                 <th scope="col">Day</th>
                 <th scope="col">Time</th>
@@ -34,10 +98,10 @@
                 <th scope="col">Game</th>
                 <th scope="col">Runner(s)</th>
               </tr>
-            </thead>
-            <tbody>
+              </thead>
+              <tbody>
 
-              <tr *ngFor="let game of gameList">
+              <tr *ngFor="let game of gameList; let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
 
                 <td class="align-middle">
                   <div class="">
@@ -76,17 +140,32 @@
                            [title]="game.name + ' Cover Art'">
                     </div>
                     <div class="text-center w-100">
-                      <p class="mb-1">{{ game.name }} ({{ game.releaseDate }})</p>
+                      <p class="mb-1">
+                        {{ game.name }} ({{ game.releaseDate }})
+                        <ng-container *ngIf="hasBeenPlayed(i) && !isCurrentlyPlaying(i)">
+                            <span class="badge badge-warning m-2">
+                              COMPLETED
+                            </span>
+                        </ng-container>
+                        <ng-container *ngIf="isCurrentlyPlaying(i) && isLive">
+                          <div class="d-inline-block m-2" (click)="routeToLiveView()">
+                            <span class="badge badge-danger" style="cursor: pointer;" title="Watch Livestream">
+                              LIVE
+                            </span>
+                            <div class="d-inline-block live-circle ml-1"></div>
+                          </div>
+                        </ng-container>
+                      </p>
                       <ng-container *ngFor="let badge of game.extraBadges">
                         <ng-container *ngIf="badge.url">
-                          <span class="badge m-2" [ngClass]="badge.type">
-                            <a class="text-white" [href]="badge.url" target="_blank">{{ badge.text }}</a>
-                          </span>
+                            <span class="badge m-2" [ngClass]="badge.type">
+                              <a class="text-white" [href]="badge.url" target="_blank">{{ badge.text }}</a>
+                            </span>
                         </ng-container>
                         <ng-container *ngIf="!badge.url">
-                          <span class="badge m-2" [ngClass]="badge.type">
-                            {{ badge.text }}
-                          </span>
+                            <span class="badge m-2" [ngClass]="badge.type">
+                              {{ badge.text }}
+                            </span>
                         </ng-container>
                       </ng-container>
                     </div>
@@ -101,14 +180,42 @@
 
               </tr>
 
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
+
         </div>
 
       </div>
 
     </div>
 
+  </div>
+
+  <div class="p-3" style="width: 25%">
+    <div class="position-absolute" style="margin-right: 2rem;">
+      <div class="card bg-dark text-light small">
+        <div class="text-center card card-header bg-dark text-light">
+          <h5 class="card-title mb-0">10 Years of ZeldathonUK</h5>
+        </div>
+        <div class="text-center card card-body bg-dark">
+          <ngb-carousel class="mb-2" #carousel [interval]="5000" [pauseOnHover]="pauseOnHover" [pauseOnFocus]="pauseOnFocus" (slide)="onSlide($event)">
+            <ng-template ngbSlide *ngFor="let img of images; index as i">
+              <div class="carousel-caption">
+                <h3>{{ alts[i] }}</h3>
+              </div>
+              <a [href]="urls[i]" target="_blank" rel="nofollow noopener noreferrer">
+                <div class="picsum-img-wrapper">
+                  <img [src]="img" [alt]="alts[i]" style="max-height: 200px; filter: sepia(75%);">
+                </div>
+              </a>
+            </ng-template>
+          </ngb-carousel>
+          <p>Ever since the first Zeldathon "for GamesAid" on 11th November 2011 in the week prior to <a class="text-info" href="http://www.zelda.com/skywardsword/" target="_blank">Skyward Sword</a>'s launch, we have been fundraising for the awesome <a class="text-warning" href="https://www.specialeffect.org.uk/what-we-do" target="_blank">SpecialEffect</a> charity. Together with your support we have raised over £6,000+ for them.</p>
+          <p>As a thank you to everyone who has donated over the past decade we will be playing every main title in the Zelda timeline. Hopefully with your continued support during this years <a class="text-warning" href="https://twitter.com/search?q=%23GameBlast21&src=hashtag_click" target="_blank">#GameBlast21</a> event we can raise even more for this increadible cause!</p>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>

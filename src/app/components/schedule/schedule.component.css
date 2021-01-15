@@ -1,3 +1,74 @@
+.table-gold,
+.table-gold > th,
+.table-gold > td {
+  background-color: #C5B358;
+}
+
+.table-gold th,
+.table-gold td,
+.table-gold thead th,
+.table-gold tbody + tbody {
+  border-color: #C5B358;
+}
+
+.table-hover .table-gold:hover {
+  background-color: #D4AF37;
+}
+
+.table-hover .table-gold:hover > td,
+.table-hover .table-gold:hover > th {
+  background-color: #D4AF37;
+}
+
+
+.table-played,
+.table-played > th,
+.table-played > td {
+  background-color: #15202b;
+}
+
+.table-played:nth-child(even) td {
+  background-color: #192734;
+}
+
+.table-played th,
+.table-played td,
+.table-played thead th,
+.table-played tbody + tbody {
+  border-color: #15202b;
+}
+
+.table-hover .table-played:hover {
+  background-color: #22303c;
+}
+
+.table-hover .table-played:hover > td,
+.table-hover .table-played:hover > th {
+  background-color: #22303c;
+}
+
+
+.live-circle {
+  animation: pulse 2s infinite;
+  background-color: rgba(220, 20, 53, 1);
+  border-radius: 50%;
+  height: 0.75em;
+  width: 0.75em;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 rgba(220, 20, 53, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(220, 20, 53, 0);
+  }
+  100% {
+    transform: scale(0.8);
+  }
+}
 
 
 .btn-justgiving {

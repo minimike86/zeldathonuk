@@ -15,10 +15,10 @@
               <h6 class="benefitting-text bebas-neue">Benefitting:</h6>
               <div class="d-flex justify-content-between">
                 <div class="w-50 mr-2">
-                  <img src="./assets/img/specialeffect-logo.svg" class="d-inline-block w-100" style="margin-top: 24px; opacity: 0.65;">
+                  <img src="./assets/img/specialeffect-logo.svg" class="d-inline-block w-100" style="margin-top: 24px; opacity: 0.65;" (click)="decreaseVolume()">
                 </div>
                 <div class="w-50 ml-2">
-                  <img src="./assets/img/GB21_logo_for_website.png" class="d-inline-block w-100" style="opacity: 0.65;">
+                  <img src="./assets/img/GB21_logo_for_website.png" class="d-inline-block w-100" style="opacity: 0.65;" (click)="increaseVolume()">
                 </div>
               </div>
             </div>
@@ -26,14 +26,16 @@
         </div>
 
         <div class="d-flex justify-content-center vw-100">
-          <canvas #canvasBeatLeft id="canvasBeatLeft" class="audio-viz-beat"></canvas>
           <canvas #canvas id="canvas" class="audio-viz-container" (click)="onCanvasClick()"></canvas>
-          <canvas #canvasBeatRight id="canvasBeatRight" class="audio-viz-beat"></canvas>
         </div>
 
         <div class="time-remaining text-center w-100">
-          <h5 #timeRemainingTitle class="time-remaining-title bebas-neue d-flex justify-content-center"></h5>
-
+          <div [ngClass]="(timeRemaining.days <= 0 && timeRemaining.hours <= 0 && timeRemaining.minutes <= 0 && timeRemaining.seconds <= 0) ? 'd-none' : ''">
+            <h5 #timeRemainingTitle class="time-remaining-title bebas-neue d-flex justify-content-center"></h5>
+          </div>
+          <div class="welcome-to-zeldathon-container" [ngClass]="(timeRemaining.days > 0 && timeRemaining.hours > 0 && timeRemaining.minutes > 0 && timeRemaining.seconds > 0) ? 'd-none' : ''">
+            <h1 #welcomeToZeldathon class="welcome-to-zeldathon"></h1>
+          </div>
           <ng-container *ngIf="timeRemaining.days >= 1; else hoursRemaining">
             <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.days, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">d</h2>
             <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">h</h2>
@@ -50,17 +52,16 @@
             </ng-container>
             <ng-template #minutesRemaining>
               <ng-container *ngIf="timeRemaining.minutes >= 1; else secondsRemaining">
-                <h1 class="d-inline-block text-warning time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-warning mr-4">m</h2>
-                <h1 class="d-inline-block text-warning time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-warning mr-4">s</h2>
+                <h1 class="d-inline-block time-remaining-h1" [ngClass]="timeRemaining.minutes >= 10 ? 'text-white' : 'time-remaining-last-ten-minutes-h1 timeRunningOut1'">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">m</h2>
+                <h1 class="d-inline-block time-remaining-h1" [ngClass]="timeRemaining.minutes >= 10 ? 'text-white' : 'time-remaining-last-ten-minutes-h1 timeRunningOut1'">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">s</h2>
                 <!--              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.milliseconds, 3) }}</h1><h2 class="d-inline-block time-remaining-h2">ms</h2>-->
               </ng-container>
               <ng-template #secondsRemaining>
                 <ng-container *ngIf="timeRemaining.seconds >= 1; else timesUp">
-                  <h1 class="d-inline-block text-danger time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 text-danger mr-4">s</h2>
+                  <h1 class="d-inline-block timeRunningOut2 time-remaining-last-minute-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-last-minute-h2 mr-4">s</h2>
                   <!--                <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.milliseconds, 3) }}</h1><h2 class="d-inline-block time-remaining-h2">ms</h2>-->
                 </ng-container>
                 <ng-template #timesUp>
-                  <h1 class="d-inline-block text-white time-remaining-h1">WAKE UP LINK!</h1>
                 </ng-template>
               </ng-template>
             </ng-template>
@@ -75,7 +76,7 @@
               <span class="bebas-neue donate-link mb-2">www.zeldathon.co.uk/donate</span>
               <h6 class="raising-money-text bebas-neue">Helping gamers with physical disabilities to be able to play video games!</h6>
             </div>
-            <div class="d-flex flex-column" (click)="playRandomSong()">
+            <div class="d-flex flex-column" *ngIf="!introComplete" (click)="playRandomSong()" (contextmenu)="playPreviousSong()">
               <marquee behavior="scroll" direction="left">
                 <h3 class="song-name bebas-neue mb-1">{{ audioLibrary[playingLibraryIndex].songName }}</h3>
               </marquee>
