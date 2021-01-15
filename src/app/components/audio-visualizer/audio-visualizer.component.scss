@@ -77,11 +77,91 @@
   text-shadow: 4px 4px rgba(255, 255, 30, 0.6), 8px 8px rgba(20, 20, 20, 0.6);
 }
 
+.time-remaining-last-ten-minutes-h1 {
+  font-size: 170px;
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: lighter;
+  color: rgba(180, 180, 30);
+  text-shadow: 4px 4px rgba(255, 255, 255, 0.4), 8px 8px rgba(20, 20, 20, 0.6);
+}
+
+.time-remaining-last-minute-h1 {
+  font-size: 170px;
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: lighter;
+  color: rgba(180, 50, 30);
+  text-shadow: 4px 4px rgba(255, 255, 255, 0.4), 8px 8px rgba(20, 20, 20, 0.6);
+}
+
 .time-remaining-h2 {
   font-size: 120px;
   font-family: 'Share Tech Mono', monospace;
   font-weight: lighter;
   color: rgba(255, 225, 30, 0.45);
+}
+
+.time-remaining-last-minute-h2 {
+  font-size: 120px;
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: lighter;
+  color: rgba(255, 50, 30, 0.45);
+}
+
+.welcome-to-zeldathon-container {
+  position: relative;
+  top: -3em;
+}
+
+.welcome-to-zeldathon {
+  font-size: 150px;
+  font-family: 'Bebas Neue', cursive;
+  font-weight: lighter;
+  color: rgba(255, 255, 255, 1);
+}
+
+.roll-in-blurred-left {
+  -webkit-animation: roll-in-blurred-left 1.65s cubic-bezier(0.230, 1.000, 0.320, 1.000) 2s both;
+  animation: roll-in-blurred-left 1.65s cubic-bezier(0.230, 1.000, 0.320, 1.000) 2s both;
+}
+
+@-webkit-keyframes roll-in-blurred-left {
+  0% {
+    -webkit-transform: translateX(-1000px) rotate(-720deg);
+    transform: translateX(-1000px) rotate(-720deg);
+    -webkit-filter: blur(50px);
+    filter: blur(50px);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateX(0) rotate(0deg);
+    transform: translateX(0) rotate(0deg);
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@keyframes roll-in-blurred-left {
+  0% {
+    -webkit-transform: translateX(-1000px) rotate(-720deg);
+    transform: translateX(-1000px) rotate(-720deg);
+    -webkit-filter: blur(50px);
+    filter: blur(50px);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateX(0) rotate(0deg);
+    transform: translateX(0) rotate(0deg);
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@for $i from 1 through 5 {
+  .welcome-animation:nth-child(#{$i}n) {
+    animation-delay: #{$i * 1.15}s;
+  }
 }
 
 .benefitting-text {
@@ -116,3 +196,18 @@
   font-size: 28px;
   color: rgba(255, 225, 30, 0.65);
 }
+
+.timeRunningOut1 {
+  animation: blinker 1.7s cubic-bezier(.5, 0, 1, 1) infinite alternate;
+}
+@keyframes blinker { to { opacity: 0.4; } }
+
+.timeRunningOut2 {
+  animation: blinker2 0.6s cubic-bezier(1, 0, 0, 1) infinite alternate;
+}
+@keyframes blinker2 { to { opacity: 0.4; } }
+
+.timeRunningOut3 {
+  animation: blinker3 1s ease-in-out infinite alternate;
+}
+@keyframes blinker3 { to { opacity: 0; } }
