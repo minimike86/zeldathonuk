@@ -27,7 +27,7 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
   public charityLogoSwap = true;
 
   constructor( private omnibarContentService: OmnibarContentService,
-               private fbService: FbService,
+               // private fbService: FbService,
                private jgService: JgService ) {
     this.secondsCounter$ = interval(1000 * 15);
     this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
@@ -41,33 +41,36 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
 
     this.omnibarContentService.setCurrentOmnibarContentId(1, 500);
 
-    this.facebookFundraisingPage$ = this.fbService.getFacebookFundraisingPage().pipe(take(1), map(fbDonations => {
-      // console.log('facebook donation updated');
-      return fbDonations[0];
-    }));
-    this.facebookFundraisingPage$.subscribe();
+    // this.facebookFundraisingPage$ = this.fbService.getFacebookFundraisingPage().pipe(take(1), map(fbDonations => {
+    //   // console.log('facebook donation updated');
+    //   return fbDonations !== null ? fbDonations[0] : null;
+    // }));
+    // this.facebookFundraisingPage$.subscribe();
 
     this.fundraisingPageDetails$ = this.jgService.getFundraisingPageDetails().pipe(take(1), map(fpd => {
-      // console.log('justgiving donation updated');
+      // console.log('justgiving donation updated', fpd);
       return fpd;
     }));
     this.fundraisingPageDetails$.subscribe();
 
-    this.donationTotal$ = combineLatest([this.facebookFundraisingPage$, this.fundraisingPageDetails$]).pipe(map(combinedDonations => {
+    // this.donationTotal$ = combineLatest([this.facebookFundraisingPage$, this.fundraisingPageDetails$]).pipe(map(combinedDonations => {
+    this.donationTotal$ = this.fundraisingPageDetails$.pipe(map(combinedDonations => {
       // console.log('combinedDonations:', combinedDonations);
-      return this.getCombinedDonationTotal(combinedDonations[0], combinedDonations[1]);
+      const newDonationTotal = parseFloat(combinedDonations.totalRaisedOnline) + parseFloat(combinedDonations.totalRaisedOffline);
+      this.transitionCurrentDonationTotal(newDonationTotal);
+      return newDonationTotal;
     }));
     this.donationTotal$.subscribe();
-    setInterval(() => {
-      // console.log('omnibar setInterval fired');
-      this.facebookFundraisingPage$.subscribe();
-      this.fundraisingPageDetails$.subscribe();
-      this.donationTotal$.subscribe();
-    }, 0.5 * 60 * 1000);
 
   }
 
   ngAfterViewInit(): void {
+    setInterval(() => {
+      // console.log('omnibar setInterval fired');
+      // this.facebookFundraisingPage$.subscribe();
+      // this.fundraisingPageDetails$.subscribe();
+      this.donationTotal$.subscribe();
+    }, 0.5 * 60 * 1000);
   }
 
   getCombinedDonationTotal(facebookFundraisingPage: FacebookFundraisingPage, fundraisingPageDetails: FundraisingPageDetails): number {
@@ -121,7 +124,7 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
 
   updateCharityLogoUrl(): void {
     if (this.charityLogoSwap) {
-      this.charityLogoUrl = '../../../../assets/img/GB20_logo_for_website.png';
+      this.charityLogoUrl = '../../../../assets/img/GB21_logo_for_website.png';
     } else {
       this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
     }

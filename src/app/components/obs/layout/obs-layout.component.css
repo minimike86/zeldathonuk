@@ -1,4 +1,6 @@
 .obs {
+  background: #28a745; /* #28a745 */
+  z-index: 1000;
 }
 
 .standard-cap-card{
@@ -9,5 +11,5 @@
   top: 0px;
   width: 1364px;
   height: 1024px;
-  background-color: #28a745;
+  background-color: transparent;
 }

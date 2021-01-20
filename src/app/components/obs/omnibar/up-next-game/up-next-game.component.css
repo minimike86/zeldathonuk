@@ -9,21 +9,21 @@
   left: 0;
   border-style: solid;
   border-width: 28px 0 28px 24px;
-  border-color: transparent transparent transparent rgb(9, 98, 224);
+  border-color: transparent transparent transparent darkgoldenrod;
   z-index: 2;
 }
 
 .up-next {
   display: inline-block;
-  background: rgb(9, 98, 224);
+  background: linear-gradient(-45deg, darkgoldenrod, darkgoldenrod);
   width: 200px;
-  height: 56px;
+  height: 57px;
   text-align: center;
   font-family: 'Bungee', cursive;
   font-size: 1.95em;
   padding-top: 5px;
   color: white;
-  -webkit-text-stroke: 0.035em royalblue;
+  -webkit-text-stroke: 0.040em saddlebrown;
   z-index: 1;
 }
 

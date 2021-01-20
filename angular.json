@@ -40,7 +40,7 @@
               "budgets": [
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "15kb"
+                  "maximumWarning": "25kb"
                 }
               ],
               "fileReplacements": [

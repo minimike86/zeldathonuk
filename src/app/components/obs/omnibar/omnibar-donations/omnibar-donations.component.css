@@ -6,7 +6,7 @@
 }
 
 .donation {
-  background: rgba(9, 98, 224, 0.5) !important; /* linear-gradient(-45deg, gold, goldenrod); */
+  background: darkgoldenrod !important; /* linear-gradient(-45deg, gold, goldenrod); */
   border-radius: 5px;
   height: 44px;
   width: 60%;
@@ -17,7 +17,7 @@
 
 .donation-text {
   color: #f5f5f5;
-  -webkit-text-stroke: 0.035em rgba(9, 98, 224, 0.85);
+  -webkit-text-stroke: 0.035em darkgoldenrod;
   font-family: 'Passion One', cursive;
   z-index: 0;
 }
@@ -27,14 +27,14 @@
 }
 
 .up-next {
-  background: rgb(9, 98, 224);
+  background: darkgoldenrod;
   width: 350px;
   padding-top: 4px;
   font-family: 'Bungee', cursive;
   font-size: 1.95em;
   text-align: center;
   color: white;
-  -webkit-text-stroke: 0.035em royalblue;
+  -webkit-text-stroke: 0.040em saddlebrown;
   z-index: 2;
 }
 
@@ -46,7 +46,7 @@
   left: 0;
   border-style: solid;
   border-width: 28px 0 28px 24px;
-  border-color: transparent transparent transparent rgb(9, 98, 224);
+  border-color: transparent transparent transparent darkgoldenrod;
   z-index: 2;
 }
 
@@ -63,6 +63,14 @@
   font-family: 'Mukta', sans-serif;
   color: black;
   -webkit-text-fill-color: rgb(59, 148, 224); /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.call-to-action-gold {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: darkgoldenrod; /* Will override color (regardless of order) */
   text-shadow: 2px 2px black;
 }
 

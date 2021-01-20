@@ -1,7 +1,7 @@
 <ng-container *ngIf="(this.trackedDonationIds$ | async)">
 
   <ng-template [ngIf]="lastTenDonations.length >= 1">
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-between mt-1">
 
       <div id="last-donors-text">
         <div class="d-flex justify-content-start up-next-div slide-in-left">
@@ -32,12 +32,12 @@
   </ng-template>
 
   <ng-template [ngIf]="lastTenDonations.length === 0">
-    <div class="d-flex justify-content-center">
+    <div class="d-flex justify-content-center mt-1">
       <div class="d-flex align-items-center">
         <div class="h1 call-to-action-white mr-3 mb-0">
           No donors yet!
         </div>
-        <div class="h1 call-to-action-blue mr-3 mb-0">
+        <div class="h1 call-to-action-gold mr-3 mb-0">
           donate.zeldathon.co.uk
         </div>
       </div>

@@ -1,5 +1,5 @@
 .side-panel {
-  border-right: 2px solid rgb(9, 98, 224);
+  border-right: 2px solid darkgoldenrod;
   height:1024px;
   width:479px;
   max-height:1024px;
@@ -7,7 +7,7 @@
 }
 
 .gameplay-panel {
-  background-color: #28a745;
+  background-color: transparent; /*#28a745; */
   height:809px;
   width:1442px;
   max-height:809px;
@@ -16,7 +16,7 @@
 }
 
 .camera-panel {
-  background-color: #28a745;
+  background-color: transparent;
   height:530px;
   width:479px;
   max-height:530px;
@@ -25,7 +25,7 @@
 }
 
 .adv-panel {
-  border-top: 1px solid rgb(9, 98, 224);
+  border-top: 1px solid darkgoldenrod;
   height:550px;
   width:479px;
   max-height:550px;
@@ -33,11 +33,12 @@
 }
 
 .bottom-panel {
-  border-top: 2px solid rgb(9, 98, 224);
+  border-top: 2px solid darkgoldenrod;
   height:215px;
   width:1442px;
   max-height:215px;
   max-width:1442px;
+  background: -webkit-linear-gradient(0deg, darkgoldenrod 45%, transparent 55%, transparent);
 }
 
 .name-timer-panel-container {
@@ -50,14 +51,12 @@
 }
 
 .name-timer-panel {
-  border-top: 1px solid rgb(9, 98, 224);
-  border-bottom: 2px solid rgb(9, 98, 224);
-  border-right: 2px solid rgb(9, 98, 224);
-  height:215px;
-  width:691px;
-  max-height:215px;
-  max-width:691px;
-  background: linear-gradient(-80deg, rgba(9, 98, 224, 0.65), rgba(116, 158, 253, 0.65)), url("../../../../assets/img/obs-bg/tumblr_nkilh6Fbl41r85hlio1_500.gif");
+  border-right: 2px solid darkgoldenrod;
+  height: 214px;
+  width: 691px;
+  max-height: 214px;
+  max-width: 691px;
+  background: linear-gradient(-80deg, rgba(184, 134, 11, 0.65), rgba(184, 134, 11, 0.65)), url("../../../../assets/img/obs-bg/hylian-symbol-1.png");
   background-size: cover;
   background-position: bottom;
 }
@@ -74,8 +73,11 @@
 }
 
 .game-desc-panel {
+  display: block;
+  position: relative;
   height:215px;
   width:750px;
   max-height:215px;
   max-width:750px;
+  top: -1px;
 }

@@ -23,6 +23,7 @@ export interface FundraisingPageDetails {
   totalRaisedOnline: string;
   totalRaisedSms: string;
   totalEstimatedGiftAid: string;
+  grandTotalRaisedExcludingGiftAid: string;
   branding: {
     buttonColour: number;
     buttonTextColour: string;

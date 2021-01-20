@@ -1,6 +1,6 @@
 .runner-name {
   width: 90%;
-  background: -webkit-linear-gradient(0deg, darkred 10%, #cc111b 40%, rgba(255, 13, 27, 0.7) 65%, transparent);
+  background: -webkit-linear-gradient(0deg, darkgoldenrod 10%, goldenrod 40%, darkgoldenrod 65%, transparent);
   color: rgb(225, 225, 225);
   -webkit-text-stroke: 0.075em black;
   font-family: 'Passion One', cursive;

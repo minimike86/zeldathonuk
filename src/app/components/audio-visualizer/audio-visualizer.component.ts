@@ -1031,7 +1031,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Zelda & Chill 2 - Kass\' Theme',
       songAuthor: 'by GameChops',
       beatColour: 'rgba(50, 200, 50, 0.75)',
-      youtubeId: '2TRE55puZoc'
+      youtubeId: 'TP061wI3chs'
     };
     this.audioLibrary.push(zeldaAndChill2KassTheme);
     const zeldaAndChill2SerenadeOfWater = {

@@ -37,3 +37,11 @@
   -webkit-text-fill-color: darkorange; /* Will override color (regardless of order) */
   text-shadow: 2px 2px black;
 }
+
+.call-to-action-gold {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: darkgoldenrod; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}

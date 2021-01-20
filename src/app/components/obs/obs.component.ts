@@ -14,7 +14,6 @@ import { FirebaseTimerService } from '../../services/firebase/firebase-timer/fir
 import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-timer';
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
-import { JgService } from '../../services/jg-service/jg-service.service';
 import { CountUpService } from '../../services/countup-service/countup.service';
 import { TrackedDonation } from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
@@ -62,7 +61,6 @@ export class ObsComponent implements OnInit {
                private countUpService: CountUpService,
                private firebaseTimerService: FirebaseTimerService,
                private donationTrackingService: DonationTrackingService,
-               private jgService: JgService,
                private runnerNameService: RunnerNameService,
                private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService ) {

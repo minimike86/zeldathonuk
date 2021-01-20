@@ -32,7 +32,7 @@ export class WspAdPanelComponent implements OnInit {
       this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
       this.updateBgImage();
     } else {
-      this.charityLogoUrl = '../../../../assets/img/GB20_logo_for_website.png';
+      this.charityLogoUrl = '../../../../assets/img/GB21_logo_for_website.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
   }
