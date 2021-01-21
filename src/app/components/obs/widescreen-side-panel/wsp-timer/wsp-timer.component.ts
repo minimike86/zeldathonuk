@@ -11,7 +11,6 @@ import {Observable, of} from 'rxjs';
 export class WspTimerComponent implements OnInit {
   public countUpTimer$: Observable<string>;
   public countUpTimer: string;
-  public timeToShow = 'local';
   public count = 0;
 
   constructor( private countUpService: CountUpService ) {
@@ -21,19 +20,6 @@ export class WspTimerComponent implements OnInit {
     this.countUpTimer$ = this.countUpService.getTimer().pipe(map(countUpTimer => {
       return this.countUpTimer = countUpTimer;
     }));
-
-    setInterval(() => {
-      this.count++;
-      if (this.count === 1) {
-        this.timeToShow = 'total';    // after 15 seconds
-      } else if (this.count === 2) {
-        this.timeToShow = 'count-up'; // after 30 seconds
-      } else if (this.count === 4 * 30) {
-        this.timeToShow = 'local';    // after 30 minutes
-        this.count = 0;
-      }
-    }, 15 * 1000);
-
   }
 
   getLocalTime(): Observable<string> {
@@ -41,7 +27,7 @@ export class WspTimerComponent implements OnInit {
     const ampm = localDate.getUTCHours() >= 12 ? 'pm' : 'am';
     return of(this.prefixZero(localDate.getUTCHours()) + ':' +
            this.prefixZero(localDate.getUTCMinutes()) + ':' +
-           this.prefixZero(localDate.getUTCSeconds()) + ' ' + ampm);
+           this.prefixZero(localDate.getUTCSeconds()) + ampm);
   }
 
   getTotalTime(): Observable<string> {

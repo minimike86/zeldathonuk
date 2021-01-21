@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import {AngularFirestore, AngularFirestoreCollection} from '@angular/fire/firestore';
 import {GameLineUp, GameLineUpId} from './game-lineup';
 import {GameItems, GameItemsId} from '../game-item/game-item';
-import {Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {Observable, pipe} from 'rxjs';
+import {map, switchMap, take} from 'rxjs/operators';
 import {ZeldaGame} from '../../../models/zelda-game';
 
 @Injectable({
@@ -11,7 +11,6 @@ import {ZeldaGame} from '../../../models/zelda-game';
 })
 export class GameLineupService {
   private gameLineUpCollection: AngularFirestoreCollection<GameLineUp>;
-  private gameLineup: GameLineUp;
 
   constructor(private db: AngularFirestore) {
     this.gameLineUpCollection = db.collection<GameLineUp>('/game-lineup');
@@ -25,6 +24,26 @@ export class GameLineupService {
         return { id, ...data };
       }))
     );
+  }
+
+  addGameToLineUp(keyString: string, zeldaGame: ZeldaGame) {
+    const newGame: GameLineUp = {
+      // @ts-ignore
+      gameLineUp: {
+        [keyString]: {
+          coverArt: zeldaGame.coverArt,
+          gameName: zeldaGame.gameName,
+          gameType: zeldaGame.gameType,
+          gamePlatform: zeldaGame.gamePlatform,
+          gameRelYear: zeldaGame.gameRelYear,
+          gameEstimate: zeldaGame.gameEstimate,
+          gameProgressKey: zeldaGame.gameProgressKey,
+          active: zeldaGame.active,
+          order: zeldaGame.order
+        }
+      }
+    };
+    this.gameLineUpCollection.doc('ChgBotZzXpt8oeRPAmtg').set(newGame, {merge: true}).then();
   }
 
 }

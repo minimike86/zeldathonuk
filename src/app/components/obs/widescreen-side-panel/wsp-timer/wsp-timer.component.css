@@ -5,7 +5,7 @@
 
 .timer-inner {
   height: 100%;
-  width: 90%;
+  width: 100%;
   background: -webkit-linear-gradient(0deg, darkgoldenrod 10%, goldenrod 40%, darkgoldenrod 65%, transparent);
 }
 

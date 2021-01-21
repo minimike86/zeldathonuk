@@ -39,17 +39,41 @@ export class UpNextGameComponent implements OnInit {
   getNextGame(): ZeldaGame {
     if (this.gameLineUp) {
       switch (this.currentlyPlayingId.index) {
+        case 'SKYWARD-SWORD':
+          return this.gameLineUp['MINISH-CAP'];
+        case 'MINISH-CAP':
+          return this.gameLineUp['FOUR-SWORDS'];
+        case 'FOUR-SWORDS':
+          return this.gameLineUp['OOTO'];
+        case 'OOTO':
+          return this.gameLineUp['MMO'];
+        case 'MMO':
+          return this.gameLineUp['TPHD'];
+        case 'TPHD':
+          return this.gameLineUp['FSA'];
+        case 'FSA':
+          return this.gameLineUp['WWHD'];
         case 'WWHD':
-          return this.gameLineUp['SS'];
-        case 'SS':
+          return this.gameLineUp['PH'];
+        case 'PH':
+          return this.gameLineUp['ST'];
+        case 'ST':
+          return this.gameLineUp['ALTTP'];
+        case 'ALTTP':
           return this.gameLineUp['LASR'];
         case 'LASR':
-          return this.gameLineUp['OOT'];
-        case 'OOT':
-          return this.gameLineUp['LTTP'];
-        case 'LTTP':
+          return this.gameLineUp['ALBTW'];
+        case 'ALBTW':
+          return this.gameLineUp['LOZ'];
+        case 'LOZ':
+          return this.gameLineUp['AOL'];
+        case 'AOL':
+          return this.gameLineUp['HWAOC'];
+        case 'HWAOC':
           return this.gameLineUp['BOTW'];
         case 'BOTW':
+          return this.gameLineUp['SMALTTP'];
+        case 'SMALTTP':
           return {
             active: true,
             coverArt: '',
@@ -58,7 +82,8 @@ export class UpNextGameComponent implements OnInit {
             gamePlatform: '',
             gameProgressKey: '',
             gameRelYear: '',
-            gameType: ''
+            gameType: '',
+            order: 0
           };
         default:
           break;
@@ -72,7 +97,8 @@ export class UpNextGameComponent implements OnInit {
         gamePlatform: '',
         gameProgressKey: '',
         gameRelYear: '',
-        gameType: ''
+        gameType: '',
+        order: 0
       };
     }
   }

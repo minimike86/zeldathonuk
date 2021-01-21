@@ -72,6 +72,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     // this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length)); // start on random song
     // Define audio element
     this.audio = new Audio();
+    this.audio.crossOrigin = 'anonymous';
     this.audio.src = this.audioLibrary[this.playingLibraryIndex].url;
     this.beatColour = this.audioLibrary[this.playingLibraryIndex].beatColour;
     this.audio.volume = 0.35;
