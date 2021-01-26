@@ -5,11 +5,11 @@ export interface TrackedDonationId extends TrackedDonation {
 
 export interface TrackedDonation {
   name: string;
-  imgUrl: string | null;
-  message: string | null;
+  imgUrl?: string;
+  message?: string;
   currency: string;
   donationAmount: number;
-  giftAidAmount: number | null;
+  giftAidAmount?: number;
   donationSource: string;
   donationDate: Date;
 }

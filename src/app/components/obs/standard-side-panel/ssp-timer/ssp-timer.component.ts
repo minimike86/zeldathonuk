@@ -55,7 +55,7 @@ export class SspTimerComponent implements OnInit {
   }
 
   prefixZero(number: number): string {
-    return number < 10 && number > 0 ? '0' + number  : number.toString();
+    return number >= 0 && number < 10 ? '0' + number : number.toString();
   }
 
 }

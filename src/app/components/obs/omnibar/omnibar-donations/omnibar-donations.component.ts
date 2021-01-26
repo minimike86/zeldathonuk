@@ -54,6 +54,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   public highlightedDonation: TrackedDonationId;
   public timeAgo: TimeAgo;
   public currentState = 'slideInFromRight';
+  public slideIn = true;
 
   public currentOmnibarContentId$: Observable<number>;
 
@@ -72,6 +73,10 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
       this.lastTenDonations = trackedDonationIds.slice(0, 10);
       return trackedDonationIds;
     }));
+    // setTimeout(() => {
+    //   this.slideIn = !this.slideIn;
+    //   this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 5);
+    // }, 1000 * 30); // 30
   }
 
   ngAfterViewInit(): void {
@@ -97,7 +102,10 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
               index++;
             } else {
               clearInterval(displayDonationsInterval);
-              this.omnibarContentService.setCurrentOmnibarContentId(4, (this.lastTenDonations.length * 10000) + 2000);
+              setTimeout(() => {
+                this.slideIn = !this.slideIn;
+                this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 5);
+              }, 1000 * 10); // 30
             }
             // console.log('hiding donation', index, this.lastTenDonations[index]);
           }, 1000);  // slideOutToLeft => slideInFromRight

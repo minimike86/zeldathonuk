@@ -4,8 +4,8 @@
 }
 
 .omnibar-brand {
-  height: 57px;
-  max-height: 57px;
+  height: 56px;
+  max-height: 56px;
   width: 180px;
   max-width: 180px;
   background: -webkit-linear-gradient(45deg, darkgoldenrod 20%, goldenrod 45%, darkgoldenrod 70%, darkgoldenrod);
@@ -14,8 +14,8 @@
 }
 
 .omnibar-donation-total {
-  height:57px;
-  max-height:57px;
+  height:56px;
+  max-height:56px;
   border-left: 2px solid darkgoldenrod;
   background: -webkit-linear-gradient(45deg, darkgoldenrod 20%, goldenrod 45%, darkgoldenrod 70%, darkgoldenrod);
   z-index: 5;
@@ -39,7 +39,8 @@
 .dtotal-odometer-pound {
   position: relative;
   font-size: 0.85em;
-  -webkit-text-stroke: 1px rgba(165, 120, 9, 1) !important;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.008em rgba(124, 84, 11, 0.9);
   top: 6px;
   font-weight: 600;
   color: white;
@@ -49,6 +50,8 @@
   color: white;
   font-weight: 900;
   font-family: 'Bungee', cursive;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.03em rgba(124, 84, 11, 0.9);
 }
 
 #donation_total_charity_logo {

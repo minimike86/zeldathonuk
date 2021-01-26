@@ -126,8 +126,7 @@ export class ObsComponent implements OnInit {
   }
 
   onSwapGameClick(game: ZeldaGame) {
-    this.swapGameKey.key = game.gameProgressKey;
-    this.swapGameKey.value = game;
+    this.swapGameKey = Object.assign({key: game.gameProgressKey}, {value: game});
     this.yesNoModal = this.modalService.open(this.yesNoModalDialogRef);
   }
 

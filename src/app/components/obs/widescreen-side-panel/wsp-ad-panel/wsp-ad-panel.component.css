@@ -1,6 +1,6 @@
 .advertisement-panel-bg-container {
   position: relative;
-  background: rgba(184, 134, 11, 0.75);
+  background: radial-gradient(circle, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 75%, rgba(184,134,11,1) 90%, rgba(184,134,11,1) 100%);
 }
 
 .advertisement-panel-bg {
@@ -28,7 +28,7 @@
 
 .advertisement-panel {
   position: relative;
-  height: calc(100% - 18px);
+  height: calc(100% - 15px);
   width: calc(100% - 18px);
   color: white;
   opacity: 1;

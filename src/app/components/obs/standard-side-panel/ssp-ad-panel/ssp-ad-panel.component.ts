@@ -32,7 +32,7 @@ export class SspAdPanelComponent implements OnInit {
       this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
       this.updateBgImage();
     } else {
-      this.charityLogoUrl = '../../../../assets/img/GB20_logo_for_website.png';
+      this.charityLogoUrl = '../../../../assets/img/GB21_logo_for_website.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
   }
@@ -95,6 +95,7 @@ export class SspAdPanelComponent implements OnInit {
     imageUrls.push('url("../../../../../assets/img/obs-bg/EQFV2QoU8AAsiGM.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-bg/EQFVz-PVUAEGpUM.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-bg/HEvAqqv.png")');
+    imageUrls.push('url("../../../../../assets/img/obs-bg/EsHr6JBXMAE9sxV.jpg")');
     // SPECIAL EFFECT IMAGES
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/5hfgyufk8.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/1310-1024x576.jpg")');

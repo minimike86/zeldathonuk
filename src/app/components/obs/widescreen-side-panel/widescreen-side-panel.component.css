@@ -56,7 +56,7 @@
   width: 691px;
   max-height: 214px;
   max-width: 691px;
-  background: linear-gradient(-80deg, rgba(184, 134, 11, 0.65), rgba(184, 134, 11, 0.65)), url("../../../../assets/img/obs-bg/hylian-symbol-1.png");
+  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%), url("../../../../assets/img/obs-bg/hylian-symbol-1.png");
   background-size: cover;
   background-position: bottom;
 }

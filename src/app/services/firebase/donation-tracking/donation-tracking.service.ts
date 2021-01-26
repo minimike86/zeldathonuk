@@ -27,7 +27,6 @@ export class DonationTrackingService {
       map(actions => actions.map(a => {
         const id = a.payload.doc.id;
         const data = a.payload.doc.data() as TrackedDonation;
-        data.imgUrl = 'https://static-cdn.jtvnw.net/jtv_user_pictures/7461067d-af56-4607-8631-283725e3d010-profile_image-300x300.png';
         return { id, ...data };
       }))
     );

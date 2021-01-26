@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import {AfterViewInit, Component, OnInit} from '@angular/core';
 import { CountUpService } from '../../../../services/countup-service/countup.service';
-import { map } from 'rxjs/operators';
+import {delay, map} from 'rxjs/operators';
 import {Observable, of} from 'rxjs';
 
 @Component({
@@ -8,10 +8,13 @@ import {Observable, of} from 'rxjs';
   templateUrl: './wsp-timer.component.html',
   styleUrls: ['./wsp-timer.component.css']
 })
-export class WspTimerComponent implements OnInit {
+export class WspTimerComponent implements OnInit, AfterViewInit {
   public countUpTimer$: Observable<string>;
   public countUpTimer: string;
   public count = 0;
+
+  public localTime$: Observable<string>;
+  public totalTime$: Observable<string>;
 
   constructor( private countUpService: CountUpService ) {
   }
@@ -22,12 +25,19 @@ export class WspTimerComponent implements OnInit {
     }));
   }
 
+  ngAfterViewInit(): void {
+    setInterval(() => {
+      this.localTime$ = this.getLocalTime();
+      this.totalTime$ = this.getTotalTime();
+    }, 1000);
+  }
+
   getLocalTime(): Observable<string> {
     const localDate = new Date();
     const ampm = localDate.getUTCHours() >= 12 ? 'pm' : 'am';
     return of(this.prefixZero(localDate.getUTCHours()) + ':' +
-           this.prefixZero(localDate.getUTCMinutes()) + ':' +
-           this.prefixZero(localDate.getUTCSeconds()) + ampm);
+      this.prefixZero(localDate.getUTCMinutes()) + ':' +
+      this.prefixZero(localDate.getUTCSeconds()) + ampm);
   }
 
   getTotalTime(): Observable<string> {
@@ -41,7 +51,7 @@ export class WspTimerComponent implements OnInit {
   }
 
   prefixZero(number: number): string {
-    return number < 10 && number > 0 ? '0' + number  : number.toString();
+    return number >= 0 && number < 10 ? '0' + number : number.toString();
   }
 
 }

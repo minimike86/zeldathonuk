@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {interval, Observable} from "rxjs";
+import {interval, Observable} from 'rxjs';
 
 @Component({
   selector: 'app-ds3-ad-panel',
