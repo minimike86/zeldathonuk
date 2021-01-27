@@ -30,7 +30,7 @@ export class CurrentlyPlayingService {
   }
 
   setCurrentlyPlaying(data: CurrentlyPlaying): void {
-    this.currentlyPlayingCollection.doc('bFrAHwuF1iksUjYAkhj3').set(data);
+    this.currentlyPlayingCollection.doc('CURRENTLY-PLAYING').set(data);
   }
 
 }

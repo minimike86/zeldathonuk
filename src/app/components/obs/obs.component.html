@@ -128,70 +128,85 @@
         <div class="d-flex justify-content-center" *ngIf="showAddDonation">
           <form class="w-50">
 
-            <div class="form-group">
-              <label for="name">Name:</label>
+            <div class="form-group mb-1">
+              <label class="small mb-0" for="name">Name:</label>
               <input id="name" name="name" type="text" placeholder="Name" class="form-control form-control-sm"
                      [(ngModel)]="tempTrackedDonation.name">
             </div>
 
-            <div class="form-group">
-              <label for="imgUrl">Image Url:</label>
-              <input id="imgUrl" name="imgUrl" type="text" placeholder="https://image.url/image.jpg" class="form-control form-control-sm"
-                     [(ngModel)]="tempTrackedDonation.imgUrl">
+            <div class="d-flex justify-content-between">
+              <div class="flex-grow-1">
+                <div class="form-group mb-1">
+                    <label class="small mb-0" for="imgUrl">Image Url:</label>
+                    <input id="imgUrl" name="imgUrl" type="text" placeholder="https://image.url/image.jpg" class="form-control form-control-sm"
+                           [(ngModel)]="tempTrackedDonation.imgUrl">
+                </div>
+              </div>
+              <div class="ml-2">
+                <img class="img-thumbnail" style="max-height: 4em;" [src]="tempTrackedDonation.imgUrl">
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="message">Donation Message:</label>
+            <div class="form-group mb-1">
+              <label class="small mb-0" for="message">Donation Message:</label>
               <textarea id="message" name="message" placeholder="Donation Message" class="form-control form-control-sm"
                         [(ngModel)]="tempTrackedDonation.message"></textarea>
             </div>
 
-            <div class="form-group">
-              <label for="currency">Currency:</label>
-              <select id="currency" name="currency" class="form-control form-control-sm"
-                      [(ngModel)]="tempTrackedDonation.currency">
-                <option [ngValue]="'GBP'" selected="selected">GBP</option>
-                <option [ngValue]="'EUR'">EUR</option>
-                <option [ngValue]="'USD'">USD</option>
-              </select>
+            <div class="d-flex justify-content-between">
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="currency">Currency:</label>
+                <select id="currency" name="currency" class="form-control form-control-sm"
+                        [(ngModel)]="tempTrackedDonation.currency">
+                  <option [ngValue]="'GBP'" selected="selected">GBP</option>
+                  <option [ngValue]="'EUR'">EUR</option>
+                  <option [ngValue]="'USD'">USD</option>
+                </select>
+              </div>
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="donationAmount">Donation Amount:</label>
+                <input id="donationAmount" name="donationAmount" type="number" value="0.00" class="form-control form-control-sm"
+                       [(ngModel)]="tempTrackedDonation.donationAmount">
+              </div>
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="giftAidAmount">GiftAid Amount:</label>
+                <input id="giftAidAmount" name="giftAidAmount" type="number" value="0.00" class="form-control form-control-sm"
+                       [(ngModel)]="tempTrackedDonation.giftAidAmount">
+              </div>
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="donationSource">Donation Source:</label>
+                <select id="donationSource" name="donationSource" class="form-control form-control-sm"
+                        [(ngModel)]="tempTrackedDonation.donationSource">
+                  <option [ngValue]="'Facebook'" selected="selected">Facebook</option>
+                  <option [ngValue]="'JustGiving'">JustGiving</option>
+                </select>
+              </div>
+
             </div>
 
-            <div class="form-group">
-              <label for="donationAmount">Donation Amount:</label>
-              <input id="donationAmount" name="donationAmount" type="number" value="0.00" class="form-control form-control-sm"
-                     [(ngModel)]="tempTrackedDonation.donationAmount">
-            </div>
+            <div class="d-flex justify-content-between">
 
-            <div class="form-group">
-              <label for="giftAidAmount">GiftAid Amount:</label>
-              <input id="giftAidAmount" name="giftAidAmount" type="number" value="0.00" class="form-control form-control-sm"
-                     [(ngModel)]="tempTrackedDonation.giftAidAmount">
-            </div>
+              <div class="form-group w-50">
+                <label class="small mb-0" for="donationDate">Date:</label>
+                <input id="donationDate" name="donationDate" type="date" class="form-control form-control-sm"
+                       [(ngModel)]="donationDate">
+              </div>
 
-            <div class="form-group">
-              <label for="donationSource">Donation Source:</label>
-              <select id="donationSource" name="donationSource" class="form-control form-control-sm"
-                      [(ngModel)]="tempTrackedDonation.donationSource">
-                <option [ngValue]="'Facebook'" selected="selected">Facebook</option>
-                <option [ngValue]="'JustGiving'">JustGiving</option>
-              </select>
-            </div>
+              <div class="form-group w-50 ml-2">
+                <label class="small mb-0" for="donationTime">Time:</label>
+                <input id="donationTime" name="donationTime" type="time" class="form-control form-control-sm"
+                       [(ngModel)]="donationTime">
+              </div>
 
-            <div class="form-group">
-              <label for="donationDate">Date:</label>
-              <input id="donationDate" name="donationDate" type="date" class="form-control form-control-sm"
-                     [(ngModel)]="donationDate">
-            </div>
-
-            <div class="form-group">
-              <label for="donationTime">Time:</label>
-              <input id="donationTime" name="donationTime" type="time" class="form-control form-control-sm"
-                     [(ngModel)]="donationTime">
             </div>
 
             <div class="d-flex justify-content-center">
-              <button type="submit" class="btn btn-primary mb-2 mr-2 w-75" (click)="submitTrackedDonation()">Add Donation</button>
               <button type="submit" class="btn btn-secondary mb-2 w-25" (click)="clearTrackedDonation()">Clear</button>
+              <button type="submit" class="btn btn-primary mb-2 ml-2 w-75" (click)="submitTrackedDonation()">Add Donation</button>
             </div>
 
           </form>

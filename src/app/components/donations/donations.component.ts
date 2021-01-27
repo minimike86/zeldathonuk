@@ -4,7 +4,7 @@ import en from 'javascript-time-ago/locale/en';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {DonationTrackingService} from '../../services/firebase/donation-tracking/donation-tracking.service';
-import {TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation} from '../../services/firebase/donation-tracking/tracked-donation';
 
 
 /**
@@ -17,7 +17,7 @@ import {TrackedDonationId} from '../../services/firebase/donation-tracking/track
 })
 export class DonationsComponent implements OnInit {
   public timeAgo: TimeAgo;
-  public trackedDonationIds$: Observable<TrackedDonationId[]>;
+  public trackedDonationIds$: Observable<TrackedDonation[]>;
 
   constructor( private donationTrackingService: DonationTrackingService ) {
   }
@@ -25,10 +25,10 @@ export class DonationsComponent implements OnInit {
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(map(trackedDonationIds => {
-      console.log('trackedDonationIds:', trackedDonationIds);
-      if (trackedDonationIds) {
-        return trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
+    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationArray().pipe(map(trackedDonationArray => {
+      console.log('trackedDonationArray:', trackedDonationArray);
+      if (trackedDonationArray[0].donations) {
+        return trackedDonationArray[0].donations.sort((a: TrackedDonation, b: TrackedDonation) =>
           b.donationAmount - a.donationAmount
         );
       }

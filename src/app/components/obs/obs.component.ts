@@ -168,7 +168,9 @@ export class ObsComponent implements OnInit {
 
   submitTrackedDonation() {
     this.tempTrackedDonation.donationDate = new Date(this.donationDate + 'T' + this.donationTime);
-    this.donationTrackingService.addTrackedDonation(this.tempTrackedDonation);
+    console.log('submitTrackedDonation: ', this.tempTrackedDonation);
+    this.donationTrackingService.addTrackedDonation([this.tempTrackedDonation]);
+    this.clearTrackedDonation();
   }
 
   clearTrackedDonation() {
@@ -182,6 +184,8 @@ export class ObsComponent implements OnInit {
       donationSource: 'Facebook',
       donationDate: null
     };
+    this.donationDate = '';
+    this.donationTime = '';
   }
 
   toggleShowObsLayouts() {

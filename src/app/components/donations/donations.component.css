@@ -1,6 +1,13 @@
 .donation-benefit-amount {
   font-family: 'Bebas Neue', cursive;
-  font-size: 44px;
+  font-size: 40px;
+}
+.donation-benefit-img{
+  max-width: 100%;
+  max-height: 5em;
+}
+.donation-benefit-desc {
+  font-size: 0.9em;
 }
 
 .btn-justgiving {
@@ -76,6 +83,7 @@
   box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
 }
 
+
 /* Extra small devices (portrait phones, less than 576px) */
 @media (max-width: 575.98px) {
   .donor-list {
@@ -108,32 +116,52 @@
 }
 
 .donation {
-  background: linear-gradient(-45deg, #15a6d3, rgba(140, 140, 255, 1), goldenrod);
-  background-size: 400% 400%;
-  border: lightslategrey solid 2px;
-  border-radius: 1em;
+  color: white;
+  border-radius: 0.25rem;
   padding: 1em;
   width: 95%;
-  margin-right: 1em;
-  margin-bottom: 1em;
-
-  -webkit-animation: DonationBgColorWave 5s ease infinite;
-  -moz-animation: DonationBgColorWave 5s ease infinite;
-  animation: DonationBgColorWave 5s ease infinite;
 }
 
-@-webkit-keyframes DonationBgColorWave {
-  0%{background-position:0 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0 50%}
+.donation-img {
+  padding: 1px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  max-height: 1.4em;
+  max-width: 100%;
+  height: auto;
 }
-@-moz-keyframes DonationBgColorWave {
-  0%{background-position:0 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0 50%}
+
+.facebook-donation {
+  position: relative;
+  z-index:1;
+  overflow:hidden;
+  background-color: #3b5998;
+  border: #344e86 solid 2px;
 }
-@keyframes DonationBgColorWave {
-  0%{background-position:0 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0 50%}
+.facebook-donation::before {
+  z-index:-1;
+  position:absolute;
+  left: 0;
+  top: 0;
+  content: url("../../../assets/img/thumb_icon_header_image_05_2018.png");
+  transform: scale(.25) translateX(-50%) translateY(-135%);
+  opacity: 0.2;
+}
+
+.justgiving-donation {
+  position: relative;
+  z-index:1;
+  overflow:hidden;
+  background-color: #932aa1;
+  border: #6e2079 solid 2px;
+}
+.justgiving-donation::before {
+  z-index:-1;
+  position:absolute;
+  left: 0;
+  top: 0;
+  content: url("../../../assets/img/JustGiving_Logo.svg.png");
+  transform: scale(.35) translateX(-75%) translateY(-55%);
+  opacity: 0.4;
 }

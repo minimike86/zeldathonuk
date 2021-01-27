@@ -1,6 +1,9 @@
-
-export interface TrackedDonationId extends TrackedDonation {
+export interface TrackedDonationId extends TrackedDonationArray {
   id: string;
+}
+
+export interface TrackedDonationArray {
+  donations: TrackedDonation[];
 }
 
 export interface TrackedDonation {

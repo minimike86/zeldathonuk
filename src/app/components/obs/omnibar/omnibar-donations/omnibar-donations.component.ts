@@ -13,7 +13,7 @@ import {
 } from '@angular/animations';
 import {OmnibarContentService} from '../../../../services/omnibar-content-service/omnibar-content-service.service';
 import {DonationTrackingService} from '../../../../services/firebase/donation-tracking/donation-tracking.service';
-import {TrackedDonationId} from '../../../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from '../../../../services/firebase/donation-tracking/tracked-donation';
 
 @Component({
   selector: 'app-omnibar-donations',
@@ -49,9 +49,9 @@ import {TrackedDonationId} from '../../../../services/firebase/donation-tracking
   ],
 })
 export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
-  public trackedDonationIds$: Observable<TrackedDonationId[]>;
-  public lastTenDonations: TrackedDonationId[] = [];
-  public highlightedDonation: TrackedDonationId;
+  public trackedDonationIds$: Observable<TrackedDonation[]>;
+  public lastTenDonations: TrackedDonation[] = [];
+  public highlightedDonation: TrackedDonation;
   public timeAgo: TimeAgo;
   public currentState = 'slideInFromRight';
   public slideIn = true;
@@ -66,12 +66,12 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(map(trackedDonationIds => {
-      trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
+    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationArray().pipe(map(trackedDonationIds => {
+      trackedDonationIds[0].donations.sort((a: TrackedDonation, b: TrackedDonation) =>
         b.donationDate.getTime() - a.donationDate.getTime()
       );
-      this.lastTenDonations = trackedDonationIds.slice(0, 10);
-      return trackedDonationIds;
+      this.lastTenDonations = trackedDonationIds[0].donations.slice(0, 10);
+      return trackedDonationIds[0].donations;
     }));
     // setTimeout(() => {
     //   this.slideIn = !this.slideIn;
@@ -90,6 +90,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   displayDonations() {
     let index = 0;
 
+    // TODO: FIX THIS SHITE
     const displayDonationsInterval = setInterval(() => {
       this.highlightedDonation = this.lastTenDonations[index];
       setTimeout(() => {
