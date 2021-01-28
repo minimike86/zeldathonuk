@@ -1,6 +1,6 @@
-<div class="d-flex flex-row h-100">
+<div class="d-flex flex-row min-vh-100">
 
-  <div class="p-3">
+  <div class="p-3 d-none d-xl-block">
     <div class="d-flex flex-column">
 
       <div class="text-center card bg-dark d-inline-block position-sticky mb-3" style="width: 22rem;">
@@ -63,9 +63,9 @@
     </div>
   </div>
 
-  <div class="container p-3 h-100" style="background-color: #606060;">
+  <div class="container donation-list-container p-3">
 
-    <div class="h-100">
+    <div class="">
       <h3 class="text-white mb-3">Thank you to all our donors!</h3>
       <p class="text-light">
         On behalf of everyone in the ZeldathonUK team we would like to thank all of the donors below for their generous donations:
@@ -80,8 +80,8 @@
       <ng-container *ngIf="(trackedDonationIds$ | async) as tds">
 
         <ng-template [ngIf]="tds.length >= 1">
-          <div>
-            <div class="d-inline-block donor-list" *ngFor="let donation of tds">
+          <div class="card-columns min-vh-100">
+            <div class="card donor-list mb-2" *ngFor="let donation of tds">
 
               <div class="d-flex flex-column donation" [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' : 'justgiving-donation'">
 
@@ -97,13 +97,12 @@
                       <h5 class="mb-0" style="word-break: break-word;">{{ donation.name }}</h5>
                     </div>
                   </div>
-                  <div class="d-flex align-self-start">
-                    <span class="small text-white-50">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
-                  </div>
                 </div>
 
-                <div class="my-2 small">
-                  {{ donation.message.length >= 1 ? donation.message : 'No Message' }}
+                <div class="my-2 small" *ngIf="donation.message.length >= 1">
+                  <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.2em;">&ldquo;</span>
+                  <i class="px-1" style="font-size: 1.2em; font-family: 'Poppins', sans-serif;">{{ donation.message.length >= 1 ? donation.message : '-' }}</i>
+                  <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.7em;">&rdquo;</span>
                 </div>
 
                 <div class="d-flex justify-content-between">
@@ -116,6 +115,10 @@
                   <div class="">
                     <h3 class="mb-0">{{ donation.donationAmount | currency:donation.currency }}</h3>
                   </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                  <span class="text-white-50" style="font-size: 9px;">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
                 </div>
 
               </div>
@@ -155,7 +158,7 @@
 
   </div>
 
-  <div class="p-3">
+  <div class="p-3 d-none d-xl-block">
     <div class="card bg-dark" style="width: 30rem;">
       <div class="text-center card card-header bg-dark text-light">
         <h5 class="card-title mb-0">What will your donation do?</h5>

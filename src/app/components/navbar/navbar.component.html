@@ -41,14 +41,20 @@
           <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
             <div class="align-self-center">
               <button class="btn btn-sm btnfacebook" (click)="donateFacebook();">
-                Donate via Facebook <span class="small text-white-50">*no fees</span>
+                <div class="d-flex">
+                  Donate <span class="d-inline-block d-sm-none ml-1"><i class="fa fa-facebook"></i></span>
+                  <span class="d-none d-md-block">&nbsp;via Facebook <span class="small text-white-50">*no fees</span></span>
+                </div>
               </button>
             </div>
           </li>
           <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
             <div class="align-self-center">
               <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-                Donate via JustGiving <span class="small text-warning">*adds fees!</span>
+                <div class="d-flex">
+                  Donate <span class="d-inline-block d-sm-none ml-1"><img src="../../../assets/img/justgiving-g.svg" style="width: 10px; filter: brightness(10);"></span>
+                  <span class="d-none d-md-block">&nbsp;via JustGiving <span class="small text-warning">*adds fees!</span></span>
+                </div>
               </button>
             </div>
           </li>

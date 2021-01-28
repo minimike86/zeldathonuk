@@ -59,12 +59,12 @@ export interface FundraisingPageDetails {
 
 export interface FundraisingPageDonations {
   id?: string;
-  donations: Donation[];
+  donations: JustGivingDonation[];
   pageShortName: string;
   pagination: Pagination;
 }
 
-export interface Donation {
+export interface JustGivingDonation {
   amount: string | number;
   currencyCode: string;
   donationDate: string;

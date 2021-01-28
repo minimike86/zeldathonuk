@@ -6,7 +6,8 @@
 }
 
 .donation {
-  background: darkgoldenrod !important; /* linear-gradient(-45deg, gold, goldenrod); */
+  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%),
+                              url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
   border-radius: 5px;
   height: 44px;
   width: 60%;
@@ -16,9 +17,12 @@
 }
 
 .donation-text {
+  position: relative;
+  top: -0.25em;
   color: #f5f5f5;
-  -webkit-text-stroke: 0.035em darkgoldenrod;
-  font-family: 'Passion One', cursive;
+  -webkit-text-stroke: 0.045em black;
+  font-size: 32px;
+  font-family: 'Bungee', cursive;
   z-index: 0;
 }
 
@@ -26,19 +30,20 @@
   z-index: 2;
 }
 
-.up-next {
-  background: darkgoldenrod;
-  width: 350px;
-  font-family: 'Bungee', cursive;
-  font-size: 1.95em;
-  text-align: center;
-  color: white;
-  -webkit-text-stroke: 0.040em saddlebrown;
-  display: inline-block;
+.up-next-div {
   background: linear-gradient(-45deg, darkgoldenrod, darkgoldenrod);
+  width: 300px;
   height: 56px;
   max-height: 56px;
-  padding-top: 5px;
+}
+
+.up-next {
+  font-family: 'Bungee', cursive;
+  font-size: 28px;
+  color: white;
+  -webkit-text-stroke: 0.040em saddlebrown;
+  margin-left: auto;
+  margin-right: auto;
   z-index: 2;
 }
 

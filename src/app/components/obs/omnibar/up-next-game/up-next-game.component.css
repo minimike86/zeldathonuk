@@ -1,4 +1,8 @@
 .up-next-div {
+  background: linear-gradient(-45deg, darkgoldenrod, darkgoldenrod);
+  width: 300px;
+  height: 56px;
+  max-height: 56px;
 }
 
 .up-next-div-triangle {
@@ -14,18 +18,13 @@
 }
 
 .up-next {
-  display: inline-block;
-  background: linear-gradient(-45deg, darkgoldenrod, darkgoldenrod);
-  width: 200px;
-  height:56px;
-  max-height:56px;
-  text-align: center;
   font-family: 'Bungee', cursive;
-  font-size: 1.95em;
-  padding-top: 5px;
+  font-size: 28px;
   color: white;
   -webkit-text-stroke: 0.040em saddlebrown;
-  z-index: 1;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2;
 }
 
 .up-next-game {

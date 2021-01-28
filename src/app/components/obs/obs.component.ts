@@ -19,6 +19,8 @@ import { TrackedDonation, TrackedDonationId } from '../../services/firebase/dona
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
 
 import { ZeldaGame } from '../../models/zelda-game';
+import firebase from 'firebase/app';
+import Timestamp = firebase.firestore.Timestamp;
 
 
 @Component({
@@ -167,7 +169,7 @@ export class ObsComponent implements OnInit {
   }
 
   submitTrackedDonation() {
-    this.tempTrackedDonation.donationDate = new Date(this.donationDate + 'T' + this.donationTime);
+    this.tempTrackedDonation.donationDate = Timestamp.fromDate(new Date(this.donationDate + 'T' + this.donationTime));
     console.log('submitTrackedDonation: ', this.tempTrackedDonation);
     this.donationTrackingService.addTrackedDonation([this.tempTrackedDonation]);
     this.clearTrackedDonation();

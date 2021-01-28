@@ -5,5 +5,5 @@ export interface RunnerNameId extends RunnerName {
 
 export interface RunnerName {
   runnerName: string;
-  runnerHasTwitchAccount: boolean,
+  runnerHasTwitchAccount: boolean;
 }
