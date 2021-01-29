@@ -129,6 +129,14 @@
           <form class="w-50">
 
             <div class="form-group mb-1">
+              <label class="small mb-0" for="donationId">ID:</label>
+              <input id="donationId" name="donationId" type="text" placeholder="Donation Id"
+                     class="form-control form-control-sm"
+                     disabled="true"
+                     [(ngModel)]="tempTrackedDonation.id">
+            </div>
+
+            <div class="form-group mb-1">
               <label class="small mb-0" for="name">Name:</label>
               <input id="name" name="name" type="text" placeholder="Name" class="form-control form-control-sm"
                      [(ngModel)]="tempTrackedDonation.name">

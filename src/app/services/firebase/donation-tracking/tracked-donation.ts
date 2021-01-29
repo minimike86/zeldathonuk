@@ -10,6 +10,7 @@ export interface TrackedDonationArray {
 }
 
 export interface TrackedDonation {
+  id: string|number;
   name: string;
   imgUrl?: string;
   message?: string;

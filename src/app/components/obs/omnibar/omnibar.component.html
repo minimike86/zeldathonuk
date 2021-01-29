@@ -26,7 +26,7 @@
         <div class="dtotal-odometer-div">
           <span class="dtotal-odometer-pound mr-1">&pound;</span>
           <ng9-odometer class="dtotal-odometer"
-                        [number]="currentDonationTotal"
+                        [number]="currentDonationTotal$ | async"
                         [animation]="'slide'"
                         [duration]="3000"
                         [format]="'(,ddd).dd'"

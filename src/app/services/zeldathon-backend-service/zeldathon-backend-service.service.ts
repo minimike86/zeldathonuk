@@ -37,6 +37,7 @@ export interface FacebookProgressCard {
 
 export interface FacebookDonation {
   name: string;
+  currency: string;
   amount: number;
   profileUrl?: string;
   imgSrc?: string;

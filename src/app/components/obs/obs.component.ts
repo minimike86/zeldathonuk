@@ -21,6 +21,7 @@ import { DonationTrackingService } from '../../services/firebase/donation-tracki
 import { ZeldaGame } from '../../models/zelda-game';
 import firebase from 'firebase/app';
 import Timestamp = firebase.firestore.Timestamp;
+import {sha256} from 'js-sha256';
 
 
 @Component({
@@ -177,13 +178,14 @@ export class ObsComponent implements OnInit {
 
   clearTrackedDonation() {
     this.tempTrackedDonation = {
+      id: sha256(new Date().toDateString()),
       name: '',
       imgUrl: '',
       message: '',
       currency: 'GBP',
       donationAmount: 0.00,
       giftAidAmount: 0.00,
-      donationSource: 'Facebook',
+      donationSource: 'Manual',
       donationDate: null
     };
     this.donationDate = '';

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { JgService } from '../../services/jg-service/jg-service.service';
 import {Observable, timer} from 'rxjs';
-import {FundraisingPageDetails, FundraisingPageDonations} from '../../services/jg-service/fundraising-page';
+import {FundraisingPageDetails, FundraisingPageDonations, JustGivingDonation} from '../../services/jg-service/fundraising-page';
 import {map} from 'rxjs/operators';
 
 
@@ -15,8 +15,8 @@ import {map} from 'rxjs/operators';
 })
 export class JgDonationComponent implements OnInit {
   public displayTotal: boolean;
-  public fundraisingPageDetails: Observable<FundraisingPageDetails>;
-  public fundraisingPageDonations: Observable<FundraisingPageDonations>;
+  public fundraisingPageDetails$: Observable<FundraisingPageDetails>;
+  public fundraisingPageDonations$: Observable<JustGivingDonation[]>;
 
   constructor(private jgService: JgService) {
   }
@@ -24,11 +24,11 @@ export class JgDonationComponent implements OnInit {
   ngOnInit() {
     this.observableTimer();
 
-    this.fundraisingPageDetails = this.jgService.getFundraisingPageDetails().pipe(map(fpDetails => {
+    this.fundraisingPageDetails$ = this.jgService.getFundraisingPageDetails().pipe(map(fpDetails => {
       console.log('fpDetails', fpDetails);
       return fpDetails;
     }));
-    this.fundraisingPageDonations = this.jgService.getFundraisingPageDonations().pipe(map(fpDonations => {
+    this.fundraisingPageDonations$ = this.jgService.getAllJustGivingDonations().pipe(map(fpDonations => {
       console.log('fpDonations', fpDonations);
       return fpDonations;
     }));
