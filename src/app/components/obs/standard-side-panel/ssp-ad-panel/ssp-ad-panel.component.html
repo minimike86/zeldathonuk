@@ -1,9 +1,22 @@
-<div class="d-flex justify-content-start align-items-center h-100 w-100">
-  <div class="d-flex justify-content-center align-items-center advertisement-panel-bg"
-       [style.background-image]="bgImageUrls[bgImageIndex]"></div>
-  <div class="d-flex justify-content-center align-items-center advertisement-panel">
-    <img class="advertisement-img embed-responsive-16by9"
-         alt="Charity Logo"
-         [src]="charityLogoUrl">
+<div class="d-flex justify-content-start position-relative h-100 w-100">
+  <div class="advertisement-panel-bg-container h-100 w-100">
+
+    <div class="advertisement-panel-bg"
+         [style.background-image]="bgImageUrls[bgImageIndex]"></div>
+
+    <div class="advertisement-panel mt-2 ml-2 mb-2">
+      <div class="d-flex justify-content-center h-100 w-100">
+        <div class="d-flex align-self-center w-100">
+
+          <div class="d-block w-50 mx-auto">
+            <img class="advertisement-img"
+                 alt="Charity Logo"
+                 [src]="charityLogoUrl">
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>

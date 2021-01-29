@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CountUpService } from '../../../../services/countup-service/countup.service';
-import {Observable} from 'rxjs';
+import {Observable, of} from 'rxjs';
 import {map} from 'rxjs/operators';
 
 @Component({
@@ -23,39 +23,39 @@ export class SspTimerComponent implements OnInit {
     }));
 
     setInterval(() => {
-      this.count++;
-      if (this.count === 1) {
-        this.timeToShow = 'total';    // after 15 seconds
-      } else if (this.count === 2) {
-        this.timeToShow = 'count-up'; // after 30 seconds
-      } else if (this.count === 4 * 30) {
-        this.timeToShow = 'local';    // after 30 minutes
+      if (this.count >= 0 && this.count < 30) {
+        this.timeToShow = 'total';
+        this.count++;
+      } else if (this.count >= 30 && this.count < 60) {
+        this.timeToShow = 'local';
+        this.count++;
+      } else {
         this.count = 0;
       }
-    }, 15 * 1000);
+    }, 1000);
 
   }
 
-  getLocalTime(): string {
+  getLocalTime(): Observable<string> {
     const localDate = new Date();
     const ampm = localDate.getUTCHours() >= 12 ? 'pm' : 'am';
-    return this.prefixZero(localDate.getUTCHours()) + ':' +
+    return of(this.prefixZero(localDate.getUTCHours()) + ':' +
       this.prefixZero(localDate.getUTCMinutes()) + ':' +
-      this.prefixZero(localDate.getUTCSeconds()) + ' ' + ampm;
+      this.prefixZero(localDate.getUTCSeconds()) + ampm);
   }
 
-  getTotalTime(): string {
-    const startDate = new Date(2020, 1, 20, 13, 0 , 0, 0);
+  getTotalTime(): Observable<string> {
+    const startDate = new Date(2021, 1, 20, 9, 0 , 0, 0);
     const endDate = new Date();
     const totalTimeInSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
     const hours = Math.floor(totalTimeInSeconds / 3600);
     const minutes = Math.floor((totalTimeInSeconds - (hours * 3600)) / 60);
     const seconds = Math.floor((totalTimeInSeconds - (hours * 3600) - (minutes * 60)));
-    return this.prefixZero(hours) + ':' + this.prefixZero(minutes) + ':' + this.prefixZero(seconds);
+    return of(this.prefixZero(hours) + ':' + this.prefixZero(minutes) + ':' + this.prefixZero(seconds));
   }
 
   prefixZero(number: number): string {
-    return number < 10 && number > 0 ? '0' + number  : number.toString();
+    return number >= 0 && number < 10 ? '0' + number : number.toString();
   }
 
 }

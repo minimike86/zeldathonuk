@@ -1,16 +1,16 @@
-<ng-container *ngIf="(fundraisingPageDetails | async) as jgfpdtls">
-  <ng-container *ngIf="(fundraisingPageDonations | async) as jgfpdnts">
+<ng-container *ngIf="(fundraisingPageDetails$ | async) as details">
+  <ng-container *ngIf="(fundraisingPageDonations$ | async) as donations">
 
-    <div *ngIf="jgfpdnts !== undefined; then displayTotal ? showDonations : showDonors else showNothing"></div>
+    <div *ngIf="donations !== undefined; then displayTotal ? showDonations : showDonors else showNothing"></div>
     <ng-template #showDonations>
       <div class="text-center jg-text-dark mt-1" style="line-height: 0.65em;">
-        <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ getDonationTotal(jgfpdtls) | currency:jgfpdtls?.currencySymbol }}</h6>
+        <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ getDonationTotal(details) | currency:details?.currencySymbol }}</h6>
         <span class="jg-text-dark" style="font-size: 0.65em;" title="JustGiving Donations Total">Current Total (JG)</span>
       </div>
     </ng-template>
     <ng-template #showDonors>
       <div class="text-center jg-text-dark mt-1" style="line-height: 0.65em;">
-        <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ jgfpdnts?.donations.length }}</h6>
+        <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ donations?.length }}</h6>
         <span class="jg-text-dark" style="font-size: 0.65em;" title="JustGiving Donor Count">Number of Donors (JG)</span>
       </div>
     </ng-template>

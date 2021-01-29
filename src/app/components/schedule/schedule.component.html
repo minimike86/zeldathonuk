@@ -1,6 +1,6 @@
-<div class="d-flex flex-row">
+<div class="d-flex flex-row min-vh-100">
 
-  <div class="p-3" style="width: 25%;">
+  <div class="p-3 d-none d-lg-block" style="width: 25%;">
     <div class="d-flex flex-column">
 
       <div class="position-absolute">
@@ -23,9 +23,11 @@
             </div>
             <div class="d-flex justify-content-center p-3">
               <a href="https://www.specialeffect.org.uk/" target="_blank">
-                <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo"></a>
+                <img style="max-height: 50px;"
+                     src="../../../assets/img/logo-specialeffect.png"
+                     alt="SpecialEffect Logo"></a>
             </div>
-            <div class="text-light small">
+            <div class="text-light" style="font-size: 0.7em;">
               <a class="text-info" href="https://www.specialeffect.org.uk/" target="_blank">SpecialEffect</a> are a charity putting fun and inclusion
               back into the lives of people with physical disabilities
               by helping them play video games to the very best
@@ -53,17 +55,16 @@
         <div class="card bg-dark mb-2" style="width: 22rem;">
           <div class="card-header d-inline-block position-sticky">
             <div class="d-flex flex-column">
-              <span class="text-white-50">Facebook Fundraisers Page:</span>
-              <a class="text-light text-break small" href="https://www.facebook.com/donate/855003971855785/" target="_blank">https://www.facebook.com/donate/855003971855785/</a>
+              <span class="text-white-50" style="font-size: 0.8em;">Facebook Fundraisers Page:</span>
+              <a class="text-light text-break" style="font-size: 0.8em;" href="https://www.facebook.com/donate/855003971855785/" target="_blank">https://www.facebook.com/donate/855003971855785/</a>
             </div>
           </div>
         </div>
-
         <div class="card bg-dark" style="width: 22rem;">
           <div class="card-header d-inline-block position-sticky">
             <div class="d-flex flex-column">
-              <span class="text-white-50">JustGiving Page:</span>
-              <a class="text-light text-break small" href="https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec" target="_blank">https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec</a>
+              <span class="text-white-50" style="font-size: 0.8em;">JustGiving Page:</span>
+              <a class="text-light text-break" style="font-size: 0.8em;" href="https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec" target="_blank">https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec</a>
             </div>
           </div>
         </div>
@@ -73,7 +74,7 @@
     </div>
   </div>
 
-  <div class="container p-3" style="background-color: #606060;">
+  <div class="container p-3 min-vh-100" style="background-color: #606060;">
 
     <div class="py-2">
       <h3 class="text-white">Stream Schedule</h3>
@@ -83,18 +84,14 @@
         Check the dates and times below to see when (roughly) we will be playing your favourite titles so that you won't miss out!
       </p>
 
-      <div class="d-flex justify-content-between">
-
-        <div class="d-flex flex-column flex-fill">
-
-          <div class="table-responsive">
+      <div class="table-responsive">
             <table class="table table-hover table-striped table-dark" style="font-size: 14px;">
               <thead>
               <tr>
                 <th scope="col">Day</th>
                 <th scope="col">Time</th>
-                <th scope="col">Console</th>
-                <th scope="col">Timeline</th>
+                <th scope="col" class="d-none d-sm-block d-md-none">Console</th>
+                <th scope="col" class="d-none d-md-block d-lg-none">Timeline</th>
                 <th scope="col">Game</th>
                 <th scope="col">Runner(s)</th>
               </tr>
@@ -121,13 +118,13 @@
                   </div>
                 </td>
 
-                <td class="align-middle text-center">
+                <td class="align-middle text-center d-none d-sm-block d-md-none">
                   <div class="badge badge-pill badge-secondary p-2">
                     {{ game.console }}
                   </div>
                 </td>
 
-                <td class="align-middle text-center">
+                <td class="align-middle text-center d-none d-md-block d-lg-none">
                   <div class="badge badge-pill badge-light p-2">
                     {{ game.timeline }}
                   </div>
@@ -184,15 +181,11 @@
             </table>
           </div>
 
-        </div>
-
-      </div>
-
     </div>
 
   </div>
 
-  <div class="p-3" style="width: 25%">
+  <div class="p-3 d-none d-lg-block" style="width: 25%">
     <div class="position-absolute" style="margin-right: 2rem;">
       <div class="card bg-dark text-light small">
         <div class="text-center card card-header bg-dark text-light">

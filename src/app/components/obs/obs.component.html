@@ -1,256 +1,413 @@
-<app-navbar></app-navbar>
-<div class="container py-2" style="background: lightgrey;">
+<div class="d-flex justify-content-start min-vh-100 h-auto w-100" style="background: dimgrey;">
+  <div class="d-flex flex-column w-100">
+    <app-navbar></app-navbar>
+    <div class="flex-fill container py-2" style="background: lightgrey;">
 
-  <div class="">
-    <div class="d-flex justify-content-between">
-      <h1 class="text-dark pt-2">OBS Layouts</h1>
-      <button class="btn btn-sm btn-dark" (click)="toggleShowObsLayouts();">Show/Hide</button>
-    </div>
-    <div class="w-100" *ngIf="showObsLayouts">
-      <div class="card border-secondary layout-list">
-        <div class="card-header">Standard (4:3)</div>
-        <img class="card-img" src="../../../assets/img/obs-preview/standard-layout-preview.PNG">
-        <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/standard">Open</a></div>
-      </div>
-      <div class="card border-secondary layout-list">
-        <div class="card-header">Widescreen (16:9)</div>
-        <img class="card-img" src="../../../assets/img/obs-preview/widescreen-layout-preview.PNG">
-        <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/widescreen">Open</a></div>
-      </div>
-      <div class="card border-secondary layout-list">
-        <div class="card-header">3DS</div>
-        <img class="card-img" src="../../../assets/img/obs-preview/ds3-layout-preview.PNG">
-        <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/3ds">Open</a></div>
-      </div>
-      <div class="card border-secondary layout-list">
-        <div class="card-header">DS (Vertical)</div>
-        <img class="card-img" src="../../../assets/img/obs-preview/dsv-layout-preview.PNG">
-        <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/dsv">Open</a></div>
-      </div>
-      <div class="card border-secondary layout-list">
-        <div class="card-header">DS</div>
-        <img class="card-img" src="../../../assets/img/obs-preview/ds-layout-preview.PNG">
-        <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/ds">Open</a></div>
-      </div>
-      <div class="card border-secondary layout-list">
-        <div class="card-header">Audio Visualiser</div>
-        <img class="card-img" src="https://dm0qx8t0i9gc9.cloudfront.net/thumbnails/video/bOFlXnz/videoblocks-audio-spectrum-line-waveform-animation-on-alpha-channel-background_bcqs2uswx_thumbnail-1080_01.png">
-        <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/audio-countdown">Open</a></div>
-      </div>
-    </div>
-  </div>
-
-  <hr class="hr">
-
-  <div class="mb-3">
-    <div class="d-flex justify-content-between">
-      <h1 class="text-dark pt-2">Timer</h1>
-      <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();">Show/Hide</button>
-    </div>
-    <div class="d-flex flex-column" *ngIf="showTimer">
-      <div class="d-flex justify-content-start align-items-center mt-2">
-        <div class="d-flex align-items-center m-1 w-25">
-          <span class="timer-label ml-2">Time&nbsp;Played:</span>
+      <div class="">
+        <div class="d-flex justify-content-between">
+          <h3 class="text-dark pt-2">OBS Layouts</h3>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowObsLayouts();">Show/Hide</button>
         </div>
-        <div class="d-flex justify-content-start align-items-center w-50">
-          <h1 class="timer-text">{{ this.timer$ | async }}</h1>
-        </div>
-      </div>
-      <div class="m-3">
-        <button class="btn btn-success mx-1" (click)="start()">
-          {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'started'
-                                                      : countUpData[0].hasPaused === true ? 'resume + catchup'
-                                                      : countUpData[0].isStopped === true ? 'start' : '' }}
-        </button>
-        <button class="btn btn-warning mx-1" (click)="reset()">
-          {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'reset'
-                                                      : countUpData[0].hasPaused === true ? 'resume + reset'
-                                                      : countUpData[0].isStopped === true ? 'reset' : '' }}
-        </button>
-        <button class="btn btn-danger mx-1" (click)="stop()">
-          {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'pause'
-                                                      : countUpData[0].hasPaused === true ? 'stop'
-                                                      : countUpData[0].isStopped === true ? 'stopped' : '' }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <hr class="hr">
-
-  <div class="mb-3">
-    <div class="d-flex justify-content-between mb-3">
-      <div class="d-flex justify-content-start">
-        <h1 class="text-dark pt-2 mr-3">Runner Name</h1>
-        <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
-          <div class="d-flex flex-row">
-            <span class="small mr-2">Current Runner:</span>
-            <h6 class="m-0">{{ currentRunner !== undefined ? currentRunner.runnerName + ' (Twitch: ' + currentRunner.runnerHasTwitchAccount + ')' : 'fetching...' }}</h6>
+        <div class="w-100" *ngIf="showObsLayouts">
+          <div class="card border-secondary layout-list">
+            <div class="card-header">Standard (4:3)</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/standard-layout-preview.PNG">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/standard">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">Widescreen (16:9)</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/widescreen-layout-preview.PNG">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/widescreen">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">3DS</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/ds3-layout-preview.PNG">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/3ds">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">DS (Vertical)</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/dsv-layout-preview.PNG">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/dsv">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">DS</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/ds-layout-preview.PNG">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/ds">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">Audio Visualiser</div>
+            <img class="card-img" src="https://dm0qx8t0i9gc9.cloudfront.net/thumbnails/video/bOFlXnz/videoblocks-audio-spectrum-line-waveform-animation-on-alpha-channel-background_bcqs2uswx_thumbnail-1080_01.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/audio-countdown">Open</a></div>
           </div>
         </div>
       </div>
-      <button class="btn btn-sm btn-dark" (click)="toggleShowRunnerName();">Show/Hide</button>
-    </div>
-    <div class="d-flex" *ngIf="showRunnerName">
 
-      <div class="input-group input-group-lg">
+      <hr class="hr">
 
-        <div class="input-group input-group-lg mb-3">
-          <div class="input-group-prepend">
-            <div class="input-group-text">
-              <fa-icon [icon]="faTwitch" class="pr-3"></fa-icon>
-              <input style="width: 20px; height: 20px;"
-                     type="checkbox"
-                     title="Is this runner on twitch?" [(ngModel)]="runnerName.runnerHasTwitchAccount">
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <h3 class="text-dark pt-2">Timer</h3>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();">Show/Hide</button>
+        </div>
+        <div class="d-flex flex-column" *ngIf="showTimer">
+          <div class="d-flex justify-content-start align-items-center mt-2">
+            <div class="d-flex align-items-center m-1 w-25">
+              <span class="timer-label ml-2">Time&nbsp;Played:</span>
+            </div>
+            <div class="d-flex justify-content-start align-items-center w-50">
+              <h3 class="timer-text">{{ this.timer$ | async }}</h3>
             </div>
           </div>
-          <input type="text" class="form-control" [(ngModel)]="runnerName.runnerName">
-          <div class="input-group-append">
-            <button class="btn btn-primary btn-lg" (click)="updateRunner()">Change Runner</button>
-          </div>
-        </div>
-
-
-      </div>
-
-    </div>
-  </div>
-
-  <hr class="hr">
-
-  <div class="mb-3">
-    <div class="d-flex justify-content-between">
-      <h1 class="text-dark pt-2 mr-3">Add Donation</h1>
-      <button class="btn btn-sm btn-dark" (click)="toggleShowAddDonation();">Show/Hide</button>
-    </div>
-    <div class="d-flex justify-content-center" *ngIf="showAddDonation">
-      <form class="w-50">
-
-        <div class="form-group">
-          <label for="name">Name:</label>
-          <input id="name" name="name" type="text" placeholder="Name" class="form-control form-control-sm"
-                 [(ngModel)]="tempTrackedDonation.name">
-        </div>
-
-        <div class="form-group">
-          <label for="imgUrl">Image Url:</label>
-          <input id="imgUrl" name="imgUrl" type="text" placeholder="https://image.url/image.jpg" class="form-control form-control-sm"
-                 [(ngModel)]="tempTrackedDonation.imgUrl">
-        </div>
-
-        <div class="form-group">
-          <label for="message">Donation Message:</label>
-          <textarea id="message" name="message" placeholder="Donation Message" class="form-control form-control-sm"
-                    [(ngModel)]="tempTrackedDonation.message"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="currency">Currency:</label>
-          <select id="currency" name="currency" class="form-control form-control-sm"
-                  [(ngModel)]="tempTrackedDonation.currency">
-            <option [ngValue]="'GBP'" selected="selected">GBP</option>
-            <option [ngValue]="'EUR'">EUR</option>
-            <option [ngValue]="'USD'">USD</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="donationAmount">Donation Amount:</label>
-          <input id="donationAmount" name="donationAmount" type="number" value="0.00" class="form-control form-control-sm"
-                 [(ngModel)]="tempTrackedDonation.donationAmount">
-        </div>
-
-        <div class="form-group">
-          <label for="giftAidAmount">GiftAid Amount:</label>
-          <input id="giftAidAmount" name="giftAidAmount" type="number" value="0.00" class="form-control form-control-sm"
-                 [(ngModel)]="tempTrackedDonation.giftAidAmount">
-        </div>
-
-        <div class="form-group">
-          <label for="donationSource">Donation Source:</label>
-          <select id="donationSource" name="donationSource" class="form-control form-control-sm"
-                  [(ngModel)]="tempTrackedDonation.donationSource">
-            <option [ngValue]="'Facebook'" selected="selected">Facebook</option>
-            <option [ngValue]="'JustGiving'">JustGiving</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="donationDate">Date:</label>
-          <input id="donationDate" name="donationDate" type="date" class="form-control form-control-sm"
-                 [(ngModel)]="donationDate">
-        </div>
-
-        <div class="form-group">
-          <label for="donationTime">Time:</label>
-          <input id="donationTime" name="donationTime" type="time" class="form-control form-control-sm"
-                 [(ngModel)]="donationTime">
-        </div>
-
-        <div class="d-flex justify-content-center">
-          <button type="submit" class="btn btn-primary mb-2 mr-2 w-75" (click)="submitTrackedDonation()">Add Donation</button>
-          <button type="submit" class="btn btn-secondary mb-2 w-25" (click)="clearTrackedDonation()">Clear</button>
-        </div>
-
-      </form>
-    </div>
-  </div>
-
-  <hr class="hr">
-
-  <div class="mb-3">
-    <div class="d-flex justify-content-between">
-      <div class="d-flex justify-content-start">
-        <h1 class="text-dark pt-2 mr-3">Select Game</h1>
-        <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
-          <div class="d-flex flex-row">
-            <span class="small mr-2">Currently Playing:</span>
-            <h6 class="m-0">{{ gameLineUp !== undefined ? currentlyPlaying.index : 'fetching...' }}</h6>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-sm btn-dark" (click)="toggleShowGameSelect();">Show/Hide</button>
-    </div>
-    <div class="d-flex" *ngIf="showGameSelect">
-      <ng-container *ngFor="let game of gameLineUp | keyvalue">
-        <div class="card border-secondary layout-list" style="max-width: 110px;" *ngIf="game.value.active">
-          <div class="card-header small">{{ game.value.gameName }}</div>
-          <img class="card-img" style="max-height: 110px; max-width: 110px;" [src]="game.value.coverArt">
-          <div class="card-footer">
-            <button class="btn btn-sm btn-block"
-                    [disabled]="currentlyPlaying.index === game.key"
-                    [ngClass]="currentlyPlaying.index === game.key ? 'btn-success' : 'btn-danger'"
-                    (click)="onSwapGameClick(game)">
-              {{ game.value !== undefined && currentlyPlaying.index === game.key ? 'Playing' : 'Swap' }}
+          <div class="m-3">
+            <button class="btn btn-success mx-1" (click)="start()">
+              {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'started'
+                : countUpData[0].hasPaused === true ? 'resume + catchup'
+                    : countUpData[0].isStopped === true ? 'start' : '' }}
+            </button>
+            <button class="btn btn-warning mx-1" (click)="reset()">
+              {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'reset'
+                : countUpData[0].hasPaused === true ? 'resume + reset'
+                    : countUpData[0].isStopped === true ? 'reset' : '' }}
+            </button>
+            <button class="btn btn-danger mx-1" (click)="stop()">
+              {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'pause'
+                : countUpData[0].hasPaused === true ? 'stop'
+                    : countUpData[0].isStopped === true ? 'stopped' : '' }}
             </button>
           </div>
         </div>
-      </ng-container>
-    </div>
-  </div>
+      </div>
 
-  <hr class="hr">
+      <hr class="hr">
 
-  <div class="mb-5">
-    <div class="d-flex justify-content-between">
-      <div class="d-flex justify-content-start">
-        <h1 class="text-dark pt-2 mr-3">Track Game Items</h1>
-        <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
-          <div class="d-flex flex-row">
-            <span class="small mr-2">Currently Playing:</span>
-            <h6 class="m-0">{{ gameLineUp !== undefined ? gameLineUp.size !== 0 ? currentlyPlaying.index : 'No Games' : 'Fetching...' }}</h6>
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-3">
+          <div class="d-flex justify-content-start">
+            <h3 class="text-dark pt-2 mr-3">Runner Name</h3>
+            <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
+              <div class="d-flex flex-row">
+                <span class="small mr-2">Current Runner:</span>
+                <h6 class="m-0">{{ currentRunner !== undefined ? currentRunner.runnerName + ' (Twitch: ' + currentRunner.runnerHasTwitchAccount + ')' : 'fetching...' }}</h6>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowRunnerName();">Show/Hide</button>
+        </div>
+        <div class="d-flex" *ngIf="showRunnerName">
+
+          <div class="input-group input-group-lg">
+
+            <div class="input-group input-group-lg mb-3">
+              <div class="input-group-prepend">
+                <div class="input-group-text">
+                  <fa-icon [icon]="faTwitch" class="pr-3"></fa-icon>
+                  <input style="width: 20px; height: 20px;"
+                         type="checkbox"
+                         title="Is this runner on twitch?" [(ngModel)]="runnerName.runnerHasTwitchAccount">
+                </div>
+              </div>
+              <input type="text" class="form-control" [(ngModel)]="runnerName.runnerName">
+              <div class="input-group-append">
+                <button class="btn btn-primary btn-lg" (click)="updateRunner()">Change Runner</button>
+              </div>
+            </div>
+
+
+          </div>
+
+        </div>
+      </div>
+
+      <hr class="hr">
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <h3 class="text-dark pt-2 mr-3">Add Donation</h3>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowAddDonation();">Show/Hide</button>
+        </div>
+        <div class="d-flex justify-content-center" *ngIf="showAddDonation">
+          <form class="w-50">
+
+            <div class="form-group mb-1">
+              <label class="small mb-0" for="donationId">ID:</label>
+              <input id="donationId" name="donationId" type="text" placeholder="Donation Id"
+                     class="form-control form-control-sm"
+                     disabled="true"
+                     [(ngModel)]="tempTrackedDonation.id">
+            </div>
+
+            <div class="form-group mb-1">
+              <label class="small mb-0" for="name">Name:</label>
+              <input id="name" name="name" type="text" placeholder="Name" class="form-control form-control-sm"
+                     [(ngModel)]="tempTrackedDonation.name">
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <div class="flex-grow-1">
+                <div class="form-group mb-1">
+                    <label class="small mb-0" for="imgUrl">Image Url:</label>
+                    <input id="imgUrl" name="imgUrl" type="text" placeholder="https://image.url/image.jpg" class="form-control form-control-sm"
+                           [(ngModel)]="tempTrackedDonation.imgUrl">
+                </div>
+              </div>
+              <div class="ml-2">
+                <img class="img-thumbnail" style="max-height: 4em;" [src]="tempTrackedDonation.imgUrl">
+              </div>
+            </div>
+
+            <div class="form-group mb-1">
+              <label class="small mb-0" for="message">Donation Message:</label>
+              <textarea id="message" name="message" placeholder="Donation Message" class="form-control form-control-sm"
+                        [(ngModel)]="tempTrackedDonation.message"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between">
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="currency">Currency:</label>
+                <select id="currency" name="currency" class="form-control form-control-sm"
+                        [(ngModel)]="tempTrackedDonation.currency">
+                  <option [ngValue]="'GBP'" selected="selected">GBP</option>
+                  <option [ngValue]="'EUR'">EUR</option>
+                  <option [ngValue]="'USD'">USD</option>
+                </select>
+              </div>
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="donationAmount">Donation Amount:</label>
+                <input id="donationAmount" name="donationAmount" type="number" value="0.00" class="form-control form-control-sm"
+                       [(ngModel)]="tempTrackedDonation.donationAmount">
+              </div>
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="giftAidAmount">GiftAid Amount:</label>
+                <input id="giftAidAmount" name="giftAidAmount" type="number" value="0.00" class="form-control form-control-sm"
+                       [(ngModel)]="tempTrackedDonation.giftAidAmount">
+              </div>
+
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="donationSource">Donation Source:</label>
+                <select id="donationSource" name="donationSource" class="form-control form-control-sm"
+                        [(ngModel)]="tempTrackedDonation.donationSource">
+                  <option [ngValue]="'Facebook'" selected="selected">Facebook</option>
+                  <option [ngValue]="'JustGiving'">JustGiving</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="d-flex justify-content-between">
+
+              <div class="form-group w-50">
+                <label class="small mb-0" for="donationDate">Date:</label>
+                <input id="donationDate" name="donationDate" type="date" class="form-control form-control-sm"
+                       [(ngModel)]="donationDate">
+              </div>
+
+              <div class="form-group w-50 ml-2">
+                <label class="small mb-0" for="donationTime">Time:</label>
+                <input id="donationTime" name="donationTime" type="time" class="form-control form-control-sm"
+                       [(ngModel)]="donationTime">
+              </div>
+
+            </div>
+
+            <div class="d-flex justify-content-center">
+              <button type="submit" class="btn btn-secondary mb-2 w-25" (click)="clearTrackedDonation()">Clear</button>
+              <button type="submit" class="btn btn-primary mb-2 ml-2 w-75" (click)="submitTrackedDonation()">Add Donation</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <hr class="hr">
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <div class="d-flex justify-content-start">
+            <h3 class="text-dark pt-2 mr-3">Select Game</h3>
+            <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
+              <div class="d-flex flex-row">
+                <span class="small mr-2">Currently Playing:</span>
+                <h6 class="m-0">{{ gameLineUp !== undefined ? currentlyPlaying.index : 'fetching...' }}</h6>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowGameSelect();">Show/Hide</button>
+        </div>
+        <div class="" *ngIf="showGameSelect">
+          <ng-container *ngFor="let game of sortedGameLineUp; let i = index">
+            <div class="card border-secondary layout-list" style="max-width: 19%;" *ngIf="game.active">
+              <div class="card-header d-flex justify-content-between">
+                <div class="mr-2 d-flex align-self-center" style="max-height: 2.4em; max-width: 2em;">
+                  <img class="card-img" [src]="game.coverArt">
+                </div>
+                <div class="text-truncate" style="max-height: 100px;">
+                  <span class="text-wrap small">{{ game.gameName.replace('The Legend of Zelda:', 'LOZ: ') }}</span>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button class="btn btn-sm btn-block"
+                        [disabled]="currentlyPlaying.index === game.gameProgressKey"
+                        [ngClass]="currentlyPlaying.index === game.gameProgressKey ? 'btn-success' : 'btn-danger'"
+                        (click)="onSwapGameClick(game)">
+                  {{ game !== undefined && currentlyPlaying.index === game.gameProgressKey ? 'Playing' : 'Swap' }}
+                </button>
+              </div>
+            </div>
+          </ng-container>
+          <div class="card border-secondary layout-list" style="max-width: 19%;">
+            <div class="card-header d-flex justify-content-between">
+              <h1>+</h1>
+              <div class="d-flex align-self-center">
+                <span class="small">Add Game</span>
+              </div>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-sm btn-block btn-primary"
+                      (click)="onOpenAddGameModalClick()">
+                Add Game
+              </button>
+            </div>
           </div>
         </div>
       </div>
-      <button class="btn btn-sm btn-dark" (click)="toggleShowGameTracking();">Show/Hide</button>
+
+      <hr class="hr">
+
+      <div class="mb-5">
+        <div class="d-flex justify-content-between">
+          <div class="d-flex justify-content-start">
+            <h3 class="text-dark pt-2 mr-3">Track Game Items</h3>
+            <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
+              <div class="d-flex flex-row">
+                <span class="small mr-2">Currently Playing:</span>
+                <h6 class="m-0">{{ gameLineUp !== undefined ? gameLineUp.size !== 0 ? currentlyPlaying.index : 'No Games' : 'Fetching...' }}</h6>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowGameTracking();">Show/Hide</button>
+        </div>
+        <div class="d-flex" *ngIf="showGameTracking">
+          <app-game-tracking></app-game-tracking>
+        </div>
+      </div>
+
     </div>
-    <div class="d-flex" *ngIf="showGameTracking">
-      <app-game-tracking></app-game-tracking>
+    <app-footer></app-footer>
+  </div>
+</div>
+
+<ng-template #addGameModalDialog>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Add Game</h5>
+      <button type="button" class="close" aria-label="Close" (click)="addGameModal.dismiss('Cross click')">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="d-flex justify-content-center">
+        <form class="w-50">
+
+          <div class="form-group">
+            <label for="tempAddGameKey">Key:</label>
+            <input id="tempAddGameKey" name="tempAddGameKey" type="text"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGameKey">
+          </div>
+
+          <div class="form-group">
+            <label for="active">Active:</label>
+            <select id="active" name="active" class="form-control form-control-sm"
+                    [(ngModel)]="tempAddGame.active">
+              <option [ngValue]="true" selected="selected">true</option>
+              <option [ngValue]="false">false</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="coverArt">Image Url:</label>
+            <input id="coverArt" name="coverArt" type="text"
+                   placeholder="https://image.url/image.jpg"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGame.coverArt">
+          </div>
+
+          <div class="form-group">
+            <label for="gameEstimate">Game Estimate:</label>
+            <input id="gameEstimate" name="gameEstimate" type="text"
+                   placeholder="00:00:00"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGame.gameEstimate">
+          </div>
+
+          <div class="form-group">
+            <label for="gameName">Game Name:</label>
+            <input id="gameName" name="gameName" type="text"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGame.gameName">
+          </div>
+
+          <div class="form-group">
+            <label for="gamePlatform">Game Platform:</label>
+            <select id="gamePlatform" name="gamePlatform"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="tempAddGame.gamePlatform">
+              <option [ngValue]="'NES'" selected="selected">NES</option>
+              <option [ngValue]="'SNES'">SNES</option>
+              <option [ngValue]="'N64'">N64</option>
+              <option [ngValue]="'GC'">GC</option>
+              <option [ngValue]="'Wii'">Wii</option>
+              <option [ngValue]="'WiiU'">WiiU</option>
+              <option [ngValue]="'Switch'">Switch</option>
+              <option [ngValue]="'GB'">GB</option>
+              <option [ngValue]="'GBC'">GBC</option>
+              <option [ngValue]="'GBA'">GBA</option>
+              <option [ngValue]="'DS'">DS</option>
+              <option [ngValue]="'3DS'">3DS</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="gameProgressKey">Game Progress Key:</label>
+            <input id="gameProgressKey" name="gameProgressKey"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGame.gameProgressKey">
+          </div>
+
+          <div class="form-group">
+            <label for="gameRelYear">Game Release Year:</label>
+            <input id="gameRelYear" name="gameRelYear"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGame.gameRelYear">
+          </div>
+
+          <div class="form-group">
+            <label for="gameType">Game Type:</label>
+            <input id="gameType" name="gameType"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGame.gameType">
+          </div>
+
+          <div class="form-group">
+            <label for="order">Order:</label>
+            <input id="order" name="order" type="number"
+                   class="form-control form-control-sm"
+                   [(ngModel)]="tempAddGame.order">
+          </div>
+
+        </form>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="addGameModal.close('Cancel click')">Cancel</button>
+      <button type="submit" class="btn btn-secondary" (click)="clearAddGame()">Clear</button>
+      <button type="submit" class="btn btn-primary" (click)="submitAddGame()">Add Game</button>
     </div>
   </div>
-
-</div>
-<app-footer></app-footer>
+</ng-template>
 
 <ng-template #yesNoModalDialog>
   <div class="modal-content">
@@ -272,7 +429,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="yesNoModal.close('Cancel click')">Cancel</button>
-      <button type="button" class="btn btn-primary" (click)="swapModalBtn()">Swap Game</button>
+      <button type="button" class="btn btn-primary" (click)="swapGameModalBtn()">Swap Game</button>
     </div>
   </div>
 </ng-template>

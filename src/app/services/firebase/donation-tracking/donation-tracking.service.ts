@@ -3,39 +3,106 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import firebase from 'firebase/app';
+import FieldValue = firebase.firestore.FieldValue;
+import Timestamp = firebase.firestore.Timestamp;
+import {AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument} from '@angular/fire/firestore';
 
-import { TrackedDonation, TrackedDonationId } from './tracked-donation';
+import {JgService} from '../../jg-service/jg-service.service';
+import {JustGivingDonation} from '../../jg-service/fundraising-page';
+
+import {FacebookDonation} from '../../zeldathon-backend-service/zeldathon-backend-service.service';
+import {sha256} from 'js-sha256';
+
+import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from './tracked-donation';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class DonationTrackingService {
-  private trackedDonationCollection: AngularFirestoreCollection<TrackedDonation>;
-  private trackedDonationIds: TrackedDonationId[];
+  private trackedDonationCollection: AngularFirestoreCollection<TrackedDonationArray>;
+  private trackedDonationDoc: AngularFirestoreDocument<TrackedDonationArray>;
+  private trackedDonationArray: TrackedDonationId[];
+  private trackedDonations: TrackedDonation[];
 
-  constructor( private db: AngularFirestore ) {
-    this.trackedDonationCollection = db.collection<TrackedDonation>('/donations');
-    this.getTrackedDonationIds().subscribe( data => {
-      this.trackedDonationIds = data;
+  constructor( private jgService: JgService,
+               private db: AngularFirestore ) {
+    this.trackedDonationCollection = db.collection<TrackedDonationArray>('/donations');
+    this.trackedDonationDoc = this.trackedDonationCollection.doc('DONATIONS');
+    this.getTrackedDonationArray().subscribe( data => {
+      this.trackedDonationArray = data;
+      this.trackedDonations = data[0].donations;
     });
   }
 
-  getTrackedDonationIds(): Observable<TrackedDonationId[]> {
+  getTrackedDonationArray(): Observable<TrackedDonationId[]> {
     return this.trackedDonationCollection.snapshotChanges().pipe(
       map(actions => actions.map(a => {
         const id = a.payload.doc.id;
-        const data = a.payload.doc.data() as TrackedDonation;
-        data.imgUrl = 'https://static-cdn.jtvnw.net/jtv_user_pictures/7461067d-af56-4607-8631-283725e3d010-profile_image-300x300.png';
+        const data = a.payload.doc.data() as TrackedDonationArray;
         return { id, ...data };
       }))
     );
   }
 
-  addTrackedDonation(trackedDonation: TrackedDonation): void {
+  addTrackedDonation(trackedDonation: TrackedDonation[]): void {
     console.log('addTrackedDonation: ', trackedDonation);
-    this.trackedDonationCollection.add(trackedDonation).then();
+    this.trackedDonationDoc.ref.update({
+      donations: FieldValue.arrayUnion(...trackedDonation)
+    }).then(() => {
+      console.log('Document successfully written!');
+    });
+  }
+
+  removeTrackedDonation(trackedDonation: TrackedDonation[]): void {
+    console.log('removeTrackedDonation: ', trackedDonation);
+    this.trackedDonationDoc.ref.update({
+      donations: FieldValue.arrayRemove(...trackedDonation)
+    }).then(() => {
+      console.log('Document successfully written!');
+    });
+  }
+
+  convertJustGivingDonationToTrackedDonation(donation: JustGivingDonation): TrackedDonation {
+    return {
+      id: donation.id !== undefined ? donation.id : 'undefined',
+      name: (donation.donorDisplayName !== null && donation.donorDisplayName !== undefined
+        && donation.donorDisplayName.length >= 1) ? donation.donorDisplayName
+        : (donation.donorRealName !== null && donation.donorRealName !== undefined
+          && donation.donorRealName.length >= 1) ? donation.donorRealName
+          : 'Anonymous',
+      imgUrl: (donation.image !== undefined && donation.image !== null
+        && donation.image !== 'https://www.justgiving.com/content/images/graphics/icons/avatars/facebook-avatar.gif')
+        ? donation.image : 'undefined',
+      message: donation.message !== undefined ? donation.message : '',
+      currency: donation.currencyCode,
+      donationAmount: typeof(donation.amount) === 'string'
+        ? parseFloat(donation.amount) : donation.amount,
+      giftAidAmount: typeof(donation.estimatedTaxReclaim) === 'string'
+        ? parseFloat(donation.estimatedTaxReclaim) : 0,
+      donationSource: 'JustGiving',
+      donationDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(donation.donationDate))
+    };
+  }
+
+  convertFacebookDonationToTrackedDonation(donation: FacebookDonation): TrackedDonation {
+    return {
+      id: sha256(donation.name + donation.amount + donation.date),
+      name: (donation.name !== null && donation.name !== undefined) ? donation.name : donation.name,
+      imgUrl: donation.imgDataUri !== undefined ? donation.imgDataUri : 'undefined',
+      message: '',
+      currency: donation.currency,
+      donationAmount: typeof(donation.amount) === 'string'
+        ? parseFloat(donation.amount) : donation.amount,
+      giftAidAmount: 0,
+      donationSource: 'Facebook',
+      donationDate: Timestamp.fromDate(new Date(donation.date))
+    };
+  }
+
+  trackedDonationExists(donation: TrackedDonation): boolean {
+    return this.trackedDonations?.filter(x => x.id === donation.id).length >= 1;
   }
 
 }

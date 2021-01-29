@@ -1,6 +1,6 @@
 .camera-panel {
   height: 350px;
   width: 100%;
-  background-color: #28a745;
-  border-bottom: 2px solid rgb(9, 98, 224);
+  background-color: transparent;
+  border-bottom: 2px solid darkgoldenrod;
 }

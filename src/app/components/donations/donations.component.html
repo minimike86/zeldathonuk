@@ -1,6 +1,6 @@
-<div class="d-flex flex-row h-100">
+<div class="d-flex flex-row min-vh-100">
 
-  <div class="p-3">
+  <div class="p-3 d-none d-xl-block">
     <div class="d-flex flex-column">
 
       <div class="text-center card bg-dark d-inline-block position-sticky mb-3" style="width: 22rem;">
@@ -14,9 +14,11 @@
           </div>
           <div class="d-flex justify-content-center p-3">
             <a href="https://www.specialeffect.org.uk/" target="_blank">
-              <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo"></a>
+              <img style="max-height: 50px;"
+                   src="../../../assets/img/logo-specialeffect.png"
+                   alt="SpecialEffect Logo"></a>
           </div>
-          <div class="text-light small">
+          <div class="text-light" style="font-size: 0.7em;">
             <a class="text-info" href="https://www.specialeffect.org.uk/" target="_blank">SpecialEffect</a> are a charity putting fun and inclusion
             back into the lives of people with physical disabilities
             by helping them play video games to the very best
@@ -44,16 +46,16 @@
       <div class="card bg-dark mb-2" style="width: 22rem;">
         <div class="card-header d-inline-block position-sticky">
           <div class="d-flex flex-column">
-            <span class="text-white-50">Facebook Fundraisers Page:</span>
-            <a class="text-light text-break small" href="https://www.facebook.com/donate/855003971855785/" target="_blank">https://www.facebook.com/donate/855003971855785/</a>
+            <span class="text-white-50" style="font-size: 0.8em;">Facebook Fundraisers Page:</span>
+            <a class="text-light text-break" style="font-size: 0.8em;" href="https://www.facebook.com/donate/855003971855785/" target="_blank">https://www.facebook.com/donate/855003971855785/</a>
           </div>
         </div>
       </div>
       <div class="card bg-dark" style="width: 22rem;">
         <div class="card-header d-inline-block position-sticky">
           <div class="d-flex flex-column">
-            <span class="text-white-50">JustGiving Page:</span>
-            <a class="text-light text-break small" href="https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec" target="_blank">https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec</a>
+            <span class="text-white-50" style="font-size: 0.8em;">JustGiving Page:</span>
+            <a class="text-light text-break" style="font-size: 0.8em;" href="https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec" target="_blank">https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec</a>
           </div>
         </div>
       </div>
@@ -61,10 +63,10 @@
     </div>
   </div>
 
-  <div class="container p-3 h-100" style="background-color: #606060;">
+  <div class="container donation-list-container p-3">
 
-    <div class="h-100">
-      <h3 class="text-white mb-3">Thank you to all our generous donors!</h3>
+    <div class="">
+      <h3 class="text-white mb-3">Thank you to all our donors!</h3>
       <p class="text-light">
         On behalf of everyone in the ZeldathonUK team we would like to thank all of the donors below for their generous donations:
       </p>
@@ -78,39 +80,45 @@
       <ng-container *ngIf="(trackedDonationIds$ | async) as tds">
 
         <ng-template [ngIf]="tds.length >= 1">
-          <div>
-            <div class="d-inline-block donor-list" *ngFor="let donation of tds">
+          <div class="card-columns min-vh-100">
+            <div class="card donor-list mb-2" *ngFor="let donation of tds">
 
-              <div class="d-flex flex-column text-white donation">
+              <div class="d-flex flex-column donation" [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' : 'justgiving-donation'">
 
                 <div class="d-flex justify-content-between">
-                  <div class="w-25">
-                    <img class="ml-2 mr-4 w-75"
-                         [src]="donation.imgUrl && donation.imgUrl !== '' ? donation.imgUrl : 'https://static-cdn.jtvnw.net/jtv_user_pictures/7461067d-af56-4607-8631-283725e3d010-profile_image-300x300.png'"
-                         [alt]="donation.name"
-                         [title]="donation.name">
-                  </div>
-                  <div class="">
-                    <div class="d-flex justify-content-between w-100">
-                      <h4 class="mb-0 pr-3 flex-grow-1" style="word-break: break-word;">{{ donation.name }}</h4>
-                      <div class="align-self-center">
-                        <span class="small font-weight-bold text-white">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
-                      </div>
+                  <div class="d-flex justify-content-start">
+                    <div class="d-flex align-self-center">
+                      <img class="donation-img"
+                           [src]="donation.imgUrl"
+                           [alt]="donation.name"
+                           [title]="donation.name">
+                    </div>
+                    <div class="d-flex align-self-start ml-2">
+                      <h5 class="mb-0" style="word-break: break-word;">{{ donation.name }}</h5>
                     </div>
                   </div>
                 </div>
 
-                <div class="">
-                  <div class="">
-                    {{ donation.message.length >= 1 ? donation.message : 'No Message' }}
-                  </div>
-                  <div class="d-flex flex-row justify-content-between">
-                    <h3>{{ donation.donationAmount | currency:donation.currency }}</h3>
-                    <div class="badge badge-pill badge-success align-self-center" *ngIf="donation.giftAidAmount">
+                <div class="my-2 small" *ngIf="donation.message.length >= 1">
+                  <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.2em;">&ldquo;</span>
+                  <i class="px-1" style="font-size: 1.2em; font-family: 'Poppins', sans-serif;">{{ donation.message.length >= 1 ? donation.message : '-' }}</i>
+                  <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.7em;">&rdquo;</span>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                  <div class="d-flex align-self-end">
+                    <div class="badge badge-pill badge-success" *ngIf="donation.giftAidAmount">
                       <a href="https://www.gov.uk/donating-to-charity/gift-aid" target="_blank" class="text-white"
                          title="Gift Aid declaration made for the charity to claim additional 25% of donation">GiftAid</a>: {{ donation.giftAidAmount | currency:donation.currency }}
                     </div>
                   </div>
+                  <div class="">
+                    <h3 class="mb-0">{{ donation.donationAmount | currency:donation.currency }}</h3>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                  <span class="text-white-50" style="font-size: 9px;">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
                 </div>
 
               </div>
@@ -150,129 +158,122 @@
 
   </div>
 
-  <div class="p-3">
-    <div class="card bg-dark" style="width: 30rem;">
+  <div class="p-3 d-none d-xl-block">
+    <div class="card bg-dark" style="width: 22rem;">
       <div class="text-center card card-header bg-dark text-light">
         <h5 class="card-title mb-0">What will your donation do?</h5>
       </div>
-      <div class="text-center card card-body bg-dark">
-        <div class="text-light small mb-3">
+      <div class="text-center card card-body bg-dark small">
+        <div class="text-light mb-3">
           All of <a class="text-info" href="https://www.specialeffect.org.uk/" target="_blank">SpecialEffect</a>'s services are provided <span class="text-warning">free of charge</span>, so they rely entirely on your generosity to keep on transforming lives.
         </div>
-        <table class="table table-hover table-striped table-dark small">
+        <table class="table table-hover table-striped table-dark small mb-0">
           <tbody>
           <tr>
-            <td class="pt-3">
+            <td style="vertical-align: middle;">
               <div class="donation-benefit-amount">
                 &pound;5
               </div>
             </td>
-            <td>
-              <img src="https://static.dezeen.com/uploads/2018/05/xbox-controller-technology-games-design_dezeen_2364_col_23.jpg"
-                   alt="Flexible Fixings" style="max-width: 75px; max-height: 75px;">
+            <td style="vertical-align: middle;">
+              <img class="donation-benefit-img"
+                   src="https://static.dezeen.com/uploads/2018/05/xbox-controller-technology-games-design_dezeen_2364_col_23.jpg"
+                   alt="Flexible Fixings">
             </td>
-            <td>
-              <div class="d-flex justify-content-between">
-                <span class="align-self-center">Can buy flexible fixings to enable a correct and firm hold of controller, joystick or button for safe and comfortable use.</span>
-              </div>
+            <td style="vertical-align: middle;">
+              <span class="donation-benefit-desc">Can buy flexible fixings to enable a correct and firm hold of controller, joystick or button for safe and comfortable use.</span>
             </td>
           </tr>
           <tr>
-            <td class="pt-3">
+            <td style="vertical-align: middle;">
               <div class="donation-benefit-amount">
                 &pound;10
               </div>
             </td>
-            <td>
-              <img src="https://hedaroart.files.wordpress.com/2016/05/infinity4ps-thumbstick-heights.jpg?w=428&h=161"
-                   alt="Joystick Extensions" class="pt-3" style="max-width: 75px; max-height: 100px;">
+            <td style="vertical-align: middle;">
+              <img class="donation-benefit-img"
+                   src="https://hedaroart.files.wordpress.com/2016/05/infinity4ps-thumbstick-heights.jpg?w=428&h=161"
+                   alt="Joystick Extensions">
             </td>
-            <td>
-              <div class="d-flex justify-content-between">
-                <span class="align-self-center">Could purchase joystick extensions, to potentially enable greater control of a thumbstick, with its increased leverage.</span>
-              </div>
+            <td style="vertical-align: middle;">
+              <span class="donation-benefit-desc">Could purchase joystick extensions, to potentially enable greater control of a thumbstick, with its increased leverage.</span>
             </td>
           </tr>
           <tr>
-            <td class="pt-3">
+            <td style="vertical-align: middle;">
               <div class="donation-benefit-amount">
                 &pound;25
               </div>
             </td>
-            <td>
-              <img src="https://www.specialeffect.org.uk/images/sasha_1000.jpg"
-                   alt="Deliver Adaptive Gaming Setup" class="pt-3" style="max-width: 75px; max-height: 75px;">
+            <td style="vertical-align: middle;">
+              <img class="donation-benefit-img"
+                   src="https://www.specialeffect.org.uk/images/sasha_1000.jpg"
+                   alt="Deliver Adaptive Gaming Setup">
             </td>
-            <td>
-              <div class="d-flex justify-content-between">
-                <span class="align-self-center">Will enable us to deliver an adapted gaming setup quickly and directly to someone who needs it.</span>
-              </div>
+            <td style="vertical-align: middle;">
+              <span class="donation-benefit-desc">Will enable us to deliver an adapted gaming setup quickly and directly to someone who needs it.</span>
             </td>
           </tr>
           <tr>
-            <td class="pt-3">
+            <td style="vertical-align: middle;">
               <div class="donation-benefit-amount">
                 &pound;50
               </div>
             </td>
-            <td>
-              <img src="http://permobilus.com/wp-content/uploads/2016/11/2_ALT_MiniJoystick-min.jpg"
-                   alt="Low Force Joysticks" class="pt-3" style="max-width: 75px; max-height: 75px;">
+            <td style="vertical-align: middle;">
+              <img class="donation-benefit-img"
+                   src="http://permobilus.com/wp-content/uploads/2016/11/2_ALT_MiniJoystick-min.jpg"
+                   alt="Low Force Joysticks">
             </td>
-            <td>
-              <div class="d-flex justify-content-between">
-                <span class="align-self-center">Will buy a gamepad to be modified in the workshop with low force joysticks and buttons for a gamer with weak hand muscles to use.</span>
-              </div>
+            <td style="vertical-align: middle;">
+              <span class="donation-benefit-desc">Will buy a gamepad to be modified in the workshop with low force joysticks and buttons for a gamer with weak hand muscles to use.</span>
             </td>
           </tr>
           <tr>
-            <td class="pt-3">
+            <td style="vertical-align: middle;">
               <div class="donation-benefit-amount">
                 &pound;75
               </div>
             </td>
-            <td>
-              <img src="https://compass-ssl.xbox.com/assets/3f/2c/3f2cd0bf-3b0e-402d-9c59-a8fdbd73ff47.png?n=Xbox-Accessibility_Image-0_Adaptive-Controller_1600x658.png"
-                   alt="Xbox Adaptive Controller" class="pt-3" style="max-width: 75px; max-height: 75px;">
+            <td style="vertical-align: middle;">
+              <img class="donation-benefit-img"
+                   src="https://compass-ssl.xbox.com/assets/3f/2c/3f2cd0bf-3b0e-402d-9c59-a8fdbd73ff47.png?n=Xbox-Accessibility_Image-0_Adaptive-Controller_1600x658.png"
+                   alt="Xbox Adaptive Controller">
             </td>
-            <td>
-              <div class="d-flex justify-content-between">
-                <span class="align-self-center">Will buy an interface box like an
-                  <a class="text-info" href="https://www.xbox.com/en-GB/accessories/controllers/xbox-adaptive-controller" target="_blank">Xbox Adaptive Controller</a>
-                  for use as part of a gaming setup.</span>
-              </div>
+            <td style="vertical-align: middle;">
+              <span class="donation-benefit-desc">Will buy an interface box like an
+                <a class="text-info" href="https://www.xbox.com/en-GB/accessories/controllers/xbox-adaptive-controller" target="_blank">Xbox Adaptive Controller</a>
+                for use as part of a gaming setup.</span>
             </td>
           </tr>
           <tr>
-            <td class="pt-3">
+            <td style="vertical-align: middle;">
               <div class="donation-benefit-amount">
                 &pound;100
               </div>
             </td>
-            <td>
-              <img src="https://i1.wp.com/meru.org.uk/wp-content/uploads/2019/08/mounted-to-chair-in-use.jpg?fit=1184%2C888&ssl=1"
-                   alt="Mounting System" class="pt-3" style="max-width: 75px; max-height: 75px;">
+            <td style="vertical-align: middle;">
+              <img class="donation-benefit-img"
+                   src="https://i1.wp.com/meru.org.uk/wp-content/uploads/2019/08/mounted-to-chair-in-use.jpg?fit=1184%2C888&ssl=1"
+                   alt="Mounting System">
             </td>
-            <td>
-              <div class="d-flex justify-content-between">
-                <span class="align-self-center">Can enable us to buy a mounting system which will hold a joystick and position it for optimum use by a gamer to control it.</span>
-              </div>
+            <td style="vertical-align: middle;">
+              <span class="donation-benefit-desc">Can enable us to buy a mounting system which will hold a joystick and position it for optimum use by a gamer to control it.</span>
             </td>
           </tr>
           <tr>
-            <td class="pt-3">
+            <td style="vertical-align: middle;">
               <div class="donation-benefit-amount">
                 &pound;200
               </div>
             </td>
-            <td>
-              <img src="https://www.evilcontrollers.com/media/pages/gaming/img_01.jpg"
-                   alt="Single Handed Controller" class="pt-3" style="max-width: 75px; max-height: 75px;">
+            <td style="vertical-align: middle;">
+              <img class="donation-benefit-img"
+                   src="https://www.evilcontrollers.com/media/pages/gaming/img_01.jpg"
+                   alt="Single Handed Controller">
             </td>
-            <td>
-              <div class="d-flex justify-content-between">
-                <span class="align-self-center">Could buy a single handed controller to enable a disabled gamer to play with just one hand.</span>
-              </div>
+            <td style="vertical-align: middle;">
+              <span class="donation-benefit-desc">Could buy a single handed controller to enable a disabled gamer to play with just one hand.</span>
             </td>
           </tr>
           </tbody>

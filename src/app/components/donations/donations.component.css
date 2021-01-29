@@ -1,6 +1,15 @@
 .donation-benefit-amount {
   font-family: 'Bebas Neue', cursive;
-  font-size: 44px;
+  font-size: 40px;
+}
+
+.donation-benefit-img{
+  max-width: 100%;
+  max-height: 5em;
+}
+
+.donation-benefit-desc {
+  font-size: 0.9em;
 }
 
 .btn-justgiving {
@@ -37,11 +46,6 @@
   box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
 }
 
-
-
-
-
-
 .btnfacebook {
   color: #fff;
   background-color: #3b5998;
@@ -76,64 +80,114 @@
   box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
 }
 
+.donation-list-container {
+  background-color: #606060;
+  height: auto;
+}
+
+.card {
+  background-color: #606060;
+}
+
+.donation {
+  color: white;
+  border-radius: 0.25rem;
+  padding: 8px 8px 4px 8px;
+  width: 100%;
+}
+
+.donation-img {
+  padding: 1px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  height: 3em;
+  max-height: 3em;
+  max-width: 3em;
+}
+
+.facebook-donation {
+  position: relative;
+  z-index:1;
+  overflow:hidden;
+  background-color: #3b5998;
+  border: #344e86 solid 2px;
+}
+
+.facebook-donation::before {
+  z-index:-1;
+  position:absolute;
+  left: 0;
+  top: 0;
+  content: url("../../../assets/img/thumb_icon_header_image_05_2018.png");
+  transform: scale(.25) translateX(-50%) translateY(-135%);
+  opacity: 0.2;
+}
+
+.justgiving-donation {
+  position: relative;
+  z-index:1;
+  overflow:hidden;
+  background-color: #932aa1;
+  border: #6e2079 solid 2px;
+}
+
+.justgiving-donation::before {
+  z-index:-1;
+  position:absolute;
+  left: 0;
+  top: 0;
+  content: url("../../../assets/img/JustGiving_Logo-cropped.png");
+  transform: scale(.5) translateX(-40%) translateY(50%);
+  opacity: 0.4;
+}
+
+
 /* Extra small devices (portrait phones, less than 576px) */
 @media (max-width: 575.98px) {
-  .donor-list {
-    width: 100%;
+  .card-columns {
+    column-count: 1;
   }
 }
 /* Small devices (landscape phones, 576px and up) */
 @media (min-width: 576px) and (max-width: 767.98px) {
-  .donor-list {
-    width: 100%;
+  .card-columns {
+    column-count: 1;
   }
 }
 /* Medium devices (tablets, 768px and up) */
 @media (min-width: 768px) and (max-width: 991.98px) {
-  .donor-list {
-    width: 100%;
+  .card-columns {
+    column-count: 2;
   }
 }
 /* Large devices (desktops, 992px and up) */
 @media (min-width: 992px) and (max-width: 1199.98px) {
-  .donor-list {
-    width: 50%;
+  .card-columns {
+    column-count: 3;
   }
 }
 /* Extra large devices (large desktops, 1200px and up) */
-@media (min-width: 1200px) {
-  .donor-list {
-    width: 33%;
+@media (min-width: 1200px) and (max-width: 1299.98px) {
+  .card-columns {
+    column-count: 1;
   }
 }
-
-.donation {
-  background: linear-gradient(-45deg, #15a6d3, rgba(140, 140, 255, 1), goldenrod);
-  background-size: 400% 400%;
-  border: lightslategrey solid 2px;
-  border-radius: 1em;
-  padding: 1em;
-  width: 95%;
-  margin-right: 1em;
-  margin-bottom: 1em;
-
-  -webkit-animation: DonationBgColorWave 5s ease infinite;
-  -moz-animation: DonationBgColorWave 5s ease infinite;
-  animation: DonationBgColorWave 5s ease infinite;
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1300px) and (max-width: 1399.98px) {
+  .card-columns {
+    column-count: 2;
+  }
 }
-
-@-webkit-keyframes DonationBgColorWave {
-  0%{background-position:0 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0 50%}
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1400px) and (max-width: 1699.98px) {
+  .card-columns {
+    column-count: 3;
+  }
 }
-@-moz-keyframes DonationBgColorWave {
-  0%{background-position:0 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0 50%}
-}
-@keyframes DonationBgColorWave {
-  0%{background-position:0 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0 50%}
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1700px) {
+  .card-columns {
+    column-count: 4;
+  }
 }

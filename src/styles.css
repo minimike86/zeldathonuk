@@ -9,43 +9,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue');
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono');
 
+::-webkit-scrollbar {
+  display: none;
+}
+
 html, body {
   height: 100%;
 }
 
 body {
-  background: linear-gradient(to bottom, rgba(132, 160, 192, 1) 0%,
-                                         rgba(132, 160, 192, 1) 35%,
-                                         rgba(208, 197, 201, 1) 40%,
-                                         rgba(255, 205, 225, 1) 45%,
-                                         rgba(204, 152, 190, 1) 50%,
-                                         rgba(101, 177, 68, 1) 55%,
-                                         rgba(69, 117, 43, 1) 60%,
-                                         rgba(125, 146, 40, 1) 75%,
-                                         rgba(29, 117, 43, 1) 85%,
-                                         rgba(49, 97, 43, 1) 90%,
-                                         rgba(77, 104, 37, 1) 100%
-                              ) no-repeat rgba(77, 104, 37, 1);
-  background-size: 100% 120%;
-  backdrop-filter: blur(0.8rem);
-
-  -webkit-animation: AnimationName 10s ease infinite;
-  -moz-animation: AnimationName 10s ease infinite;
-  animation: AnimationName 10s ease infinite;
-}
-
-@-webkit-keyframes AnimationName {
-  0%{background-position:50% 0}
-  50%{background-position:51% 100%}
-  100%{background-position:50% 0}
-}
-@-moz-keyframes AnimationName {
-  0%{background-position:50% 0}
-  50%{background-position:51% 100%}
-  100%{background-position:50% 0}
-}
-@keyframes AnimationName {
-  0%{background-position:50% 0}
-  50%{background-position:51% 100%}
-  100%{background-position:50% 0}
 }

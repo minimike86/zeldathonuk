@@ -1,9 +1,12 @@
+.advertisement-panel-bg-container {
+  position: relative;
+  background: radial-gradient(circle, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 75%, rgba(184,134,11,1) 90%, rgba(184,134,11,1) 100%);
+}
+
 .advertisement-panel-bg {
   content: '';
   display: block;
   position: absolute;
-  left: -10px;
-  top: 470px;
   height: 100%;
   width: 100%;
   max-height: calc(548px + 8px);
@@ -25,17 +28,15 @@
 
 .advertisement-panel {
   position: relative;
-  height: calc(100% - 16px);
-  width: calc(100% - 16px);
+  height: calc(100% - 15px);
+  width: calc(100% - 18px);
   color: white;
   opacity: 1;
   box-shadow: 0 0 120px 120px rgba(0,0,0,0.5) inset;
   z-index: 1;
-  margin-top: 2px;
-  margin-left: 6px;
 }
 
 .advertisement-img {
-  max-height: 300px;
   max-width: 100%;
+  max-height: 300px;
 }

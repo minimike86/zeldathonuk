@@ -13,7 +13,7 @@ import {map} from 'rxjs/operators';
 })
 export class SspGameDescriptionComponent implements OnInit {
   public gameId: CurrentlyPlayingId;
-  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '', '', false);
+  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '', '', false, 0);
   public gameLineUp: Map<string, ZeldaGame>;
 
   public pos: number;

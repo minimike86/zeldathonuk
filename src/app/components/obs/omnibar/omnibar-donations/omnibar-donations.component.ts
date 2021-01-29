@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import {from, Observable, of, pipe} from 'rxjs';
+import {concatMap, delay, finalize, flatMap, map, mergeMap, switchMap, tap, timeout} from 'rxjs/operators';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@angular/animations';
 import {OmnibarContentService} from '../../../../services/omnibar-content-service/omnibar-content-service.service';
 import {DonationTrackingService} from '../../../../services/firebase/donation-tracking/donation-tracking.service';
-import {TrackedDonationId} from '../../../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from '../../../../services/firebase/donation-tracking/tracked-donation';
 
 @Component({
   selector: 'app-omnibar-donations',
@@ -49,11 +49,12 @@ import {TrackedDonationId} from '../../../../services/firebase/donation-tracking
   ],
 })
 export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
-  public trackedDonationIds$: Observable<TrackedDonationId[]>;
-  public lastTenDonations: TrackedDonationId[] = [];
-  public highlightedDonation: TrackedDonationId;
+  public trackedDonationArray$: Observable<TrackedDonation[]>;
+  public lastTenDonations: TrackedDonation[] = [];
+  public highlightedDonation: TrackedDonation;
   public timeAgo: TimeAgo;
   public currentState = 'slideInFromRight';
+  public slideIn = true;
 
   public currentOmnibarContentId$: Observable<number>;
 
@@ -65,46 +66,79 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(map(trackedDonationIds => {
-      trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
-        b.donationDate.getTime() - a.donationDate.getTime()
-      );
-      this.lastTenDonations = trackedDonationIds.slice(0, 10);
-      return trackedDonationIds;
-    }));
+
+    this.trackedDonationArray$ = this.donationTrackingService.getTrackedDonationArray().pipe(
+      map((trackedDonationIds: TrackedDonationId[]) => {
+        return trackedDonationIds[0]?.donations;
+      }),
+      map((trackedDonations: TrackedDonation[]) => {
+        trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => {
+          return b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime();
+        });
+        this.lastTenDonations = trackedDonations.slice(0, 10);
+        this.displayDonations();
+        return trackedDonations;
+      })
+    );
   }
 
   ngAfterViewInit(): void {
-    this.displayDonations();
-  }
-
-  changeState() {
-    this.currentState = this.currentState === 'slideInFromRight' ? 'slideOutToLeft' : 'slideInFromRight';
   }
 
   displayDonations() {
-    let index = 0;
+    const initialWait: number = 1 * 1000;
+    const slideInFromRightDuration: number = 2 * 1000;
+    const slideOutToLeftDuration: number = 2 * 1000;
+    const showDonationDuration: number = 8 * 1000;
 
-    const displayDonationsInterval = setInterval(() => {
-      this.highlightedDonation = this.lastTenDonations[index];
-      setTimeout(() => {
-        // console.log('showing donation', index, this.lastTenDonations[index]);
-        this.changeState();
-        setTimeout(() => {
-          setTimeout(() => {
-            this.changeState();
-            if (index < this.lastTenDonations.length - 1) {
-              index++;
-            } else {
-              clearInterval(displayDonationsInterval);
-              this.omnibarContentService.setCurrentOmnibarContentId(4, (this.lastTenDonations.length * 10000) + 2000);
-            }
-            // console.log('hiding donation', index, this.lastTenDonations[index]);
-          }, 1000);  // slideOutToLeft => slideInFromRight
-        }, 5000);   // time to show donation for
-      }, 2000);     // slideInFromRight => slideOutToLeft
-    }, 10000);    // total time to complete donation animation + delay between next donation
+    // iterate donations
+    // console.log('lastTenDonations', this.lastTenDonations);
+    if (this.lastTenDonations.length >= 1) {
 
+      from(this.lastTenDonations).pipe(
+        delay(initialWait),
+        map((donation: TrackedDonation) => donation),
+        pipe(donation => donation.pipe(
+          delay(slideInFromRightDuration),
+          tap((donationItem: TrackedDonation) => {
+            this.showDonation(donationItem);
+          }),
+          delay(showDonationDuration),
+          tap(() => {
+            this.hideDonation();
+          }),
+          delay(slideOutToLeftDuration)
+        )),
+        finalize(() => {
+          // this.displayDonations();
+          this.showNextOmnibarComponent();
+        })
+      ).subscribe();
+
+    } else {
+
+      this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 30);
+
+    }
+
+  }
+
+  showDonation(donation: TrackedDonation) {
+    this.highlightedDonation = donation;
+    this.currentState = 'slideOutToLeft';
+    // console.log('showing donation', donation);
+  }
+
+  hideDonation() {
+    this.currentState = 'slideInFromRight';
+    // console.log('hiding donation');
+  }
+
+  // next omnibar component
+  showNextOmnibarComponent() {
+    this.slideIn = !this.slideIn;
+    this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 5);
+    // console.log('next omnibar component', this.lastTenDonations.length);
   }
 
 }

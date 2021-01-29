@@ -1,4 +1,8 @@
 .up-next-div {
+  background: linear-gradient(-45deg, darkgoldenrod, darkgoldenrod);
+  width: 300px;
+  height: 56px;
+  max-height: 56px;
 }
 
 .up-next-div-triangle {
@@ -9,22 +13,18 @@
   left: 0;
   border-style: solid;
   border-width: 28px 0 28px 24px;
-  border-color: transparent transparent transparent rgb(9, 98, 224);
+  border-color: transparent transparent transparent darkgoldenrod;
   z-index: 2;
 }
 
 .up-next {
-  display: inline-block;
-  background: rgb(9, 98, 224);
-  width: 200px;
-  height: 56px;
-  text-align: center;
   font-family: 'Bungee', cursive;
-  font-size: 1.95em;
-  padding-top: 5px;
+  font-size: 28px;
   color: white;
-  -webkit-text-stroke: 0.035em royalblue;
-  z-index: 1;
+  -webkit-text-stroke: 0.040em saddlebrown;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2;
 }
 
 .up-next-game {
@@ -54,7 +54,6 @@
   -webkit-animation: slide-in-left 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s 1 normal both;
   animation: slide-in-left 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s 1 normal both;
 }
-
 /**
  * ----------------------------------------
  * animation slide-in-left
@@ -85,11 +84,46 @@
   }
 }
 
+
+.slide-out-left {
+  -webkit-animation: slide-out-left 1s cubic-bezier(0.550, 0.085, 0.680, 0.530) 1s both;
+  animation: slide-out-left 1s cubic-bezier(0.550, 0.085, 0.680, 0.530) 1s both;
+}
+/**
+ * ----------------------------------------
+ * animation slide-out-left
+ * ----------------------------------------
+ */
+@-webkit-keyframes slide-out-left {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+}
+@keyframes slide-out-left {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+}
+
+
 .fade-in {
   -webkit-animation: fade-in 1.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) 3s both;
   animation: fade-in 1.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) 3s both;
 }
-
 /**
  * ----------------------------------------
  * animation fade-in
@@ -109,5 +143,32 @@
   }
   100% {
     opacity: 1;
+  }
+}
+
+
+.fade-out {
+  -webkit-animation: fade-out 1s ease-out both;
+  animation: fade-out 1s ease-out both;
+}
+/**
+ * ----------------------------------------
+ * animation fade-out
+ * ----------------------------------------
+ */
+@-webkit-keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }

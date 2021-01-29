@@ -72,6 +72,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
     // this.playingLibraryIndex = Math.floor(Math.random() * (this.audioLibrary.length)); // start on random song
     // Define audio element
     this.audio = new Audio();
+    this.audio.crossOrigin = 'anonymous';
     this.audio.src = this.audioLibrary[this.playingLibraryIndex].url;
     this.beatColour = this.audioLibrary[this.playingLibraryIndex].beatColour;
     this.audio.volume = 0.35;
@@ -1031,7 +1032,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
       songName: 'Zelda & Chill 2 - Kass\' Theme',
       songAuthor: 'by GameChops',
       beatColour: 'rgba(50, 200, 50, 0.75)',
-      youtubeId: '2TRE55puZoc'
+      youtubeId: 'TP061wI3chs'
     };
     this.audioLibrary.push(zeldaAndChill2KassTheme);
     const zeldaAndChill2SerenadeOfWater = {

@@ -1,13 +1,15 @@
-<ng-container *ngIf="(this.trackedDonationIds$ | async)">
+<ng-container *ngIf="(trackedDonationArray$ | async)">
 
   <ng-template [ngIf]="lastTenDonations.length >= 1">
     <div class="d-flex justify-content-between">
 
       <div id="last-donors-text">
-        <div class="d-flex justify-content-start up-next-div slide-in-left">
-          <div class="up-next">LAST {{ lastTenDonations.length >= 10 ? '10 DONORS' :
-                                                         lastTenDonations.length == 1 ? 'DONOR' :
-                                                         lastTenDonations.length + ' DONORS' }}</div>
+        <div class="d-flex justify-content-start" [ngClass]="slideIn ? 'slide-in-left' : 'slide-out-left'">
+          <div class="d-flex align-self-center up-next-div">
+            <span class="d-flex justify-content-between align-self-center up-next">LAST {{ lastTenDonations.length >= 10 ? '10 DONORS' :
+                                       lastTenDonations.length == 1 ? 'DONOR' :
+                                           lastTenDonations.length + ' DONORS' }}</span>
+          </div>
           <div class="up-next-div-triangle"></div>
         </div>
       </div>
@@ -15,13 +17,18 @@
       <div id="donations" class="flex-grow-1">
         <div class="donation-container mx-2">
           <div class="donation" [@showDonation]=currentState>
-            <div class="d-flex flex-row donation-text h-100 p-1">
-              <div class="align-self-center">
-                <img src="../../../../../assets/img/obs-bg/tingle-kaloo-limpah.gif" alt="tingle" style="height: 56px;">
-              </div>
+            <div class="h-100 p-1">
               <div class="d-flex justify-content-between flex-fill">
-                <h1 class="align-self-center text-truncate donation-text mt-3">{{ highlightedDonation?.name }}</h1>
-                <h1 class="align-self-center donation-text mt-2 mr-2">{{ highlightedDonation?.donationAmount | currency:highlightedDonation?.currency }}</h1>
+                <div class="d-flex align-self-center" style="max-width: 10%;">
+                  <img class="position-relative" style="top: -12px; max-height: 56px;"
+                       src="../../../../../assets/img/obs-bg/tingle-kaloo-limpah.gif" alt="tingle">
+                </div>
+                <div class="d-flex align-self-center" style="max-width: 60%;">
+                  <h1 class="donation-text text-truncate mb-0">{{ highlightedDonation?.name }}</h1>
+                </div>
+                <div class="d-flex align-self-center mx-2" style="max-width: 30%;">
+                  <h1 class="donation-text mb-0">{{ highlightedDonation?.donationAmount | currency:highlightedDonation?.currency }}</h1>
+                </div>
               </div>
             </div>
           </div>
@@ -32,15 +39,28 @@
   </ng-template>
 
   <ng-template [ngIf]="lastTenDonations.length === 0">
-    <div class="d-flex justify-content-center">
-      <div class="d-flex align-items-center">
-        <div class="h1 call-to-action-white mr-3 mb-0">
-          No donors yet!
-        </div>
-        <div class="h1 call-to-action-blue mr-3 mb-0">
-          donate.zeldathon.co.uk
+    <div class="d-flex justify-content-between">
+
+      <div id="no-donors-text">
+        <div class="d-flex justify-content-start" [ngClass]="slideIn ? 'slide-in-left' : 'slide-out-left'">
+          <div class="d-flex align-self-center up-next-div">
+            <span class="d-flex justify-content-between align-self-center up-next">LAST DONORS</span>
+          </div>
+          <div class="up-next-div-triangle"></div>
         </div>
       </div>
+
+      <div class="d-flex justify-content-center flex-fill">
+        <div class="d-flex align-items-center" [ngClass]="slideIn ? 'fade-in' : 'fade-out'">
+          <div class="h1 call-to-action-white mr-3 mb-0">
+            No donors yet!
+          </div>
+          <div class="h1 call-to-action-gold mr-3 mb-0">
+            zeldathon.co.uk/donate
+          </div>
+        </div>
+      </div>
+
     </div>
   </ng-template>
 

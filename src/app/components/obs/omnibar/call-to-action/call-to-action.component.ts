@@ -9,6 +9,7 @@ import {Observable} from 'rxjs';
 })
 export class CallToActionComponent implements OnInit {
   public callToAction = true;
+  public slideIn = true;
   public currentDate: number = Date.now();
 
   public currentOmnibarContentId$: Observable<number>;
@@ -18,7 +19,10 @@ export class CallToActionComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.omnibarContentService.setCurrentOmnibarContentId(3, 1000 * 15 * 5);
+    setTimeout(() => {
+      this.slideIn = !this.slideIn;
+      this.omnibarContentService.setCurrentOmnibarContentId(3, 1000 * 5);
+    }, 1000 * 10); // 30
   }
 
 }

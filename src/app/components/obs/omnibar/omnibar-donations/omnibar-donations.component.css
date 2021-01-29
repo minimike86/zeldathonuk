@@ -6,7 +6,8 @@
 }
 
 .donation {
-  background: rgba(9, 98, 224, 0.5) !important; /* linear-gradient(-45deg, gold, goldenrod); */
+  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%),
+                              url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
   border-radius: 5px;
   height: 44px;
   width: 60%;
@@ -16,9 +17,12 @@
 }
 
 .donation-text {
+  position: relative;
+  top: -0.25em;
   color: #f5f5f5;
-  -webkit-text-stroke: 0.035em rgba(9, 98, 224, 0.85);
-  font-family: 'Passion One', cursive;
+  -webkit-text-stroke: 0.045em black;
+  font-size: 32px;
+  font-family: 'Bungee', cursive;
   z-index: 0;
 }
 
@@ -26,15 +30,20 @@
   z-index: 2;
 }
 
+.up-next-div {
+  background: linear-gradient(-45deg, darkgoldenrod, darkgoldenrod);
+  width: 300px;
+  height: 56px;
+  max-height: 56px;
+}
+
 .up-next {
-  background: rgb(9, 98, 224);
-  width: 350px;
-  padding-top: 4px;
   font-family: 'Bungee', cursive;
-  font-size: 1.95em;
-  text-align: center;
+  font-size: 28px;
   color: white;
-  -webkit-text-stroke: 0.035em royalblue;
+  -webkit-text-stroke: 0.040em saddlebrown;
+  margin-left: auto;
+  margin-right: auto;
   z-index: 2;
 }
 
@@ -46,7 +55,7 @@
   left: 0;
   border-style: solid;
   border-width: 28px 0 28px 24px;
-  border-color: transparent transparent transparent rgb(9, 98, 224);
+  border-color: transparent transparent transparent darkgoldenrod;
   z-index: 2;
 }
 
@@ -66,12 +75,19 @@
   text-shadow: 2px 2px black;
 }
 
+.call-to-action-gold {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: darkgoldenrod; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
 
 .slide-in-left {
   -webkit-animation: slide-in-left 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s 1 normal both;
   animation: slide-in-left 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s 1 normal both;
 }
-
 /**
  * ----------------------------------------
  * animation slide-in-left
@@ -99,5 +115,94 @@
     -webkit-transform: translateX(0);
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+
+.slide-out-left {
+  -webkit-animation: slide-out-left 1s cubic-bezier(0.550, 0.085, 0.680, 0.530) 1s both;
+  animation: slide-out-left 1s cubic-bezier(0.550, 0.085, 0.680, 0.530) 1s both;
+}
+/**
+ * ----------------------------------------
+ * animation slide-out-left
+ * ----------------------------------------
+ */
+@-webkit-keyframes slide-out-left {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+}
+@keyframes slide-out-left {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+}
+
+
+.fade-in {
+  -webkit-animation: fade-in 1.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) 3s both;
+  animation: fade-in 1.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) 3s both;
+}
+/**
+ * ----------------------------------------
+ * animation fade-in
+ * ----------------------------------------
+ */
+@-webkit-keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+
+.fade-out {
+  -webkit-animation: fade-out 1s ease-out both;
+  animation: fade-out 1s ease-out both;
+}
+/**
+ * ----------------------------------------
+ * animation fade-out
+ * ----------------------------------------
+ */
+@-webkit-keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }

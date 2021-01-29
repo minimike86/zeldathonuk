@@ -1,7 +1,7 @@
-<ng-container *ngIf="(trackedDonationIds$ | async) as trackedDonations">
+<ng-container *ngIf="(trackedDonationDocIds$ | async) as trackedDonations">
 
   <div class="text-center jg-text-dark mt-1" style="line-height: 0.65em;">
-    <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ total | currency:'GBP' }}</h6>
+    <h6 class="m-0" style="font-family: 'Press Start 2P', cursive;">{{ trackedDonationsTotal | currency:'GBP' }}</h6>
     <span class="jg-text-dark" style="font-size: 0.65em;" title="Combined Facebook & JustGiving Donations Total">Current Total</span>
   </div>
 

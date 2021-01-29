@@ -1,10 +1,10 @@
 import {Component, OnInit} from '@angular/core';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
-import {Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {from, Observable, of, pipe} from 'rxjs';
+import {map, mergeMap, pluck, switchMap, take, tap} from 'rxjs/operators';
 import {DonationTrackingService} from '../../services/firebase/donation-tracking/donation-tracking.service';
-import {TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
 
 
 /**
@@ -17,7 +17,7 @@ import {TrackedDonationId} from '../../services/firebase/donation-tracking/track
 })
 export class DonationsComponent implements OnInit {
   public timeAgo: TimeAgo;
-  public trackedDonationIds$: Observable<TrackedDonationId[]>;
+  public trackedDonationIds$: Observable<TrackedDonation[]>;
 
   constructor( private donationTrackingService: DonationTrackingService ) {
   }
@@ -25,14 +25,20 @@ export class DonationsComponent implements OnInit {
   ngOnInit() {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
-    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationIds().pipe(map(trackedDonationIds => {
-      console.log('trackedDonationIds:', trackedDonationIds);
-      if (trackedDonationIds) {
-        return trackedDonationIds.sort((a: TrackedDonationId, b: TrackedDonationId) =>
-          b.donationAmount - a.donationAmount
-        );
-      }
-    }));
+    this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationArray().pipe(
+      map((trackedDonationId: TrackedDonationId[]) => trackedDonationId[0]),
+      pluck('donations'),
+      map((trackedDonations: TrackedDonation[]) => {
+        console.log('trackedDonations:', trackedDonations);
+        if (trackedDonations) {
+          trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => b.donationAmount - a.donationAmount);
+          for (const donation of trackedDonations) {
+            donation.imgUrl = (donation.imgUrl !== 'undefined') ? donation.imgUrl : this.getRandomThumbnailImageUrl();
+          }
+          return trackedDonations;
+        }
+      })
+    );
   }
 
   donateFacebook() {
@@ -41,6 +47,22 @@ export class DonationsComponent implements OnInit {
 
   donateJustGiving() {
     window.open('https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec', '_blank');
+  }
+
+  getRandomThumbnailImageUrl(): string {
+    const imageUrls: string[] = [];
+    imageUrls.push('../../../assets/img/thumbnails/ww-link-tingle.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/ss-fi-floating.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/oot-saria-avatar.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/botw-archer-link.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/botw-zelda-flower.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/z2-return-of-ganon.png');
+    imageUrls.push('../../../assets/img/thumbnails/alttp-gannon-fight.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/tp-ganondorf-avatar.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/tp-goron-shop-owner.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/hylian-shield-avatar.jpg');
+    imageUrls.push('../../../assets/img/thumbnails/mm-kid-link-keaton-mask.jpg');
+    return imageUrls[Math.floor((Math.random() * imageUrls.length))];
   }
 
   getDateFromJustGivingString(dateStr: string): Date {

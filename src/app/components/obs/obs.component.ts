@@ -14,12 +14,14 @@ import { FirebaseTimerService } from '../../services/firebase/firebase-timer/fir
 import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-timer';
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
-import { JgService } from '../../services/jg-service/jg-service.service';
 import { CountUpService } from '../../services/countup-service/countup.service';
-import { TrackedDonation } from '../../services/firebase/donation-tracking/tracked-donation';
+import { TrackedDonation, TrackedDonationId } from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
 
 import { ZeldaGame } from '../../models/zelda-game';
+import firebase from 'firebase/app';
+import Timestamp = firebase.firestore.Timestamp;
+import {sha256} from 'js-sha256';
 
 
 @Component({
@@ -31,6 +33,11 @@ import { ZeldaGame } from '../../models/zelda-game';
   providedIn: 'root',
 })
 export class ObsComponent implements OnInit {
+
+  @ViewChild('addGameModalDialog')
+  private addGameModalDialogRef: TemplateRef<any>;
+  public addGameModal: NgbActiveModal;
+
   @ViewChild('yesNoModalDialog')
   private yesNoModalDialogRef: TemplateRef<any>;
   public yesNoModal: NgbActiveModal;
@@ -54,28 +61,23 @@ export class ObsComponent implements OnInit {
   public donationDate: string;
   public donationTime: string;
 
+  public tempAddGameKey: string;
+  public tempAddGame: ZeldaGame;
+
   public currentlyPlaying = {id: '', index: ''};
   public gameLineUp: Map<string, ZeldaGame>;
+  public sortedGameLineUp: ZeldaGame[];
   public swapGameKey: KeyValue<string, ZeldaGame>;
 
   constructor( private modalService: NgbModal,
                private countUpService: CountUpService,
                private firebaseTimerService: FirebaseTimerService,
                private donationTrackingService: DonationTrackingService,
-               private jgService: JgService,
                private runnerNameService: RunnerNameService,
                private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService ) {
-    this.tempTrackedDonation = {
-      name: '',
-      imgUrl: '',
-      message: '',
-      currency: 'GBP',
-      donationAmount: 0.00,
-      giftAidAmount: 0.00,
-      donationSource: 'Facebook',
-      donationDate: null
-    };
+    this.clearTrackedDonation();
+    this.clearAddGame();
   }
 
   ngOnInit() {
@@ -90,7 +92,8 @@ export class ObsComponent implements OnInit {
     })).subscribe();
     this.gameLineupService.getGameLineUp().pipe(map(data => {
       this.gameLineUp = data[0].gameLineUp;
-      // console.log('gameLineUp', this.gameLineUp);
+      this.sortedGameLineUp = Array.from(Object.values(this.gameLineUp)).sort((a: ZeldaGame, b: ZeldaGame) => a.order - b.order);
+      this.tempAddGame.order = Object.keys(this.gameLineUp).length;
     })).subscribe();
     this.firebaseTimerService.getCountUpTimer().subscribe(data => {
       this.countUpData = data;
@@ -100,12 +103,37 @@ export class ObsComponent implements OnInit {
     }));
   }
 
-  onSwapGameClick(gameKey: KeyValue<string, ZeldaGame>) {
-    this.swapGameKey = gameKey;
+  onOpenAddGameModalClick() {
+    this.tempAddGame.order = this.gameLineUp !== undefined ? Object.keys(this.gameLineUp).length : 0;
+    this.addGameModal = this.modalService.open(this.addGameModalDialogRef);
+  }
+
+  submitAddGame() {
+    this.gameLineupService.addGameToLineUp(this.tempAddGameKey, this.tempAddGame);
+    this.addGameModal.close();
+    this.clearAddGame();
+  }
+
+  clearAddGame() {
+    this.tempAddGame = {
+      active: true,
+      coverArt: '',
+      gameEstimate: '00:00:00',
+      gameName: '',
+      gamePlatform: '',
+      gameProgressKey: '',
+      gameRelYear: '',
+      gameType: 'Casual Any%',
+      order: this.gameLineUp !== undefined ? Object.keys(this.gameLineUp).length : 0
+    };
+  }
+
+  onSwapGameClick(game: ZeldaGame) {
+    this.swapGameKey = Object.assign({key: game.gameProgressKey}, {value: game});
     this.yesNoModal = this.modalService.open(this.yesNoModalDialogRef);
   }
 
-  swapModalBtn() {
+  swapGameModalBtn() {
     this.currentlyPlayingService.setCurrentlyPlaying({index: this.swapGameKey.key});
     this.yesNoModal.close('Game swapped');
   }
@@ -142,21 +170,26 @@ export class ObsComponent implements OnInit {
   }
 
   submitTrackedDonation() {
-    this.tempTrackedDonation.donationDate = new Date(this.donationDate + 'T' + this.donationTime);
-    this.donationTrackingService.addTrackedDonation(this.tempTrackedDonation);
+    this.tempTrackedDonation.donationDate = Timestamp.fromDate(new Date(this.donationDate + 'T' + this.donationTime));
+    console.log('submitTrackedDonation: ', this.tempTrackedDonation);
+    this.donationTrackingService.addTrackedDonation([this.tempTrackedDonation]);
+    this.clearTrackedDonation();
   }
 
   clearTrackedDonation() {
     this.tempTrackedDonation = {
+      id: sha256(new Date().toDateString()),
       name: '',
       imgUrl: '',
       message: '',
       currency: 'GBP',
       donationAmount: 0.00,
       giftAidAmount: 0.00,
-      donationSource: 'Facebook',
+      donationSource: 'Manual',
       donationDate: null
     };
+    this.donationDate = '';
+    this.donationTime = '';
   }
 
   toggleShowObsLayouts() {

@@ -3,6 +3,8 @@ import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/fire
 import { CountUpTimer, CountUpTimerId } from './count-up-timer';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import firebase from 'firebase/app';
+import Timestamp = firebase.firestore.Timestamp;
 
 @Injectable({
   providedIn: 'root'
@@ -28,11 +30,11 @@ export class FirebaseTimerService {
     );
   }
 
-  setCountUpTimerStartDate(data: Date): void {
+  setCountUpTimerStartDate(data: Timestamp): void {
     this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'startDate': data});
   }
 
-  setCountUpTimerStopDate(data: Date): void {
+  setCountUpTimerStopDate(data: Timestamp): void {
     data === undefined || data === null ? this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'stopDate': null})
       : this.countUpCollection.doc('vuect9iPi4vNbssTOgLC').update({'stopDate': data});
   }

@@ -1,6 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ObsLayoutComponent } from './layout.component';
+import { ObsLayoutComponent } from './obs-layout.component';
+
 
 describe('LayoutComponent', () => {
   let component: ObsLayoutComponent;

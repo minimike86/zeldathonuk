@@ -1,15 +1,22 @@
+import firebase from 'firebase/app';
+import Timestamp = firebase.firestore.Timestamp;
 
-export interface TrackedDonationId extends TrackedDonation {
+export interface TrackedDonationId extends TrackedDonationArray {
   id: string;
 }
 
+export interface TrackedDonationArray {
+  donations: TrackedDonation[];
+}
+
 export interface TrackedDonation {
+  id: string|number;
   name: string;
-  imgUrl: string | null;
-  message: string | null;
+  imgUrl?: string;
+  message?: string;
   currency: string;
   donationAmount: number;
-  giftAidAmount: number | null;
+  giftAidAmount?: number;
   donationSource: string;
-  donationDate: Date;
+  donationDate: Timestamp;
 }

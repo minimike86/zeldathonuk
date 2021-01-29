@@ -1,27 +1,30 @@
 .omnibar {
-  border-top: 2px solid rgb(9, 98, 224);
+  border-top: 1px solid darkgoldenrod;
   background: -webkit-linear-gradient(-90deg, #313539, #414549);
 }
 
 .omnibar-brand {
-  height:56px;
-  max-height:56px;
-  width:180px;
-  max-width:180px;
-  background: rgb(9, 98, 224);
-  border-right: 2px solid rgb(9, 98, 224);
+  height: 56px;
+  max-height: 56px;
+  width: 180px;
+  max-width: 180px;
+  background: -webkit-linear-gradient(45deg, darkgoldenrod 20%, goldenrod 45%, darkgoldenrod 70%, darkgoldenrod);
+  border-right: 2px solid darkgoldenrod;
   z-index: 5;
 }
 
 .omnibar-donation-total {
-  background: rgb(9, 98, 224);
+  height:56px;
+  max-height:56px;
+  border-left: 2px solid darkgoldenrod;
+  background: -webkit-linear-gradient(45deg, darkgoldenrod 20%, goldenrod 45%, darkgoldenrod 70%, darkgoldenrod);
   z-index: 5;
 }
 
 .dtotal {
   background: white;
   -webkit-background-clip: text;
-  -webkit-text-stroke: 0.035em royalblue;
+  -webkit-text-stroke: 2px rgba(165, 120, 9, 1);
   font-size: 3em;
   font-family: 'Bungee', cursive;
   color: transparent;
@@ -35,8 +38,11 @@
 
 .dtotal-odometer-pound {
   position: relative;
+  font-size: 0.85em;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.008em rgba(124, 84, 11, 0.9);
   top: 6px;
-  font-weight: 900;
+  font-weight: 600;
   color: white;
 }
 
@@ -44,6 +50,8 @@
   color: white;
   font-weight: 900;
   font-family: 'Bungee', cursive;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0.03em rgba(124, 84, 11, 0.9);
 }
 
 #donation_total_charity_logo {
