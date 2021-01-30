@@ -106,10 +106,10 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.justGivingFundraisingPageDonations$.subscribe();
-    setInterval(() => {
-      this.justGivingFundraisingPageDonations$.subscribe();
-    }, 5 * 60 * 1000);
+    // this.justGivingFundraisingPageDonations$.subscribe();
+    // setInterval(() => {
+    //   this.justGivingFundraisingPageDonations$.subscribe();
+    // }, 5 * 60 * 1000);
 
     // this.facebookFundraisingPageDonations$.subscribe();
     // setInterval(() => {
