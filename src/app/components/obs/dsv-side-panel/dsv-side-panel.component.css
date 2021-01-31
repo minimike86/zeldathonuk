@@ -1,40 +1,41 @@
 .side-panel {
-  border-right: 2px solid rgb(9, 98, 224);
-  height:1024px;
-  width:751px;
-  max-height:1024px;
-  max-width:751px;
+  border-right: 2px solid darkgoldenrod;
+  height: 1024px;
+  width: 747px;
+  max-height: 1024px;
+  max-width: 747px;
+}
+
+.fake-background {
+  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%), url("../../../../assets/img/obs-bg/hylian-symbol-1.png");
 }
 
 .dsv-panel {
   position: absolute;
   top: 0;
-  left: 751px;
+  left: 747px;
   height: 1024px;
-  width: 1169px;
+  width: 1173px;
   max-height: 1024px;
-  max-width: 1169px;
+  max-width: 1173px;
 }
-.dsv-panel:after {
+.dsv-panel:before {
   content: '';
   display: block;
   position: absolute;
-  background: url("../../../../assets/img/obs-preview/3ds-layout.png"), #782F99;
-  top: 0;
-  left: 0;
+  background: url("../../../../assets/img/obs-preview/3ds-layout - darker.png"), linear-gradient(90deg, rgba(184, 134, 11, 0.9) 5%, transparent 10%, transparent 90%, rgba(184, 134, 11, 0.9) 95%);
   height: 1024px;
-  width: 1169px;
+  width: 1173px;
   max-height: 1024px;
-  max-width: 1169px;
-  opacity: 0.1;
+  max-width: 1173px;
   z-index: -1;
 }
 
 .ds-left-spacer {
   height: 1024px;
-  width: 260px;
+  width: 234px;
   max-height: 1024px;
-  max-width: 260px;
+  max-width: 234px;
 }
 
 .ds-screen {
@@ -45,9 +46,9 @@
 }
 
 .ds-top-screen {
-  border-left: 2px solid rgb(9, 98, 224);
-  border-bottom: 2px solid rgb(9, 98, 224);
-  border-right: 2px solid rgb(9, 98, 224);
+  border-left: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-right: 2px solid transparent;
   background-color: transparent;
   height: 489px;
   width: 650px;
@@ -63,7 +64,7 @@
 }
 
 .ds-bottom-screen {
-  border: 2px solid rgb(9, 98, 224);
+  border: 2px solid transparent;
   background-color: transparent;
   height: 488px;
   width: 650px;
