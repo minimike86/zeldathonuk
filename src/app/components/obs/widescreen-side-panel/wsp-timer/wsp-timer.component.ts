@@ -1,6 +1,6 @@
 import {AfterViewInit, Component, OnInit} from '@angular/core';
-import { CountUpService } from '../../../../services/countup-service/countup.service';
-import {delay, map} from 'rxjs/operators';
+import {CountUpService } from '../../../../services/countup-service/countup.service';
+import {map} from 'rxjs/operators';
 import {Observable, of} from 'rxjs';
 
 @Component({

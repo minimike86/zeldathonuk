@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import {faTwitch} from "@fortawesome/free-brands-svg-icons";
-import {RunnerNameService} from "../../../../services/firebase/runner-name/runner-name.service";
-import {RunnerNameId} from "../../../../services/firebase/runner-name/runner-name";
+import {faTwitch} from '@fortawesome/free-brands-svg-icons';
+import {RunnerNameId} from '../../../../services/firebase/runner-name/runner-name';
+import {RunnerNameService} from '../../../../services/firebase/runner-name/runner-name.service';
 
 @Component({
   selector: 'app-ds3-runner-name',

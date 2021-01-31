@@ -48,7 +48,7 @@
   border-left: 2px solid rgb(9, 98, 224);
   border-bottom: 2px solid rgb(9, 98, 224);
   border-right: 2px solid rgb(9, 98, 224);
-  background-color: #28a745;
+  background-color: transparent;
   height: 489px;
   width: 650px;
   max-height: 489px;
@@ -64,7 +64,7 @@
 
 .ds-bottom-screen {
   border: 2px solid rgb(9, 98, 224);
-  background-color: #28a745;
+  background-color: transparent;
   height: 488px;
   width: 650px;
   max-height: 488px;

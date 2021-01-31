@@ -1,27 +1,26 @@
 .side-panel {
-  border-right: 2px solid rgb(9, 98, 224);
-  height:1024px;
-  width:554px;
-  max-height:1024px;
-  max-width:554px;
+  border-right: 2px solid darkgoldenrod;
+  height: 1024px;
+  width: 554px;
+  max-height: 1024px;
+  max-width: 554px;
 }
 
 .gameplay-panel {
-  background-color: #28a745;
-  height:821px;
-  width:1366px;
-  max-height:821px;
-  max-width:1366px;
+  background-color: transparent;
+  height: 820px;
+  width: 1366px;
+  max-height: 820px;
+  max-width: 1366px;
   z-index: -1;
 }
 
 .camera-panel {
-  background-color: #28a745;
-  border-top: 2px solid rgb(9, 98, 224);
-  height:417px;
-  width:554px;
-  max-height:417px;
-  max-width:554px;
+  background-color: transparent;
+  height: 417px;
+  width: 554px;
+  max-height: 417px;
+  max-width: 554px;
   z-index: -1;
 }
 .camera-panel:after {
@@ -30,60 +29,65 @@
   position: absolute;
   top: 0;
   left: 0;
-  background-color: #28a745;
-  border-bottom: 2px solid rgb(9, 98, 224);
-  height:415px;
-  width:554px;
-  max-height:415px;
-  max-width:554px;
+  background-color: transparent;
+  border-bottom: 2px solid darkgoldenrod;
+  height: 415px;
+  width: 554px;
+  max-height: 415px;
+  max-width: 554px;
   z-index: 0;
 }
 
 .adv-panel {
-  border-top: 2px solid rgb(9, 98, 224);
-  height:203px;
-  width:554px;
-  max-height:204px;
-  max-width:554px;
+  border-top: 1px solid darkgoldenrod;
+  height: 204px;
+  width: 554px;
+  max-height: 204px;
+  max-width: 554px;
 }
 
 .bottom-panel {
-  border-top: 2px solid rgb(9, 98, 224);
-  height:204px;
-  width:1366px;
-  max-height:204px;
-  max-width:1366px;
+  height: 204px;
+  width: 1366px;
+  max-height: 204px;
+  max-width: 1366px;
+  background: -webkit-linear-gradient(0deg, darkgoldenrod 45%, transparent 55%, transparent);
+}
+
+.name-timer-panel-container {
+  width: calc(100% - 4px);
+  height: calc(100% - 16px);
+  box-shadow: 0 0 80px 80px rgba(0,0,0,0.4) inset;
+  opacity: 1;
+  margin-top: 8px;
+  margin-left: 4px;
 }
 
 .name-timer-panel {
-  border-right: 2px solid rgb(9, 98, 224);
-  height:204px;
-  width:615px;
-  max-height:204px;
-  max-width:615px;
+  border-right: 2px solid darkgoldenrod;
+  height: 204px;
+  width: 616px;
+  max-height: 204px;
+  max-width: 616px;
+  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%), url("../../../../assets/img/obs-bg/hylian-symbol-1.png");
+  background-size: cover;
+  background-position: bottom;
 }
 .name-timer-panel::after {
   content: "";
   display: block;
   position: relative;
-  height:204px;
-  width:615px;
-  background: linear-gradient(-90deg,
-  rgba(80,82,154, 0.35),
-  rgba(148,64,132, 0.65)
-  ),
-  url("../../../../assets/img/GB_Background_nologo.png");
-  background-size: cover;
-  background-position: bottom;
-  opacity: 0.5;
+  height: 204px;
+  width: 615px;
+  opacity: 1;
   top: -178px;
   left: 0;
   z-index: -1;
 }
 
 .game-desc-panel {
-  height:204px;
-  width:750px;
-  max-height:215px;
-  max-width:750px;
+  height: 204px;
+  width: 750px;
+  max-height: 204px;
+  max-width: 750px;
 }

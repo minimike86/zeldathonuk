@@ -30,20 +30,20 @@ export class ScheduleComponent implements OnInit {
   @ViewChild('carousel', {static : true}) carousel: NgbCarousel;
 
   public now: Date;
-
-  public isLive: boolean;
+  public isLive = false;
 
   constructor(private router: Router,
               private twitchService: TwitchService) {
-    this.twitchService.getSearchChannels('zeldathonuk', 1, false).subscribe(data => {
-      this.isLive = data.is_live;
-      console.log(data);
-    });
   }
 
   ngOnInit() {
     this.now = new Date();
     this.gameList = this.getGames();
+
+    this.twitchService.getSearchChannels('zeldathonuk', 1, false).subscribe(data => {
+      this.isLive = data.is_live;
+    });
+
   }
 
   routeToLiveView() {
@@ -421,6 +421,30 @@ export class ScheduleComponent implements OnInit {
       }],
     };
     games.push(linkBetweenWorlds);
+
+    const triforceHeroes = {
+      startDate: new Date((games[games.length - 1].startDate.getTime() +
+        (parseInt(games[games.length - 1].extraBadges.find(x => x.text.endsWith('Hours')).text.split(' ')[0], 10) * 60 * 60 * 1000))),
+      console: '3DS',
+      timeline: 'Downfall',
+      name: 'The Legend of Zelda: Tri Force Heroes',
+      releaseDate: 2015,
+      boxArt: '../../../assets/img/cover-art/250px-Zelda_triforce-heroes.jpg',
+      extraBadges: [{
+        type: 'badge-primary',
+        text: 'Any%'
+      },
+        {
+          type: 'badge-info',
+          text: '14 Hours',
+          url: 'https://howlongtobeat.com/game?id=30592'
+        }],
+      runners: [{
+        name: 'MSec',
+        channelUrl: 'https://www.twitch.tv/msec'
+      }],
+    };
+    games.push(triforceHeroes);
 
     const theLegendOfZelda = {
       startDate: new Date((games[games.length - 1].startDate.getTime() +
