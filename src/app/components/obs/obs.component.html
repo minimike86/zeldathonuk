@@ -25,14 +25,19 @@
             <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/3ds">Open</a></div>
           </div>
           <div class="card border-secondary layout-list">
+            <div class="card-header">DS (Top Focus)</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/ds-layout-preview.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/ds">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
             <div class="card-header">DS (Vertical)</div>
             <img class="card-img" src="../../../assets/img/obs-preview/dsv-layout-preview.PNG">
             <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/dsv">Open</a></div>
           </div>
           <div class="card border-secondary layout-list">
-            <div class="card-header">DS</div>
-            <img class="card-img" src="../../../assets/img/obs-preview/ds-layout-preview.png">
-            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/ds">Open</a></div>
+            <div class="card-header">Break</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/break-layout-preview.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/break">Open</a></div>
           </div>
           <div class="card border-secondary layout-list">
             <div class="card-header">Audio Visualiser</div>
@@ -46,7 +51,40 @@
 
       <div class="mb-3">
         <div class="d-flex justify-content-between">
-          <h3 class="text-dark pt-2">Timer</h3>
+          <h3 class="text-dark pt-2">Break Timer</h3>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowBreakCountdownDate();">Show/Hide</button>
+        </div>
+        <div class="d-flex flex-column" *ngIf="showBreakCountdownDate">
+          <div class="d-flex justify-content-start align-items-center mt-2">
+            <div class="d-flex align-items-center m-1 w-25">
+              <span class="timer-label ml-2">Break Countdown to Date:</span>
+            </div>
+            <div class="d-flex justify-content-start align-items-center w-75">
+              <form class="d-flex align-self-center">
+                <div class="form-group">
+                  <label class="small mb-0" for="breakCountdownDate">Break Countdown Date:</label>
+                  <input id="breakCountdownDate" name="breakCountdownDate" type="date" class="form-control form-control-sm"
+                         [(ngModel)]="breakCountdownDate">
+                </div>
+                <div class="form-group ml-2">
+                  <label class="small mb-0" for="breakCountdownTime">Time:</label>
+                  <input id="breakCountdownTime" name="breakCountdownTime" type="time" class="form-control form-control-sm"
+                         [(ngModel)]="breakCountdownTime">
+                </div>
+                <div class="d-flex align-self-center ml-2">
+                  <button class="btn btn-primary" (click)="setBreakCountdown()">Set Break Timer</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="hr">
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <h3 class="text-dark pt-2">Play Timer</h3>
           <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();">Show/Hide</button>
         </div>
         <div class="d-flex flex-column" *ngIf="showTimer">

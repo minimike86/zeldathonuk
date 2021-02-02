@@ -35,6 +35,7 @@ const routes: Routes = [
   { path: 'obs', component: ObsComponent },
   { path: 'obs/layout/:layout', component: ObsLayoutComponent },
   { path: 'obs/countdown', component: CountDateComponent },
+  { path: 'obs/break', component: CountDateComponent },
   { path: 'obs/audio-countdown', component: AudioVisualizerComponent },
   { path: 'tracking/:game', component: GameTrackingComponent },
   { path: 'api/timers', component: TimersComponent },

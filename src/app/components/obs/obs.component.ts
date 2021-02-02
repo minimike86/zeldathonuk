@@ -22,6 +22,7 @@ import { ZeldaGame } from '../../models/zelda-game';
 import firebase from 'firebase/app';
 import Timestamp = firebase.firestore.Timestamp;
 import {sha256} from 'js-sha256';
+import {BreakCountdownService} from '../../services/firebase/break-countdown/break-countdown.service';
 
 
 @Component({
@@ -43,6 +44,7 @@ export class ObsComponent implements OnInit {
   public yesNoModal: NgbActiveModal;
 
   public showObsLayouts = false;
+  public showBreakCountdownDate = false;
   public showTimer = false;
   public showRunnerName = false;
   public showAddDonation = false;
@@ -52,6 +54,9 @@ export class ObsComponent implements OnInit {
   public countUpData: CountUpTimerId[];
   public timer$: Observable<string>;
   public timer: string;
+
+  public breakCountdownDate: string;
+  public breakCountdownTime: string;
 
   public faTwitch = faTwitch;
   public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
@@ -70,6 +75,7 @@ export class ObsComponent implements OnInit {
   public swapGameKey: KeyValue<string, ZeldaGame>;
 
   constructor( private modalService: NgbModal,
+               private breakCountdownService: BreakCountdownService,
                private countUpService: CountUpService,
                private firebaseTimerService: FirebaseTimerService,
                private donationTrackingService: DonationTrackingService,
@@ -81,6 +87,11 @@ export class ObsComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.breakCountdownService.getBreakCountdown().pipe(map(data => {
+      const date: Date = data[0].timestamp.toDate();
+      this.breakCountdownDate = `${date.getFullYear()}-${this.zeroPad(date.getMonth() + 1, 2)}-${this.zeroPad(date.getDate(), 2)}`;
+      this.breakCountdownTime = `${this.zeroPad(date.getHours(), 2)}:${this.zeroPad(date.getMinutes(), 2)}:${this.zeroPad(date.getSeconds(), 2)}`;
+    })).subscribe();
     this.runnerNameService.getRunnerName().pipe(map(data => {
       this.runnerName = data[0];
       this.currentRunner.runnerName = data[0].runnerName;
@@ -136,6 +147,10 @@ export class ObsComponent implements OnInit {
   swapGameModalBtn() {
     this.currentlyPlayingService.setCurrentlyPlaying({index: this.swapGameKey.key});
     this.yesNoModal.close('Game swapped');
+  }
+
+  setBreakCountdown() {
+    this.breakCountdownService.setBreakCountdown(Timestamp.fromDate(new Date(this.breakCountdownDate + 'T' + this.breakCountdownTime)));
   }
 
   start() {
@@ -196,6 +211,10 @@ export class ObsComponent implements OnInit {
     this.showObsLayouts = !this.showObsLayouts;
   }
 
+  toggleShowBreakCountdownDate() {
+    this.showBreakCountdownDate = !this.showBreakCountdownDate;
+  }
+
   toggleShowTimer() {
     this.showTimer = !this.showTimer;
   }
@@ -214,6 +233,24 @@ export class ObsComponent implements OnInit {
 
   toggleShowGameTracking() {
     this.showGameTracking = !this.showGameTracking;
+  }
+
+  zeroPad(num: number, maxLen: number): string {
+    if (maxLen > 2) {
+      if (num < 10) {
+        return ('00' + num);
+      } else if (num < 100) {
+        return ('0' + num);
+      } else {
+        return ('' + num);
+      }
+    } else if (maxLen <= 2) {
+      if (num < 10) {
+        return ('0' + num);
+      } else {
+        return ('' + num);
+      }
+    }
   }
 
 }

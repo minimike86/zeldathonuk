@@ -77,6 +77,7 @@ import { CombinedTotalComponent } from './components/combined-total/combined-tot
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
 import { AudioVisualizerComponent } from './components/audio-visualizer/audio-visualizer.component';
+import { BreakBrbComponent } from './components/obs/break-brb/break-brb.component';
 
 
 @NgModule({
@@ -135,7 +136,8 @@ import { AudioVisualizerComponent } from './components/audio-visualizer/audio-vi
     CombinedTotalComponent,
     PrivacyPolicyComponent,
     TermsOfUseComponent,
-    AudioVisualizerComponent
+    AudioVisualizerComponent,
+    BreakBrbComponent
   ],
   imports: [
     BrowserModule,
