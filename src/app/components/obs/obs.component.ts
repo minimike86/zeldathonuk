@@ -1,8 +1,8 @@
 import { Component, Injectable, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { KeyValue } from '@angular/common';
+import {KeyValue} from '@angular/common';
 
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import {Observable, of} from 'rxjs';
+import {map} from 'rxjs/operators';
 
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -15,14 +15,17 @@ import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 import { CountUpService } from '../../services/countup-service/countup.service';
-import { TrackedDonation, TrackedDonationId } from '../../services/firebase/donation-tracking/tracked-donation';
+import { TrackedDonation } from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
+import {BreakCountdownService} from '../../services/firebase/break-countdown/break-countdown.service';
 
 import { ZeldaGame } from '../../models/zelda-game';
 import firebase from 'firebase/app';
 import Timestamp = firebase.firestore.Timestamp;
 import {sha256} from 'js-sha256';
-import {BreakCountdownService} from '../../services/firebase/break-countdown/break-countdown.service';
+
+import {faPlay, faPause, faStop, faHistory,
+        faBackward} from '@fortawesome/free-solid-svg-icons';
 
 
 @Component({
@@ -55,6 +58,9 @@ export class ObsComponent implements OnInit {
   public timer$: Observable<string>;
   public timer: string;
 
+  public pauseTimestamp: Timestamp;
+  public pauseOffset: number;
+
   public breakCountdownDate: string;
   public breakCountdownTime: string;
 
@@ -73,6 +79,12 @@ export class ObsComponent implements OnInit {
   public gameLineUp: Map<string, ZeldaGame>;
   public sortedGameLineUp: ZeldaGame[];
   public swapGameKey: KeyValue<string, ZeldaGame>;
+
+  faPlay = faPlay;
+  faPause = faPause;
+  faStop = faStop;
+  faHistory = faHistory;
+  faBackward = faBackward;
 
   constructor( private modalService: NgbModal,
                private breakCountdownService: BreakCountdownService,
@@ -109,7 +121,9 @@ export class ObsComponent implements OnInit {
     this.firebaseTimerService.getCountUpTimer().subscribe(data => {
       this.countUpData = data;
     });
-    this.timer$ = this.countUpService.getTimer().pipe(map(timer => {
+    this.pauseOffset = 0;
+    this.pauseTimestamp = Timestamp.now();
+    this.timer$ = this.countUpService.getTimer().pipe(map((timer: string) => {
       return this.timer = timer;
     }));
   }
@@ -154,27 +168,48 @@ export class ObsComponent implements OnInit {
   }
 
   start() {
-    if (this.countUpData[0].isStarted === false && this.countUpData[0].hasPaused === false) {
-      this.countUpService.startNewTimer();
+    if (this.countUpData?.find(x => x.id === 'vuect9iPi4vNbssTOgLC').isStarted === false
+      && this.countUpData?.find(x => x.id === 'vuect9iPi4vNbssTOgLC').hasPaused === false) {
+      this.countUpService.startNewTimer(Timestamp.now());
     } else {
       this.countUpService.continueExistingTimer();
     }
   }
 
+  unpause() {
+    this.pauseTimestamp = Timestamp.fromDate(new Date(new Date().getTime() - this.pauseOffset));
+    this.countUpService.startNewTimer(this.pauseTimestamp);
+  }
+
   reset() {
-    if (this.countUpData[0].isStopped === true) {
+    if (this.countUpData?.find(x => x.id === 'vuect9iPi4vNbssTOgLC').isStopped === true) {
       this.countUpService.resetStoppedTimer();
     } else {
       this.countUpService.resetCurrentTimer();
     }
   }
 
-  stop() {
-    if (this.countUpData[0].isStarted === true && this.countUpData[0].hasPaused === false) {
+  pauseStop(startDate: Timestamp) {
+    if (this.countUpData?.find(x => x.id === 'vuect9iPi4vNbssTOgLC').isStarted === true
+      && this.countUpData?.find(x => x.id === 'vuect9iPi4vNbssTOgLC').hasPaused === false) {
+      // pause
+      this.pauseOffset = new Date(new Date().getTime() - startDate?.toDate()?.getTime()).getTime();
+      console.log('pauseOffset', this.pauseOffset);
       this.countUpService.pauseTimer();
     } else {
+      // stop
       this.countUpService.stopTimer();
     }
+  }
+
+  getCancelTimer(startDate: Timestamp): Observable<string> {
+    const pausedTimer: Date = new Date(new Date().getTime() - startDate?.toDate()?.getTime() + 500);
+    return of(`${this.zeroPad(pausedTimer.getUTCHours(), 2)}:${this.zeroPad(pausedTimer.getUTCMinutes(), 2)}:${this.zeroPad(pausedTimer.getUTCSeconds(), 2)}`);
+  }
+
+  getPausedTimer(): Observable<string> {
+    const pausedTimer: Date = new Date(this.pauseOffset + 500);
+    return of(`${this.zeroPad(pausedTimer.getUTCHours(), 2)}:${this.zeroPad(pausedTimer.getUTCMinutes(), 2)}:${this.zeroPad(pausedTimer.getUTCSeconds(), 2)}`);
   }
 
   updateRunner() {
@@ -195,7 +230,7 @@ export class ObsComponent implements OnInit {
     this.tempTrackedDonation = {
       id: sha256(new Date().toDateString()),
       name: '',
-      imgUrl: '',
+      imgUrl: 'https://via.placeholder.com/150',
       message: '',
       currency: 'GBP',
       donationAmount: 0.00,

@@ -57,9 +57,10 @@ export class TextToSpeechComponent implements OnInit {
 
   speakDonationEvent(donation: TrackedDonation) {
     // speak message if there is one
-    this.speakText = (donation?.message.length >= 1)
-      ? `New donation of ${donation.currency === 'GBP' ? '£' : donation.currency}${donation.donationAmount} from ${donation.name}. ${donation.message}`
-      : `New donation of ${donation.currency === 'GBP' ? '£' : donation.currency}${donation.donationAmount} from ${donation.name}.`;
+    this.speakText = 'New donation ';
+    this.speakText += (donation?.donationAmount != null) ? `of ${donation.currency === 'GBP' ? '£' : donation.currency}${donation.donationAmount} ` : '';
+    this.speakText += `from ${donation.name}. `;
+    this.speakText += (donation?.message.length >= 1) ? `${donation.message}` : '';
     this.speech.speak({
       text: this.speakText,
       queue: false, // current speech will be interrupted

@@ -99,29 +99,91 @@
         </div>
         <div class="d-flex flex-column" *ngIf="showTimer">
           <div class="d-flex justify-content-start align-items-center mt-2">
-            <div class="d-flex align-items-center m-1 w-25">
+            <div class="d-flex align-items-center m-1 mr-5">
               <span class="timer-label ml-2">Time&nbsp;Played:</span>
             </div>
-            <div class="d-flex justify-content-start align-items-center w-50">
-              <h3 class="timer-text">{{ this.timer$ | async }}</h3>
+            <div class="d-flex justify-content-start align-items-center w-100">
+
+              <div class="card text-white bg-secondary"
+                   [ngClass]="countUpData[0].isStarted === true ? 'border-primary'
+                            : countUpData[0].hasPaused === true ? 'border-warning'
+                            : countUpData[0].isStopped === true ? 'border-dark'
+                            : ''"
+                   *ngIf="countUpData">
+                <div class="card-header">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                    </div>
+                    <div class="badge small" [ngClass]="countUpData[0].isStarted === true ? 'badge-primary'
+                                                      : countUpData[0].hasPaused === true ? 'badge-warning'
+                                                      : countUpData[0].isStopped === true ? 'badge-danger' : ''">
+                      {{ countUpData === undefined ? 'Loading...'
+                        : countUpData[0].isStarted === true ? 'Started'
+                            : countUpData[0].hasPaused === true ? 'Paused'
+                                : countUpData[0].isStopped === true ? 'Stopped' : '' }}
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body text-center">
+                  <h1>{{ this.timer$ | async }}</h1>
+                </div>
+                <div class="card-footer">
+                  <div class="m-3">
+                    <button class="btn btn-success mx-1"
+                            [title]="countUpData[0].isStarted === true ? 'Play'
+                                   : countUpData[0].hasPaused === true ? 'Undo Pause'
+                                   : countUpData[0].isStopped === true ? 'Play' : ''"
+                            [disabled]="countUpData[0].isStarted"
+                            (click)="start()">
+                      <fa-icon [icon]="faPlay" *ngIf="countUpData[0].isStarted === true"></fa-icon>
+                      <fa-icon [icon]="faHistory" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
+                      <fa-icon [icon]="faPlay" *ngIf="countUpData[0].isStopped === true"></fa-icon>
+                      {{ countUpData === undefined ? 'Loading...'
+                        : countUpData[0].isStarted === true ? ''
+                            : countUpData[0].hasPaused === true ? (getCancelTimer(countUpData[0]?.startDate) | async)
+                                : countUpData[0].isStopped === true ? '' : '' }}
+                    </button>
+                    <button class="btn btn-success mx-1"
+                            [title]="'Resume'"
+                            [disabled]=""
+                            (click)="unpause()"
+                            *ngIf="countUpData !== undefined && countUpData[0].hasPaused === true">
+                      <fa-icon [icon]="faPlay"></fa-icon>
+                      {{ (getPausedTimer() | async) }}
+                    </button>
+                    <button class="btn btn-warning mx-1"
+                            [title]="countUpData[0].isStarted === true ? 'Reset'
+                                   : countUpData[0].hasPaused === true ? 'Reset'
+                                   : countUpData[0].isStopped === true ? 'Reset' : ''"
+                            [disabled]="countUpData[0].isStopped"
+                            (click)="reset()">
+                      <fa-icon [icon]="faBackward" *ngIf="countUpData[0].isStarted === true"></fa-icon>
+                      <fa-icon [icon]="faBackward" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
+                      <fa-icon [icon]="faBackward" *ngIf="countUpData[0].isStopped === true"></fa-icon>
+                      {{ countUpData === undefined ? 'Loading...'
+                        : countUpData[0].isStarted === true ? '00:00:00'
+                            : countUpData[0].hasPaused === true ? '00:00:00'
+                                : countUpData[0].isStopped === true ? '' : '' }}
+                    </button>
+                    <button class="btn btn-danger mx-1"
+                            [title]="countUpData[0].isStarted === true ? 'Pause'
+                                   : countUpData[0].hasPaused === true ? 'Stop'
+                                   : countUpData[0].isStopped === true ? 'Pause' : ''"
+                            [disabled]="countUpData[0].isStopped"
+                            (click)="pauseStop(countUpData[0]?.startDate)">
+                      <fa-icon [icon]="faPause" *ngIf="countUpData[0].isStarted === true"></fa-icon>
+                      <fa-icon [icon]="faStop" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
+                      <fa-icon [icon]="faPause" *ngIf="countUpData[0].isStopped === true"></fa-icon>
+                      {{ countUpData === undefined ? 'Loading...'
+                        : countUpData[0].isStarted === true ? (getCancelTimer(countUpData[0]?.startDate) | async)
+                            : countUpData[0].hasPaused === true ? '00:00:00'
+                                : countUpData[0].isStopped === true ? '' : '' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </div>
-          </div>
-          <div class="m-3">
-            <button class="btn btn-success mx-1" (click)="start()">
-              {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'started'
-                : countUpData[0].hasPaused === true ? 'resume + catchup'
-                    : countUpData[0].isStopped === true ? 'start' : '' }}
-            </button>
-            <button class="btn btn-warning mx-1" (click)="reset()">
-              {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'reset'
-                : countUpData[0].hasPaused === true ? 'resume + reset'
-                    : countUpData[0].isStopped === true ? 'reset' : '' }}
-            </button>
-            <button class="btn btn-danger mx-1" (click)="stop()">
-              {{ countUpData === undefined ? 'Loading...' : countUpData[0].isStarted === true ? 'pause'
-                : countUpData[0].hasPaused === true ? 'stop'
-                    : countUpData[0].isStopped === true ? 'stopped' : '' }}
-            </button>
           </div>
         </div>
       </div>
@@ -194,7 +256,9 @@
               <div class="flex-grow-1">
                 <div class="form-group mb-1">
                     <label class="small mb-0" for="imgUrl">Image Url:</label>
-                    <input id="imgUrl" name="imgUrl" type="text" placeholder="https://image.url/image.jpg" class="form-control form-control-sm"
+                    <input id="imgUrl" name="imgUrl" type="text"
+                           class="form-control form-control-sm"
+                           placeholder="https://via.placeholder.com/150"
                            [(ngModel)]="tempTrackedDonation.imgUrl">
                 </div>
               </div>
@@ -237,8 +301,10 @@
                 <label class="small mb-0" for="donationSource">Donation Source:</label>
                 <select id="donationSource" name="donationSource" class="form-control form-control-sm"
                         [(ngModel)]="tempTrackedDonation.donationSource">
-                  <option [ngValue]="'Facebook'" selected="selected">Facebook</option>
+                  <option [ngValue]="'Manual'" selected="selected">Manual</option>
+                  <option [ngValue]="'Facebook'">Facebook</option>
                   <option [ngValue]="'JustGiving'">JustGiving</option>
+                  <option [ngValue]="'Test'">Test</option>
                 </select>
               </div>
 

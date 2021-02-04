@@ -97,8 +97,8 @@ export class CountUpService {
     this.includeMillisecs = value;
   }
 
-  startNewTimer() {
-    this.firebaseTimerService.setCountUpTimerStartDate(Timestamp.now());
+  startNewTimer(timestamp: Timestamp) {
+    this.firebaseTimerService.setCountUpTimerStartDate(timestamp);
     this.firebaseTimerService.setCountUpTimerStopDate(null);
     this.firebaseTimerService.setCountUpTimerIsStarted(true);
     this.firebaseTimerService.setCountUpTimerHasPaused(false);
