@@ -1,4 +1,6 @@
 .omnibar {
+  width: 1920px;
+  max-width: 1920px;
   border-top: 1px solid darkgoldenrod;
   background: -webkit-linear-gradient(-90deg, #313539, #414549);
 }

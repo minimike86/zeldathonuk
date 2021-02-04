@@ -18,6 +18,9 @@ export class LoginComponent implements OnInit {
   private currentUser: firebase.User;
   public faGoogle = faGoogle;
 
+  public inputEmail: string;
+  public inputPassword: string;
+
   constructor(private authService: AuthService,
               private router: Router) {
     this.authService.user$.subscribe(user => {
@@ -39,7 +42,7 @@ export class LoginComponent implements OnInit {
   }
 
   login() {
-    this.authService.login('google');
+    this.authService.login('google', this.inputEmail, this.inputPassword);
   }
 
   showPrivacyPolicyModal() {

@@ -31,7 +31,6 @@ import { JgDonationComponent } from './components/jg-donation/jg-donation.compon
 import { TimersComponent } from './components/timers/timers.component';
 import { FbDonationComponent } from './components/fb-donation/fb-donation.component';
 import { CountupComponent } from './components/timers/countup/countup.component';
-import { CountDateComponent } from './components/timers/count-date/count-date.component';
 import { IncentivesComponent } from './components/incentives/incentives.component';
 import { DonationsComponent } from './components/donations/donations.component';
 import { ObsComponent } from './components/obs/obs.component';
@@ -78,6 +77,7 @@ import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-poli
 import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
 import { AudioVisualizerComponent } from './components/audio-visualizer/audio-visualizer.component';
 import { BreakBrbComponent } from './components/obs/break-brb/break-brb.component';
+import { TextToSpeechComponent } from './components/text-to-speech/text-to-speech.component';
 
 
 @NgModule({
@@ -91,7 +91,6 @@ import { BreakBrbComponent } from './components/obs/break-brb/break-brb.componen
     TimersComponent,
     FbDonationComponent,
     CountupComponent,
-    CountDateComponent,
     IncentivesComponent,
     ScheduleComponent,
     DonationsComponent,
@@ -137,7 +136,8 @@ import { BreakBrbComponent } from './components/obs/break-brb/break-brb.componen
     PrivacyPolicyComponent,
     TermsOfUseComponent,
     AudioVisualizerComponent,
-    BreakBrbComponent
+    BreakBrbComponent,
+    TextToSpeechComponent
   ],
   imports: [
     BrowserModule,

@@ -18,6 +18,11 @@
     <ng-template [ngIf]="layoutString === 'break'">
       <app-break-brb></app-break-brb>
     </ng-template>
-    <app-omnibar></app-omnibar>
+    <ng-template [ngIf]="layoutString === 'tts'">
+      <app-text-to-speech></app-text-to-speech>
+    </ng-template>
+    <ng-template [ngIf]="layoutString === 'omnibar'">
+      <app-omnibar></app-omnibar>
+    </ng-template>
   </div>
 </div>

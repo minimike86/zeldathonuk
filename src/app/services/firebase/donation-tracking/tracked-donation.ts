@@ -9,6 +9,14 @@ export interface TrackedDonationArray {
   donations: TrackedDonation[];
 }
 
+export interface HighlightedDonationId extends HighlightedDonation {
+  id: string;
+}
+export interface HighlightedDonation {
+  donation: TrackedDonation;
+  show: boolean;
+}
+
 export interface TrackedDonation {
   id: string|number;
   name: string;

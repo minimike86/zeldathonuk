@@ -10,20 +10,31 @@
                               url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
   border-radius: 5px;
   height: 44px;
-  width: 60%;
+  width: 70%;
   margin-left: 20%;
   margin-top: 6px;
   z-index: -5;
 }
 
-.donation-text {
+.donation-text-container {
   position: relative;
   top: -0.25em;
+  width: calc(90% - 28px);
+}
+
+.donation-text {
   color: #f5f5f5;
   -webkit-text-stroke: 0.045em black;
   font-size: 32px;
   font-family: 'Bungee', cursive;
   z-index: 0;
+}
+
+.time-ago {
+  position: relative;
+  top: -0.5em;
+  color: #f5f5f5;
+  font-size: 10px;
 }
 
 #last-donors-text {

@@ -48,7 +48,7 @@ export class JgService {
         return fundraisingPageDonations.pagination;
       }),
       // if more pages remain get the donations from them as well
-      tap(pagination => range(1, pagination.totalPages).pipe(
+      tap(pagination => range(2, pagination.totalPages).pipe(
         delay(5 * 1000),
         tap((pageNumber: number) => {
           console.log('pageNumber', pageNumber);

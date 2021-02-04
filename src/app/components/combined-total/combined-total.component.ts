@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {tap} from 'rxjs/operators';
 import {DonationTrackingService} from '../../services/firebase/donation-tracking/donation-tracking.service';
-import {TrackedDonation, TrackedDonationArray} from '../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
 import {Observable} from 'rxjs';
 
 @Component({
@@ -19,8 +19,8 @@ export class CombinedTotalComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.trackedDonationDocIds$ = this.donationTrackingService.getTrackedDonationArray().pipe(
-      tap(trackedDonationDocIds => {
-        this.trackedDonations = trackedDonationDocIds[0].donations;
+      tap((trackedDonationDocIds: TrackedDonationId[]) => {
+        this.trackedDonations = trackedDonationDocIds.find(x => x.id === 'TEST-DONATIONS').donations;
         this.trackedDonationsTotal = this.trackedDonations.reduce((a, b) => a + b.donationAmount, 0);
       })
     );
