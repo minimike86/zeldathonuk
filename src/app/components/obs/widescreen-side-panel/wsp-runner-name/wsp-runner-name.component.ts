@@ -3,6 +3,7 @@ import {faTwitch} from '@fortawesome/free-brands-svg-icons';
 import {RunnerNameId} from '../../../../services/firebase/runner-name/runner-name';
 import {RunnerNameService} from '../../../../services/firebase/runner-name/runner-name.service';
 
+
 @Component({
   selector: 'app-wsp-runner-name',
   templateUrl: './wsp-runner-name.component.html',

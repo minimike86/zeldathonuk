@@ -99,6 +99,10 @@ export class UpNextGameComponent implements OnInit {
       } else if (this.currentlyPlayingId.index === 'LINK-BETWEEN-WORLD' && this.countUpTimer === '00:00:00') {
         return this.gameLineUp['LINK-BETWEEN-WORLD'];
       } else if (this.currentlyPlayingId.index === 'LINK-BETWEEN-WORLD') {
+        return this.gameLineUp['TRIFORCE-HEROES'];
+      } else if (this.currentlyPlayingId.index === 'TRIFORCE-HEROES' && this.countUpTimer === '00:00:00') {
+        return this.gameLineUp['TRIFORCE-HEROES'];
+      } else if (this.currentlyPlayingId.index === 'TRIFORCE-HEROES') {
         return this.gameLineUp['LEGEND-OF-ZELDA'];
       } else if (this.currentlyPlayingId.index === 'LEGEND-OF-ZELDA' && this.countUpTimer === '00:00:00') {
         return this.gameLineUp['LEGEND-OF-ZELDA'];

@@ -9,7 +9,6 @@ import { DonationsComponent } from './components/donations/donations.component';
 import { IncentivesComponent } from './components/incentives/incentives.component';
 import { TimersComponent } from './components/timers/timers.component';
 import { CountupComponent } from './components/timers/countup/countup.component';
-import { CountDateComponent } from './components/timers/count-date/count-date.component';
 import { ObsComponent } from './components/obs/obs.component';
 import { ObsLayoutComponent } from './components/obs/layout/obs-layout.component';
 import { GameTrackingComponent } from './components/game-tracking/game-tracking.component';
@@ -18,6 +17,7 @@ import { ScheduleComponent } from './components/schedule/schedule.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
 import {AudioVisualizerComponent} from './components/audio-visualizer/audio-visualizer.component';
+
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -34,7 +34,6 @@ const routes: Routes = [
   { path: 'schedule', component: ScheduleComponent },
   { path: 'obs', component: ObsComponent },
   { path: 'obs/layout/:layout', component: ObsLayoutComponent },
-  { path: 'obs/countdown', component: CountDateComponent },
   { path: 'obs/audio-countdown', component: AudioVisualizerComponent },
   { path: 'tracking/:game', component: GameTrackingComponent },
   { path: 'api/timers', component: TimersComponent },

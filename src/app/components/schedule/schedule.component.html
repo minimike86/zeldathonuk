@@ -1,6 +1,6 @@
 <div class="d-flex flex-row min-vh-100">
 
-  <div class="p-3 d-none d-lg-block" style="width: 25%;">
+  <div class="p-3 d-none d-xl-block" style="width: 25%;">
     <div class="d-flex flex-column">
 
       <div class="position-absolute">
@@ -85,107 +85,125 @@
       </p>
 
       <div class="table-responsive">
-            <table class="table table-hover table-striped table-dark" style="font-size: 14px;">
-              <thead>
-              <tr>
-                <th scope="col">Day</th>
-                <th scope="col">Time</th>
-                <th scope="col" class="d-none d-sm-block d-md-none">Console</th>
-                <th scope="col" class="d-none d-md-block d-lg-none">Timeline</th>
-                <th scope="col">Game</th>
-                <th scope="col">Runner(s)</th>
-              </tr>
-              </thead>
-              <tbody>
+        <table class="table table-hover table-striped table-dark" style="font-size: 12px;">
+          <thead>
+            <tr>
+              <th scope="col">Day</th>
+              <th scope="col">Time</th>
+              <th scope="col">
+                <div class="d-none d-md-block">
+                  Console
+                </div>
+              </th>
+              <th scope="col">
+                <div class="d-none d-md-block">
+                  Timeline
+                </div>
+              </th>
+              <th scope="col">Game</th>
+              <th scope="col">
+                <div class="d-none d-md-block">
+                  Runner(s)
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
 
-              <tr *ngFor="let game of gameList; let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
+            <tr *ngFor="let game of gameList; let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
 
-                <td class="align-middle">
-                  <div class="">
-                    {{ game.startDate | date:'EEE dd' }}
-                  </div>
-                  <div class="text-white-50">
-                    {{ game.startDate | date:'MMM yyyy' }}
-                  </div>
-                </td>
+              <td class="align-middle">
+                <div class="">
+                  {{ game.startDate | date:'EEE dd' }}
+                </div>
+                <div class="text-white-50">
+                  {{ game.startDate | date:'MMM yyyy' }}
+                </div>
+              </td>
 
-                <td class="align-middle">
-                  <div class="">
-                    {{ game.startDate | date:'hh:mm' }}
-                  </div>
-                  <div class="text-white-50">
-                    {{ game.startDate | date:'aa' }}
-                  </div>
-                </td>
+              <td class="align-middle">
+                <div class="">
+                  {{ game.startDate | date:'hh:mm' }}
+                </div>
+                <div class="text-white-50">
+                  {{ game.startDate | date:'aa' }}
+                </div>
+              </td>
 
-                <td class="align-middle text-center d-none d-sm-block d-md-none">
+              <td class="align-middle text-center">
+                <div class="d-none d-md-block">
                   <div class="badge badge-pill badge-secondary p-2">
                     {{ game.console }}
                   </div>
-                </td>
+                </div>
+              </td>
 
-                <td class="align-middle text-center d-none d-md-block d-lg-none">
+              <td class="align-middle text-center">
+                <div class="d-none d-md-block">
                   <div class="badge badge-pill badge-light p-2">
                     {{ game.timeline }}
                   </div>
-                </td>
+                </div>
+              </td>
 
-                <td class="align-middle">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex flex-column mr-2">
-                      <img [src]="game.boxArt" [alt]="game.name + ' Cover Art'" style="max-width: 50px;"
-                           [title]="game.name + ' Cover Art'">
-                    </div>
-                    <div class="text-center w-100">
-                      <p class="mb-1">
-                        {{ game.name }} ({{ game.releaseDate }})
-                        <ng-container *ngIf="hasBeenPlayed(i) && !isCurrentlyPlaying(i)">
-                            <span class="badge badge-warning m-2">
-                              COMPLETED
-                            </span>
-                        </ng-container>
-                        <ng-container *ngIf="isCurrentlyPlaying(i) && isLive">
-                          <div class="d-inline-block m-2" (click)="routeToLiveView()">
-                            <span class="badge badge-danger" style="cursor: pointer;" title="Watch Livestream">
-                              LIVE
-                            </span>
-                            <div class="d-inline-block live-circle ml-1"></div>
-                          </div>
-                        </ng-container>
-                      </p>
-                      <ng-container *ngFor="let badge of game.extraBadges">
-                        <ng-container *ngIf="badge.url">
-                            <span class="badge m-2" [ngClass]="badge.type">
-                              <a class="text-white" [href]="badge.url" target="_blank">{{ badge.text }}</a>
-                            </span>
-                        </ng-container>
-                        <ng-container *ngIf="!badge.url">
-                            <span class="badge m-2" [ngClass]="badge.type">
-                              {{ badge.text }}
-                            </span>
-                        </ng-container>
-                      </ng-container>
-                    </div>
+              <td class="align-middle">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="d-flex flex-column mr-2">
+                    <img [src]="game.boxArt" [alt]="game.name + ' Cover Art'" style="max-width: 50px;"
+                         [title]="game.name + ' Cover Art'">
                   </div>
-                </td>
+                  <div class="text-center w-100">
+                    <p class="mb-1">
+                      {{ game.name }} ({{ game.releaseDate }})
+                      <ng-container *ngIf="hasBeenPlayed(i) && !isCurrentlyPlaying(i)">
+                          <span class="badge badge-warning m-2">
+                            COMPLETED
+                          </span>
+                      </ng-container>
+                      <ng-container *ngIf="isCurrentlyPlaying(i) && isLive">
+                        <div class="d-inline-block m-2" (click)="routeToLiveView()">
+                          <span class="badge badge-danger" style="cursor: pointer;" title="Watch Livestream">
+                            LIVE
+                          </span>
+                          <div class="d-inline-block live-circle ml-1"></div>
+                        </div>
+                      </ng-container>
+                    </p>
+                    <ng-container *ngFor="let badge of game.extraBadges">
+                      <ng-container *ngIf="badge.url">
+                          <span class="badge m-2" [ngClass]="badge.type">
+                            <a class="text-white" [href]="badge.url" target="_blank">{{ badge.text }}</a>
+                          </span>
+                      </ng-container>
+                      <ng-container *ngIf="!badge.url">
+                          <span class="badge m-2" [ngClass]="badge.type">
+                            {{ badge.text }}
+                          </span>
+                      </ng-container>
+                    </ng-container>
+                  </div>
+                </div>
+              </td>
 
-                <td class="align-middle text-center">
+              <td class="align-middle text-center">
+                <div class="d-none d-md-block">
                   <ng-container *ngFor="let runner of game.runners">
                     <a [href]="runner.channelUrl" target="_blank"><span class="badge badge-pill badge-secondary p-2">{{ runner.name }}</span></a>
                   </ng-container>
-                </td>
+                </div>
+              </td>
 
-              </tr>
+            </tr>
 
-              </tbody>
-            </table>
-          </div>
+          </tbody>
+        </table>
+      </div>
 
     </div>
 
   </div>
 
-  <div class="p-3 d-none d-lg-block" style="width: 25%">
+  <div class="p-3 d-none d-xl-block" style="width: 25%">
     <div class="position-absolute" style="margin-right: 2rem;">
       <div class="card bg-dark text-light small">
         <div class="text-center card card-header bg-dark text-light">

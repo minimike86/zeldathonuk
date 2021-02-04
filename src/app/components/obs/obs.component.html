@@ -10,34 +10,49 @@
         </div>
         <div class="w-100" *ngIf="showObsLayouts">
           <div class="card border-secondary layout-list">
+            <div class="card-header">Audio Visualiser</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/audioviz-layout-preview.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/audio-countdown">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">Break</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/break-layout-preview.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/break">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">Omnibar</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/omnibar-layout-preview.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/omnibar">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">TTS</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/tts-layout-preview.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/tts">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
             <div class="card-header">Standard (4:3)</div>
-            <img class="card-img" src="../../../assets/img/obs-preview/standard-layout-preview.PNG">
+            <img class="card-img" src="../../../assets/img/obs-preview/standard-layout-preview.png">
             <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/standard">Open</a></div>
           </div>
           <div class="card border-secondary layout-list">
             <div class="card-header">Widescreen (16:9)</div>
-            <img class="card-img" src="../../../assets/img/obs-preview/widescreen-layout-preview.PNG">
+            <img class="card-img" src="../../../assets/img/obs-preview/widescreen-layout-preview.png">
             <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/widescreen">Open</a></div>
           </div>
           <div class="card border-secondary layout-list">
             <div class="card-header">3DS</div>
-            <img class="card-img" src="../../../assets/img/obs-preview/ds3-layout-preview.PNG">
+            <img class="card-img" src="../../../assets/img/obs-preview/ds3-layout-preview.png">
             <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/3ds">Open</a></div>
+          </div>
+          <div class="card border-secondary layout-list">
+            <div class="card-header">DS (Top Focus)</div>
+            <img class="card-img" src="../../../assets/img/obs-preview/ds-layout-preview.png">
+            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/ds">Open</a></div>
           </div>
           <div class="card border-secondary layout-list">
             <div class="card-header">DS (Vertical)</div>
             <img class="card-img" src="../../../assets/img/obs-preview/dsv-layout-preview.PNG">
             <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/dsv">Open</a></div>
-          </div>
-          <div class="card border-secondary layout-list">
-            <div class="card-header">DS</div>
-            <img class="card-img" src="../../../assets/img/obs-preview/ds-layout-preview.PNG">
-            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/ds">Open</a></div>
-          </div>
-          <div class="card border-secondary layout-list">
-            <div class="card-header">Audio Visualiser</div>
-            <img class="card-img" src="https://dm0qx8t0i9gc9.cloudfront.net/thumbnails/video/bOFlXnz/videoblocks-audio-spectrum-line-waveform-animation-on-alpha-channel-background_bcqs2uswx_thumbnail-1080_01.png">
-            <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/audio-countdown">Open</a></div>
           </div>
         </div>
       </div>
@@ -46,7 +61,40 @@
 
       <div class="mb-3">
         <div class="d-flex justify-content-between">
-          <h3 class="text-dark pt-2">Timer</h3>
+          <h3 class="text-dark pt-2">Break Timer</h3>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowBreakCountdownDate();">Show/Hide</button>
+        </div>
+        <div class="d-flex flex-column" *ngIf="showBreakCountdownDate">
+          <div class="d-flex justify-content-start align-items-center mt-2">
+            <div class="d-flex align-items-center m-1 w-25">
+              <span class="timer-label ml-2">Break Countdown to Date:</span>
+            </div>
+            <div class="d-flex justify-content-start align-items-center w-75">
+              <form class="d-flex align-self-center">
+                <div class="form-group">
+                  <label class="small mb-0" for="breakCountdownDate">Break Countdown Date:</label>
+                  <input id="breakCountdownDate" name="breakCountdownDate" type="date" class="form-control form-control-sm"
+                         [(ngModel)]="breakCountdownDate">
+                </div>
+                <div class="form-group ml-2">
+                  <label class="small mb-0" for="breakCountdownTime">Time:</label>
+                  <input id="breakCountdownTime" name="breakCountdownTime" type="time" class="form-control form-control-sm"
+                         [(ngModel)]="breakCountdownTime">
+                </div>
+                <div class="d-flex align-self-center ml-2">
+                  <button class="btn btn-primary" (click)="setBreakCountdown()">Set Break Timer</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="hr">
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <h3 class="text-dark pt-2">Play Timer</h3>
           <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();">Show/Hide</button>
         </div>
         <div class="d-flex flex-column" *ngIf="showTimer">

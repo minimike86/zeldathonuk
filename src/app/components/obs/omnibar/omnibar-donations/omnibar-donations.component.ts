@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import {from, Observable, of, pipe} from 'rxjs';
-import {concatMap, delay, finalize, flatMap, map, mergeMap, switchMap, tap, timeout} from 'rxjs/operators';
+import {concatMap, delay, finalize, map, tap} from 'rxjs/operators';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@angular/animations';
 import {OmnibarContentService} from '../../../../services/omnibar-content-service/omnibar-content-service.service';
 import {DonationTrackingService} from '../../../../services/firebase/donation-tracking/donation-tracking.service';
-import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from '../../../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation, TrackedDonationId} from '../../../../services/firebase/donation-tracking/tracked-donation';
 
 @Component({
   selector: 'app-omnibar-donations',
@@ -69,13 +69,24 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
 
     this.trackedDonationArray$ = this.donationTrackingService.getTrackedDonationArray().pipe(
       map((trackedDonationIds: TrackedDonationId[]) => {
-        return trackedDonationIds[0]?.donations;
+        return trackedDonationIds.find(x => x.id === 'TEST-DONATIONS')?.donations;
       }),
       map((trackedDonations: TrackedDonation[]) => {
         trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => {
           return b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime();
         });
         this.lastTenDonations = trackedDonations.slice(0, 10);
+        console.log('lastTenDonations', this.lastTenDonations.map(x => {
+          return {
+            name: x.name,
+            date: x.donationDate.toDate(),
+            imgUrl: x.imgUrl,
+            message: x.message,
+            currency: x.currency,
+            donationAmount: x.donationAmount,
+            donationSource: x.donationSource
+          };
+        }));
         this.displayDonations();
         return trackedDonations;
       })
@@ -86,10 +97,10 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   }
 
   displayDonations() {
-    const initialWait: number = 1 * 1000;
-    const slideInFromRightDuration: number = 2 * 1000;
-    const slideOutToLeftDuration: number = 2 * 1000;
-    const showDonationDuration: number = 8 * 1000;
+    const initialWait: number = 2 * 1000;
+    const slideInFromRightDuration: number = 0.5 * 1000;
+    const slideOutToLeftDuration: number = 1 * 1000;
+    const showDonationDuration: number = 10 * 1000;
 
     // iterate donations
     // console.log('lastTenDonations', this.lastTenDonations);
@@ -97,8 +108,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
 
       from(this.lastTenDonations).pipe(
         delay(initialWait),
-        map((donation: TrackedDonation) => donation),
-        pipe(donation => donation.pipe(
+        concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
           delay(slideInFromRightDuration),
           tap((donationItem: TrackedDonation) => {
             this.showDonation(donationItem);

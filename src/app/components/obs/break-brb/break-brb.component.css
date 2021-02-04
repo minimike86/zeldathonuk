@@ -1,0 +1,70 @@
+.break-container {
+  height: calc(1080px - 56px);
+  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.75) 20%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%);
+}
+
+.break-container:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: calc(1080px - 56px);
+  width: 1920px;
+  background: url("../../../../assets/img/obs-bg/tumblr_ozphtmRXHa1ujgw92o2_1280.gif") no-repeat;
+  background-size: cover;
+  opacity: 0.15;
+}
+
+.break-container:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: calc(1080px - 56px);
+  width: 1920px;
+  background: url("../../../../assets/img/obs-bg/hylian-symbol-1.png") round space;
+  opacity: 0.05;
+}
+
+.zeldathon-logo {
+  max-height: 150px;
+  z-index: 100;
+}
+
+.opacity-60 {
+  opacity: 0.6;
+}
+
+.countdown-container {
+  width: 480px;
+  z-index: 100;
+}
+
+.break-title-pretext {
+  margin-left: 0.2em;
+  font-family: 'Bungee', cursive;
+  font-size: 2em;
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.break-title-text {
+  position: relative;
+  top: -0.3em;
+  font-family: 'Bungee', cursive;
+  font-size: 6em;
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+  z-index: 100;
+}
+
+.special-effect-image {
+  height: 100px;
+  max-height: 100px;
+}
+
+.gameblast-image {
+  max-height: 100px;
+}

@@ -23,24 +23,30 @@ export class SspGameDescriptionComponent implements OnInit {
 
   constructor( private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService ) {
-    currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
+
+    this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
       this.gameId = data[0];
-      console.log('this.gameId', this.gameId);
+      if (this.gameLineUp) {
+        this.gameDesc = this.gameLineUp[this.gameId.index];
+      }
+      // console.log('this.gameId', this.gameId);
     })).subscribe();
+
     this.gameLineupService.getGameLineUp().pipe(map(data => {
       this.gameLineUp = data[0].gameLineUp;
       this.gameDesc = this.gameLineUp[this.gameId.index];
-      console.log('gameLineUp', this.gameLineUp);
+      // console.log('gameLineUp', this.gameLineUp);
     })).subscribe();
+
   }
 
   ngOnInit() {
     this.pos = 0;
     this.direction = true;
     this.secondsCounter$ = interval(75);
-    this.subscription = this.secondsCounter$.subscribe(n => {
+    this.subscription = this.secondsCounter$.pipe(map(n => {
       this.updatePos(n);
-    });
+    })).subscribe();
   }
 
   updatePos(n: number) {

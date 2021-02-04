@@ -38,13 +38,13 @@ export class AuthService {
     return this.afAuth.authState !== null;
   }
 
-
-  login(provider: string) {
+  login(provider: string, inputEmail: string, inputPassword: string) {
     console.log('logging in');
     switch (provider) {
       case 'google':
-        this.afAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-          .then((credential) => {
+        this.afAuth.signInWithEmailAndPassword(inputEmail, inputPassword)
+          .then((credential: any) => {
+            console.log('credential', credential);
             this.updateUserData(credential.user);
           });
         break;

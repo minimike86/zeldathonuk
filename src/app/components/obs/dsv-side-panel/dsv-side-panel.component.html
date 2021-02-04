@@ -1,15 +1,18 @@
-<div class="d-flex flex-column side-panel">
-  <app-dsv-game-description></app-dsv-game-description>
-  <app-dsv-camera></app-dsv-camera>
-  <app-dsv-runner-name></app-dsv-runner-name>
-  <app-dsv-timer></app-dsv-timer>
-  <app-dsv-ad-panel></app-dsv-ad-panel>
-</div>
-<div class="d-flex dsv-panel">
-  <div class="ds-left-spacer"></div>
-  <div class="ds-screen">
-    <div class="ds-top-screen"></div>
-    <div class="ds-screen-gap"></div>
-    <div class="ds-bottom-screen"></div>
+<div class="position-relative">
+  <div class="d-flex flex-column side-panel">
+    <app-dsv-game-description></app-dsv-game-description>
+    <app-dsv-camera></app-dsv-camera>
+    <div class="fake-background">
+      <app-dsv-runner-name></app-dsv-runner-name>
+      <app-dsv-timer></app-dsv-timer>
+    </div>
+    <app-dsv-ad-panel></app-dsv-ad-panel>
+  </div>
+  <div class="d-flex justify-content-center dsv-panel">
+    <div class="ds-screen">
+      <div class="ds-top-screen"></div>
+      <div class="ds-screen-gap"></div>
+      <div class="ds-bottom-screen"></div>
+    </div>
   </div>
 </div>

@@ -1,58 +1,69 @@
 <div class="side-panel spt">
-  <div class="d-flex spt-game" style="height:175px; max-height:175px;">
+  <div class="d-flex flex-column spt-game-panel-container">
 
     <div class="spt-game-img-container">
       <img class="spt-game-img"
+           alt="Cover Art"
            [ngStyle]="{ 'top.px': pos }"
            [src]="gameDesc.coverArt">
     </div>
 
-    <div class="d-flex justify-content-center align-items-center spt-game-text">
-      <h1 class="text-center" style="width: 90%; overflow-wrap: break-word;">
-        {{ gameDesc.gameName | uppercase }}
-      </h1>
-    </div>
+    <div class="spt-game p-2">
 
-  </div>
-  <div class="d-flex justify-content-start spt-type"
-       style="height:30px; max-height:30px; margin: 0; margin-top: -15px;">
+      <div class="spt-game-panel">
 
-    <div class="d-flex justify-content-center align-items-center spt-type-text"
-         style="height:30px; width: 90%;">
-      {{ gameDesc.gameType }}
-    </div>
-
-  </div>
-  <div class="d-flex justify-content-center align-items-center spt-platform"
-       style="height:85px; max-height:85px; margin-top: -20px;">
-
-    <div class="d-flex justify-content-center text-center spt-platform-bg"></div>
-    <div class="d-flex justify-content-center text-center spt-platform-content"
-         style="height:30px; width: 90%;">
-      <div style="width: 33%;">
-        <div class="spt-platform-text br-l p-1">
-          {{ gameDesc.gamePlatform }}
+        <div class="d-flex justify-content-center spt-game-text">
+          <div class="d-flex flex-column">
+            <h1 class="d-flex align-self-center text-center mb-0" style="overflow-wrap: break-word;">
+              {{ gameDesc.gameName.split(':')[0] + ':' | uppercase }}
+            </h1>
+            <h1 class="d-flex align-self-center text-center" style="overflow-wrap: break-word;">
+              {{ gameDesc.gameName.split(':')[1] | uppercase }}
+            </h1>
+          </div>
         </div>
-        <div class="small">
-          Platform
+
+        <div class="spt-type">
+          <div class="spt-type-text text-center"
+               style="width: 100%;">
+            {{ gameDesc.gameType }}
+          </div>
         </div>
+
+        <div class="d-flex justify-content-center spt-platform mt-2">
+
+          <div class="d-flex justify-content-center text-center spt-platform-content"
+               style="height:30px; width: 90%;">
+            <div style="width: 33%;">
+              <div class="spt-platform-text br-l p-1">
+                {{ gameDesc.gamePlatform }}
+              </div>
+              <div class="small text-shadow-black">
+                Platform
+              </div>
+            </div>
+            <div style="width: 33%;">
+              <div class="spt-platform-text align-items-center br-m mx-1 p-1">
+                {{ gameDesc.gameRelYear }}
+              </div>
+              <div class="small text-shadow-black">
+                Release Year
+              </div>
+            </div>
+            <div style="width: 33%;">
+              <div class="spt-platform-text br-r p-1">
+                {{ gameDesc.gameEstimate }}
+              </div>
+              <div class="small text-shadow-black">
+                Estimate
+              </div>
+            </div>
+          </div>
+
+        </div>
+
       </div>
-      <div style="width: 33%;">
-        <div class="spt-platform-text align-items-center br-m mx-1 p-1">
-          {{ gameDesc.gameRelYear }}
-        </div>
-        <div class="small">
-          Release Year
-        </div>
-      </div>
-      <div style="width: 33%;">
-        <div class="spt-platform-text br-r p-1">
-          {{ gameDesc.gameEstimate }}
-        </div>
-        <div class="small">
-          Estimate
-        </div>
-      </div>
+
     </div>
 
   </div>

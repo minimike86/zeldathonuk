@@ -11,11 +11,11 @@
   </div>
   <div class="flex-grow-1">
     <div class="omnibar-content" id="omnibar_content">
-      <ng-container *ngIf="(currentOmnibarContentId$ | async) as ocid">
-        <app-up-next-game *ngIf="ocid == 1" style="height:56px; max-height:56px;"></app-up-next-game>
-        <app-call-to-action *ngIf="ocid == 2" style="height:56px; max-height:56px;"></app-call-to-action>
-        <app-omnibar-donations *ngIf="ocid == 3" style="height:56px; max-height:56px;"></app-omnibar-donations>
-        <app-omnibar-donation-plea *ngIf="ocid == 4" style="height:56px; max-height:56px;"></app-omnibar-donation-plea>
+      <ng-container *ngIf="(currentOmnibarContentId$ | async) as coid">
+        <app-up-next-game *ngIf="coid == 1" style="height:56px; max-height:56px;"></app-up-next-game>
+        <app-call-to-action *ngIf="coid == 2" style="height:56px; max-height:56px;"></app-call-to-action>
+        <app-omnibar-donations *ngIf="coid == 3" style="height:56px; max-height:56px;"></app-omnibar-donations>
+        <app-omnibar-donation-plea *ngIf="coid == 4" style="height:56px; max-height:56px;"></app-omnibar-donation-plea>
       </ng-container>
     </div>
   </div>

@@ -28,11 +28,12 @@ export class DonationTrackingService {
 
   constructor( private jgService: JgService,
                private db: AngularFirestore ) {
+    this.trackedDonations = [];
     this.trackedDonationCollection = db.collection<TrackedDonationArray>('/donations');
-    this.trackedDonationDoc = this.trackedDonationCollection.doc('DONATIONS');
+    this.trackedDonationDoc = this.trackedDonationCollection.doc('TEST-DONATIONS');
     this.getTrackedDonationArray().subscribe( data => {
       this.trackedDonationArray = data;
-      this.trackedDonations = data[0].donations;
+      this.trackedDonations = data.find(x => x.id === 'TEST-DONATIONS').donations;
     });
   }
 
@@ -51,7 +52,7 @@ export class DonationTrackingService {
     this.trackedDonationDoc.ref.update({
       donations: FieldValue.arrayUnion(...trackedDonation)
     }).then(() => {
-      console.log('Document successfully written!');
+      console.log('TrackedDonation Document successfully written!');
     });
   }
 
@@ -60,7 +61,7 @@ export class DonationTrackingService {
     this.trackedDonationDoc.ref.update({
       donations: FieldValue.arrayRemove(...trackedDonation)
     }).then(() => {
-      console.log('Document successfully written!');
+      console.log('TrackedDonation Document successfully written!');
     });
   }
 

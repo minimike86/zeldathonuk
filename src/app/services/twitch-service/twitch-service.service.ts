@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {HttpClient, HttpErrorResponse, HttpHeaders} from '@angular/common/http';
+import {Observable, throwError} from 'rxjs';
+import {catchError, delay, map, retry} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -19,16 +20,6 @@ export class TwitchService {
   constructor(private http: HttpClient) {
   }
 
-  getAccessToken() {
-    this.http.post<AccessToken>(
-      `https://id.twitch.tv/oauth2/token?client_id=${this.clientId}
-      &client_secret=${this.clientSecret}
-      &grant_type=client_credentials`, null).subscribe(data => {
-        this.accessToken = data;
-        console.log('accessToken', data);
-    });
-  }
-
   getChannelInformation(broadcasterId: string): Observable<ChannelInformation> {
     const httpHeaders = new HttpHeaders()
       .set('Authorization', `Bearer ${this.accessToken.access_token}`)
@@ -41,14 +32,16 @@ export class TwitchService {
     const httpHeaders = new HttpHeaders()
       .set('Authorization', `Bearer ${this.accessToken.access_token}`)
       .set('Client-Id', this.clientId);
-    return this.http.get<SearchChannelsResponse>(
-      `https://api.twitch.tv/helix/search/channels?query=${query}&first=${first}&live_only=${liveOnly}`, {headers: httpHeaders});
+    return this.http.get<RawSearchChannelsResponse>(
+      `https://api.twitch.tv/helix/search/channels?query=${query}&first=${first}&live_only=${liveOnly}`,
+      {headers: httpHeaders}).pipe(map(rawData => {
+        return rawData.data[0];
+    }));
   }
 
 }
 
-
-interface AccessToken {
+export interface AccessToken {
   access_token: string;
   refresh_token?: string;
   expires_in: number;
@@ -56,8 +49,7 @@ interface AccessToken {
   token_type: string;
 }
 
-
-interface ChannelInformation {
+export interface ChannelInformation {
   broadcaster_id: string;       // Twitch User ID of this channel owner
   broadcaster_name: string;     // Twitch user display name of this channel owner
   game_name: string;            // Name of the game being played on the channel
@@ -66,8 +58,14 @@ interface ChannelInformation {
   title: string;                // Title of the stream
 }
 
+export interface RawSearchChannelsResponse {
+  data: SearchChannelsResponse[];
+  pagination: {
+    cursor: string
+  };
+}
 
-interface SearchChannelsResponse {
+export interface SearchChannelsResponse {
   game_id: string;
   id: string;
   display_name: string;

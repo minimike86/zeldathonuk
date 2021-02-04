@@ -1,0 +1,25 @@
+<div class="position-relative">
+  <div class="d-flex justify-content-center min-vh-100" style="background-color: #303030;">
+    <div class="d-flex align-self-center">
+      <div class="d-flex flex-column">
+        <div>
+          <h1 class="d-flex justify-content-center text-white m-5" style="word-break: break-all;">
+            &ldquo;{{ this.speakText }}&rdquo;
+          </h1>
+          <h1 class="d-flex justify-content-center m-5">
+            <span class="badge" [ngClass]="speech.speaking() ? 'badge-warning' : 'badge-success'">
+              {{ speech.speaking() ? 'SPEAKING' : 'NOT SPEAKING' }}
+              <fa-icon [icon]="speech.speaking() ? faCommentDollar : faCommentSlash"></fa-icon>
+            </span>
+          </h1>
+        </div>
+        <div class="d-flex justify-content-center">
+          <button class="btn btn-danger btn-lg p-5"
+                  (click)="emergencyStop()">
+            EMERGENCY STOP TSS
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

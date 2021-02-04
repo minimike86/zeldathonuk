@@ -18,16 +18,28 @@
         <div class="donation-container mx-2">
           <div class="donation" [@showDonation]=currentState>
             <div class="h-100 p-1">
-              <div class="d-flex justify-content-between flex-fill">
+              <div class="d-flex justify-content-between flex-fill" style="max-height: 38px;">
                 <div class="d-flex align-self-center" style="max-width: 10%;">
-                  <img class="position-relative" style="top: -12px; max-height: 56px;"
+                  <img class="position-relative" style="max-height: 56px;"
                        src="../../../../../assets/img/obs-bg/tingle-kaloo-limpah.gif" alt="tingle">
                 </div>
-                <div class="d-flex align-self-center" style="max-width: 60%;">
-                  <h1 class="donation-text text-truncate mb-0">{{ highlightedDonation?.name }}</h1>
-                </div>
-                <div class="d-flex align-self-center mx-2" style="max-width: 30%;">
-                  <h1 class="donation-text mb-0">{{ highlightedDonation?.donationAmount | currency:highlightedDonation?.currency }}</h1>
+                <div class="d-flex flex-column donation-text-container">
+                  <div class="d-flex justify-content-between" style="max-height: 28px;">
+                    <div class="" style="max-width: 500px;">
+                      <h1 class="donation-text text-truncate mb-0">{{ highlightedDonation?.name }}</h1>
+                    </div>
+                    <div class="mx-2">
+                      <h1 class="donation-text mb-0">{{ highlightedDonation?.donationAmount | currency:highlightedDonation?.currency }}</h1>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-between" style="height: 14px; max-height: 14px;">
+                    <div class="text-truncate" style="max-width: 500px;">
+                      <span class="time-ago" *ngIf="highlightedDonation">{{ highlightedDonation?.message.length >= 1 ? highlightedDonation.message : 'Thank You!' }}</span>
+                    </div>
+                    <div class="mx-2">
+                      <span class="time-ago" *ngIf="highlightedDonation">{{ timeAgo.format(highlightedDonation.donationDate.toDate()) }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
