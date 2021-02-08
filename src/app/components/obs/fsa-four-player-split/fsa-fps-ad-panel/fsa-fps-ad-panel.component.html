@@ -6,7 +6,7 @@
 
     <div class="advertisement-panel mt-2 ml-2">
       <div class="d-flex justify-content-center h-100 w-100">
-        <div class="d-flex align-self-start w-100" style="padding-top: 94px;">
+        <div class="d-flex align-self-center w-100" style="padding-top: 28px;">
 
           <ng-container *ngIf="(donationHighlight$ | async) as donationHighlight;">
             <ng-container *ngIf="donationHighlight.donation !== null; else showCharityLogos;">
@@ -74,7 +74,7 @@
 </div>
 
 <ng-template #showCharityLogos>
-  <div class="d-flex justify-content-center w-50 mx-auto" style="height: 304px">
+  <div class="d-flex justify-content-center w-50 mx-auto" style="height: 376px">
     <div class="d-flex align-self-center">
       <img class="advertisement-img"
            alt="Charity Logo"

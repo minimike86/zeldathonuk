@@ -1,0 +1,25 @@
+.side-panel {
+  border-right: 2px solid darkgoldenrod;
+}
+
+.screen {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 2em;
+  color: white;
+  padding: 8px 8px 8px 16px;
+  width: 100%;
+}
+
+.big-screen {
+  height: 804px;
+}
+
+.small-screen {
+  height: 220px;
+  border: darkgoldenrod 2px solid;
+  border-left: darkgoldenrod 0 solid;
+}
+
+.small-screen:last-child {
+  border-right: 0;
+}

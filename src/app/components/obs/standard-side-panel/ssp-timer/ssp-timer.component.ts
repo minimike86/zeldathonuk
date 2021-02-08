@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {AfterContentInit, ChangeDetectorRef, Component, OnInit} from '@angular/core';
 import { CountUpService } from '../../../../services/countup-service/countup.service';
 import {Observable, of} from 'rxjs';
 import {map} from 'rxjs/operators';
@@ -8,20 +8,26 @@ import {map} from 'rxjs/operators';
   templateUrl: './ssp-timer.component.html',
   styleUrls: ['./ssp-timer.component.css']
 })
-export class SspTimerComponent implements OnInit {
+export class SspTimerComponent implements OnInit, AfterContentInit {
   public countUpTimer$: Observable<string>;
   public countUpTimer: string;
   public timeToShow = 'local';
   public count = 0;
 
-  constructor(private countUpService: CountUpService) {
+  public localTime = '';
+  public totalTime = '';
+
+  constructor( private countUpService: CountUpService,
+               private cdRef: ChangeDetectorRef ) {
   }
 
   ngOnInit() {
     this.countUpTimer$ = this.countUpService.getTimer().pipe(map(countUpTimer => {
       return this.countUpTimer = countUpTimer;
     }));
+  }
 
+  ngAfterContentInit(): void {
     setInterval(() => {
       if (this.count >= 0 && this.count < 30) {
         this.timeToShow = 'total';
@@ -32,6 +38,17 @@ export class SspTimerComponent implements OnInit {
       } else {
         this.count = 0;
       }
+
+      this.getLocalTime().pipe(map(time => {
+        this.localTime = time;
+        this.cdRef.detectChanges();
+      })).subscribe();
+
+      this.getTotalTime().pipe(map(time => {
+        this.totalTime = time;
+        this.cdRef.detectChanges();
+      })).subscribe();
+
     }, 1000);
 
   }
