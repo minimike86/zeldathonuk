@@ -49,7 +49,7 @@ export class BreakBrbComponent implements OnInit, AfterViewInit {
         minutes: minutes,
         seconds: seconds
       };
-      console.log('calcTimeRemaining', this.milliseconds );
+      // console.log('calcTimeRemaining', this.milliseconds );
       this.updateTimer();
     }, 1000);
   }

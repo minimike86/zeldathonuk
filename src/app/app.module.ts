@@ -78,6 +78,8 @@ import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.comp
 import { AudioVisualizerComponent } from './components/audio-visualizer/audio-visualizer.component';
 import { BreakBrbComponent } from './components/obs/break-brb/break-brb.component';
 import { TextToSpeechComponent } from './components/text-to-speech/text-to-speech.component';
+import { FsaFourPlayerSplitComponent } from './components/obs/fsa-four-player-split/fsa-four-player-split.component';
+import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/fsa-fps-ad-panel/fsa-fps-ad-panel.component';
 
 
 @NgModule({
@@ -137,7 +139,9 @@ import { TextToSpeechComponent } from './components/text-to-speech/text-to-speec
     TermsOfUseComponent,
     AudioVisualizerComponent,
     BreakBrbComponent,
-    TextToSpeechComponent
+    TextToSpeechComponent,
+    FsaFourPlayerSplitComponent,
+    FsaFpsAdPanelComponent
   ],
   imports: [
     BrowserModule,

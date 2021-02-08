@@ -21,7 +21,7 @@ export class CombinedTotalComponent implements OnInit, AfterViewInit {
     this.trackedDonationDocIds$ = this.donationTrackingService.getTrackedDonationArray().pipe(
       tap((trackedDonationDocIds: TrackedDonationId[]) => {
         this.trackedDonations = trackedDonationDocIds.find(x => x.id === 'TEST-DONATIONS').donations;
-        this.trackedDonationsTotal = this.trackedDonations.reduce((a, b) => a + b.donationAmount, 0);
+        this.trackedDonationsTotal = this.trackedDonations?.reduce((a, b) => a + b.donationAmount, 0);
       })
     );
   }

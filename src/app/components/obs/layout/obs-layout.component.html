@@ -6,6 +6,9 @@
     <ng-template [ngIf]="layoutString === 'widescreen'">
       <app-widescreen-side-panel></app-widescreen-side-panel>
     </ng-template>
+    <ng-template [ngIf]="layoutString === 'fsa-4p-split'">
+      <app-fsa-four-player-split></app-fsa-four-player-split>
+    </ng-template>
     <ng-template [ngIf]="layoutString === '3ds'">
       <app-ds3-bottom-panel></app-ds3-bottom-panel>
     </ng-template>

@@ -130,6 +130,7 @@ export class WspAdPanelComponent implements OnInit {
     imageUrls.push('url("../../../../../assets/img/obs-bg/EQFVz-PVUAEGpUM.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-bg/HEvAqqv.png")');
     imageUrls.push('url("../../../../../assets/img/obs-bg/EsHr6JBXMAE9sxV.jpg")');
+    imageUrls.push('url("../../../../../assets/img/obs-bg/EtpZSlGUcAMyNSC.jpg")');
     // SPECIAL EFFECT IMAGES
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/5hfgyufk8.jpg")');
     imageUrls.push('url("../../../../../assets/img/obs-specialeffect/1310-1024x576.jpg")');

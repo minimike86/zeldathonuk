@@ -1,10 +1,77 @@
 <div class="d-flex flex-column side-panel">
-  <div class="ds-secondary-screen"></div>
+
+  <div class="ds-secondary-screen">
+    <div class="d-flex justify-content-center h-100">
+      <div class="d-flex align-items-center w-100">
+        <ng-container *ngIf="(donationHighlight$ | async) as donationHighlight;">
+          <ng-container *ngIf="donationHighlight.donation !== null;">
+            <div class="d-block w-75 mx-auto">
+
+              <div class="new-donation-text" [ngClass]="donationHighlight.show ? '' : 'd-none'">
+                NEW DONATION!
+              </div>
+              <div class="card mb-2" [ngClass]="donationHighlight.show ? 'slide-in-elliptic-top-fwd' : 'slide-out-elliptic-bottom-bck'">
+
+                <div class="d-flex flex-column donation"
+                     [ngClass]="donationHighlight.donation?.donationSource === 'Facebook' ? 'facebook-donation' : donationHighlight.donation?.donationSource === 'JustGiving' ? 'justgiving-donation' : 'test-donation'">
+
+                  <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-start">
+                      <div class="d-flex align-self-center">
+                        <img class="donation-img"
+                             [src]="donationHighlight.donation?.imgUrl ? donationHighlight.donation?.imgUrl : '../../../assets/img/thumbnails/hylian-shield-avatar.jpg'"
+                             [alt]="donationHighlight.donation?.name"
+                             [title]="donationHighlight.donation?.name">
+                      </div>
+                      <div class="d-flex align-self-start ml-2">
+                        <h5 class="mb-0" style="word-break: break-word;">{{ donationHighlight.donation?.name }}</h5>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="my-2 small" *ngIf="donationHighlight.donation?.message?.length >= 1">
+                    <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.2em;">&ldquo;</span>
+                    <i class="px-1" style="font-size: 1.2em; font-family: 'Poppins', sans-serif;">{{ donationHighlight.donation?.message?.length >= 1 ? donationHighlight.donation?.message : '-' }}</i>
+                    <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.7em;">&rdquo;</span>
+                  </div>
+
+                  <div class="d-flex justify-content-between">
+                    <div class="d-flex align-self-end">
+                      <div class="badge badge-pill badge-success" *ngIf="donationHighlight.donation?.giftAidAmount">
+                        <a href="https://www.gov.uk/donating-to-charity/gift-aid" target="_blank" class="text-white"
+                           title="Gift Aid declaration made for the charity to claim additional 25% of donation">GiftAid</a>: {{ donationHighlight.donation?.giftAidAmount | currency:donationHighlight.donation?.currency }}
+                      </div>
+                    </div>
+                    <div class="">
+                      <h3 class="mb-0">{{ donationHighlight.donation?.donationAmount | currency:donationHighlight.donation?.currency }}</h3>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-end">
+                      <span class="text-white-50" style="font-size: 9px;" *ngIf="donationHighlight.donation?.donationDate">
+                        {{ timeAgo.format(donationHighlight.donation?.donationDate.toDate()) }}
+                      </span>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
   <app-ds-game-description></app-ds-game-description>
+
   <app-ds-camera></app-ds-camera>
+
   <div class="position-relative">
     <app-ds-timer class="timer-panel"></app-ds-timer>
     <app-ds-runner-name class="runner-name-panel"></app-ds-runner-name>
   </div>
+
 </div>
 <div class="ds-primary-screen"></div>
