@@ -3,7 +3,7 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { HttpClientModule } from '@angular/common/http';
+import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { CountdownModule } from 'ngx-countdown';
@@ -80,6 +80,7 @@ import { BreakBrbComponent } from './components/obs/break-brb/break-brb.componen
 import { TextToSpeechComponent } from './components/text-to-speech/text-to-speech.component';
 import { FsaFourPlayerSplitComponent } from './components/obs/fsa-four-player-split/fsa-four-player-split.component';
 import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/fsa-fps-ad-panel/fsa-fps-ad-panel.component';
+import { CreditsRollComponent } from './components/obs/credits-roll/credits-roll.component';
 
 
 @NgModule({
@@ -141,7 +142,8 @@ import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/f
     BreakBrbComponent,
     TextToSpeechComponent,
     FsaFourPlayerSplitComponent,
-    FsaFpsAdPanelComponent
+    FsaFpsAdPanelComponent,
+    CreditsRollComponent
   ],
   imports: [
     BrowserModule,
@@ -160,7 +162,7 @@ import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/f
   providers: [
     AuthGuardService,
     GameItemService,
-    FirebaseTimerService
+    FirebaseTimerService,
   ],
   bootstrap: [AppComponent]
 })

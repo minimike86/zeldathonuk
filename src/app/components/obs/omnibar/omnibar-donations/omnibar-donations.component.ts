@@ -69,24 +69,24 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
 
     this.trackedDonationArray$ = this.donationTrackingService.getTrackedDonationArray().pipe(
       map((trackedDonationIds: TrackedDonationId[]) => {
-        return trackedDonationIds.find(x => x.id === 'TEST-DONATIONS')?.donations;
+        return trackedDonationIds.find(x => x.id === 'GAMEBLAST21')?.donations;
       }),
       map((trackedDonations: TrackedDonation[]) => {
-        trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => {
+        trackedDonations?.sort((a: TrackedDonation, b: TrackedDonation) => {
           return b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime();
         });
         this.lastTenDonations = trackedDonations.slice(0, 10);
-        console.log('lastTenDonations', this.lastTenDonations.map(x => {
-          return {
-            name: x.name,
-            date: x.donationDate.toDate(),
-            imgUrl: x.imgUrl,
-            message: x.message,
-            currency: x.currency,
-            donationAmount: x.donationAmount,
-            donationSource: x.donationSource
-          };
-        }));
+        // console.log('lastTenDonations', this.lastTenDonations?.map(x => {
+        //   return {
+        //     name: x.name,
+        //     date: x.donationDate.toDate(),
+        //     imgUrl: x.imgUrl,
+        //     message: x.message,
+        //     currency: x.currency,
+        //     donationAmount: x.donationAmount,
+        //     donationSource: x.donationSource
+        //   };
+        // }));
         this.displayDonations();
         return trackedDonations;
       })
@@ -99,12 +99,12 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   displayDonations() {
     const initialWait: number = 2 * 1000;
     const slideInFromRightDuration: number = 0.5 * 1000;
-    const slideOutToLeftDuration: number = 1 * 1000;
+    const slideOutToLeftDuration: number = 2 * 1000;
     const showDonationDuration: number = 10 * 1000;
 
     // iterate donations
     // console.log('lastTenDonations', this.lastTenDonations);
-    if (this.lastTenDonations.length >= 1) {
+    if (this.lastTenDonations?.length >= 1) {
 
       from(this.lastTenDonations).pipe(
         delay(initialWait),
@@ -117,7 +117,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
           tap(() => {
             this.hideDonation();
           }),
-          delay(slideOutToLeftDuration)
+          delay(slideOutToLeftDuration),
         )),
         finalize(() => {
           // this.displayDonations();
@@ -127,7 +127,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
 
     } else {
 
-      this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 30);
+      this.showNextOmnibarComponent();
 
     }
 
@@ -147,7 +147,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   // next omnibar component
   showNextOmnibarComponent() {
     this.slideIn = !this.slideIn;
-    this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 5);
+    this.omnibarContentService.setCurrentOmnibarContentId(4, 5000 * 5);
     // console.log('next omnibar component', this.lastTenDonations.length);
   }
 

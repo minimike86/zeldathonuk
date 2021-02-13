@@ -1,9 +1,14 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import {EMPTY, iif, Observable, of, pipe, range} from 'rxjs';
+import {HttpClient, HttpErrorResponse} from '@angular/common/http';
+import {forkJoin, from, Observable, of, pipe, range, throwError} from 'rxjs';
 import { jgEnvironment } from '../../../environments/environment';
-import {FundraisingPageDetails, FundraisingPageDonations, JustGivingDonation, Pagination} from './fundraising-page';
-import {delay, finalize, map, mergeMap, switchMap, tap} from 'rxjs/operators';
+import {FundraisingPageDetails, FundraisingPageDonations, JustGivingDonation} from './fundraising-page';
+import {
+  concatMap,
+  map,
+  toArray,
+  switchMap, catchError,
+} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -38,31 +43,26 @@ export class JgService {
       jgEnvironment.justgiving.httpOptions);
   }
 
+  getFundraisingPageTotalPages(pageSize: number): Observable<number> {
+    return this.getFundraisingPageDonations(pageSize, 1).pipe(map(data => data.pagination.totalPages));
+  }
+
+  getJustGivingPageDonations(pageSize: number, pageNumber: number): Observable<JustGivingDonation[]> {
+    return this.getFundraisingPageDonations(pageSize, pageNumber).pipe(map(data => data.donations));
+  }
+
   getAllJustGivingDonations(): Observable<JustGivingDonation[]> {
-    const justGivingDonations: JustGivingDonation[] = [];
-    // get first page
-    return this.getFundraisingPageDonations(150, 1).pipe(
-      // get the donations
-      map((fundraisingPageDonations: FundraisingPageDonations) => {
-        justGivingDonations.push(...fundraisingPageDonations.donations);
-        return fundraisingPageDonations.pagination;
+    return this.getFundraisingPageTotalPages(150).pipe(
+      concatMap((totalPages: number) => range(1, totalPages).pipe(toArray())),
+      switchMap((pageNumbers: number[]) => from(pageNumbers)),
+      pipe(
+        map((pageNumber: number) => this.getJustGivingPageDonations(150, pageNumber)),
+        toArray()
+      ),
+      switchMap((observables: Observable<JustGivingDonation[]>[]) => {
+        return forkJoin(observables)
+          .pipe(map(data => data.reduce((result, arr) => [...result, ...arr], [])));
       }),
-      // if more pages remain get the donations from them as well
-      tap(pagination => range(2, pagination.totalPages).pipe(
-        delay(5 * 1000),
-        tap((pageNumber: number) => {
-          console.log('pageNumber', pageNumber);
-          this.getFundraisingPageDonations(150, pageNumber).pipe(
-            tap((fundraisingPageDonations: FundraisingPageDonations) => {
-              justGivingDonations.push(...fundraisingPageDonations.donations);
-            })
-          );
-        }
-      ))),
-      switchMap(() => {
-        console.log('switchMap justGivingDonations', justGivingDonations);
-        return of(justGivingDonations);
-      })
     );
   }
 

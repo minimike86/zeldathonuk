@@ -16,13 +16,17 @@ export const environment = {
   }
 };
 
+export const fbEnvironment = {
+  fundraisingId: 855003971855785,
+};
+
 export const jgEnvironment = {
   production: false,
   justgiving: {
-    // pageShortName: '276hr-zelda-marathon-benefitting-specialeffec-test',
-    // baseUri: 'https://api.staging.justgiving.com/v1',
-    pageShortName: '276hr-zelda-marathon-benefitting-specialeffec',
-    baseUri: 'https://api.justgiving.com/v1',
+    pageShortName: '276hr-zelda-marathon-benefitting-specialeffec',    // prod
+    baseUri: 'https://api.justgiving.com/v1',                          // prod
+    // pageShortName: '276hr-zelda-marathon-benefitting-specialeffec-test',  // staging
+    // baseUri: 'https://api.staging.justgiving.com/v1',                     // staging
     httpOptions: {
       headers: new HttpHeaders({
         'Content-Type': 'application/json',

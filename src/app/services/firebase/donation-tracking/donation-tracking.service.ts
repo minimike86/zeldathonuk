@@ -30,10 +30,10 @@ export class DonationTrackingService {
                private db: AngularFirestore ) {
     this.trackedDonations = [];
     this.trackedDonationCollection = db.collection<TrackedDonationArray>('/donations');
-    this.trackedDonationDoc = this.trackedDonationCollection.doc('TEST-DONATIONS');
+    this.trackedDonationDoc = this.trackedDonationCollection.doc('GAMEBLAST21');
     this.getTrackedDonationArray().subscribe( data => {
       this.trackedDonationArray = data;
-      this.trackedDonations = data.find(x => x.id === 'TEST-DONATIONS').donations;
+      this.trackedDonations = data.find(x => x.id === 'GAMEBLAST21').donations;
     });
   }
 
@@ -48,11 +48,11 @@ export class DonationTrackingService {
   }
 
   addTrackedDonation(trackedDonation: TrackedDonation[]): void {
-    console.log('addTrackedDonation: ', trackedDonation);
+    // console.log('addTrackedDonation: ', trackedDonation);
     this.trackedDonationDoc.ref.update({
       donations: FieldValue.arrayUnion(...trackedDonation)
     }).then(() => {
-      console.log('TrackedDonation Document successfully written!');
+      // console.log('TrackedDonation Document successfully written!');
     });
   }
 
@@ -92,7 +92,7 @@ export class DonationTrackingService {
       id: sha256(donation.name + donation.amount + donation.date),
       name: (donation.name !== null && donation.name !== undefined) ? donation.name : donation.name,
       imgUrl: donation.imgDataUri !== undefined ? donation.imgDataUri : 'undefined',
-      message: '',
+      message: donation.message,
       currency: donation.currency,
       donationAmount: typeof(donation.amount) === 'string'
         ? parseFloat(donation.amount) : donation.amount,

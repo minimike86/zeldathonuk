@@ -1,0 +1,80 @@
+<div class="credits-roll-body fade-to-black position-relative">
+
+  <div class="d-flex justify-content-center h-100">
+    <div class="d-flex align-self-start flex-column w-75 h-100 text-center">
+
+      <div class="d-flex justify-content-start">
+        <div class="d-flex align-self-center text-white mt-5 pt-5 mr-5">
+          <img src="../../../../assets/img/Zeldathon-Logo-svg_white.fw.png" class="zeldathon-logo">
+        </div>
+        <div class="ml-5">
+          <h1 class="display-1 font-weight-bolder text-white mt-5 pt-5 z100"
+              [ngClass]="showTitle === null ? 'invisible' : showTitle ? 'tracking-in-expand-fwd' : 'tracking-out-contract-bck'">
+            THE DONORS
+          </h1>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-start h-100">
+        <div class="d-flex align-self-center">
+
+          <ng-container  *ngIf="!showThankYou; else showThankYouTemplate;">
+            <div class="card-columns z100">
+
+              <ng-container *ngFor="let donation of (highlightDonations$ | async);">
+                <div class="card text-white mb-3"
+                     [ngClass]="[showCards === null ? 'invisible' : showCards ? 'tilt-in-fwd-tl' : 'tilt-in-fwd-bl',
+                                donation.donationAmount === null ? 'bg-secondary' :
+                                donation.donationAmount >= 0 && donation.donationAmount < 5 ? 'bg-success' :
+                                donation.donationAmount >= 5 && donation.donationAmount < 10 ? 'bg-primary' :
+                                donation.donationAmount >= 10 && donation.donationAmount < 20 ? 'bg-warning' :
+                                donation.donationAmount >= 20 && donation.donationAmount < 50 ? 'bg-danger' :
+                                donation.donationAmount >= 50 && donation.donationAmount < 100 ? 'bg-purple' :
+                                donation.donationAmount >= 100 && donation.donationAmount < 200 ? 'bg-silver' :
+                                donation.donationAmount >= 200 ? 'bg-gold' : 'bg-secondary']">
+                  <div class="card-header">
+                    <h3>
+                      {{ donation.name }}
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <h1 class="card-title">
+                      {{ donation.currency === 'GBP' ? '£' : donation.currency }}
+                      {{ donation.donationAmount !== null ? donation.donationAmount : 'Hidden' }}
+                    </h1>
+                    <p class="card-text text-break">{{ donation.message }}</p>
+                  </div>
+                </div>
+              </ng-container>
+
+            </div>
+          </ng-container>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<div class="hide" #audioElement></div>
+
+<ng-template #showThankYouTemplate>
+  <div class="d-flex justify-content-center w-100">
+    <div class="d-flex align-self-center">
+      <img src="../../../../assets/img/obs-bg/bfb5280ebb6700e017867c4d46c2e204.gif" alt="zelda thank you">
+    </div>
+    <div class="d-flex flex-column align-self-center ml-5">
+      <h1 class="display-1 font-weight-bolder text-white z100 tracking-in-expand-fwd">
+        THANK YOU!!!
+      </h1>
+      <h4 class="display-4 font-weight-bolder text-white tracking-in-expand-fwd">
+        STAY SAFE! SEE YOU NEXT YEAR?
+      </h4>
+    </div>
+  </div>
+  <audio autoplay>
+    <source src="https://dl.dropboxusercontent.com/s/pggbr2owm5n36zs/ww_beedle_thankyou.mp3?dl=0"
+            type="audio/mpeg">
+  </audio>
+</ng-template>

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {HttpClient, HttpErrorResponse} from '@angular/common/http';
+import {Observable, of, throwError} from 'rxjs';
+import {catchError} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -36,13 +37,14 @@ export interface FacebookProgressCard {
 }
 
 export interface FacebookDonation {
+  id: number;
   name: string;
   currency: string;
   amount: number;
-  profileUrl?: string;
-  imgSrc?: string;
-  imgDataUri?: string;
+  profileUrl: string;
+  imgDataUri: string;
   date: Date;
+  message: string;
 }
 
 interface DonationTweet {

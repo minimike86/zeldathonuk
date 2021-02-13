@@ -26,7 +26,7 @@ export class DonationsComponent implements OnInit {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
     this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationArray().pipe(
-      map((trackedDonationId: TrackedDonationId[]) => trackedDonationId.find(x => x.id === 'TEST-DONATIONS')),
+      map((trackedDonationId: TrackedDonationId[]) => trackedDonationId.find(x => x.id === 'GAMEBLAST21')),
       pluck('donations'),
       map((trackedDonations: TrackedDonation[]) => {
         console.log('trackedDonations:', trackedDonations);
