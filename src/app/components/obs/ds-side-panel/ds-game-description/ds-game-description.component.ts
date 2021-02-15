@@ -5,6 +5,7 @@ import { CurrentlyPlayingService } from '../../../../services/firebase/currently
 import { CurrentlyPlayingId } from '../../../../services/firebase/currently-playing/currently-playing';
 import {GameLineupService} from '../../../../services/firebase/game-lineup/game-lineup.service';
 import {map} from 'rxjs/operators';
+import {GameLineUpId} from '../../../../services/firebase/game-lineup/game-lineup';
 
 @Component({
   selector: 'app-ds-game-description',
@@ -13,7 +14,9 @@ import {map} from 'rxjs/operators';
 })
 export class DsGameDescriptionComponent implements OnInit {
   public gameId: CurrentlyPlayingId;
-  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '', '', false, 0);
+  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '',
+                                             '', '', false, 0, [], [],
+                                             null, null, null);
   public gameLineUp: Map<string, ZeldaGame>;
 
   public pos: number;
@@ -32,8 +35,8 @@ export class DsGameDescriptionComponent implements OnInit {
       // console.log('this.gameId', this.gameId);
     })).subscribe();
 
-    this.gameLineupService.getGameLineUp().pipe(map(data => {
-      this.gameLineUp = data[0].gameLineUp;
+    this.gameLineupService.getGameLineUp().pipe(map((data: GameLineUpId[]) => {
+      this.gameLineUp = data.find(x => x.id === 'GAME-LINEUP').gameLineUp;
       this.gameDesc = this.gameLineUp[this.gameId.index];
       // console.log('gameLineUp', this.gameLineUp);
     })).subscribe();

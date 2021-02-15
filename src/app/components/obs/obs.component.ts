@@ -19,13 +19,16 @@ import { TrackedDonation } from '../../services/firebase/donation-tracking/track
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
 import {BreakCountdownService} from '../../services/firebase/break-countdown/break-countdown.service';
 
-import { ZeldaGame } from '../../models/zelda-game';
+import {GameBadge, Runner, ZeldaGame} from '../../models/zelda-game';
 import firebase from 'firebase/app';
 import Timestamp = firebase.firestore.Timestamp;
 import {sha256} from 'js-sha256';
 
 import {faPlay, faPause, faStop, faHistory,
         faBackward} from '@fortawesome/free-solid-svg-icons';
+import {GameLineUpId} from '../../services/firebase/game-lineup/game-lineup';
+import {TwitchService} from '../../services/twitch-service/twitch-service.service';
+import {ZeldathonBackendService} from '../../services/zeldathon-backend-service/zeldathon-backend-service.service';
 
 
 @Component({
@@ -41,6 +44,20 @@ export class ObsComponent implements OnInit {
   @ViewChild('addGameModalDialog')
   private addGameModalDialogRef: TemplateRef<any>;
   public addGameModal: NgbActiveModal;
+
+  @ViewChild('addBadgeModalDialog')
+  private addBadgeModalDialogRef: TemplateRef<any>;
+  public addBadgeModal: NgbActiveModal;
+  public badgeType: string;
+  public badgeText: string;
+  public badgeUrlYn = false;
+  public badgeUrl: string;
+
+  @ViewChild('addRunnerModalDialog')
+  private addRunnerModalDialogRef: TemplateRef<any>;
+  public addRunnerModal: NgbActiveModal;
+  public tempRunnerName: string;
+  public tempRunnerChannelUrl: string;
 
   @ViewChild('yesNoModalDialog')
   private yesNoModalDialogRef: TemplateRef<any>;
@@ -89,48 +106,108 @@ export class ObsComponent implements OnInit {
   constructor( private modalService: NgbModal,
                private breakCountdownService: BreakCountdownService,
                private countUpService: CountUpService,
+               private zeldathonBackendService: ZeldathonBackendService,
                private firebaseTimerService: FirebaseTimerService,
                private donationTrackingService: DonationTrackingService,
                private runnerNameService: RunnerNameService,
                private gameLineupService: GameLineupService,
+               private twitchService: TwitchService,
                private currentlyPlayingService: CurrentlyPlayingService ) {
     this.clearTrackedDonation();
     this.clearAddGame();
   }
 
   ngOnInit() {
+
     this.breakCountdownService.getBreakCountdown().pipe(map(data => {
       const date: Date = data[0].timestamp.toDate();
       this.breakCountdownDate = `${date.getFullYear()}-${this.zeroPad(date.getMonth() + 1, 2)}-${this.zeroPad(date.getDate(), 2)}`;
       this.breakCountdownTime = `${this.zeroPad(date.getHours(), 2)}:${this.zeroPad(date.getMinutes(), 2)}:${this.zeroPad(date.getSeconds(), 2)}`;
     })).subscribe();
+
     this.runnerNameService.getRunnerName().pipe(map(data => {
       this.runnerName = data[0];
       this.currentRunner.runnerName = data[0].runnerName;
       this.currentRunner.runnerHasTwitchAccount = data[0].runnerHasTwitchAccount;
     })).subscribe();
+
     this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
       this.currentlyPlaying = data[0];
       // console.log('currentlyPlaying', this.currentlyPlaying, data);
     })).subscribe();
-    this.gameLineupService.getGameLineUp().pipe(map(data => {
-      this.gameLineUp = data[0].gameLineUp;
+
+    this.gameLineupService.getGameLineUp().pipe(map((data: GameLineUpId[]) => {
+      this.gameLineUp = data.find(x => x.id === 'GAME-LINEUP').gameLineUp;
       this.sortedGameLineUp = Array.from(Object.values(this.gameLineUp)).sort((a: ZeldaGame, b: ZeldaGame) => a.order - b.order);
       this.tempAddGame.order = Object.keys(this.gameLineUp).length;
     })).subscribe();
+
     this.firebaseTimerService.getCountUpTimer().subscribe(data => {
       this.countUpData = data;
     });
+
     this.pauseOffset = 0;
     this.pauseTimestamp = Timestamp.now();
     this.timer$ = this.countUpService.getTimer().pipe(map((timer: string) => {
       return this.timer = timer;
     }));
+
   }
 
   onOpenAddGameModalClick() {
     this.tempAddGame.order = this.gameLineUp !== undefined ? Object.keys(this.gameLineUp).length : 0;
-    this.addGameModal = this.modalService.open(this.addGameModalDialogRef);
+    this.addGameModal = this.modalService.open(this.addGameModalDialogRef, { size: 'lg' });
+  }
+
+  openAddBadgeModal() {
+    this.addBadgeModal = this.modalService.open(this.addBadgeModalDialogRef);
+  }
+
+  submitAddBadge() {
+    let badge: GameBadge;
+    if (this.badgeUrlYn) {
+      badge = {
+        type: this.badgeType,
+        text: this.badgeText,
+        url: this.badgeUrl
+      };
+    } else {
+      badge = {
+        type: this.badgeType,
+        text: this.badgeText,
+      };
+    }
+    if (this.badgeType && this.badgeText) {
+      this.tempAddGame.extraBadges.push(badge);
+      this.clearAddBadge();
+    }
+  }
+
+  clearAddBadge() {
+    this.badgeType = null;
+    this.badgeText = null;
+    this.badgeUrlYn = false;
+    this.badgeUrl = null;
+  }
+
+  openAddRunnerModal() {
+    this.addRunnerModal = this.modalService.open(this.addRunnerModalDialogRef);
+  }
+
+  submitAddRunner() {
+    const runner: Runner = {
+      name: this.tempRunnerName,
+      channelUrl: this.tempRunnerChannelUrl,
+    };
+    if (this.tempRunnerName && this.tempRunnerChannelUrl) {
+      this.tempAddGame.runners.push(runner);
+      this.clearTempRunner();
+    }
+  }
+
+  clearTempRunner() {
+    this.tempRunnerName = null;
+    this.tempRunnerChannelUrl = null;
   }
 
   submitAddGame() {
@@ -140,16 +217,23 @@ export class ObsComponent implements OnInit {
   }
 
   clearAddGame() {
+    this.tempAddGameKey = '';
     this.tempAddGame = {
       active: true,
       coverArt: '',
       gameEstimate: '00:00:00',
       gameName: '',
       gamePlatform: '',
+      timeline: '',
       gameProgressKey: '',
       gameRelYear: '',
       gameType: 'Casual Any%',
-      order: this.gameLineUp !== undefined ? Object.keys(this.gameLineUp).length : 0
+      order: this.gameLineUp !== undefined ? Object.keys(this.gameLineUp).length : 0,
+      extraBadges: [],
+      runners: [],
+      startDate: null,
+      endDate: null,
+      twitchGameId: null
     };
   }
 
@@ -159,8 +243,31 @@ export class ObsComponent implements OnInit {
   }
 
   swapGameModalBtn() {
+    const currentGame: ZeldaGame = Object.values(this.gameLineUp).find((x: ZeldaGame) => x.gameProgressKey === this.currentlyPlaying.index);
+    // SET THE PREVIOUS GAME TO COMPLETE AND START THE NEXT GAME
+    // this.gameLineupService.updateGameFinished(currentGame, this.swapGameKey.value);
+
+    // UPDATE TWITCH GAME AND TITLE
+    this.twitchService.updateChannel('52548232', this.swapGameKey.value.twitchGameId, 'en',
+        `#GameBlast21 Fundraising for SpecialEffect! | Now playing: ${this.getAbbriatedGameName(this.swapGameKey.value.gameName)} (Game #${this.swapGameKey.value.order + 1} of ${Object.values(this.gameLineUp).length})`)
+      .subscribe();
+
+    // CREATE A NEW STREAM MARKER
+    this.twitchService.createStreamMaker('52548232',
+      `Beaten \"${this.getAbbriatedGameName(currentGame.gameName)}\" and about to start the next game \"${this.getAbbriatedGameName(this.swapGameKey.value.gameName)}\" (#${this.swapGameKey.value.order + 1} of ${Object.values(this.gameLineUp).length})`)
+      .subscribe();
+
+    // TWEET THE START OF THE NEXT GAME
+    this.zeldathonBackendService.scrapeTwitterTweet(
+      `The #ZeldathonUK crew have just beaten \"${this.getAbbriatedGameName(currentGame.gameName)}\" and are about to start the next game \"${this.getAbbriatedGameName(this.swapGameKey.value.gameName)}\" (#${this.swapGameKey.value.order + 1} of ${Object.values(this.gameLineUp).length})!\n\nFundraising for @SpecialEffect #GameBlast21\nWatch Live: https://www.zeldathon.co.uk/`)
+      .subscribe();
+
     this.currentlyPlayingService.setCurrentlyPlaying({index: this.swapGameKey.key});
     this.yesNoModal.close('Game swapped');
+  }
+
+  getAbbriatedGameName(gameName: string) {
+    return gameName.replace('The Legend of Zelda:', '').trim();
   }
 
   setBreakCountdown() {

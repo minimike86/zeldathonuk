@@ -34,7 +34,7 @@ export class GameTrackingComponent implements OnInit {
     }));
 
     this.gameLineUp$ = this.gameLineUpService.getGameLineUp().pipe(map(data => {
-      return this.gameLineUp = data[0].gameLineUp;
+      return this.gameLineUp = data.find(x => x.id === 'GAME-LINEUP').gameLineUp;
     }));
 
     this.gameItemsId$ = this.gameItemService.getGameItemsIds().pipe(map(data => {

@@ -22,23 +22,94 @@ export class TwitchService {
 
   getChannelInformation(broadcasterId: string): Observable<ChannelInformation> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken.access_token}`)
+      .set('Authorization', `Bearer ${this.appToken.access_token}`)
       .set('Client-Id', this.clientId);
     return this.http.get<ChannelInformation>(
-      `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcasterId}`, {headers: httpHeaders});
+      `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcasterId}`,
+      {headers: httpHeaders});
   }
 
-  getSearchChannels(query: string, first: number, liveOnly: boolean): Observable<SearchChannelsResponse> {
+  getSearchChannels(query: string, first: number, liveOnly: boolean): Observable<SearchChannelsData> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken.access_token}`)
+      .set('Authorization', `Bearer ${this.appToken.access_token}`)
       .set('Client-Id', this.clientId);
-    return this.http.get<RawSearchChannelsResponse>(
+    return this.http.get<SearchChannelsData>(
       `https://api.twitch.tv/helix/search/channels?query=${query}&first=${first}&live_only=${liveOnly}`,
-      {headers: httpHeaders}).pipe(map(rawData => {
+      {headers: httpHeaders}).pipe(map((rawData: any) => {
         return rawData.data[0];
     }));
   }
 
+  getGamesById(id: string): Observable<GamesData> {
+    const httpHeaders = new HttpHeaders()
+      .set('Authorization', `Bearer ${this.appToken.access_token}`)
+      .set('Client-Id', this.clientId);
+    return this.http.get<GamesData>(`https://api.twitch.tv/helix/games?id=${id}`,
+                                    {headers: httpHeaders}).pipe(map((rawData: any) => {
+      return rawData.data[0];
+    }));
+  }
+
+  getGamesByName(name: string): Observable<GamesData> {
+    const httpHeaders = new HttpHeaders()
+      .set('Authorization', `Bearer ${this.appToken.access_token}`)
+      .set('Client-Id', this.clientId);
+    return this.http.get<GamesData>(`https://api.twitch.tv/helix/games?name=${name}`,
+                                    {headers: httpHeaders}).pipe(map((rawData: any) => {
+      return rawData.data[0];
+    }));
+  }
+
+  /**
+   * Modifies channel information for users.
+   * @param broadcasterId         - ID of the channel to be updated
+   * @param gameId                - The current game ID being played on the channel
+   * @param broadcasterLanguage   - The language of the channel. Must be either the ISO 639-1 two-letter code or “other”.
+   * @param title                 - The title of the stream
+   */
+  updateChannel(broadcasterId: string, gameId: string, broadcasterLanguage: string, title: string): Observable<any> {
+    const httpHeaders = new HttpHeaders()
+      .set('Authorization', `Bearer ${this.userToken.access_token}`)
+      .set('Client-Id', this.clientId);
+    return this.http.patch<any>(`https://api.twitch.tv/helix/channels/?broadcaster_id=${broadcasterId}`,
+        {
+                game_id: gameId,
+                broadcaster_language: broadcasterLanguage,
+                title: title
+              },
+      {headers: httpHeaders});
+  }
+
+  /**
+   * Creates a marker in the stream of a user specified by user ID. A marker is an arbitrary point in a stream that the broadcaster wants
+   * to mark; e.g., to easily return to later. The marker is created at the current timestamp in the live broadcast when the request is
+   * processed. Markers can be created by the stream owner or editors. The user creating the marker is identified by a Bearer token.
+   * @param userId            - ID of the broadcaster in whose live stream the marker is created.
+   * @param description       - Description of or comments on the marker. Max length is 140 characters.
+   */
+  createStreamMaker(userId: string, description?: string): Observable<StreamMarkerResponse> {
+    const httpHeaders = new HttpHeaders()
+      .set('Authorization', `Bearer ${this.userToken.access_token}`)
+      .set('Client-Id', this.clientId);
+    return this.http.post<any>(`https://api.twitch.tv/helix/streams/markers`,
+        {
+                user_id: userId,
+                description: description
+              },
+      {headers: httpHeaders});
+  }
+
+}
+
+export interface StreamMarkerData {
+  id: string;
+  created_at: string;
+  description: string;
+  position_seconds: number;
+}
+
+export interface StreamMarkerResponse {
+  data: StreamMarkerData[];
 }
 
 export interface AccessToken {
@@ -50,22 +121,35 @@ export interface AccessToken {
 }
 
 export interface ChannelInformation {
-  broadcaster_id: string;       // Twitch User ID of this channel owner
-  broadcaster_name: string;     // Twitch user display name of this channel owner
-  game_name: string;            // Name of the game being played on the channel
-  game_id: string;              // Current game ID being played on the channel
-  broadcaster_language: string; // Language of the channel. Either the ISO 639-1 two-letter code for a supported stream language or “other”.
-  title: string;                // Title of the stream
+  broadcaster_id: string;
+  broadcaster_name: string;
+  game_name: string;
+  game_id: string;
+  broadcaster_language: string;
+  title: string;
 }
 
-export interface RawSearchChannelsResponse {
-  data: SearchChannelsResponse[];
+export interface GamesResponse {
+  data: GamesResponse[];
   pagination: {
     cursor: string
   };
 }
 
+export interface GamesData {
+  id: string;
+  name: string;
+  box_art_url: string;
+}
+
 export interface SearchChannelsResponse {
+  data: SearchChannelsData[];
+  pagination: {
+    cursor: string
+  };
+}
+
+export interface SearchChannelsData {
   game_id: string;
   id: string;
   display_name: string;

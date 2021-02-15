@@ -69,8 +69,6 @@ export class CreditsRollComponent implements OnInit, AfterViewInit {
     this.audio.autoplay = false;
     this.audio.loop = true;
     this.audio.controls = false;
-    this.audio.load();
-    this.audio.play().then();
 
     setTimeout(() => {
       this.showTitle = true;
@@ -80,6 +78,12 @@ export class CreditsRollComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.renderer.appendChild(this.audioElement.nativeElement, this.audio);
+
+    setTimeout(() => {
+      this.audio.load();
+      this.audio.play().then();
+    }, 500);
+
   }
 
   increaseVolume() {

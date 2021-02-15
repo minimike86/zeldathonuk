@@ -31,7 +31,7 @@
           </div>
           <div class="card border-secondary layout-list">
             <div class="card-header">Credits Roll</div>
-            <img class="card-img" src="../../../assets/img/obs-preview/tts-layout-preview.png">
+            <img class="card-img" src="../../../assets/img/obs-preview/credits-layout-preview.png">
             <div class="card-footer"><a class="btn btn-block btn-primary" target="_blank" routerLink="/obs/layout/credits">Open</a></div>
           </div>
           <div class="card border-secondary layout-list">
@@ -433,93 +433,184 @@
     </div>
     <div class="modal-body">
       <div class="d-flex justify-content-center">
-        <form class="w-50">
+        <form class="w-100">
 
-          <div class="form-group">
-            <label for="tempAddGameKey">Key:</label>
-            <input id="tempAddGameKey" name="tempAddGameKey" type="text"
-                   class="form-control form-control-sm"
-                   [(ngModel)]="tempAddGameKey">
+          <div class="d-flex justify-content-between">
+            <div class="form-group flex-fill">
+              <label class="small mb-0" for="tempAddGameKey">Key:</label>
+              <input id="tempAddGameKey" name="tempAddGameKey" type="text"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGameKey">
+            </div>
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="gameProgressKey">Game Progress Key:</label>
+              <input id="gameProgressKey" name="gameProgressKey"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.gameProgressKey">
+            </div>
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="twitchGameId">Twitch Game Id:</label>
+              <input id="twitchGameId" name="twitchGameId"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.twitchGameId">
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="active">Active:</label>
-            <select id="active" name="active" class="form-control form-control-sm"
-                    [(ngModel)]="tempAddGame.active">
-              <option [ngValue]="true" selected="selected">true</option>
-              <option [ngValue]="false">false</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="coverArt">Image Url:</label>
-            <input id="coverArt" name="coverArt" type="text"
-                   placeholder="https://image.url/image.jpg"
-                   class="form-control form-control-sm"
-                   [(ngModel)]="tempAddGame.coverArt">
-          </div>
-
-          <div class="form-group">
-            <label for="gameEstimate">Game Estimate:</label>
-            <input id="gameEstimate" name="gameEstimate" type="text"
-                   placeholder="00:00:00"
-                   class="form-control form-control-sm"
-                   [(ngModel)]="tempAddGame.gameEstimate">
-          </div>
-
-          <div class="form-group">
-            <label for="gameName">Game Name:</label>
+            <label class="small mb-0" for="gameName">Game Name:</label>
             <input id="gameName" name="gameName" type="text"
                    class="form-control form-control-sm"
                    [(ngModel)]="tempAddGame.gameName">
           </div>
 
-          <div class="form-group">
-            <label for="gamePlatform">Game Platform:</label>
-            <select id="gamePlatform" name="gamePlatform"
-                    class="form-control form-control-sm"
-                    [(ngModel)]="tempAddGame.gamePlatform">
-              <option [ngValue]="'NES'" selected="selected">NES</option>
-              <option [ngValue]="'SNES'">SNES</option>
-              <option [ngValue]="'N64'">N64</option>
-              <option [ngValue]="'GC'">GC</option>
-              <option [ngValue]="'Wii'">Wii</option>
-              <option [ngValue]="'WiiU'">WiiU</option>
-              <option [ngValue]="'Switch'">Switch</option>
-              <option [ngValue]="'GB'">GB</option>
-              <option [ngValue]="'GBC'">GBC</option>
-              <option [ngValue]="'GBA'">GBA</option>
-              <option [ngValue]="'DS'">DS</option>
-              <option [ngValue]="'3DS'">3DS</option>
-            </select>
+          <div class="d-flex justify-content-between">
+            <div class="flex-grow-1">
+              <div class="form-group mb-1">
+                <label class="small mb-0" for="coverArt">Image Url:</label>
+                <input id="coverArt" name="coverArt" type="text"
+                       class="form-control form-control-sm"
+                       placeholder="https://via.placeholder.com/150"
+                       [(ngModel)]="tempAddGame.coverArt">
+              </div>
+            </div>
+            <div class="ml-2">
+              <img class="img-thumbnail" style="max-height: 4em;" [src]="tempAddGame.coverArt">
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="gameProgressKey">Game Progress Key:</label>
-            <input id="gameProgressKey" name="gameProgressKey"
-                   class="form-control form-control-sm"
-                   [(ngModel)]="tempAddGame.gameProgressKey">
+          <div class="d-flex justify-content-between">
+
+            <div class="form-group flex-fill">
+              <label class="small mb-0" for="gamePlatform">Game Platform:</label>
+              <select id="gamePlatform" name="gamePlatform"
+                      class="form-control form-control-sm"
+                      [(ngModel)]="tempAddGame.gamePlatform">
+                <option [ngValue]="'NES'" selected="selected">NES</option>
+                <option [ngValue]="'SNES'">SNES</option>
+                <option [ngValue]="'N64'">N64</option>
+                <option [ngValue]="'GC'">GC</option>
+                <option [ngValue]="'Wii'">Wii</option>
+                <option [ngValue]="'WiiU'">WiiU</option>
+                <option [ngValue]="'Switch'">Switch</option>
+                <option [ngValue]="'GB'">GB</option>
+                <option [ngValue]="'GBC'">GBC</option>
+                <option [ngValue]="'GBA'">GBA</option>
+                <option [ngValue]="'DS'">DS</option>
+                <option [ngValue]="'3DS'">3DS</option>
+              </select>
+            </div>
+
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="timeline">Timeline:</label>
+              <select id="timeline" name="timeline"
+                      class="form-control form-control-sm"
+                      [(ngModel)]="tempAddGame.timeline">
+                <option [ngValue]="'Original'" selected="selected">Original</option>
+                <option [ngValue]="'Child'">Child</option>
+                <option [ngValue]="'Adult'">Adult</option>
+                <option [ngValue]="'Downfall'">Downfall</option>
+                <option [ngValue]="'???'">???</option>
+                <option [ngValue]="'Crossover'">Crossover</option>
+              </select>
+            </div>
+
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="gameRelYear">Game Release Year:</label>
+              <input id="gameRelYear" name="gameRelYear"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.gameRelYear">
+            </div>
+
           </div>
 
-          <div class="form-group">
-            <label for="gameRelYear">Game Release Year:</label>
-            <input id="gameRelYear" name="gameRelYear"
-                   class="form-control form-control-sm"
-                   [(ngModel)]="tempAddGame.gameRelYear">
+          <div class="d-flex justify-content-between">
+
+            <div class="form-group flex-fill">
+              <label class="small mb-0" for="gameType">Game Type:</label>
+              <input id="gameType" name="gameType"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.gameType">
+            </div>
+
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="gameEstimate">Game Estimate:</label>
+              <input id="gameEstimate" name="gameEstimate" type="text"
+                     placeholder="00:00:00"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.gameEstimate">
+            </div>
+
           </div>
 
-          <div class="form-group">
-            <label for="gameType">Game Type:</label>
-            <input id="gameType" name="gameType"
-                   class="form-control form-control-sm"
-                   [(ngModel)]="tempAddGame.gameType">
+          <div class="d-flex justify-content-between">
+
+            <div class="flex-fill">
+              <div class="d-inline-block m-1" *ngFor="let extraBadge of tempAddGame.extraBadges">
+                <ng-container *ngIf="extraBadge.url; else noBadgeUrl;">
+                  <a [href]="extraBadge.url" target="_blank">
+                    <span class="badge" [ngClass]="extraBadge.type">{{ extraBadge.text }}</span>
+                  </a>
+                </ng-container>
+                <ng-template #noBadgeUrl>
+                  <span class="badge" [ngClass]="extraBadge.type">{{ extraBadge.text }}</span>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="">
+              <button class="btn btn-sm btn-secondary" (click)="openAddBadgeModal()">Add Badge</button>
+            </div>
+
           </div>
 
-          <div class="form-group">
-            <label for="order">Order:</label>
-            <input id="order" name="order" type="number"
-                   class="form-control form-control-sm"
-                   [(ngModel)]="tempAddGame.order">
+          <div class="d-flex justify-content-between mt-2">
+
+            <div class="flex-fill">
+              <div class="d-inline-block m-1" *ngFor="let runner of tempAddGame.runners">
+                <a [href]="runner.channelUrl" target="_blank">
+                  <span class="badge badge-dark">{{ runner.name }}</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="">
+              <button class="btn btn-sm btn-secondary" (click)="openAddRunnerModal()">Add Runner</button>
+            </div>
+
+          </div>
+
+          <div class="d-flex justify-content-between">
+
+            <div class="form-group flex-fill">
+              <label class="small mb-0" for="order">StartDate:</label>
+              <input id="startDate" name="startDate" type="datetime-local"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.startDate">
+            </div>
+
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="order">EndDate:</label>
+              <input id="endDate" name="endDate" type="datetime-local"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.endDate">
+            </div>
+
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="order">Order:</label>
+              <input id="order" name="order" type="number"
+                     class="form-control form-control-sm"
+                     [(ngModel)]="tempAddGame.order">
+            </div>
+
+            <div class="form-group flex-fill ml-2">
+              <label class="small mb-0" for="active">Active:</label>
+              <select id="active" name="active" class="form-control form-control-sm"
+                      [(ngModel)]="tempAddGame.active">
+                <option [ngValue]="true" selected="selected">true</option>
+                <option [ngValue]="false">false</option>
+              </select>
+            </div>
+
           </div>
 
         </form>
@@ -529,6 +620,90 @@
       <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="addGameModal.close('Cancel click')">Cancel</button>
       <button type="submit" class="btn btn-secondary" (click)="clearAddGame()">Clear</button>
       <button type="submit" class="btn btn-primary" (click)="submitAddGame()">Add Game</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #addBadgeModalDialog>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Add Badge</h5>
+      <button type="button" class="close" aria-label="Close" (click)="addBadgeModal.dismiss('Cross click')">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="small mb-0" for="badgeType">Type:</label>
+        <select id="badgeType" name="badgeType"
+                class="form-control form-control-sm"
+                [(ngModel)]="badgeType">
+          <option [ngValue]="'badge-primary'" selected="selected">badge-primary</option>
+          <option [ngValue]="'badge-secondary'">badge-secondary</option>
+          <option [ngValue]="'badge-success'">badge-success</option>
+          <option [ngValue]="'badge-danger'">badge-danger</option>
+          <option [ngValue]="'badge-warning'">badge-warning</option>
+          <option [ngValue]="'badge-info'">badge-info</option>
+          <option [ngValue]="'badge-light'">badge-light</option>
+          <option [ngValue]="'badge-dark'">badge-dark</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="small mb-0" for="badgeText">Text:</label>
+        <input id="badgeText" name="badgeText" type="text"
+               class="form-control form-control-sm"
+               [(ngModel)]="badgeText">
+      </div>
+      <div class="d-flex justify-content-between">
+        <div class="form-group">
+          <label class="small mb-0" for="badgeUrlYn">Url?:</label>
+          <input id="badgeUrlYn" name="badgeUrlYn" type="checkbox"
+                 class="form-control form-control-sm"
+                 [(ngModel)]="badgeUrlYn">
+        </div>
+        <div class="form-group flex-fill ml-2">
+          <label class="small mb-0" for="badgeUrl">Url:</label>
+          <input id="badgeUrl" name="badgeUrl" type="text"
+                 class="form-control form-control-sm"
+                 placeholder="http://example.com"
+                 [disabled]="!badgeUrlYn"
+                 [(ngModel)]="badgeUrl">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="addBadgeModal.close('Cancel click')">Cancel</button>
+      <button type="submit" class="btn btn-primary" (click)="submitAddBadge()">Add Badge</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #addRunnerModalDialog>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Add Runner</h5>
+      <button type="button" class="close" aria-label="Close" (click)="addRunnerModal.dismiss('Cross click')">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="small mb-0" for="tempRunnerName">Runner Name:</label>
+        <input id="tempRunnerName" name="tempRunnerName" type="text"
+               class="form-control form-control-sm"
+               [(ngModel)]="tempRunnerName">
+      </div>
+      <div class="form-group flex-fill">
+        <label class="small mb-0" for="tempRunnerChannelUrl">Channel Url:</label>
+        <input id="tempRunnerChannelUrl" name="tempRunnerChannelUrl" type="text"
+               class="form-control form-control-sm"
+               placeholder="https://www.twitch.tv/channelName"
+               [(ngModel)]="tempRunnerChannelUrl">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="addRunnerModal.close('Cancel click')">Cancel</button>
+      <button type="submit" class="btn btn-primary" (click)="submitAddRunner()">Add Runner</button>
     </div>
   </div>
 </ng-template>

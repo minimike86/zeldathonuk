@@ -81,6 +81,7 @@ import { TextToSpeechComponent } from './components/text-to-speech/text-to-speec
 import { FsaFourPlayerSplitComponent } from './components/obs/fsa-four-player-split/fsa-four-player-split.component';
 import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/fsa-fps-ad-panel/fsa-fps-ad-panel.component';
 import { CreditsRollComponent } from './components/obs/credits-roll/credits-roll.component';
+import { TwitchOAuthComponent } from './components/twitch-oauth/twitch-oauth.component';
 
 
 @NgModule({
@@ -143,7 +144,8 @@ import { CreditsRollComponent } from './components/obs/credits-roll/credits-roll
     TextToSpeechComponent,
     FsaFourPlayerSplitComponent,
     FsaFpsAdPanelComponent,
-    CreditsRollComponent
+    CreditsRollComponent,
+    TwitchOAuthComponent
   ],
   imports: [
     BrowserModule,

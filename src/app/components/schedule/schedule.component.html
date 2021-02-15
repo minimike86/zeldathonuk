@@ -110,30 +110,31 @@
           </thead>
           <tbody>
 
-            <tr *ngFor="let game of gameList; let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
+            <tr *ngFor="let game of (gameList$ | async); let i = index"
+                [ngClass]="isCurrentlyPlaying(game) ? 'table-gold' : hasBeenPlayed(game) ? 'table-played' : ''">
 
               <td class="align-middle">
                 <div class="">
-                  {{ game.startDate | date:'EEE dd' }}
+                  {{ game.startDate?.toDate() | date:'EEE dd' }}
                 </div>
                 <div class="text-white-50">
-                  {{ game.startDate | date:'MMM yyyy' }}
+                  {{ game.startDate?.toDate() | date:'MMM yyyy' }}
                 </div>
               </td>
 
               <td class="align-middle">
                 <div class="">
-                  {{ game.startDate | date:'hh:mm' }}
+                  {{ game.startDate?.toDate() | date:'hh:mm' }}
                 </div>
                 <div class="text-white-50">
-                  {{ game.startDate | date:'aa' }}
+                  {{ game.startDate?.toDate() | date:'aa' }}
                 </div>
               </td>
 
               <td class="align-middle text-center">
                 <div class="d-none d-md-block">
                   <div class="badge badge-pill badge-secondary p-2">
-                    {{ game.console }}
+                    {{ game.gamePlatform }}
                   </div>
                 </div>
               </td>
@@ -149,18 +150,18 @@
               <td class="align-middle">
                 <div class="d-flex justify-content-between align-items-center">
                   <div class="d-flex flex-column mr-2">
-                    <img [src]="game.boxArt" [alt]="game.name + ' Cover Art'" style="max-width: 50px;"
-                         [title]="game.name + ' Cover Art'">
+                    <img [src]="game.coverArt" [alt]="game.gameName + ' Cover Art'" style="max-width: 50px;"
+                         [title]="game.gameName + ' Cover Art'">
                   </div>
                   <div class="text-center w-100">
                     <p class="mb-1">
-                      {{ game.name }} ({{ game.releaseDate }})
-                      <ng-container *ngIf="hasBeenPlayed(i) && !isCurrentlyPlaying(i)">
+                      {{ game.gameName }} ({{ game.gameRelYear }})
+                      <ng-container *ngIf="hasBeenPlayed(game) && !isCurrentlyPlaying(game)">
                           <span class="badge badge-warning m-2">
                             COMPLETED
                           </span>
                       </ng-container>
-                      <ng-container *ngIf="isCurrentlyPlaying(i) && isLive">
+                      <ng-container *ngIf="isCurrentlyPlaying(game) && isLive">
                         <div class="d-inline-block m-2" (click)="routeToLiveView()">
                           <span class="badge badge-danger" style="cursor: pointer;" title="Watch Livestream">
                             LIVE

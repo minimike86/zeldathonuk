@@ -4,10 +4,10 @@ import {GameLineupService} from '../../../../services/firebase/game-lineup/game-
 import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
 import {ZeldaGame} from '../../../../models/zelda-game';
 import {Observable} from 'rxjs';
-import {GameLineUp} from '../../../../services/firebase/game-lineup/game-lineup';
 import {map} from 'rxjs/operators';
 import {OmnibarContentService} from '../../../../services/omnibar-content-service/omnibar-content-service.service';
 import {CountUpService} from '../../../../services/countup-service/countup.service';
+import {GameLineUpId} from '../../../../services/firebase/game-lineup/game-lineup';
 
 @Component({
   selector: 'app-up-next-game',
@@ -26,114 +26,63 @@ export class UpNextGameComponent implements OnInit {
   constructor( private omnibarContentService: OmnibarContentService,
                private countUpService: CountUpService,
                private currentlyPlayingService: CurrentlyPlayingService,
-               private gameLineupService: GameLineupService ) {
+               private gameLineUpService: GameLineupService ) {
     this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
   }
 
   ngOnInit() {
+
     this.countUpService.getTimer().pipe(map(countUpTimer => {
       return this.countUpTimer = countUpTimer;
     })).subscribe();
+
     this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
       this.currentlyPlayingId = data[0];
     })).subscribe();
-    this.gameLineupService.getGameLineUp().pipe(map(data => {
-      this.gameLineUp = data[0].gameLineUp;
-    })).subscribe();
+
+    this.gameLineUpService.getGameLineUp().pipe(
+      map((data: GameLineUpId[]) => {
+        this.gameLineUp = data.find(x => x.id === 'GAME-LINEUP').gameLineUp;
+        return Object.values(this.gameLineUp)
+          .filter((x: ZeldaGame) => x.active === true)
+          .sort((a: ZeldaGame, b: ZeldaGame) => a.order - b.order);
+      }),
+    ).subscribe();
+
     setTimeout(() => {
       this.slideIn = !this.slideIn;
       this.omnibarContentService.setCurrentOmnibarContentId(2, 1000 * 5);
     }, 1000 * 10); // 30
+
   }
 
   getNextGame(): ZeldaGame {
     if (this.gameLineUp) {
-      if (this.currentlyPlayingId.index === 'SKYWARD-SWORD' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['SKYWARD-SWORD'];
-      } else if (this.currentlyPlayingId.index === 'SKYWARD-SWORD') {
-        return this.gameLineUp['MINISH-CAP'];
-      } else if (this.currentlyPlayingId.index === 'MINISH-CAP' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['MINISH-CAP'];
-      } else if (this.currentlyPlayingId.index === 'MINISH-CAP') {
-        return this.gameLineUp['FOUR-SWORDS'];
-      } else if (this.currentlyPlayingId.index === 'FOUR-SWORDS' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['FOUR-SWORDS'];
-      } else if (this.currentlyPlayingId.index === 'FOUR-SWORDS') {
-        return this.gameLineUp['OCARINA-OF-TIME'];
-      } else if (this.currentlyPlayingId.index === 'OCARINA-OF-TIME' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['OCARINA-OF-TIME'];
-      } else if (this.currentlyPlayingId.index === 'OCARINA-OF-TIME') {
-        return this.gameLineUp['MAJORAS-MASK'];
-      } else if (this.currentlyPlayingId.index === 'MAJORAS-MASK' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['MAJORAS-MASK'];
-      } else if (this.currentlyPlayingId.index === 'MAJORAS-MASK') {
-        return this.gameLineUp['TWILIGHT-PRINCESS-HD'];
-      } else if (this.currentlyPlayingId.index === 'TWILIGHT-PRINCESS-HD' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['TWILIGHT-PRINCESS-HD'];
-      } else if (this.currentlyPlayingId.index === 'TWILIGHT-PRINCESS-HD') {
-        return this.gameLineUp['FOUR-SWORDS-ADVENTURES'];
-      } else if (this.currentlyPlayingId.index === 'FOUR-SWORDS-ADVENTURES' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['FOUR-SWORDS-ADVENTURES'];
-      } else if (this.currentlyPlayingId.index === 'FOUR-SWORDS-ADVENTURES') {
-        return this.gameLineUp['WIND-WAKER-HD'];
-      } else if (this.currentlyPlayingId.index === 'WIND-WAKER-HD' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['WIND-WAKER-HD'];
-      } else if (this.currentlyPlayingId.index === 'WIND-WAKER-HD') {
-        return this.gameLineUp['PHANTOM-HOURGLASS'];
-      } else if (this.currentlyPlayingId.index === 'PHANTOM-HOURGLASS' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['PHANTOM-HOURGLASS'];
-      } else if (this.currentlyPlayingId.index === 'PHANTOM-HOURGLASS') {
-        return this.gameLineUp['SPIRIT-TRACKS'];
-      } else if (this.currentlyPlayingId.index === 'SPIRIT-TRACKS' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['SPIRIT-TRACKS'];
-      } else if (this.currentlyPlayingId.index === 'SPIRIT-TRACKS') {
-        return this.gameLineUp['LINK-TO-THE-PAST'];
-      } else if (this.currentlyPlayingId.index === 'LINK-TO-THE-PAST' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['LINK-TO-THE-PAST'];
-      } else if (this.currentlyPlayingId.index === 'LINK-TO-THE-PAST') {
-        return this.gameLineUp['LINKS-AWAKENING-SWITCH'];
-      } else if (this.currentlyPlayingId.index === 'LINKS-AWAKENING-SWITCH' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['LINKS-AWAKENING-SWITCH'];
-      } else if (this.currentlyPlayingId.index === 'LINKS-AWAKENING-SWITCH') {
-        return this.gameLineUp['LINK-BETWEEN-WORLD'];
-      } else if (this.currentlyPlayingId.index === 'LINK-BETWEEN-WORLD' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['LINK-BETWEEN-WORLD'];
-      } else if (this.currentlyPlayingId.index === 'LINK-BETWEEN-WORLD') {
-        return this.gameLineUp['TRIFORCE-HEROES'];
-      } else if (this.currentlyPlayingId.index === 'TRIFORCE-HEROES' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['TRIFORCE-HEROES'];
-      } else if (this.currentlyPlayingId.index === 'TRIFORCE-HEROES') {
-        return this.gameLineUp['LEGEND-OF-ZELDA'];
-      } else if (this.currentlyPlayingId.index === 'LEGEND-OF-ZELDA' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['LEGEND-OF-ZELDA'];
-      } else if (this.currentlyPlayingId.index === 'LEGEND-OF-ZELDA') {
-        return this.gameLineUp['ADVENTURE-OF-LINK'];
-      } else if (this.currentlyPlayingId.index === 'ADVENTURE-OF-LINK' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['ADVENTURE-OF-LINK'];
-      } else if (this.currentlyPlayingId.index === 'ADVENTURE-OF-LINK') {
-        return this.gameLineUp['AGE-OF-CALAMITY'];
-      } else if (this.currentlyPlayingId.index === 'AGE-OF-CALAMITY' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['AGE-OF-CALAMITY'];
-      } else if (this.currentlyPlayingId.index === 'AGE-OF-CALAMITY') {
-        return this.gameLineUp['BREATH-OF-THE-WILD'];
-      } else if (this.currentlyPlayingId.index === 'BREATH-OF-THE-WILD' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['BREATH-OF-THE-WILD'];
-      } else if (this.currentlyPlayingId.index === 'BREATH-OF-THE-WILD') {
-        return this.gameLineUp['SUPER-METROID-LINK-TO-THE-PAST'];
-      } else if (this.currentlyPlayingId.index === 'SUPER-METROID-LINK-TO-THE-PAST' && this.countUpTimer === '00:00:00') {
-        return this.gameLineUp['SUPER-METROID-LINK-TO-THE-PAST'];
-      } else if (this.currentlyPlayingId.index === 'SUPER-METROID-LINK-TO-THE-PAST') {
+      const currGame: ZeldaGame = this.gameLineUp.get(this.currentlyPlayingId.index);
+      const nextGame: ZeldaGame = Object.values(this.gameLineUp)
+                                        .find((x: ZeldaGame) => x.order === currGame.order + 1);
+      if (this.countUpTimer === '00:00:00') {
+        return currGame;
+      } else if (currGame.order === Object.values(this.gameLineUp).length) {
         return {
           active: true,
           coverArt: '',
           gameEstimate: '',
           gameName: 'The End',
           gamePlatform: '',
+          timeline: '',
           gameProgressKey: '',
           gameRelYear: '',
           gameType: '',
-          order: 0
+          order: 0,
+          extraBadges: [],
+          runners: [],
+          startDate: null,
+          endDate: null,
+          twitchGameId: null
         };
+      } else {
+        return nextGame;
       }
     } else {
       return {
@@ -142,10 +91,16 @@ export class UpNextGameComponent implements OnInit {
         gameEstimate: '',
         gameName: 'Loading...',
         gamePlatform: '',
+        timeline: '',
         gameProgressKey: '',
         gameRelYear: '',
         gameType: '',
-        order: 0
+        order: 0,
+        extraBadges: [],
+        runners: [],
+        startDate: null,
+        endDate: null,
+        twitchGameId: null
       };
     }
   }

@@ -16,7 +16,8 @@ import { LoginComponent } from './components/login/login.component';
 import { ScheduleComponent } from './components/schedule/schedule.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
-import {AudioVisualizerComponent} from './components/audio-visualizer/audio-visualizer.component';
+import { AudioVisualizerComponent } from './components/audio-visualizer/audio-visualizer.component';
+import { TwitchOAuthComponent } from './components/twitch-oauth/twitch-oauth.component';
 
 
 const routes: Routes = [
@@ -38,6 +39,7 @@ const routes: Routes = [
   { path: 'tracking/:game', component: GameTrackingComponent },
   { path: 'api/timers', component: TimersComponent },
   { path: 'api/count-up', component: CountupComponent },
+  { path: 'oauth', component: TwitchOAuthComponent },
   { path: '**', component: PageNotFoundComponent }
 ];
 

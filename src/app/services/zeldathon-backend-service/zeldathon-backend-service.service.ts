@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpErrorResponse} from '@angular/common/http';
+import {HttpClient, HttpErrorResponse, HttpHeaders} from '@angular/common/http';
 import {Observable, of, throwError} from 'rxjs';
 import {catchError} from 'rxjs/operators';
 
@@ -20,7 +20,10 @@ export class ZeldathonBackendService {
   }
 
   scrapeTwitterTweet(tweetContent: string): Observable<any> {
-    return this.http.post(`http://localhost:3000/scrape/twitter/tweet`, tweetContent);
+    const httpHeaders = new HttpHeaders()
+      .set('Content-Type', 'application/json');
+    return this.http.post(`http://localhost:3000/scrape/twitter/tweet`, JSON.stringify(tweetContent),
+      {headers: httpHeaders});
   }
 
 }
