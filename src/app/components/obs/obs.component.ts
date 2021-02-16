@@ -245,7 +245,7 @@ export class ObsComponent implements OnInit {
   swapGameModalBtn() {
     const currentGame: ZeldaGame = Object.values(this.gameLineUp).find((x: ZeldaGame) => x.gameProgressKey === this.currentlyPlaying.index);
     // SET THE PREVIOUS GAME TO COMPLETE AND START THE NEXT GAME
-    // this.gameLineupService.updateGameFinished(currentGame, this.swapGameKey.value);
+    this.gameLineupService.updateGameFinished(currentGame, this.swapGameKey.value);
 
     // UPDATE TWITCH GAME AND TITLE
     this.twitchService.updateChannel('52548232', this.swapGameKey.value.twitchGameId, 'en',

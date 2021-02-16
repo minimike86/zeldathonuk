@@ -58,17 +58,14 @@ export class UpNextGameComponent implements OnInit {
 
   getNextGame(): ZeldaGame {
     if (this.gameLineUp) {
-      const currGame: ZeldaGame = this.gameLineUp.get(this.currentlyPlayingId.index);
-      const nextGame: ZeldaGame = Object.values(this.gameLineUp)
-                                        .find((x: ZeldaGame) => x.order === currGame.order + 1);
-      if (this.countUpTimer === '00:00:00') {
-        return currGame;
-      } else if (currGame.order === Object.values(this.gameLineUp).length) {
+      const currGame: ZeldaGame = this.gameLineUp[this.currentlyPlayingId.index];
+
+      if (currGame.order + 1 === Object.values(this.gameLineUp).length) {
         return {
           active: true,
           coverArt: '',
           gameEstimate: '',
-          gameName: 'The End',
+          gameName: 'The End... of ZeldathonUK 2021!',
           gamePlatform: '',
           timeline: '',
           gameProgressKey: '',
@@ -81,10 +78,19 @@ export class UpNextGameComponent implements OnInit {
           endDate: null,
           twitchGameId: null
         };
+      }
+
+      const nextGame: ZeldaGame = Object.values(this.gameLineUp)
+                                        .find((x: ZeldaGame) => x.order === currGame.order + 1);
+
+      if (this.countUpTimer === '00:00:00') {
+        return currGame;
       } else {
         return nextGame;
       }
+
     } else {
+
       return {
         active: true,
         coverArt: '',
@@ -102,6 +108,7 @@ export class UpNextGameComponent implements OnInit {
         endDate: null,
         twitchGameId: null
       };
+
     }
   }
 

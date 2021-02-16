@@ -15,7 +15,7 @@
         <div class="d-flex justify-content-center spt-game-text">
           <div class="d-flex flex-column">
             <h1 class="d-flex align-self-center text-center mb-0" style="overflow-wrap: break-word; line-height: 1.1em;">
-              {{ gameDesc.gameName.split(':')[0] + ':' | uppercase }}
+              {{ gameDesc.gameName.includes(':') ? gameDesc.gameName.split(':')[0] + ':' : gameDesc.gameName | uppercase }}
             </h1>
             <h1 class="d-flex align-self-center text-center mb-0" style="overflow-wrap: break-word; line-height: 1.1em;">
               {{ gameDesc.gameName.split(':')[1] | uppercase }}

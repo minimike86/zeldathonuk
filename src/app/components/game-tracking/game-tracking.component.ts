@@ -48,20 +48,4 @@ export class GameTrackingComponent implements OnInit {
     this.gameItemService.collectItem(this.gameLineUp[this.currentlyPlayingId.index].gameProgressKey, gameItems);
   }
 
-  addData() {
-    // this.gameItemService.addLegendOfZeldaData();        // 1986
-    // this.gameItemService.addAdventureOfLinkData();      // 1987
-    // this.gameItemService.addLinkToThePastData();        // 1992
-    // this.gameItemService.addOcarinaOfTimeData();        // 1998
-    // this.gameItemService.addMajorasMaskData();          // 2000
-    // this.gameItemService.addMinishCapData();            // 2004
-    // this.gameItemService.addFourSwordsAdventuresData(); // 2004
-    // this.gameItemService.addSpiritTracksData();         // 2009
-    // this.gameItemService.addSkywardSwordData();         // 2011
-    // this.gameItemService.addWindWakerHdData();          // 2013
-    // this.gameItemService.addBreathOfTheWildData();      // 2017
-    // this.gameItemService.addLinksAwakeningRemakeData(); // 2019
-    alert('Importing game data...');
-  }
-
 }
