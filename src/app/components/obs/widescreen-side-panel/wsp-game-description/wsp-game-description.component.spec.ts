@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { WspGameDescriptionComponent } from './wsp-game-description.component';
 
@@ -6,7 +6,7 @@ describe('WspGameDescriptionComponent', () => {
   let component: WspGameDescriptionComponent;
   let fixture: ComponentFixture<WspGameDescriptionComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ WspGameDescriptionComponent ]
     })

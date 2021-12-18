@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { WspCameraComponent } from './wsp-camera.component';
 
@@ -6,7 +6,7 @@ describe('WspCameraComponent', () => {
   let component: WspCameraComponent;
   let fixture: ComponentFixture<WspCameraComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ WspCameraComponent ]
     })

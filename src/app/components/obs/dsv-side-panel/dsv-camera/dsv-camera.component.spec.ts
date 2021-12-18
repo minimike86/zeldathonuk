@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { DsvCameraComponent } from './dsv-camera.component';
 
@@ -6,7 +6,7 @@ describe('DsvCameraComponent', () => {
   let component: DsvCameraComponent;
   let fixture: ComponentFixture<DsvCameraComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ DsvCameraComponent ]
     })

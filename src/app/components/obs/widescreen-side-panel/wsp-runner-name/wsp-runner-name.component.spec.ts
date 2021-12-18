@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { WspRunnerNameComponent } from './wsp-runner-name.component';
 
@@ -6,7 +6,7 @@ describe('WspRunnerNameComponent', () => {
   let component: WspRunnerNameComponent;
   let fixture: ComponentFixture<WspRunnerNameComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ WspRunnerNameComponent ]
     })

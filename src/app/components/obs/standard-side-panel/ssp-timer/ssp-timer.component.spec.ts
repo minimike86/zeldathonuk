@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { SspTimerComponent } from './ssp-timer.component';
 
@@ -6,7 +6,7 @@ describe('SspTimerComponent', () => {
   let component: SspTimerComponent;
   let fixture: ComponentFixture<SspTimerComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ SspTimerComponent ]
     })

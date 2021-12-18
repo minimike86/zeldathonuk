@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { DsvSidePanelComponent } from './dsv-side-panel.component';
 
@@ -6,7 +6,7 @@ describe('DsvSidePanelComponent', () => {
   let component: DsvSidePanelComponent;
   let fixture: ComponentFixture<DsvSidePanelComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ DsvSidePanelComponent ]
     })

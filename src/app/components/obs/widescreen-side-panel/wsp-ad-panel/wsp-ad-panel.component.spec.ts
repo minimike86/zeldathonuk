@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { WspAdPanelComponent } from './wsp-ad-panel.component';
 
@@ -6,7 +6,7 @@ describe('WspAdPanelComponent', () => {
   let component: WspAdPanelComponent;
   let fixture: ComponentFixture<WspAdPanelComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ WspAdPanelComponent ]
     })
