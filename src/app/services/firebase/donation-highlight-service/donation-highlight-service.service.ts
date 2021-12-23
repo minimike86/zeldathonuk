@@ -6,7 +6,7 @@ import {
   HighlightedDonationId,
   TrackedDonation,
 } from '../donation-tracking/tracked-donation';
-import {AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument} from '@angular/fire/firestore';
+import {AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument} from '@angular/fire/compat/firestore';
 
 
 @Injectable({

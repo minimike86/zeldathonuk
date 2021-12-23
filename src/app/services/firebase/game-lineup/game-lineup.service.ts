@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {AngularFirestore, AngularFirestoreCollection} from '@angular/fire/firestore';
+import {AngularFirestore, AngularFirestoreCollection} from '@angular/fire/compat/firestore';
 import {GameLineUp, GameLineUpId} from './game-lineup';
 import {GameItems, GameItemsId} from '../game-item/game-item';
 import {Observable, pipe} from 'rxjs';
