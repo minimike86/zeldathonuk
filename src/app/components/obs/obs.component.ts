@@ -20,7 +20,7 @@ import { DonationTrackingService } from '../../services/firebase/donation-tracki
 import {BreakCountdownService} from '../../services/firebase/break-countdown/break-countdown.service';
 
 import { ZeldaGame } from '../../models/zelda-game';
-import firebase from 'firebase/app';
+import firebase from 'firebase/compat/app';
 import Timestamp = firebase.firestore.Timestamp;
 import {sha256} from 'js-sha256';
 

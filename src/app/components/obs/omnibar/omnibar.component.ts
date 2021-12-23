@@ -6,7 +6,7 @@ import { FundraisingPageDonations, JustGivingDonation } from '../../../services/
 import {TrackedDonation, TrackedDonationId} from '../../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../../services/firebase/donation-tracking/donation-tracking.service';
 import {concatMap, delay, filter, finalize, map, reduce, skipUntil, tap} from 'rxjs/operators';
-import firebase from 'firebase/app';
+import firebase from 'firebase/compat/app';
 import Timestamp = firebase.firestore.Timestamp;
 import {
   FacebookDonation,

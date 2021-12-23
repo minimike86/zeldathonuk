@@ -5,7 +5,7 @@ import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 
 import { AuthService } from '../../services/firebase/auth/auth.service';
 
-import firebase from 'firebase/app';
+import firebase from 'firebase/compat/app';
 import 'firebase/auth';
 
 

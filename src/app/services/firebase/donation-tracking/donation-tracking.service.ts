@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import firebase from 'firebase/app';
+import firebase from 'firebase/compat/app';
 import FieldValue = firebase.firestore.FieldValue;
 import Timestamp = firebase.firestore.Timestamp;
 import {AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument} from '@angular/fire/firestore';

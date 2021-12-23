@@ -3,7 +3,7 @@ import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/fire
 import { CountUpTimer, CountUpTimerId } from './count-up-timer';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import firebase from 'firebase/app';
+import firebase from 'firebase/compat/app';
 import Timestamp = firebase.firestore.Timestamp;
 
 @Injectable({

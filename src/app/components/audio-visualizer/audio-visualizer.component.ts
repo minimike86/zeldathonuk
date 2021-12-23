@@ -1574,7 +1574,7 @@ export class AudioVisualizerComponent implements OnInit, AfterViewInit {
 }
 
 
-interface TimeRemaining {
+export interface TimeRemaining {
   days: number;
   hours: number;
   minutes: number;

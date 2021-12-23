@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, interval, Observable, Subscription } from 'rxjs';
 import { FirebaseTimerService } from '../firebase/firebase-timer/firebase-timer.service';
 import { CountUpTimerId } from '../firebase/firebase-timer/count-up-timer';
-import firebase from 'firebase/app';
+import firebase from 'firebase/compat/app';
 import Timestamp = firebase.firestore.Timestamp;
 
 
