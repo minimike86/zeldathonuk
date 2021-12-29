@@ -65,7 +65,7 @@ export class DonationTrackingService {
     });
   }
 
-  convertJustGivingDonationToTrackedDonation(donation: JustGivingDonation): TrackedDonation {
+  convertJustGivingDonationToTrackedDonation(pageShortName: string, donation: JustGivingDonation): TrackedDonation {
     return {
       id: donation.id !== undefined ? donation.id : 'undefined',
       name: (donation.donorDisplayName !== null && donation.donorDisplayName !== undefined
@@ -83,6 +83,7 @@ export class DonationTrackingService {
       giftAidAmount: typeof(donation.estimatedTaxReclaim) === 'string'
         ? parseFloat(donation.estimatedTaxReclaim) : 0,
       donationSource: 'JustGiving',
+      pageShortName: pageShortName,
       donationDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(donation.donationDate))
     };
   }
@@ -98,6 +99,7 @@ export class DonationTrackingService {
         ? parseFloat(donation.amount) : donation.amount,
       giftAidAmount: 0,
       donationSource: 'Facebook',
+      pageShortName: 'Facebook',
       donationDate: Timestamp.fromDate(new Date(donation.date))
     };
   }

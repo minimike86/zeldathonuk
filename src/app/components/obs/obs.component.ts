@@ -1,8 +1,8 @@
 import { Component, Injectable, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import {KeyValue} from '@angular/common';
 
-import {Observable, of} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {from, Observable, of} from 'rxjs';
+import {concatMap, delay, finalize, map} from 'rxjs/operators';
 
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -15,9 +15,9 @@ import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 import { CountUpService } from '../../services/countup-service/countup.service';
-import { TrackedDonation } from '../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation, TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
-import {BreakCountdownService} from '../../services/firebase/break-countdown/break-countdown.service';
+import { BreakCountdownService } from '../../services/firebase/break-countdown/break-countdown.service';
 
 import { ZeldaGame } from '../../models/zelda-game';
 import firebase from 'firebase/compat/app';
@@ -26,6 +26,14 @@ import {sha256} from 'js-sha256';
 
 import {faPlay, faPause, faStop, faHistory,
         faBackward} from '@fortawesome/free-solid-svg-icons';
+import {JgService} from '../../services/jg-service/jg-service.service';
+import {
+  FundraisingPage,
+  FundraisingPageId,
+  FundraisingPagesService
+} from '../../services/firebase/fundraising-pages/fundraising-pages.service';
+import {FundraisingPageDetails, JustGivingDonation} from '../../services/jg-service/fundraising-page';
+import {profanityFilter} from './omnibar/omnibar.component';
 
 
 @Component({
@@ -46,11 +54,15 @@ export class ObsComponent implements OnInit {
   private yesNoModalDialogRef: TemplateRef<any>;
   public yesNoModal: NgbActiveModal;
 
+  @ViewChild('addManualDonationModalDialog')
+  private addManualDonationModalDialogRef: TemplateRef<any>;
+  public addManualDonationModal: NgbActiveModal;
+
   public showObsLayouts = false;
   public showBreakCountdownDate = false;
   public showTimer = false;
   public showRunnerName = false;
-  public showAddDonation = false;
+  public showAddDonation = true;
   public showGameSelect = false;
   public showGameTracking = false;
 
@@ -67,6 +79,11 @@ export class ObsComponent implements OnInit {
   public faTwitch = faTwitch;
   public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
   public currentRunner: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
+
+  public justGivingPages: FundraisingPage[] = [];
+  public inputJustGivingPageUrl = '';
+  public trackedDonations$: Observable<TrackedDonationId[]>;
+  public trackedDonations: TrackedDonation[];
 
   public tempTrackedDonation: TrackedDonation;
   public donationDate: string;
@@ -93,7 +110,9 @@ export class ObsComponent implements OnInit {
                private donationTrackingService: DonationTrackingService,
                private runnerNameService: RunnerNameService,
                private gameLineupService: GameLineupService,
-               private currentlyPlayingService: CurrentlyPlayingService ) {
+               private currentlyPlayingService: CurrentlyPlayingService,
+               private jgService: JgService,
+               private fundraisingPagesService: FundraisingPagesService) {
     this.clearTrackedDonation();
     this.clearAddGame();
   }
@@ -126,11 +145,60 @@ export class ObsComponent implements OnInit {
     this.timer$ = this.countUpService.getTimer().pipe(map((timer: string) => {
       return this.timer = timer;
     }));
+    this.fundraisingPagesService.getFundraisingPagesIdArray().pipe(map((data: FundraisingPageId[]) => {
+      this.justGivingPages = data[0].fundraisingPages;
+    })).subscribe();
+    this.trackedDonations$ = this.donationTrackingService.getTrackedDonationArray();
+    this.trackedDonations$.subscribe(data => {
+      this.trackedDonations = data.find(x => x.id === 'TEST-DONATIONS').donations;
+      const trackedDonationsTotal = this.trackedDonations?.reduce((a, b) => a + b.donationAmount, 0);
+    });
   }
 
   onOpenAddGameModalClick() {
     this.tempAddGame.order = this.gameLineUp !== undefined ? Object.keys(this.gameLineUp).length : 0;
     this.addGameModal = this.modalService.open(this.addGameModalDialogRef);
+  }
+
+  onOpenAddManualDonationModalClick() {
+    this.addManualDonationModal = this.modalService.open(this.addManualDonationModalDialogRef);
+  }
+
+  submitAddJustGivingPage() {
+    if (this.inputJustGivingPageUrl.trim().length >= 1
+        && !this.justGivingPages.some(x => x.pageShortName === this.inputJustGivingPageUrl)) {
+      const jgResult = this.jgService.getFundraisingPageDetailsByPageShortName(this.inputJustGivingPageUrl)
+        .subscribe((data: FundraisingPageDetails) => {
+        const temp: FundraisingPage = {
+          pageId: data.pageId,
+          pageShortName: this.inputJustGivingPageUrl,
+          eventDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(data.eventDate)),
+          image: data.image,
+          title: data.title,
+          story: data.story,
+          currencyCode: data.currencyCode,
+          currencySymbol: data.currencySymbol,
+          grandTotalRaisedExcludingGiftAid: data.grandTotalRaisedExcludingGiftAid,
+          vendor: 'JustGiving'
+        };
+        this.justGivingPages.push(temp);
+        this.fundraisingPagesService.setFundraisingPages(this.justGivingPages);
+      });
+    }
+  }
+
+  stripHtml(html: string): string {
+    html = html.replace('&lt;p&gt;', '');
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  }
+
+  getSumOfJustGivingPages(): string {
+    let grandTotalRaisedExcludingGiftAid = 0;
+    this.justGivingPages.forEach(page => {
+      grandTotalRaisedExcludingGiftAid += Number(page.grandTotalRaisedExcludingGiftAid).valueOf();
+    });
+    return grandTotalRaisedExcludingGiftAid.toFixed(2);
   }
 
   submitAddGame() {
@@ -236,6 +304,7 @@ export class ObsComponent implements OnInit {
       donationAmount: 0.00,
       giftAidAmount: 0.00,
       donationSource: 'Manual',
+      pageShortName: 'Manual',
       donationDate: null
     };
     this.donationDate = '';
@@ -286,6 +355,35 @@ export class ObsComponent implements OnInit {
         return ('' + num);
       }
     }
+  }
+
+  importFundraisingPageDonations(pageShortName: string) {
+    this.jgService.getAllJustGivingDonationsByPageShortName(pageShortName).pipe(
+      map((donations: JustGivingDonation[]) => {
+        return donations.filter(donation => !this.trackedDonations?.some(x => x.id === donation.id));
+      }),
+      map((newDonations: JustGivingDonation[]) => {
+        console.log('getNewJustGivingDonations', newDonations, this.trackedDonations);
+        from(newDonations.reverse()).pipe(
+          map((donation: JustGivingDonation) => this.donationTrackingService
+            .convertJustGivingDonationToTrackedDonation(pageShortName, donation)),
+          map((trackedDonation: TrackedDonation) => profanityFilter(trackedDonation)),
+          concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
+            map((donation: TrackedDonation) => {
+              const donationExists = this.donationTrackingService.trackedDonationExists(donation);
+              console.log('trackedDonationExists', donation, donationExists);
+              if (!donationExists) {
+                this.donationTrackingService.addTrackedDonation([donation]);
+              }
+            }),
+            finalize(() => {
+              console.log('next donationExists');
+            })
+          )),
+        ).subscribe();
+        // console.log('getAllJustGivingDonations:', donations);
+        return newDonations;
+      })).subscribe();
   }
 
 }

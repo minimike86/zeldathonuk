@@ -26,5 +26,6 @@ export interface TrackedDonation {
   donationAmount: number;
   giftAidAmount?: number;
   donationSource: string;
+  pageShortName: string;
   donationDate: Timestamp;
 }

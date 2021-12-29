@@ -3,6 +3,7 @@
     <app-navbar></app-navbar>
     <div class="flex-fill container py-2" style="background: lightgrey;">
 
+      <!-- OBS Layouts -->
       <div class="">
         <div class="d-flex justify-content-between">
           <h3 class="text-dark pt-2">OBS Layouts</h3>
@@ -64,137 +65,136 @@
 
       <hr class="hr">
 
+      <!-- Timers -->
       <div class="mb-3">
         <div class="d-flex justify-content-between">
-          <h3 class="text-dark pt-2">Break Timer</h3>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowBreakCountdownDate();">Show/Hide</button>
+          <h3 class="text-dark pt-2">Timers</h3>
+          <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();toggleShowBreakCountdownDate();">Show/Hide</button>
         </div>
         <div class="d-flex flex-column" *ngIf="showBreakCountdownDate">
-          <div class="d-flex justify-content-start align-items-center mt-2">
-            <div class="d-flex align-items-center m-1 w-25">
-              <span class="timer-label ml-2">Break Countdown to Date:</span>
-            </div>
-            <div class="d-flex justify-content-start align-items-center w-75">
-              <form class="d-flex align-self-center">
-                <div class="form-group">
-                  <label class="small mb-0" for="breakCountdownDate">Break Countdown Date:</label>
-                  <input id="breakCountdownDate" name="breakCountdownDate" type="date" class="form-control form-control-sm"
-                         [(ngModel)]="breakCountdownDate">
-                </div>
-                <div class="form-group ml-2">
-                  <label class="small mb-0" for="breakCountdownTime">Time:</label>
-                  <input id="breakCountdownTime" name="breakCountdownTime" type="time" class="form-control form-control-sm"
-                         [(ngModel)]="breakCountdownTime">
-                </div>
-                <div class="d-flex align-self-center ml-2">
-                  <button class="btn btn-primary" (click)="setBreakCountdown()">Set Break Timer</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <hr class="hr">
+            <div>
+              <h5 class="text-black-50 border-bottom border-secondary">Play Timer</h5>
+              <div class="d-flex justify-content-start align-items-center my-2">
+                <div class="d-flex align-items-center m-1 mr-5">
+                  <span class="timer-label ml-2">Time&nbsp;Played:</span>
+                </div>
+                <div class="d-flex justify-content-start align-items-center w-100">
 
-      <div class="mb-3">
-        <div class="d-flex justify-content-between">
-          <h3 class="text-dark pt-2">Play Timer</h3>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();">Show/Hide</button>
-        </div>
-        <div class="d-flex flex-column" *ngIf="showTimer">
-          <div class="d-flex justify-content-start align-items-center mt-2">
-            <div class="d-flex align-items-center m-1 mr-5">
-              <span class="timer-label ml-2">Time&nbsp;Played:</span>
-            </div>
-            <div class="d-flex justify-content-start align-items-center w-100">
-
-              <div class="card text-white bg-secondary"
-                   [ngClass]="countUpData[0].isStarted === true ? 'border-primary'
+                  <div class="card text-white bg-secondary"
+                       [ngClass]="countUpData[0].isStarted === true ? 'border-primary'
                             : countUpData[0].hasPaused === true ? 'border-warning'
                             : countUpData[0].isStopped === true ? 'border-dark'
                             : ''"
-                   *ngIf="countUpData">
-                <div class="card-header">
-                  <div class="d-flex justify-content-between">
-                    <div>
-                    </div>
-                    <div class="badge small" [ngClass]="countUpData[0].isStarted === true ? 'badge-primary'
+                       *ngIf="countUpData">
+                    <div class="card-header">
+                      <div class="d-flex justify-content-between">
+                        <div>
+                        </div>
+                        <div class="badge small" [ngClass]="countUpData[0].isStarted === true ? 'badge-primary'
                                                       : countUpData[0].hasPaused === true ? 'badge-warning'
                                                       : countUpData[0].isStopped === true ? 'badge-danger' : ''">
-                      {{ countUpData === undefined ? 'Loading...'
-                        : countUpData[0].isStarted === true ? 'Started'
+                          {{ countUpData === undefined ? 'Loading...'
+                          : countUpData[0].isStarted === true ? 'Started'
                             : countUpData[0].hasPaused === true ? 'Paused'
-                                : countUpData[0].isStopped === true ? 'Stopped' : '' }}
+                              : countUpData[0].isStopped === true ? 'Stopped' : '' }}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                <div class="card-body text-center">
-                  <h1>{{ this.timer$ | async }}</h1>
-                </div>
-                <div class="card-footer">
-                  <div class="m-3">
-                    <button class="btn btn-success mx-1"
-                            [title]="countUpData[0].isStarted === true ? 'Play'
+                    <div class="card-body text-center">
+                      <h1>{{ this.timer$ | async }}</h1>
+                    </div>
+                    <div class="card-footer">
+                      <div class="m-3">
+                        <button class="btn btn-success mx-1"
+                                [title]="countUpData[0].isStarted === true ? 'Play'
                                    : countUpData[0].hasPaused === true ? 'Undo Pause'
                                    : countUpData[0].isStopped === true ? 'Play' : ''"
-                            [disabled]="countUpData[0].isStarted"
-                            (click)="start()">
-                      <fa-icon [icon]="faPlay" *ngIf="countUpData[0].isStarted === true"></fa-icon>
-                      <fa-icon [icon]="faHistory" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
-                      <fa-icon [icon]="faPlay" *ngIf="countUpData[0].isStopped === true"></fa-icon>
-                      {{ countUpData === undefined ? 'Loading...'
-                        : countUpData[0].isStarted === true ? ''
+                                [disabled]="countUpData[0].isStarted"
+                                (click)="start()">
+                          <fa-icon [icon]="faPlay" *ngIf="countUpData[0].isStarted === true"></fa-icon>
+                          <fa-icon [icon]="faHistory" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
+                          <fa-icon [icon]="faPlay" *ngIf="countUpData[0].isStopped === true"></fa-icon>
+                          {{ countUpData === undefined ? 'Loading...'
+                          : countUpData[0].isStarted === true ? ''
                             : countUpData[0].hasPaused === true ? (getCancelTimer(countUpData[0]?.startDate) | async)
-                                : countUpData[0].isStopped === true ? '' : '' }}
-                    </button>
-                    <button class="btn btn-success mx-1"
-                            [title]="'Resume'"
-                            [disabled]=""
-                            (click)="unpause()"
-                            *ngIf="countUpData !== undefined && countUpData[0].hasPaused === true">
-                      <fa-icon [icon]="faPlay"></fa-icon>
-                      {{ (getPausedTimer() | async) }}
-                    </button>
-                    <button class="btn btn-warning mx-1"
-                            [title]="countUpData[0].isStarted === true ? 'Reset'
+                              : countUpData[0].isStopped === true ? '' : '' }}
+                        </button>
+                        <button class="btn btn-success mx-1"
+                                [title]="'Resume'"
+                                [disabled]=""
+                                (click)="unpause()"
+                                *ngIf="countUpData !== undefined && countUpData[0].hasPaused === true">
+                          <fa-icon [icon]="faPlay"></fa-icon>
+                          {{ (getPausedTimer() | async) }}
+                        </button>
+                        <button class="btn btn-warning mx-1"
+                                [title]="countUpData[0].isStarted === true ? 'Reset'
                                    : countUpData[0].hasPaused === true ? 'Reset'
                                    : countUpData[0].isStopped === true ? 'Reset' : ''"
-                            [disabled]="countUpData[0].isStopped"
-                            (click)="reset()">
-                      <fa-icon [icon]="faBackward" *ngIf="countUpData[0].isStarted === true"></fa-icon>
-                      <fa-icon [icon]="faBackward" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
-                      <fa-icon [icon]="faBackward" *ngIf="countUpData[0].isStopped === true"></fa-icon>
-                      {{ countUpData === undefined ? 'Loading...'
-                        : countUpData[0].isStarted === true ? '00:00:00'
+                                [disabled]="countUpData[0].isStopped"
+                                (click)="reset()">
+                          <fa-icon [icon]="faBackward" *ngIf="countUpData[0].isStarted === true"></fa-icon>
+                          <fa-icon [icon]="faBackward" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
+                          <fa-icon [icon]="faBackward" *ngIf="countUpData[0].isStopped === true"></fa-icon>
+                          {{ countUpData === undefined ? 'Loading...'
+                          : countUpData[0].isStarted === true ? '00:00:00'
                             : countUpData[0].hasPaused === true ? '00:00:00'
-                                : countUpData[0].isStopped === true ? '' : '' }}
-                    </button>
-                    <button class="btn btn-danger mx-1"
-                            [title]="countUpData[0].isStarted === true ? 'Pause'
+                              : countUpData[0].isStopped === true ? '' : '' }}
+                        </button>
+                        <button class="btn btn-danger mx-1"
+                                [title]="countUpData[0].isStarted === true ? 'Pause'
                                    : countUpData[0].hasPaused === true ? 'Stop'
                                    : countUpData[0].isStopped === true ? 'Pause' : ''"
-                            [disabled]="countUpData[0].isStopped"
-                            (click)="pauseStop(countUpData[0]?.startDate)">
-                      <fa-icon [icon]="faPause" *ngIf="countUpData[0].isStarted === true"></fa-icon>
-                      <fa-icon [icon]="faStop" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
-                      <fa-icon [icon]="faPause" *ngIf="countUpData[0].isStopped === true"></fa-icon>
-                      {{ countUpData === undefined ? 'Loading...'
-                        : countUpData[0].isStarted === true ? (getCancelTimer(countUpData[0]?.startDate) | async)
+                                [disabled]="countUpData[0].isStopped"
+                                (click)="pauseStop(countUpData[0]?.startDate)">
+                          <fa-icon [icon]="faPause" *ngIf="countUpData[0].isStarted === true"></fa-icon>
+                          <fa-icon [icon]="faStop" *ngIf="countUpData[0].hasPaused === true"></fa-icon>
+                          <fa-icon [icon]="faPause" *ngIf="countUpData[0].isStopped === true"></fa-icon>
+                          {{ countUpData === undefined ? 'Loading...'
+                          : countUpData[0].isStarted === true ? (getCancelTimer(countUpData[0]?.startDate) | async)
                             : countUpData[0].hasPaused === true ? '00:00:00'
-                                : countUpData[0].isStopped === true ? '' : '' }}
-                    </button>
+                              : countUpData[0].isStopped === true ? '' : '' }}
+                        </button>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </div>
-
             </div>
-          </div>
+            <div>
+              <h5 class="text-black-50 border-bottom border-secondary">BRB Screen Timer</h5>
+              <div class="d-flex justify-content-start align-items-center my-2">
+                <div class="d-flex align-items-center m-1 w-25">
+                  <span class="timer-label ml-2">Break Countdown to Date:</span>
+                </div>
+                <div class="d-flex justify-content-start align-items-center w-75">
+                  <form class="d-flex align-self-center">
+                    <div class="form-group">
+                      <label class="small mb-0" for="breakCountdownDate">Break Countdown Date:</label>
+                      <input id="breakCountdownDate" name="breakCountdownDate" type="date" class="form-control form-control-sm"
+                             [(ngModel)]="breakCountdownDate">
+                    </div>
+                    <div class="form-group ml-2">
+                      <label class="small mb-0" for="breakCountdownTime">Time:</label>
+                      <input id="breakCountdownTime" name="breakCountdownTime" type="time" class="form-control form-control-sm"
+                             [(ngModel)]="breakCountdownTime">
+                    </div>
+                    <div class="d-flex align-self-center ml-2">
+                      <button class="btn btn-primary" (click)="setBreakCountdown()">Set Break Timer</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
         </div>
       </div>
 
       <hr class="hr">
 
+      <!-- Runner Name -->
       <div class="mb-3">
         <div class="d-flex justify-content-between mb-3">
           <div class="d-flex justify-content-start">
@@ -235,108 +235,56 @@
 
       <hr class="hr">
 
+      <!-- Manage Donations -->
       <div class="mb-3">
         <div class="d-flex justify-content-between">
-          <h3 class="text-dark pt-2 mr-3">Add Donation</h3>
+          <h3 class="text-dark pt-2 mr-3">Manage Donation Pages</h3>
+          <h3 class="d-flex align-self-center pt-2">&pound;{{ getSumOfJustGivingPages() }}</h3>
           <button class="btn btn-sm btn-dark" (click)="toggleShowAddDonation();">Show/Hide</button>
         </div>
-        <div class="d-flex justify-content-center" *ngIf="showAddDonation">
-          <form class="w-50">
+        <div class="d-flex flex-column" *ngIf="showAddDonation">
 
-            <div class="form-group mb-1">
-              <label class="small mb-0" for="donationId">ID:</label>
-              <input id="donationId" name="donationId" type="text" placeholder="Donation Id"
-                     class="form-control form-control-sm"
-                     disabled="true"
-                     [(ngModel)]="tempTrackedDonation.id">
-            </div>
-
-            <div class="form-group mb-1">
-              <label class="small mb-0" for="name">Name:</label>
-              <input id="name" name="name" type="text" placeholder="Name" class="form-control form-control-sm"
-                     [(ngModel)]="tempTrackedDonation.name">
-            </div>
-
-            <div class="d-flex justify-content-between">
-              <div class="flex-grow-1">
-                <div class="form-group mb-1">
-                    <label class="small mb-0" for="imgUrl">Image Url:</label>
-                    <input id="imgUrl" name="imgUrl" type="text"
-                           class="form-control form-control-sm"
-                           placeholder="https://via.placeholder.com/150"
-                           [(ngModel)]="tempTrackedDonation.imgUrl">
-                </div>
+          <div>
+            <h5 class="text-black-50 border-bottom border-secondary">Import from Fundraising Page</h5>
+            <ng-container *ngIf="justGivingPages.length > 0; else justGivingPagesListEmpty;">
+              <div class="d-flex justify-content-start flex-wrap">
+                <ng-template ngFor let-justGivingPage [ngForOf]="justGivingPages">
+                  <div class="m-2" style="width: 18%;">
+                    <div class="card bg-light border-secondary">
+                      <img [src]="justGivingPage.image.url" class="card-img-top" [alt]="justGivingPage.title">
+                      <div class="card-body p-2">
+                        <h6 class="card-title">{{ justGivingPage.title }}</h6>
+                        <p class="card-text small font-weight-bold text-success text-center border border-success">{{ justGivingPage.currencySymbol }}{{ justGivingPage.grandTotalRaisedExcludingGiftAid }}</p>
+                        <div class="d-flex justify-content-between">
+                          <div>
+                            <a [href]="'https://www.justgiving.com/fundraising/' + justGivingPage.pageShortName" class="btn btn-link btn-sm" target="_blank">Visit</a>
+                          </div>
+                          <div>
+                            <button class="btn btn-sm btn-secondary" title="Import Donations" (click)="importFundraisingPageDonations(justGivingPage.pageShortName)">Import</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-template>
               </div>
-              <div class="ml-2">
-                <img class="img-thumbnail" style="max-height: 4em;" [src]="tempTrackedDonation.imgUrl">
-              </div>
-            </div>
-
-            <div class="form-group mb-1">
-              <label class="small mb-0" for="message">Donation Message:</label>
-              <textarea id="message" name="message" placeholder="Donation Message" class="form-control form-control-sm"
-                        [(ngModel)]="tempTrackedDonation.message"></textarea>
-            </div>
-
-            <div class="d-flex justify-content-between">
-
-              <div class="form-group mb-1">
-                <label class="small mb-0" for="currency">Currency:</label>
-                <select id="currency" name="currency" class="form-control form-control-sm"
-                        [(ngModel)]="tempTrackedDonation.currency">
-                  <option [ngValue]="'GBP'" selected="selected">GBP</option>
-                  <option [ngValue]="'EUR'">EUR</option>
-                  <option [ngValue]="'USD'">USD</option>
-                </select>
-              </div>
-
-              <div class="form-group mb-1">
-                <label class="small mb-0" for="donationAmount">Donation Amount:</label>
-                <input id="donationAmount" name="donationAmount" type="number" value="0.00" class="form-control form-control-sm"
-                       [(ngModel)]="tempTrackedDonation.donationAmount">
-              </div>
-
-              <div class="form-group mb-1">
-                <label class="small mb-0" for="giftAidAmount">GiftAid Amount:</label>
-                <input id="giftAidAmount" name="giftAidAmount" type="number" value="0.00" class="form-control form-control-sm"
-                       [(ngModel)]="tempTrackedDonation.giftAidAmount">
-              </div>
-
-              <div class="form-group mb-1">
-                <label class="small mb-0" for="donationSource">Donation Source:</label>
-                <select id="donationSource" name="donationSource" class="form-control form-control-sm"
-                        [(ngModel)]="tempTrackedDonation.donationSource">
-                  <option [ngValue]="'Manual'" selected="selected">Manual</option>
-                  <option [ngValue]="'Facebook'">Facebook</option>
-                  <option [ngValue]="'JustGiving'">JustGiving</option>
-                  <option [ngValue]="'Test'">Test</option>
-                </select>
-              </div>
-
-            </div>
-
-            <div class="d-flex justify-content-between">
-
-              <div class="form-group w-50">
-                <label class="small mb-0" for="donationDate">Date:</label>
-                <input id="donationDate" name="donationDate" type="date" class="form-control form-control-sm"
-                       [(ngModel)]="donationDate">
-              </div>
-
-              <div class="form-group w-50 ml-2">
-                <label class="small mb-0" for="donationTime">Time:</label>
-                <input id="donationTime" name="donationTime" type="time" class="form-control form-control-sm"
-                       [(ngModel)]="donationTime">
-              </div>
-
-            </div>
-
+            </ng-container>
+            <ng-template #justGivingPagesListEmpty>
+              No JustGiving Pages
+            </ng-template>
             <div class="d-flex justify-content-center">
-              <button type="submit" class="btn btn-secondary mb-2 w-25" (click)="clearTrackedDonation()">Clear</button>
-              <button type="submit" class="btn btn-primary mb-2 ml-2 w-75" (click)="submitTrackedDonation()">Add Donation</button>
+              <div class="input-group my-2 w-50">
+                <input class="form-control" placeholder="JustGiving Page ShortUrl" id="justGiving-page-url" name="justGiving-page-url" type="text" [(ngModel)]="inputJustGivingPageUrl">
+                <button class="btn btn-primary" (click)="submitAddJustGivingPage()">Add Page</button>
+              </div>
             </div>
+          </div>
 
-          </form>
+          <div>
+            <h5 class="text-black-50 border-bottom border-secondary my-2">Manually Add A Donation</h5>
+            <button class="btn btn-primary" (click)="onOpenAddManualDonationModalClick()">Add Manual Donation</button>
+          </div>
+
         </div>
       </div>
 
@@ -549,6 +497,118 @@
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="yesNoModal.close('Cancel click')">Cancel</button>
       <button type="button" class="btn btn-primary" (click)="swapGameModalBtn()">Swap Game</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #addManualDonationModalDialog>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Add A Donation</h5>
+      <button type="button" class="close" aria-label="Close" (click)="addManualDonationModal.dismiss('Cross click')">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form class="">
+
+        <div class="form-group mb-1">
+          <label class="small mb-0" for="donationId">ID:</label>
+          <input id="donationId" name="donationId" type="text" placeholder="Donation Id"
+                 class="form-control form-control-sm"
+                 disabled="true"
+                 [(ngModel)]="tempTrackedDonation.id">
+        </div>
+
+        <div class="form-group mb-1">
+          <label class="small mb-0" for="name">Name:</label>
+          <input id="name" name="name" type="text" placeholder="Name" class="form-control form-control-sm"
+                 [(ngModel)]="tempTrackedDonation.name">
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <div class="flex-grow-1">
+            <div class="form-group mb-1">
+              <label class="small mb-0" for="imgUrl">Image Url:</label>
+              <input id="imgUrl" name="imgUrl" type="text"
+                     class="form-control form-control-sm"
+                     placeholder="https://via.placeholder.com/150"
+                     [(ngModel)]="tempTrackedDonation.imgUrl">
+            </div>
+          </div>
+          <div class="ml-2">
+            <img class="img-thumbnail" style="max-height: 4em;" [src]="tempTrackedDonation.imgUrl">
+          </div>
+        </div>
+
+        <div class="form-group mb-1">
+          <label class="small mb-0" for="message">Donation Message:</label>
+          <textarea id="message" name="message" placeholder="Donation Message" class="form-control form-control-sm"
+                    [(ngModel)]="tempTrackedDonation.message"></textarea>
+        </div>
+
+        <div class="d-flex justify-content-between">
+
+          <div class="form-group mb-1">
+            <label class="small mb-0" for="currency">Currency:</label>
+            <select id="currency" name="currency" class="form-control form-control-sm"
+                    [(ngModel)]="tempTrackedDonation.currency">
+              <option [ngValue]="'GBP'" selected="selected">GBP</option>
+              <option [ngValue]="'EUR'">EUR</option>
+              <option [ngValue]="'USD'">USD</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-1">
+            <label class="small mb-0" for="donationAmount">Donation Amount:</label>
+            <input id="donationAmount" name="donationAmount" type="number" value="0.00" class="form-control form-control-sm"
+                   [(ngModel)]="tempTrackedDonation.donationAmount">
+          </div>
+
+          <div class="form-group mb-1">
+            <label class="small mb-0" for="giftAidAmount">GiftAid Amount:</label>
+            <input id="giftAidAmount" name="giftAidAmount" type="number" value="0.00" class="form-control form-control-sm"
+                   [(ngModel)]="tempTrackedDonation.giftAidAmount">
+          </div>
+
+          <div class="form-group mb-1">
+            <label class="small mb-0" for="donationSource">Donation Source:</label>
+            <select id="donationSource" name="donationSource" class="form-control form-control-sm"
+                    [(ngModel)]="tempTrackedDonation.donationSource">
+              <option [ngValue]="'Manual'" selected="selected">Manual</option>
+              <option [ngValue]="'Facebook'">Facebook</option>
+              <option [ngValue]="'JustGiving'">JustGiving</option>
+              <option [ngValue]="'Test'">Test</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="d-flex justify-content-between">
+
+          <div class="form-group w-50">
+            <label class="small mb-0" for="donationDate">Date:</label>
+            <input id="donationDate" name="donationDate" type="date" class="form-control form-control-sm"
+                   [(ngModel)]="donationDate">
+          </div>
+
+          <div class="form-group w-50 ml-2">
+            <label class="small mb-0" for="donationTime">Time:</label>
+            <input id="donationTime" name="donationTime" type="time" class="form-control form-control-sm"
+                   [(ngModel)]="donationTime">
+          </div>
+
+        </div>
+
+        <div class="d-flex justify-content-center">
+          <button type="submit" class="btn btn-secondary mb-2 w-25" (click)="clearTrackedDonation()">Clear</button>
+          <button type="submit" class="btn btn-primary mb-2 ml-2 w-75" (click)="submitTrackedDonation()">Add Donation</button>
+        </div>
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="addManualDonationModal.close('Cancel click')">Cancel</button>
     </div>
   </div>
 </ng-template>

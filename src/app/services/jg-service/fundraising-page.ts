@@ -5,6 +5,7 @@ export interface FundraisingPageDetails {
   activityId: number;
   eventName: string;
   eventId: number;
+  currencyCode: string;
   currencySymbol: string;
   image: JgImage;
   status: string;
@@ -15,7 +16,7 @@ export interface FundraisingPageDetails {
   };
   title: string;
   showEventDate: boolean;
-  eventDate: Date;
+  eventDate: string;
   showExpiryDate: boolean;
   fundraisingTarget: string;
   totalRaisedPercentageOfFundraisingTarget: string;
