@@ -52,11 +52,11 @@ export class ScheduleComponent implements OnInit {
 
   isCurrentlyPlaying(index: number): boolean {
     return (this.gameList[index].startDate.getTime() <= this.now.getTime() &&
-      this.gameList[index + 1].startDate.getTime() > this.now.getTime());
+      this.gameList[index + 1]?.startDate.getTime() > this.now.getTime());
   }
 
   hasBeenPlayed(index: number): boolean {
-    return (this.gameList[index].startDate.getTime() <= this.now.getTime());
+    return (this.gameList[index]?.startDate.getTime() <= this.now.getTime());
   }
 
   togglePaused() {
@@ -79,11 +79,11 @@ export class ScheduleComponent implements OnInit {
   }
 
   donateFacebook() {
-    window.open('https://www.facebook.com/donate/855003971855785/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
+    window.open('https://www.facebook.com/donate/5194665980557244/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
   }
 
   donateJustGiving() {
-    window.open('https://www.justgiving.com/fundraising/276hr-zelda-marathon-benefitting-specialeffec', '_blank');
+    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast2022', '_blank');
   }
 
   getGames(): Game[] {

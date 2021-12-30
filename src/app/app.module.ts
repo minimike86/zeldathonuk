@@ -12,6 +12,11 @@ import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireAuthModule } from '@angular/fire/compat/auth';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 import { Ng9OdometerModule } from 'ng9-odometer';
+import { TableModule } from 'primeng/table';
+import { RippleModule } from 'primeng/ripple';
+import { ButtonModule } from 'primeng/button';
+import { AvatarModule } from 'primeng/avatar';
+import { ToolbarModule } from 'primeng/toolbar';
 
 // Environment Variables
 import { environment } from '../environments/environment';
@@ -156,6 +161,11 @@ import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/f
     AngularFireModule.initializeApp(environment.firebase, 'zeldathonuk'),
     AngularFireAuthModule,
     AngularFirestoreModule,
+    TableModule,
+    RippleModule,
+    ButtonModule,
+    AvatarModule,
+    ToolbarModule,
   ],
   providers: [
     AuthGuardService,

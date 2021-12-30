@@ -1,12 +1,10 @@
 import { Component, Injectable, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import {KeyValue} from '@angular/common';
+import { KeyValue } from '@angular/common';
 
-import {from, Observable, of} from 'rxjs';
-import {concatMap, delay, finalize, map} from 'rxjs/operators';
+import { from, Observable, of } from 'rxjs';
+import { concatMap, finalize, map } from 'rxjs/operators';
 
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
-
-import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 
 import { CurrentlyPlayingService } from '../../services/firebase/currently-playing/currently-playing.service';
 import { GameLineupService } from '../../services/firebase/game-lineup/game-lineup.service';
@@ -15,31 +13,33 @@ import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-
 import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
 import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 import { CountUpService } from '../../services/countup-service/countup.service';
-import {TrackedDonation, TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
+import { TrackedDonation, TrackedDonationId } from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
 import { BreakCountdownService } from '../../services/firebase/break-countdown/break-countdown.service';
 
 import { ZeldaGame } from '../../models/zelda-game';
 import firebase from 'firebase/compat/app';
 import Timestamp = firebase.firestore.Timestamp;
+
 import {sha256} from 'js-sha256';
 
-import {faPlay, faPause, faStop, faHistory,
-        faBackward} from '@fortawesome/free-solid-svg-icons';
-import {JgService} from '../../services/jg-service/jg-service.service';
+import { faTwitch } from '@fortawesome/free-brands-svg-icons';
+import { faPlay, faPause, faStop, faHistory, faBackward, faSyncAlt, faTrash, faDonate } from '@fortawesome/free-solid-svg-icons';
+
+import { JgService } from '../../services/jg-service/jg-service.service';
 import {
   FundraisingPage,
   FundraisingPageId,
   FundraisingPagesService
 } from '../../services/firebase/fundraising-pages/fundraising-pages.service';
-import {FundraisingPageDetails, JustGivingDonation} from '../../services/jg-service/fundraising-page';
-import {profanityFilter} from './omnibar/omnibar.component';
+import { FundraisingPageDetails, JustGivingDonation } from '../../services/jg-service/fundraising-page';
+import { profanityFilter } from './omnibar/omnibar.component';
 
 
 @Component({
   selector: 'app-obs',
   templateUrl: './obs.component.html',
-  styleUrls: ['./obs.component.css']
+  styleUrls: ['./obs.component.scss']
 })
 @Injectable({
   providedIn: 'root',
@@ -62,7 +62,7 @@ export class ObsComponent implements OnInit {
   public showBreakCountdownDate = false;
   public showTimer = false;
   public showRunnerName = false;
-  public showAddDonation = true;
+  public showAddDonation = false;
   public showGameSelect = false;
   public showGameTracking = false;
 
@@ -83,7 +83,9 @@ export class ObsComponent implements OnInit {
   public justGivingPages: FundraisingPage[] = [];
   public inputJustGivingPageUrl = '';
   public trackedDonations$: Observable<TrackedDonationId[]>;
+  public trackedDonationIds: TrackedDonationId[];
   public trackedDonations: TrackedDonation[];
+  public selectedDonations: TrackedDonation[];
 
   public tempTrackedDonation: TrackedDonation;
   public donationDate: string;
@@ -102,6 +104,9 @@ export class ObsComponent implements OnInit {
   faStop = faStop;
   faHistory = faHistory;
   faBackward = faBackward;
+  faSyncAlt = faSyncAlt;
+  faTrash = faTrash;
+  faDonate = faDonate;
 
   constructor( private modalService: NgbModal,
                private breakCountdownService: BreakCountdownService,
@@ -112,7 +117,7 @@ export class ObsComponent implements OnInit {
                private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService,
                private jgService: JgService,
-               private fundraisingPagesService: FundraisingPagesService) {
+               private fundraisingPagesService: FundraisingPagesService ) {
     this.clearTrackedDonation();
     this.clearAddGame();
   }
@@ -146,12 +151,13 @@ export class ObsComponent implements OnInit {
       return this.timer = timer;
     }));
     this.fundraisingPagesService.getFundraisingPagesIdArray().pipe(map((data: FundraisingPageId[]) => {
-      this.justGivingPages = data[0].fundraisingPages;
+      this.justGivingPages = Array.from(Object.values(data[0].fundraisingPages))
+        .sort((a: FundraisingPage, b: FundraisingPage) => a.eventDate.seconds - b.eventDate.seconds);
     })).subscribe();
     this.trackedDonations$ = this.donationTrackingService.getTrackedDonationArray();
     this.trackedDonations$.subscribe(data => {
+      this.trackedDonationIds = data.filter(x => x.id === 'TEST-DONATIONS');
       this.trackedDonations = data.find(x => x.id === 'TEST-DONATIONS').donations;
-      const trackedDonationsTotal = this.trackedDonations?.reduce((a, b) => a + b.donationAmount, 0);
     });
   }
 
@@ -185,6 +191,44 @@ export class ObsComponent implements OnInit {
         this.fundraisingPagesService.setFundraisingPages(this.justGivingPages);
       });
     }
+  }
+
+  refreshFundraisingPage(pageShortName: string) {
+    const jgResult = this.jgService.getFundraisingPageDetailsByPageShortName(pageShortName)
+      .subscribe((data: FundraisingPageDetails) => {
+        const temp: FundraisingPage = {
+          pageId: data.pageId,
+          pageShortName: this.inputJustGivingPageUrl,
+          eventDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(data.eventDate)),
+          image: data.image,
+          title: data.title,
+          story: data.story,
+          currencyCode: data.currencyCode,
+          currencySymbol: data.currencySymbol,
+          grandTotalRaisedExcludingGiftAid: data.grandTotalRaisedExcludingGiftAid,
+          vendor: 'JustGiving'
+        };
+        this.justGivingPages = this.justGivingPages.filter(x => x.pageShortName !== pageShortName);
+        this.justGivingPages.push(temp);
+        this.fundraisingPagesService.setFundraisingPages(this.justGivingPages);
+      });
+  }
+
+  deleteFundraisingPage(pageShortName: string) {
+    this.justGivingPages = this.justGivingPages.filter(x => x.pageShortName !== pageShortName);
+    this.fundraisingPagesService.setFundraisingPages(this.justGivingPages);
+  }
+
+  getTrackedDonationCount(pageShortName: string): number {
+    return this.trackedDonations.filter(x => x.pageShortName === pageShortName).length;
+  }
+
+  getTrackedDonationTotal(pageShortName: string): number {
+    return this.trackedDonations.filter(x => x.pageShortName === pageShortName).reduce((a, b) => a + b.donationAmount, 0);
+  }
+
+  deleteDonation(donationId: number) {
+    this.donationTrackingService.removeTrackedDonation([this.trackedDonations.find(x => x.id === donationId)]);
   }
 
   stripHtml(html: string): string {

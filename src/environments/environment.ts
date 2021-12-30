@@ -21,7 +21,7 @@ export const jgEnvironment = {
   justgiving: {
     // pageShortName: '276hr-zelda-marathon-benefitting-specialeffec-test',
     // baseUri: 'https://api.staging.justgiving.com/v1',
-    pageShortName: '276hr-zelda-marathon-benefitting-specialeffec',
+    pageShortName: 'zeldathonuk-gameblast2022',
     baseUri: 'https://api.justgiving.com/v1',
     httpOptions: {
       headers: new HttpHeaders({
