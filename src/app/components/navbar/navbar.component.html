@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-dark">
 
-  <a class="navbar-brand" routerLink="/" routerLinkActive="active-link">
+  <a class="navbar-brand ms-2" routerLink="/" routerLinkActive="active-link">
     <img src="../../../assets/img/1gxaef91xpst0u.png" class="position-absolute"
          style="max-width: 32px; max-height: 32px; top: 8px; left: 115px; filter: opacity(0.75); transform: rotate(10deg);"
          title="GB Flag" alt="GB Flag">
@@ -16,7 +16,7 @@
   <div class="collapse navbar-collapse" id="navbarToggleExternalContent" [ngbCollapse]="isCollapsed">
     <div class="d-flex flex-fill justify-content-around">
 
-      <div class="d-flex flex-shrink-0 justify-content-center">
+      <div class="d-flex flex-shrink-0 justify-content-center mx-2">
         <ul class="navbar-nav">
           <li class="nav-item">
             <a class="nav-link nav-link-dark" routerLink="/schedule" routerLinkActive="active-link">Schedule</a>
@@ -31,34 +31,39 @@
       </div>
 
       <div class="d-flex flex-grow-1 justify-content-center">
-        <div class="d-flex align-items-center mr-3">
+        <div class="d-flex align-items-center me-3">
           <app-combined-total></app-combined-total>
         </div>
       </div>
 
       <div class="d-flex flex-shrink-0 align-items-center">
         <ul class="navbar-nav">
-          <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
+          <li class="nav-item d-flex ms-2" [ngClass]="!isCollapsed ? 'p-1' : ''">
             <div class="align-self-center">
-              <button class="btn btn-sm btnfacebook" (click)="donateFacebook();">
-                <div class="d-flex">
-                  Donate <span class="d-inline-block d-sm-none ml-1"><i class="fa fa-facebook"></i></span>
-                  <span class="d-none d-md-block">&nbsp;via Facebook <span class="small text-white-50">*no fees</span></span>
+              <button class="btn btn-sm btn-facebook" (click)="donateFacebook();" style="font-family: 'Bungee', cursive;">
+                <div class="d-flex" title="Donate via Facebook!">
+                  <div class="d-flex align-self-center" style="width: .9em;">
+                    <fa-icon [icon]="faFacebook" style="position: relative; top: 2px;"></fa-icon>
+                  </div>
+                  <span style="position: relative; top: 2px;">&nbsp;Donate</span>
                 </div>
               </button>
             </div>
           </li>
-          <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''">
+          <li class="nav-item d-flex ms-2" [ngClass]="!isCollapsed ? 'p-1' : ''">
             <div class="align-self-center">
-              <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-                <div class="d-flex">
-                  Donate <span class="d-inline-block d-sm-none ml-1"><img src="../../../assets/img/justgiving-g.svg" style="width: 10px; filter: brightness(10);"></span>
-                  <span class="d-none d-md-block">&nbsp;via JustGiving <span class="small text-warning">*adds fees!</span></span>
+              <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();" style="font-family: 'Bungee', cursive;">
+                <div class="d-flex" title="Donate via JustGiving!">
+                  <div class="d-flex align-self-center" style="width: .9em;">
+                    <img style="max-width: .9em; filter: brightness(10);"
+                         src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo">
+                  </div>
+                  <span style="position: relative; top: 1px;">&nbsp;Donate</span>
                 </div>
               </button>
             </div>
           </li>
-          <li class="nav-item d-flex ml-3" [ngClass]="!isCollapsed ? 'p-1' : ''" *ngIf="this.user">
+          <li class="nav-item d-flex mx-2" [ngClass]="!isCollapsed ? 'p-1' : ''" *ngIf="this.user">
             <div class="align-self-center">
               <button class="btn btn-sm btn-secondary" (click)="logout();">
                 Logout

@@ -7,7 +7,7 @@
             &ldquo;{{ this.speakText }}&rdquo;
           </h1>
           <h1 class="d-flex justify-content-center m-5">
-            <span class="badge" [ngClass]="speech.speaking() ? 'badge-warning' : 'badge-success'">
+            <span class="badge" [ngClass]="speech.speaking() ? 'bg-warning' : 'bg-success'">
               {{ speech.speaking() ? 'SPEAKING' : 'NOT SPEAKING' }}
               <fa-icon [icon]="speech.speaking() ? faCommentDollar : faCommentSlash"></fa-icon>
             </span>

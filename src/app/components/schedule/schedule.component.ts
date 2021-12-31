@@ -1,7 +1,11 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {NgbCarousel, NgbSlideEvent, NgbSlideEventSource} from '@ng-bootstrap/ng-bootstrap';
 import {Router} from '@angular/router';
+
+import {NgbCarousel, NgbSlideEvent, NgbSlideEventSource} from '@ng-bootstrap/ng-bootstrap';
+
 import {TwitchService} from '../../services/twitch-service/twitch-service.service';
+
+import {faFacebook } from '@fortawesome/free-brands-svg-icons';
 
 
 @Component({
@@ -12,6 +16,8 @@ import {TwitchService} from '../../services/twitch-service/twitch-service.servic
 export class ScheduleComponent implements OnInit {
 
   public gameList: Game[];
+
+  faFacebook = faFacebook;
 
   public images = ['https://images.justgiving.com/image/292f8261-199e-439a-847a-a5f4ad270b07.jpg',
     'https://images.justgiving.com/image/9d54ff22-3185-4a7b-812a-66df7c774ce6.jpg',
@@ -96,11 +102,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2011,
       boxArt: '../../../assets/img/cover-art/ss_cover.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '24 Hours',
           url: 'https://howlongtobeat.com/game?id=10042'
         }],
@@ -120,11 +126,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2004,
       boxArt: '../../../assets/img/cover-art/Minish_Cap_cover.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '15 Hours',
           url: 'https://howlongtobeat.com/game.php?id=10044'
         }],
@@ -144,15 +150,15 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2004,
       boxArt: '../../../assets/img/cover-art/250px-Zelda_fsae.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-secondary',
+          type: 'bg-secondary',
           text: '4P Co-op'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '4 Hours',
           url: 'https://howlongtobeat.com/game?id=10031'
         }],
@@ -172,16 +178,16 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 1998,
       boxArt: '../../../assets/img/cover-art/250px-ZeldaOoTbox.jpg',
       extraBadges: [{
-        type: 'badge-primary',
+        type: 'bg-primary',
         text: 'Multiplayer Any%'
         },
         {
-          type: 'badge-success',
+          type: 'bg-success',
           text: 'OoT Online',
           url: 'https://github.com/hylian-modding/OcarinaOfTimeOnline'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '10 Hours',
           url: 'https://howlongtobeat.com/game?id=10035'
         }],
@@ -201,16 +207,16 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2000,
       boxArt: '../../../assets/img/cover-art/Majoras_Mask_3D_cover.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Multiplayer Any%'
         },
         {
-          type: 'badge-success',
+          type: 'bg-success',
           text: 'MM Online',
           url: 'https://github.com/hylian-modding/MajorasMaskOnline'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '10 Hours',
           url: 'https://howlongtobeat.com/game?id=10034'
         }],
@@ -230,11 +236,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2016,
       boxArt: '../../../assets/img/cover-art/Twilight_Princess_HD_cover.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '20 Hours',
           url: 'https://howlongtobeat.com/game?id=33835'
         }],
@@ -254,15 +260,15 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2004,
       boxArt: '../../../assets/img/cover-art/250px-Zeldafourswordsbox.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-secondary',
+          type: 'bg-secondary',
           text: '4P Co-op'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '15 Hours',
           url: 'https://howlongtobeat.com/game?id=10030'
         }],
@@ -282,11 +288,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2013,
       boxArt: '../../../assets/img/cover-art/Zelda_TheWindWakerHD.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '25 Hours',
           url: 'https://howlongtobeat.com/game?id=13142'
         }],
@@ -306,11 +312,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2007,
       boxArt: '../../../assets/img/cover-art/phantom-hourglass-cover-256.png',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '16 Hours',
           url: 'https://howlongtobeat.com/game?id=10041'
         }],
@@ -330,11 +336,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2009,
       boxArt: '../../../assets/img/cover-art/Spirit_Tracks_cover.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '19 Hours',
           url: 'https://howlongtobeat.com/game?id=10043'
         }],
@@ -354,16 +360,16 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 1992,
       boxArt: '../../../assets/img/cover-art/250px-Zelda_SNES.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Multiplayer Any%'
         },
         {
-          type: 'badge-success',
+          type: 'bg-success',
           text: 'ALttP Online',
           url: 'https://github.com/alttpo/alttpo'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '15 Hours',
           url: 'https://howlongtobeat.com/game?id=10028'
         }],
@@ -383,11 +389,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2019,
       boxArt: '../../../assets/img/cover-art/66255_The_Legend_of_Zelda_Links_Awakening_(2019).jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '14 Hours',
           url: 'https://howlongtobeat.com/game?id=66255'
         }],
@@ -407,11 +413,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2013,
       boxArt: '../../../assets/img/cover-art/d6qewmw-4f881e91-6d83-46bb-9deb-2140a7266d69.png',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '16 Hours',
           url: 'https://howlongtobeat.com/game.php?id=12965'
         }],
@@ -431,11 +437,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2015,
       boxArt: '../../../assets/img/cover-art/250px-Zelda_triforce-heroes.jpg',
       extraBadges: [{
-        type: 'badge-primary',
+        type: 'bg-primary',
         text: 'Any%'
       },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '14 Hours',
           url: 'https://howlongtobeat.com/game?id=30592'
         }],
@@ -455,11 +461,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 1986,
       boxArt: '../../../assets/img/cover-art/Legend_of_zelda_cover_(with_cartridge)_gold.png',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '8 Hours',
           url: 'https://howlongtobeat.com/game?id=10025'
         }],
@@ -479,11 +485,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 1987,
       boxArt: '../../../assets/img/cover-art/Adventure_of_Link_cover.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '11 Hours',
           url: 'https://howlongtobeat.com/game.php?id=11533'
         }],
@@ -503,16 +509,16 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2020,
       boxArt: '../../../assets/img/cover-art/hyrule-warriors-age-of-calamity-cover.cover_small.jpg',
       extraBadges: [{
-          type: 'badge-primary',
+          type: 'bg-primary',
           text: 'Any%'
         },
         {
-          type: 'badge-danger',
+          type: 'bg-danger',
           text: 'New Title',
           url: 'https://www.nintendo.co.uk/Games/Nintendo-Switch/Hyrule-Warriors-Age-of-Calamity-1838129.html'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '20 Hours',
           url: 'https://howlongtobeat.com/game?id=82895'
         }],
@@ -532,11 +538,11 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 2017,
       boxArt: '../../../assets/img/cover-art/38019_The_Legend_of_Zelda_Breath_of_the_Wild.jpg',
       extraBadges: [{
-        type: 'badge-primary',
+        type: 'bg-primary',
         text: 'Any%'
       },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '18 Hours',
           url: 'https://howlongtobeat.com/game?id=38019'
         }],
@@ -556,16 +562,16 @@ export class ScheduleComponent implements OnInit {
       releaseDate: 1992,
       boxArt: '../../../assets/img/cover-art/250px-Zelda_SNES_Metroid.jpg',
       extraBadges: [{
-        type: 'badge-primary',
+        type: 'bg-primary',
         text: 'Multiplayer Any%'
       },
         {
-          type: 'badge-danger',
+          type: 'bg-danger',
           text: 'Randomizer',
           url: 'https://github.com/tewtal/SMZ3Randomizer'
         },
         {
-          type: 'badge-info',
+          type: 'bg-info',
           text: '14 Hours',
           url: 'https://howlongtobeat.com/game?id=10028'
         }],

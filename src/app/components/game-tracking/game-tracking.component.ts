@@ -48,6 +48,11 @@ export class GameTrackingComponent implements OnInit {
     this.gameItemService.collectItem(this.gameLineUp[this.currentlyPlayingId.index].gameProgressKey, gameItems);
   }
 
+  resetItemCollection(gameItems: GameItem[]) {
+    gameItems.forEach(x => x.collected = false);
+    this.gameItemService.collectItem(this.gameLineUp[this.currentlyPlayingId.index].gameProgressKey, gameItems);
+  }
+
   addData() {
     // this.gameItemService.addLegendOfZeldaData();        // 1986
     // this.gameItemService.addAdventureOfLinkData();      // 1987

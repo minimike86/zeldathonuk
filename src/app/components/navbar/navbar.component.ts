@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/firebase/auth/auth.service';
 import { timer } from 'rxjs';
+import { faFacebook } from '@fortawesome/free-brands-svg-icons';
 
 @Component({
   selector: 'app-navbar',
@@ -11,6 +12,8 @@ export class NavbarComponent implements OnInit {
   public isCollapsed = true;
   public displayCombinedTotal: boolean;
   public user: any;
+
+  faFacebook = faFacebook;
 
   constructor(private auth: AuthService) {
     auth.user$.subscribe(data => {

@@ -14,10 +14,10 @@
             <div class="" style="max-width: 40%;">
               <h6 class="benefitting-text bebas-neue">Benefitting:</h6>
               <div class="d-flex justify-content-between">
-                <div class="w-50 mr-2">
+                <div class="w-50 me-2">
                   <img src="./assets/img/specialeffect-logo.svg" class="d-inline-block w-100" style="margin-top: 24px; opacity: 0.85;" (click)="decreaseVolume()">
                 </div>
-                <div class="w-50 ml-2">
+                <div class="w-50 ms-2">
                   <img src="./assets/img/GB21_logo_for_website.png" class="d-inline-block w-100" style="opacity: 0.85;" (click)="increaseVolume()">
                 </div>
               </div>
@@ -37,28 +37,28 @@
             <h1 #welcomeToZeldathon class="welcome-to-zeldathon"></h1>
           </div>
           <ng-container *ngIf="timeRemaining.days >= 1; else hoursRemaining">
-            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.days, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">d</h2>
-            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">h</h2>
-            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">m</h2>
-            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">s</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.days, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">d</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">h</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">m</h2>
+            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">s</h2>
             <!--          <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.milliseconds, 3) }}</h1><h2 class="d-inline-block time-remaining-h2">ms</h2>-->
           </ng-container>
           <ng-template #hoursRemaining>
             <ng-container *ngIf="timeRemaining.hours >= 1; else minutesRemaining">
-              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">h</h2>
-              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">m</h2>
-              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">s</h2>
+              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.hours, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">h</h2>
+              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">m</h2>
+              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">s</h2>
               <!--            <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.milliseconds, 3) }}</h1><h2 class="d-inline-block time-remaining-h2">ms</h2>-->
             </ng-container>
             <ng-template #minutesRemaining>
               <ng-container *ngIf="timeRemaining.minutes >= 1; else secondsRemaining">
-                <h1 class="d-inline-block time-remaining-h1" [ngClass]="timeRemaining.minutes >= 10 ? 'text-white' : 'time-remaining-last-ten-minutes-h1 timeRunningOut1'">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">m</h2>
-                <h1 class="d-inline-block time-remaining-h1" [ngClass]="timeRemaining.minutes >= 10 ? 'text-white' : 'time-remaining-last-ten-minutes-h1 timeRunningOut1'">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 mr-4">s</h2>
+                <h1 class="d-inline-block time-remaining-h1" [ngClass]="timeRemaining.minutes >= 10 ? 'text-white' : 'time-remaining-last-ten-minutes-h1 timeRunningOut1'">{{ zeroPad(timeRemaining.minutes, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">m</h2>
+                <h1 class="d-inline-block time-remaining-h1" [ngClass]="timeRemaining.minutes >= 10 ? 'text-white' : 'time-remaining-last-ten-minutes-h1 timeRunningOut1'">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-h2 me-4">s</h2>
                 <!--              <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.milliseconds, 3) }}</h1><h2 class="d-inline-block time-remaining-h2">ms</h2>-->
               </ng-container>
               <ng-template #secondsRemaining>
                 <ng-container *ngIf="timeRemaining.seconds >= 1; else timesUp">
-                  <h1 class="d-inline-block timeRunningOut2 time-remaining-last-minute-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-last-minute-h2 mr-4">s</h2>
+                  <h1 class="d-inline-block timeRunningOut2 time-remaining-last-minute-h1">{{ zeroPad(timeRemaining.seconds, 2) }}</h1><h2 class="d-inline-block time-remaining-last-minute-h2 me-4">s</h2>
                   <!--                <h1 class="d-inline-block text-white time-remaining-h1">{{ zeroPad(timeRemaining.milliseconds, 3) }}</h1><h2 class="d-inline-block time-remaining-h2">ms</h2>-->
                 </ng-container>
                 <ng-template #timesUp>
@@ -80,7 +80,7 @@
               <marquee behavior="scroll" direction="left">
                 <h3 class="song-name bebas-neue mb-1">{{ audioLibrary[playingLibraryIndex].songName }}</h3>
               </marquee>
-              <h5 class="song-author bebas-neue text-right" style="opacity: 0.6;"><fa-icon [icon]="faMusic" class="pr-3"></fa-icon>{{ audioLibrary[playingLibraryIndex].songAuthor }}</h5>
+              <h5 class="song-author bebas-neue text-right" style="opacity: 0.6;"><fa-icon [icon]="faMusic" class="pe-3"></fa-icon>{{ audioLibrary[playingLibraryIndex].songAuthor }}</h5>
             </div>
           </div>
         </div>

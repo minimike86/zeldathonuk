@@ -4,7 +4,7 @@
     <div class="advertisement-panel-bg"
          [style.background-image]="bgImageUrls[bgImageIndex]"></div>
 
-    <div class="advertisement-panel mt-2 ml-2">
+    <div class="advertisement-panel mt-2 ms-2">
       <div class="d-flex justify-content-center h-100 w-100">
         <div class="d-flex align-self-start w-100" style="padding-top: 94px;">
 
@@ -28,7 +28,7 @@
                                [alt]="donationHighlight.donation?.name"
                                [title]="donationHighlight.donation?.name">
                         </div>
-                        <div class="d-flex align-self-start ml-2">
+                        <div class="d-flex align-self-start ms-2">
                           <h5 class="mb-0" style="word-break: break-word;">{{ donationHighlight.donation?.name }}</h5>
                         </div>
                       </div>
@@ -42,7 +42,7 @@
 
                     <div class="d-flex justify-content-between">
                       <div class="d-flex align-self-end">
-                        <div class="badge badge-pill badge-success" *ngIf="donationHighlight.donation?.giftAidAmount">
+                        <div class="badge rounded-pill bg-success" *ngIf="donationHighlight.donation?.giftAidAmount">
                           <a href="https://www.gov.uk/donating-to-charity/gift-aid" target="_blank" class="text-white"
                              title="Gift Aid declaration made for the charity to claim additional 25% of donation">GiftAid</a>: {{ donationHighlight.donation?.giftAidAmount | currency:donationHighlight.donation?.currency }}
                         </div>

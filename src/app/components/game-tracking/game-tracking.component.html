@@ -1,19 +1,18 @@
-<div class="container-fluid">
+<div class="">
 
   <ng-container *ngIf="(currentlyPlayingId$ | async) && (gameLineUp$ | async)">
-
     <ng-template ngFor let-tempGameItemId [ngForOf]="(gameItemsId$ | async)">
       <ng-container *ngIf="tempGameItemId.id === gameLineUp[currentlyPlayingId.index].gameProgressKey">
 
-        <div class="d-flex flex-wrap">
+        <ngx-masonry [options]="{ gutter: 10, percentPosition: true }" [ordered]="true">
           <ng-template ngFor let-gameItem [ngForOf]="tempGameItemId.items">
-            <div class="card m-1" style="width: 10%;">
-              <div class="card-header text-truncate small p-1">
+            <div ngxMasonryItem style="width: 4.25%;" class="card mt-2">
+              <div class="card-header text-truncate p-1" style="font-size: 8px;">
                 {{ gameItem.name }}
               </div>
               <div class="d-flex justify-content-center card-body p-1">
                 <img class="align-self-center card-img"
-                     style="height: 3em; width: 3em;"
+                     style="height: 2em; width: 2em;"
                      [src]="gameItem.imgUrl"
                      [alt]="gameItem.name"
                      [title]="gameItem.name"
@@ -22,11 +21,20 @@
               </div>
             </div>
           </ng-template>
-        </div>
+          <div ngxMasonryItem style="width: 4.25%;" class="card mt-2">
+            <div class="card-header text-truncate p-1" style="font-size: 8px;">
+              Reset
+            </div>
+            <div class="d-flex justify-content-center card-body p-1">
+              <button class="btn btn-danger p-1" style="font-size: 8px;" (click)="resetItemCollection(tempGameItemId.items)">
+                Reset
+              </button>
+            </div>
+          </div>
+        </ngx-masonry>
 
       </ng-container>
     </ng-template>
-
   </ng-container>
 
   <button class="btn btn-primary mt-4" hidden (click)="addData()">Add Data</button>

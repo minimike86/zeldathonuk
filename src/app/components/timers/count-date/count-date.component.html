@@ -4,10 +4,10 @@
 
       <div class="cntdwn my-0 py-0" style="font-size: 3em; line-height: 1em; font-family: 'Bungee', cursive;">
         <span class="d-block">Countdown to ZeldathonUK <span class="gameblast">#Gameblast2021</span>:</span>
-        <span class="mr-1">{{ zeroPad(futureDate.getUTCHours(), 2) }}:{{ zeroPad(futureDate.getMinutes(), 2) }}</span>
-        <span class="superscript mr-3">{{ futureDate.getUTCHours() >= 12 ? 'pm' : 'am' }}</span>
+        <span class="me-1">{{ zeroPad(futureDate.getUTCHours(), 2) }}:{{ zeroPad(futureDate.getMinutes(), 2) }}</span>
+        <span class="superscript me-3">{{ futureDate.getUTCHours() >= 12 ? 'pm' : 'am' }}</span>
         <span class="mr-0">{{ zeroPad(futureDate.getUTCDate(), 2) }}</span>
-        <span class="superscript mr-3">
+        <span class="superscript me-3">
           {{
             futureDate.getUTCDate().toString().substring(futureDate.getUTCDate().toString().length - 1, futureDate.getUTCDate().toString().length) === '1' ? 'st' :
             futureDate.getUTCDate().toString().substring(futureDate.getUTCDate().toString().length - 1, futureDate.getUTCDate().toString().length) === '2' ? 'nd' :
@@ -15,7 +15,7 @@
             'th'
           }}
         </span>
-        <span class="mr-3">{{ getMonthName(futureDate.getUTCMonth()) }}</span>
+        <span class="me-3">{{ getMonthName(futureDate.getUTCMonth()) }}</span>
         <span>{{ futureDate.getFullYear() }}</span>
       </div>
 

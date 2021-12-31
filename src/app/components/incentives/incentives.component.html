@@ -23,10 +23,10 @@
   <div class="d-flex my-2">
     <div class="d-inline-flex flex-fill">
 
-      <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let incentive of donationIncentives">
+      <div class="card text-white bg-secondary w-25 me-2" *ngFor="let incentive of donationIncentives">
         <div class="card-header">
           <h5>{{ incentive.name }}</h5>
-          <span class="badge mr-1" [ngClass]="incentive.typeColour">{{ incentive.type }}</span>
+          <span class="badge me-1" [ngClass]="incentive.typeColour">{{ incentive.type }}</span>
           <span class="badge" [ngClass]="incentive.constraintColour">{{ incentive.constraint }}</span>
         </div>
         <a [href]="incentive.imageHrefUrl" target="_blank">
@@ -47,7 +47,7 @@
       <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
     </div>
     <div class="d-inline">
-      <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+      <button class="btn btn-sm btn-facebook me-3" (click)="donateFacebook();">
         Donate via Facebook<br/>
         <span class="small text-white-50">*no fees</span>
       </button>
@@ -74,7 +74,7 @@
   <div class="d-flex my-2">
     <div class="d-inline-flex flex-fill">
 
-      <div class="card text-white bg-secondary w-25 mr-2" *ngFor="let prize of prizes">
+      <div class="card text-white bg-secondary w-25 me-2" *ngFor="let prize of prizes">
         <div class="card-header">
           {{ prize.name }}
         </div>
@@ -88,7 +88,7 @@
               Quantity: <b>{{ prize.quantity }}</b>
             </div>
             <div>
-              <span class="badge badge-success p-1" *ngIf="prize.won">WON</span>
+              <span class="badge bg-success p-1" *ngIf="prize.won">WON</span>
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@
       <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
     </div>
     <div class="d-inline">
-      <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+      <button class="btn btn-sm btn-facebook me-3" (click)="donateFacebook();">
         Donate via Facebook<br/>
         <span class="small text-white-50">*no fees</span>
       </button>

@@ -31,7 +31,7 @@
         </div>
         <div class="card-footer">
           <div class="d-flex justify-content-around">
-            <button class="btn btn-sm btnfacebook mr-3" (click)="donateFacebook();">
+            <button class="btn btn-sm btn-facebook me-3" (click)="donateFacebook();">
               Donate via Facebook<br/>
               <span class="small text-white-50">*no fees</span>
             </button>
@@ -80,50 +80,54 @@
       <ng-container *ngIf="(trackedDonationIds$ | async) as tds">
 
         <ng-template [ngIf]="tds.length >= 1">
-          <div class="card-columns min-vh-100">
-            <div class="card donor-list mb-2" *ngFor="let donation of tds">
+          <div class="min-vh-100">
+            <ngx-masonry [options]="{ gutter: 10, percentPosition: true }" [ordered]="true">
+              <div ngxMasonryItem style="width: 32.65%;" *ngFor="let donation of tds">
+                <div class="card donor-list mb-2">
 
-              <div class="d-flex flex-column donation" [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' : 'justgiving-donation'">
+                  <div class="d-flex flex-column donation" [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' : 'justgiving-donation'">
 
-                <div class="d-flex justify-content-between">
-                  <div class="d-flex justify-content-start">
-                    <div class="d-flex align-self-center">
-                      <img class="donation-img"
-                           [src]="donation.imgUrl"
-                           [alt]="donation.name"
-                           [title]="donation.name">
+                    <div class="d-flex justify-content-between">
+                      <div class="d-flex justify-content-start">
+                        <div class="d-flex align-self-center">
+                          <img class="donation-img"
+                               [src]="donation.imgUrl"
+                               [alt]="donation.name"
+                               [title]="donation.name">
+                        </div>
+                        <div class="d-flex align-self-start ms-2">
+                          <h5 class="mb-0" style="word-break: break-word;">{{ donation.name }}</h5>
+                        </div>
+                      </div>
                     </div>
-                    <div class="d-flex align-self-start ml-2">
-                      <h5 class="mb-0" style="word-break: break-word;">{{ donation.name }}</h5>
+
+                    <div class="my-2 small text-white-50" *ngIf="donation.message.length >= 1">
+                      <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.2em;">&ldquo;</span>
+                      <i class="px-1" style="font-size: 1.2em; font-family: 'Poppins', sans-serif;">{{ donation.message.length >= 1 ? donation.message : '-' }}</i>
+                      <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.7em;">&rdquo;</span>
                     </div>
-                  </div>
-                </div>
 
-                <div class="my-2 small" *ngIf="donation.message.length >= 1">
-                  <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.2em;">&ldquo;</span>
-                  <i class="px-1" style="font-size: 1.2em; font-family: 'Poppins', sans-serif;">{{ donation.message.length >= 1 ? donation.message : '-' }}</i>
-                  <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.7em;">&rdquo;</span>
-                </div>
-
-                <div class="d-flex justify-content-between">
-                  <div class="d-flex align-self-end">
-                    <div class="badge badge-pill badge-success" *ngIf="donation.giftAidAmount">
-                      <a href="https://www.gov.uk/donating-to-charity/gift-aid" target="_blank" class="text-white"
-                         title="Gift Aid declaration made for the charity to claim additional 25% of donation">GiftAid</a>: {{ donation.giftAidAmount | currency:donation.currency }}
+                    <div class="d-flex justify-content-between">
+                      <div class="d-flex align-self-end">
+                        <div class="badge rounded-pill bg-success" *ngIf="donation.giftAidAmount">
+                          <a href="https://www.gov.uk/donating-to-charity/gift-aid" target="_blank" class="text-white"
+                             title="Gift Aid declaration made for the charity to claim additional 25% of donation">GiftAid</a>: {{ donation.giftAidAmount | currency:donation.currency }}
+                        </div>
+                      </div>
+                      <div class="">
+                        <h1 class="mb-0">{{ donation.donationAmount | currency:donation.currency }}</h1>
+                      </div>
                     </div>
-                  </div>
-                  <div class="">
-                    <h3 class="mb-0">{{ donation.donationAmount | currency:donation.currency }}</h3>
-                  </div>
-                </div>
 
-                <div class="d-flex justify-content-end">
-                  <span class="text-white-50" style="font-size: 9px;">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
-                </div>
+                    <div class="d-flex justify-content-end">
+                      <span class="text-white-50" style="font-size: 9px;">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
+                    </div>
 
+                  </div>
+
+                </div>
               </div>
-
-            </div>
+            </ngx-masonry>
           </div>
         </ng-template>
 
@@ -136,7 +140,7 @@
               </h6>
               <div class="d-flex justify-content-around">
                 <div class="d-flex flex-column">
-                  <button class="btn btn-lg btnfacebook mr-3" (click)="donateFacebook();">
+                  <button class="btn btn-lg btn-facebook me-3" (click)="donateFacebook();">
                     Donate via Facebook<br/>
                     <span class="small text-white-50">*no fees</span>
                   </button>

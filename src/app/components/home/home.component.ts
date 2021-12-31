@@ -2,6 +2,9 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord, faFacebook, faTwitch, faYoutube, faTwitter } from '@fortawesome/free-brands-svg-icons';
 
+import { ConfirmationService } from 'primeng/api';
+
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -17,7 +20,8 @@ export class HomeComponent implements OnInit {
   faYoutube = faYoutube;
   faInfoCircle = faInfoCircle;
 
-  constructor() { }
+  constructor( private confirmationService: ConfirmationService ) {
+  }
 
   ngOnInit() {
     this.innerWidth = window.innerWidth;
@@ -26,6 +30,23 @@ export class HomeComponent implements OnInit {
   @HostListener('window:resize', ['$event'])
   onResize(event) {
     this.innerWidth = window.innerWidth;
+  }
+
+  confirm(event: Event) {
+    this.confirmationService.confirm({
+      target: event.target,
+      icon: 'pi pi-exclamation-triangle',
+      message: 'Don\'t be fooled by JustGivings "0% Platform Fee"! JustGiving charges non-profits a £39 (+VAT) monthly charge ' +
+               'in addition to deducting a "Platform Processing Fee" of 1.9% + £0.20p fee from every donation. ' +
+               'Finally JustGiving will further deduct 5% from any GiftAdd added by eligible UK tax payers.',
+      accept: () => {
+        this.donateJustGiving();
+      },
+      acceptLabel: 'Donate Anyway',
+      acceptButtonStyleClass: 'p-button-warning',
+      rejectLabel: 'Cancel',
+      rejectButtonStyleClass: 'p-button-outlined p-button-secondary'
+    });
   }
 
   donateFacebook() {

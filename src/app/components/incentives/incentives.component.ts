@@ -22,7 +22,7 @@ export class IncentivesComponent implements OnInit {
       {
         name: 'Twitch Viewership',
         type: 'Audience',
-        typeColour: 'badge-success',
+        typeColour: 'bg-success',
         constraint: '',
         constraintColour: '',
         imageSrcUrl: '../../../assets/img/challenges/twitch-views.jpg',
@@ -36,7 +36,7 @@ export class IncentivesComponent implements OnInit {
       {
         name: 'EXERCISE',
         type: 'ZeldathonUK Team',
-        typeColour: 'badge-success',
+        typeColour: 'bg-success',
         constraint: '',
         constraintColour: '',
         imageSrcUrl: '../../../assets/img/challenges/exercise.jpg',
@@ -48,9 +48,9 @@ export class IncentivesComponent implements OnInit {
       {
         name: 'Commission Henry',
         type: 'Henry',
-        typeColour: 'badge-success',
+        typeColour: 'bg-success',
         constraint: 'When Henry\'s On-stream',
-        constraintColour: 'badge-warning',
+        constraintColour: 'bg-warning',
         imageSrcUrl: '../../../assets/img/challenges/majoras-mask-pen.jpg',
         imageHrefUrl: '../../../assets/img/challenges/majoras-mask-pen.jpg',
         description: '<span class="bg-dark text-success font-weight-bold px-1">Donate £50</span> and you can commission some beautiful artwork from Heennnrrrryyyyyyyyy!',

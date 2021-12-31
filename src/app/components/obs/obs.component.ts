@@ -63,8 +63,8 @@ export class ObsComponent implements OnInit {
   public showTimer = false;
   public showRunnerName = false;
   public showAddDonation = false;
-  public showGameSelect = false;
-  public showGameTracking = false;
+  public showGameSelect = true;
+  public showGameTracking = true;
 
   public countUpData: CountUpTimerId[];
   public timer$: Observable<string>;

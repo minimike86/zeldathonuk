@@ -1,10 +1,10 @@
 import {Component, OnInit} from '@angular/core';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
-import {from, Observable, of, pipe} from 'rxjs';
-import {map, mergeMap, pluck, switchMap, take, tap} from 'rxjs/operators';
+import {Observable} from 'rxjs';
+import {map, pluck} from 'rxjs/operators';
 import {DonationTrackingService} from '../../services/firebase/donation-tracking/donation-tracking.service';
-import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
+import {TrackedDonation, TrackedDonationId} from '../../services/firebase/donation-tracking/tracked-donation';
 
 
 /**
@@ -29,7 +29,7 @@ export class DonationsComponent implements OnInit {
       map((trackedDonationId: TrackedDonationId[]) => trackedDonationId.find(x => x.id === 'TEST-DONATIONS')),
       pluck('donations'),
       map((trackedDonations: TrackedDonation[]) => {
-        console.log('trackedDonations:', trackedDonations);
+        // console.log('trackedDonations:', trackedDonations);
         if (trackedDonations) {
           trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => b.donationAmount - a.donationAmount);
           for (const donation of trackedDonations) {
