@@ -16,7 +16,10 @@ import { LoginComponent } from './components/login/login.component';
 import { ScheduleComponent } from './components/schedule/schedule.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { TermsOfUseComponent } from './components/terms-of-use/terms-of-use.component';
-import {AudioVisualizerComponent} from './components/audio-visualizer/audio-visualizer.component';
+import { AudioVisualizerComponent } from './components/audio-visualizer/audio-visualizer.component';
+import { AboutComponent } from './components/about/about.component';
+import { HistoryComponent } from './components/history/history.component';
+import { CharityComponent } from './components/charity/charity.component';
 
 
 const routes: Routes = [
@@ -32,6 +35,9 @@ const routes: Routes = [
   { path: 'donations', component: DonationsComponent },
   { path: 'incentives', component: IncentivesComponent },
   { path: 'schedule', component: ScheduleComponent },
+  { path: 'about', component: AboutComponent },
+  { path: 'history', component: HistoryComponent },
+  { path: 'charity', component: CharityComponent },
   { path: 'obs', component: ObsComponent },
   { path: 'obs/layout/:layout', component: ObsLayoutComponent },
   { path: 'obs/audio-countdown', component: AudioVisualizerComponent },

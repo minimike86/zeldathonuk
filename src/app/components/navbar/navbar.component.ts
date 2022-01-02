@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/firebase/auth/auth.service';
 import { timer } from 'rxjs';
-import { faFacebook } from '@fortawesome/free-brands-svg-icons';
+import { faFacebook, faAccessibleIcon, faChromecast } from '@fortawesome/free-brands-svg-icons';
+import { faSignOutAlt, faListOl, faPoundSign, faHandHolding, faGamepad, faCaretUp, faCarrot, faHistory } from '@fortawesome/free-solid-svg-icons';
+import { faHeart } from '@fortawesome/free-regular-svg-icons';
+
 
 @Component({
   selector: 'app-navbar',
@@ -14,6 +17,17 @@ export class NavbarComponent implements OnInit {
   public user: any;
 
   faFacebook = faFacebook;
+  faChromecast = faChromecast;
+  faHeart = faHeart;
+  faListOl = faListOl;
+  faPoundSign = faPoundSign;
+  faHandHolding = faHandHolding;
+  faCarrot = faCarrot;
+  faGamepad = faGamepad;
+  faAccessibleIcon = faAccessibleIcon;
+  faHistory = faHistory;
+  faCaretUp = faCaretUp;
+  faSignOutAlt = faSignOutAlt;
 
   constructor(private auth: AuthService) {
     auth.user$.subscribe(data => {

@@ -1,0 +1,17 @@
+.faq-row {
+  padding-bottom: 2.5em;
+  border-width: 0 0 2px;
+  border-style: solid;
+  border-image-slice: 1;
+  border-image-source: linear-gradient(90deg,#0072B6,#FE8220);
+}
+
+.golden-text {
+  background: linear-gradient(45deg,#f6b100,#fff,#f6b100);
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  background-clip: text;
+  -moz-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}

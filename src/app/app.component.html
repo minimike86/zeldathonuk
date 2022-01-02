@@ -7,13 +7,13 @@
 </ng-template>
 
 <ng-template #notApiCall>
-  <div class="d-flex flex-column flex-grow-1">
+  <div class="d-flex flex-column flex-fill zeldathon-bg">
     <div class="header">
-      <app-navbar class=""></app-navbar>
+      <app-navbar></app-navbar>
     </div>
-    <div class="overflow-auto router-outlet h-100 animated-oot-background">
+    <div class="overflow-auto router-outlet">
       <router-outlet></router-outlet>
     </div>
-    <app-footer class="mt-auto"></app-footer>
+    <app-footer></app-footer>
   </div>
 </ng-template>

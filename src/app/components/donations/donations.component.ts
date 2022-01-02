@@ -41,14 +41,6 @@ export class DonationsComponent implements OnInit {
     );
   }
 
-  donateFacebook() {
-    window.open('https://www.facebook.com/donate/5194665980557244/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
-  }
-
-  donateJustGiving() {
-    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast2022', '_blank');
-  }
-
   getRandomThumbnailImageUrl(): string {
     const imageUrls: string[] = [];
     imageUrls.push('../../../assets/img/thumbnails/ww-link-tingle.jpg');

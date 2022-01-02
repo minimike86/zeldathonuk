@@ -1,87 +1,6 @@
 <div class="d-flex flex-row min-vh-100">
 
-  <div class="p-3 d-none d-xl-block" style="width: 25%;">
-    <div class="d-flex flex-column">
-
-      <div class="position-absolute">
-
-        <div class="text-center card bg-dark d-inline-block mb-3" style="width: 22rem;">
-          <div class="text-center card card-header bg-dark text-light">
-            <h5 class="card-title mb-0">
-              Watch Live
-              <div *ngIf="isLive" class="d-inline-block live-circle ms-1"></div>
-            </h5>
-          </div>
-          <div class="card-body">
-            <div class="embed-responsive embed-responsive-16by9" style="max-height: 60vh;">
-              <iframe
-                src="https://player.twitch.tv/?channel=zeldathonuk&parent=www.zeldathon.co.uk&autoplay=false"
-                frameborder="0"
-                scrolling="no"
-                allowfullscreen>
-              </iframe>
-            </div>
-            <div class="d-flex justify-content-center p-3">
-              <a href="https://www.specialeffect.org.uk/" target="_blank">
-                <img style="max-height: 50px;"
-                     src="../../../assets/img/logo-specialeffect.png"
-                     alt="SpecialEffect Logo"></a>
-            </div>
-            <div class="text-light" style="font-size: 0.7em;">
-              <a class="text-info" href="https://www.specialeffect.org.uk/" target="_blank">SpecialEffect</a> are a charity putting fun and inclusion
-              back into the lives of people with physical disabilities
-              by helping them play video games to the very best
-              of their abilities.
-            </div>
-          </div>
-          <div class="card-footer">
-            <div class="d-flex justify-content-around">
-              <div class="d-flex align-items-center">
-                <button class="btn btn-sm btn-facebook" title="Donate via Facebook Fundraising!" (click)="donateFacebook();">
-                  <h6 class="text-center mb-0" style="font-family: 'Bungee', cursive;">
-                    <fa-icon class="me-1" [icon]="faFacebook"></fa-icon>
-                    <span style="position: relative; top: 1px;"> Donate</span>
-                  </h6>
-                </button>
-              </div>
-              <div class="d-flex align-items-center">
-                <button class="btn btn-sm btn-justgiving" title="Donate via JustGiving!" (click)="donateJustGiving();">
-                  <h6 class="text-center mb-0" style="font-family: 'Bungee', cursive;">
-                    <div class="d-inline-block me-2" style="width: .9em;">
-                      <img src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo"
-                           style="max-width: .9em; filter: brightness(10); padding-bottom: 0.15em;">
-                    </div>
-                    <span class="d-inline-block" style="position: relative; top: 1px;"> Donate</span>
-                  </h6>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card bg-dark mb-2" style="width: 22rem;">
-          <div class="card-header d-inline-block position-sticky">
-            <div class="d-flex flex-column">
-              <span class="text-white-50" style="font-size: 0.8em;">Facebook Fundraisers Page:</span>
-              <a class="text-light text-break" style="font-size: 0.8em;" href="https://www.facebook.com/donate/5194665980557244/" target="_blank">https://www.facebook.com/donate/5194665980557244/</a>
-            </div>
-          </div>
-        </div>
-        <div class="card bg-dark" style="width: 22rem;">
-          <div class="card-header d-inline-block position-sticky">
-            <div class="d-flex flex-column">
-              <span class="text-white-50" style="font-size: 0.8em;">JustGiving Page:</span>
-              <a class="text-light text-break" style="font-size: 0.8em;" href="https://www.justgiving.com/fundraising/zeldathonuk-gameblast2022" target="_blank">https://www.justgiving.com/fundraising/zeldathonuk-gameblast2022</a>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-
-  <div class="container p-3 min-vh-100" style="background-color: #606060;">
+  <div class="container p-3 min-vh-100" >
 
     <div class="py-2">
       <h3 class="text-white">Stream Schedule</h3>
@@ -208,32 +127,6 @@
 
     </div>
 
-  </div>
-
-  <div class="p-3 d-none d-xl-block" style="width: 25%">
-    <div class="position-absolute" style="margin-right: 2rem;">
-      <div class="card bg-dark text-light small">
-        <div class="text-center card card-header bg-dark text-light">
-          <h5 class="card-title mb-0">10 Years of ZeldathonUK</h5>
-        </div>
-        <div class="text-center card card-body bg-dark">
-          <ngb-carousel class="mb-2" #carousel [interval]="5000" [pauseOnHover]="pauseOnHover" [pauseOnFocus]="pauseOnFocus" (slide)="onSlide($event)">
-            <ng-template ngbSlide *ngFor="let img of images; index as i">
-              <div class="carousel-caption">
-                <h3>{{ alts[i] }}</h3>
-              </div>
-              <a [href]="urls[i]" target="_blank" rel="nofollow noopener noreferrer">
-                <div class="picsum-img-wrapper">
-                  <img [src]="img" [alt]="alts[i]" style="max-height: 200px; filter: sepia(75%);">
-                </div>
-              </a>
-            </ng-template>
-          </ngb-carousel>
-          <p>Ever since the first Zeldathon "for GamesAid" on 11th November 2011 in the week prior to <a class="text-info" href="http://www.zelda.com/skywardsword/" target="_blank">Skyward Sword</a>'s launch, we have been fundraising for the awesome <a class="text-warning" href="https://www.specialeffect.org.uk/what-we-do" target="_blank">SpecialEffect</a> charity. Together with your support we have raised over £6,000+ for them.</p>
-          <p>As a thank you to everyone who has donated over the past decade we will be playing every main title in the Zelda timeline. Hopefully with your continued support during this years <a class="text-warning" href="https://twitter.com/search?q=%23GameBlast21&src=hashtag_click" target="_blank">#GameBlast21</a> event we can raise even more for this increadible cause!</p>
-        </div>
-      </div>
-    </div>
   </div>
 
 </div>

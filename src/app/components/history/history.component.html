@@ -1,0 +1,36 @@
+<div class="container p-3 min-vh-100 text-white text-center">
+
+  <div class="my-3">
+    <div class="mb-5">
+      <h1 class="golden-text text-uppercase">{{ getYearsSince2011() }} Years of ZeldathonUK</h1>
+    </div>
+    <p-timeline [value]="events1" align="alternate" styleClass="customized-timeline">
+      <ng-template pTemplate="marker" let-event>
+            <span class="custom-marker p-shadow-2" [style.backgroundColor]="event.color">
+                <i [ngClass]="event.icon"></i>
+            </span>
+      </ng-template>
+      <ng-template pTemplate="content" let-timelineEvent>
+        <p-card [header]="timelineEvent.status" [subheader]="timelineEvent.date">
+          <ng-container *ngIf="(timelineEvent.image !== ''); else showYouTubeEmbed;">
+            <div class="ratio ratio-16x9" style="min-height: 285px;">
+              <img *ngIf="timelineEvent.image" [src]="timelineEvent.image" [alt]="timelineEvent.name" width="200" class="p-shadow-2">
+            </div>
+          </ng-container>
+          <ng-template #showYouTubeEmbed>
+            <div class="d-block position-relative">
+              <iframe class="ratio ratio-16x9" height="285" title="YouTube video player"
+                      [src]="timelineEvent.src"
+                      frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen></iframe>
+            </div>
+          </ng-template>
+          <p>{{ timelineEvent.description }}</p>
+          <a *ngIf="timelineEvent.facebookUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.facebookUrl" target="_blank">Facebook Fundraiser Page</a>
+          <a *ngIf="timelineEvent.justGivingUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.justGivingUrl" target="_blank">JustGiving Page</a>
+        </p-card>
+      </ng-template>
+    </p-timeline>
+  </div>
+
+</div>

@@ -1,0 +1,116 @@
+<div class="container p-3 min-vh-100 text-center text-white">
+
+  <div class="my-3">
+    <div class="mb-5">
+      <h1 class="golden-text text-uppercase">About ZeldathonUK</h1>
+    </div>
+
+    <div class="my-3">
+      <ngb-carousel class="mb-5" #carousel [interval]="5000" [pauseOnHover]="pauseOnHover" [pauseOnFocus]="pauseOnFocus" (slide)="onSlide($event)">
+        <ng-template ngbSlide *ngFor="let img of images; index as i">
+          <div class="carousel-caption">
+            <h3>{{ alts[i] }}</h3>
+          </div>
+          <a [href]="urls[i]" target="_blank" rel="nofollow noopener noreferrer">
+            <div class="picsum-img-wrapper">
+              <img [src]="img" [alt]="alts[i]" style="max-height: 200px; filter: sepia(50%);">
+            </div>
+          </a>
+        </ng-template>
+      </ngb-carousel>
+    </div>
+
+    <div class="my-3">
+      <div class="d-flex justify-content-center">
+        <div class="w-75">
+
+          <div class="d-flex justify-content-around mb-5 faq-row">
+            <div class="text-start w-25">
+              What is Zeldathon?
+            </div>
+            <div class="text-start w-75 ms-5">
+              Zeldathon is a group of Zelda fans, artists, musicians, streamers, and all-around good people coming together to have fun and raise money for charity!
+
+              <div class="card bg-dark mt-4">
+                <div class="card-body" style="font-size: 0.7em;">
+                  <p class="mb-0 text-white-50">We're based in the United Kingdom. There are other Zelda Marathon's run world-wide!
+                    Please check out these wonderful people as well:</p>
+                  <ul class="mb-0">
+                    <li>Zeldathon (USA) <a class="link-secondary" href="https://zeldathon.com/" target="_blank">zeldathon.com</a></li>
+                    <li>Zelda Dungeon (USA) <a class="link-secondary" href="https://www.zeldadungeon.net/category/zelda-dungeon-marathon/" target="_blank">zeldadungeon.net</a></li>
+                    <li>Zelda Speed Runs (USA) <a class="link-secondary" href="https://www.zeldaspeedruns.com/" target="_blank">zeldaspeedruns.com</a></li>
+                    <li>Rupeethon (USA) <a class="link-secondary" href="http://rupeethon.org/" target="_blank">rupeethon.org</a></li>
+                    <li>Hyrule Hustlers (USA) <a class="link-secondary" href="https://twitter.com/hyrulehustlers" target="_blank">twitter.com/hyrulehustlers</a></li>
+                    <li>Zeldathon (France) <a class="link-secondary" href="https://zeldathon.fr/" target="_blank">zeldathon.fr</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-around mb-5 faq-row">
+            <div class="text-start w-25">
+              When is the next marathon?
+            </div>
+            <div class="text-start w-75 ms-5">
+              25<sup>th</sup>-27<sup>th</sup> February 2022 for <a class="link-warning" [routerLink]="'/charity'">SpecialEffect's #GameBlast22</a>.
+              <p class="mt-2 mb-0"><strong>Pro-tip:</strong> Add the event to your calendar:</p>
+              <ul>
+                <li><a class="link-info" href="https://discord.com/invite/9eW9USX3KY?event=919648764032065546" target="_blank">Discord Event</a></li>
+                <li><a class="link-info" href="https://www.facebook.com/events/1840159519515239/?ref=newsfeed" target="_blank">Facebook Event</a></li>
+                <li><a class="link-info" href="https://www.twitch.tv/zeldathonuk/schedule" target="_blank">Twitch Schedule</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-around mb-5 faq-row">
+            <div class="text-start w-25">
+              How can I help support the cause?
+            </div>
+            <div class="text-start w-75 ms-5">
+              Thank you in advance for supporting our mission. You can do any of the following to support what we do:
+              <ul>
+                <li>Watch the stream</li>
+                <li>Spread the word on social media</li>
+                <li>Donate during an event</li>
+                <li>Donate art or prizes</li>
+                <li>Sponsor one of our events</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-around mb-5 faq-row">
+            <div class="text-start w-25">
+              Where do my donations go?
+            </div>
+            <div class="text-start w-75 ms-5">
+              Your donations are processed through either Facebook Fundraising, Tiltify, or JustGiving and go straight to the charity.
+              Zeldathon does not touch a single penny, we just record the total donated.
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-around mb-5 faq-row">
+            <div class="text-start w-25">
+              When can I donate?
+            </div>
+            <div class="text-start w-75 ms-5">
+              We usually open the donation pages a month or two before the stream and close donations one month after we stop streaming.
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-around mb-5 faq-row">
+            <div class="text-start w-25">
+              Can I ask more questions?
+            </div>
+            <div class="text-start w-75 ms-5">
+              <a class="link-info" href="https://t.co/hFFRHgJE0l" target="_blank">Join us on Discord</a> to ask more questions and hang out with the team!
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

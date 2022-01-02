@@ -20,6 +20,8 @@ import { AvatarModule } from 'primeng/avatar';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { ToastModule } from 'primeng/toast';
+import { TimelineModule } from 'primeng/timeline';
+import { CardModule } from 'primeng/card';
 
 // Environment Variables
 import { environment } from '../environments/environment';
@@ -89,6 +91,9 @@ import { BreakBrbComponent } from './components/obs/break-brb/break-brb.componen
 import { TextToSpeechComponent } from './components/text-to-speech/text-to-speech.component';
 import { FsaFourPlayerSplitComponent } from './components/obs/fsa-four-player-split/fsa-four-player-split.component';
 import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/fsa-fps-ad-panel/fsa-fps-ad-panel.component';
+import { AboutComponent } from './components/about/about.component';
+import { HistoryComponent } from './components/history/history.component';
+import { CharityComponent } from './components/charity/charity.component';
 
 
 @NgModule({
@@ -150,30 +155,35 @@ import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/f
     BreakBrbComponent,
     TextToSpeechComponent,
     FsaFourPlayerSplitComponent,
-    FsaFpsAdPanelComponent
+    FsaFpsAdPanelComponent,
+    AboutComponent,
+    HistoryComponent,
+    CharityComponent
   ],
-    imports: [
-        BrowserModule,
-        FormsModule,
-        BrowserAnimationsModule,
-        HttpClientModule,
-        AppRoutingModule,
-        NgbModule,
-        FontAwesomeModule,
-        CountdownModule,
-        Ng9OdometerModule.forRoot(),
-        AngularFireModule.initializeApp(environment.firebase, 'zeldathonuk'),
-        AngularFireAuthModule,
-        AngularFirestoreModule,
-        TableModule,
-        RippleModule,
-        ButtonModule,
-        AvatarModule,
-        ToolbarModule,
-        ConfirmPopupModule,
-        ToastModule,
-        NgxMasonryModule,
-    ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    BrowserAnimationsModule,
+    HttpClientModule,
+    AppRoutingModule,
+    NgbModule,
+    FontAwesomeModule,
+    CountdownModule,
+    Ng9OdometerModule.forRoot(),
+    AngularFireModule.initializeApp(environment.firebase, 'zeldathonuk'),
+    AngularFireAuthModule,
+    AngularFirestoreModule,
+    TableModule,
+    RippleModule,
+    ButtonModule,
+    AvatarModule,
+    ToolbarModule,
+    ConfirmPopupModule,
+    ToastModule,
+    NgxMasonryModule,
+    TimelineModule,
+    CardModule,
+  ],
   providers: [
     AuthGuardService,
     GameItemService,

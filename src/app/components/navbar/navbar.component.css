@@ -1,6 +1,13 @@
 .navbar {
-  background-color: #343a40 !important;
-  border-bottom: 1px solid #343a40;
+  background-color: #111421;
+  border-bottom: 2px solid #5e627d;
+  padding: 0;
+}
+
+.nav-item {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 10px;
 }
 
 .navbar-gold {
@@ -14,15 +21,130 @@
   text-shadow: 1px 1px 2px black;
 }
 
-
 .navbar-majoras-mask {
- background-color: #46336b;
- border-bottom: 1px solid #56437b;
+ background-color: #46336b !important;
+ border-bottom: 1px solid #56437b !important;
 }
 
+.nav-item-pink:hover {
+  background: linear-gradient(180deg,#ff48a8 -.56%,rgba(255,72,168,0)),#ff2323!important;
+}
 
+.nav-icon-pink {
+  color: #ff2323;
+}
 
+.nav-item-pink:hover .nav-icon-pink {
+  color: #111421!important;
+}
 
+.nav-item-orange:hover {
+  background: linear-gradient(180deg,#ff9820,rgba(255,152,32,0)),#f66700!important;
+}
+
+.nav-icon-orange {
+  color: #f66700;
+}
+
+.nav-item-orange:hover .nav-icon-orange {
+  color: #111421!important;
+}
+
+.nav-item-gold:hover {
+   background: linear-gradient(180deg,#ffb21d,hsla(0,0%,100%,0)),#e1cb00!important;
+ }
+
+.nav-icon-gold {
+  color: #e1cb00;
+}
+
+.nav-item-gold:hover .nav-icon-gold {
+  color: #111421!important;
+}
+
+.nav-item-purple:hover {
+  background: linear-gradient(180deg,#ff20b3,hsla(0,0%,100%,0)),#c744ff!important;
+}
+
+.nav-icon-purple {
+  color: #c744ff;
+}
+
+.nav-item-purple:hover .nav-icon-purple {
+  color: #111421!important;
+}
+
+.nav-item-blurple:hover {
+  background: linear-gradient(180deg,#65beff,hsla(0,0%,100%,0)),#755fff!important;
+}
+
+.nav-icon-blurple {
+  color: #755fff;
+}
+
+.nav-item-blurple:hover .nav-icon-blurple {
+  color: #111421!important;
+}
+
+.nav-item-blue:hover {
+  background: linear-gradient(180deg,#b3e3ff,hsla(0,0%,100%,0)),#0fa0ff!important;
+}
+
+.nav-icon-blue {
+  color: #0fa0ff;
+}
+
+.nav-item-blue:hover .nav-icon-blue {
+  color: #111421!important;
+}
+
+.nav-item-green:hover {
+  background: linear-gradient(180deg,#20ff87,hsla(0,0%,100%,0)),#67ff20!important;
+}
+
+.nav-icon-green {
+  color: #67ff20;
+}
+
+.nav-item-green:hover .nav-icon-green {
+  color: #111421!important;
+}
+
+.golden-text {
+  background: linear-gradient(45deg,#f6b100,#fff,#f6b100);
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  background-clip: text;
+  -moz-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.gradient-button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(269.7deg,#c744ff 4.46%,#007bc2 96.97%);
+  border-radius: 4px;
+  padding: 6px 19px;
+  font-family: "IBM Plex Sans","Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 27px;
+  letter-spacing: .05em;
+  text-align: center;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.director-card[data-v-009e0e54] {
+  position: relative;
+  overflow: hidden;
+  max-width: 300px;
+  height: 336px;
+  border-radius: 16px;
+  background: linear-gradient(#111421,#111421) padding-box,linear-gradient(126.97deg,#c744ff 17.15%,#007bc2 86.42%) border-box;
+  border: 2px solid transparent;
+}
 
 
 .btn-justgiving {

@@ -1,6 +1,6 @@
-<nav class="navbar navbar-expand-lg navbar-dark">
+<nav class="navbar navbar-expand-lg">
 
-  <a class="navbar-brand ms-2" routerLink="/" routerLinkActive="active-link">
+  <a class="navbar-brand ms-3 me-4" routerLink="/" routerLinkActive="active-link">
     <img src="../../../assets/img/1gxaef91xpst0u.png" class="position-absolute"
          style="max-width: 32px; max-height: 32px; top: 8px; left: 115px; filter: opacity(0.75); transform: rotate(10deg);"
          title="GB Flag" alt="GB Flag">
@@ -18,21 +18,112 @@
 
       <div class="d-flex flex-shrink-0 justify-content-center mx-2">
         <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link nav-link-dark" routerLink="/schedule" routerLinkActive="active-link">Schedule</a>
+          <li class="nav-item nav-item-pink">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/" routerLinkActive="active-link">
+              <div class="nav-icon-pink text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faHeart" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Home
+              </div>
+            </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link nav-link-dark" routerLink="/donations" routerLinkActive="active-link">Donations</a>
+          <li class="nav-item nav-item-orange">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/schedule" routerLinkActive="active-link">
+              <div class="nav-icon-orange text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faListOl" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Schedule
+              </div>
+            </a>
           </li>
-<!--          <li class="nav-item">-->
-<!--            <a class="nav-link nav-link-dark" routerLink="/incentives" routerLinkActive="active-link">Incentives</a>-->
-<!--          </li>-->
+          <li class="nav-item nav-item-gold">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/donations" routerLinkActive="active-link">
+              <div class="nav-icon-gold text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faPoundSign" transform="shrink-7" [styles]="{'margin-top': '-0.45em'}"></fa-icon>
+                  <fa-icon [icon]="faHandHolding" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Donations
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-green">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/incentives" routerLinkActive="active-link">
+              <div class="nav-icon-green text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faCarrot" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Incentives
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-blue">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/charity" routerLinkActive="active-link">
+              <div class="nav-icon-blue text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faGamepad" transform="shrink-4" [styles]="{'margin-top': '-0.05em'}"></fa-icon>
+                  <fa-icon [icon]="faAccessibleIcon" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Charity
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-blurple">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/history" routerLinkActive="active-link">
+              <div class="nav-icon-blurple text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faHistory" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                History
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-purple">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/about" routerLinkActive="active-link">
+              <div class="nav-icon-purple text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faCaretUp" transform="shrink-4" [styles]="{'margin-top': '-0.45em'}"></fa-icon>
+                  <fa-icon [icon]="faCaretUp" transform="shrink-4" [styles]="{'margin-top': '-0.15em', 'margin-left': '0.45em'}"></fa-icon>
+                  <fa-icon [icon]="faCaretUp" transform="shrink-4" [styles]="{'margin-top': '-0.15em', 'margin-right': '0.42em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                About
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-pink" *ngIf="this.user">
+            <div class="nav-icon-pink text-center" style="font-size: 2em;">
+              <fa-layers>
+                <fa-icon [icon]="faChromecast" transform="shrink-4" [styles]="{'margin-top': '0.10em'}"></fa-icon>
+              </fa-layers>
+            </div>
+            <div class="position-relative" style="margin-top: -1.1em;">
+              <a class="nav-link nav-link-dark pb-0" routerLink="/obs" routerLinkActive="active-link">OBS</a>
+            </div>
+          </li>
         </ul>
       </div>
 
       <div class="d-flex flex-grow-1 justify-content-center">
         <div class="d-flex align-items-center me-3">
+      <!--
           <app-combined-total></app-combined-total>
+      -->
         </div>
       </div>
 
@@ -65,8 +156,8 @@
           </li>
           <li class="nav-item d-flex mx-2" [ngClass]="!isCollapsed ? 'p-1' : ''" *ngIf="this.user">
             <div class="align-self-center">
-              <button class="btn btn-sm btn-secondary" (click)="logout();">
-                Logout
+              <button class="btn btn-sm btn-secondary" title="Logout" (click)="logout();">
+                <fa-icon [icon]="faSignOutAlt"></fa-icon>
               </button>
             </div>
           </li>
