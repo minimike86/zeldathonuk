@@ -1,13 +1,27 @@
-
-
-.golden-text {
-  background: linear-gradient(45deg,#f6b100,#fff,#f6b100);
+.text-bloodmoon {
+  background: linear-gradient(45deg, #E71347, #DA4471, #E7364B, #DA4471, #E71347);
   -webkit-background-clip: text;
   -moz-background-clip: text;
   background-clip: text;
   -moz-text-fill-color: transparent;
   -webkit-text-fill-color: transparent;
   display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
+}
+
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+}
+
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+  filter: opacity(85%);
 }
 
 
@@ -82,4 +96,20 @@
 .btnfacebook:not(:disabled):not(.disabled):active:focus, .btnfacebook:not(:disabled):not(.disabled).active:focus,
 .show > .btnfacebook.dropdown-toggle:focus {
   box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
+}
+
+
+.btn-specialeffect {
+  font-family: 'Bungee', cursive;
+  color: #fff;
+  background: linear-gradient(45deg, #439ABE, #0072B6, #025B90);
+  border: 2px solid rgba(254, 130, 32, 80%);
+}
+
+.btn-specialeffect:hover {
+  color: #fff;
+  /*background: linear-gradient(45deg, #FE8220, #FE8220, #FE8220);*/
+  background: linear-gradient(45deg, #439ABE, #0072B6, #025B90);
+  border: 2px solid rgba(254, 130, 32, 80%);
+  filter: opacity(85%);
 }

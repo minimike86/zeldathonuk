@@ -7,6 +7,61 @@ li {
   margin-right: 1em;
 }
 
+.bg-bloodmoon {
+  background-color: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.bg-bloodmoon:before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #FFC2E0, #E59FCB, #D96DA9);
+  opacity: 0.15;
+  z-index: -1;
+}
+
+.text-specialeffect-blurb {
+  display: -webkit-box;
+  max-width: 100%;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-bloodmoon {
+  background: linear-gradient(45deg, #E71347, #DA4471, #E7364B, #DA4471, #E71347);
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  background-clip: text;
+  -moz-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 1.65em;
+  text-transform: uppercase;
+}
+
+.gradient-button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(269.7deg,#c744ff 4.46%,#007bc2 96.97%);
+  border-radius: 4px;
+  padding: 6px 19px;
+  font-family: "IBM Plex Sans","Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 27px;
+  letter-spacing: .05em;
+  text-align: center;
+  cursor: pointer;
+  transition: .15s;
+}
 
 .fees-corner {
   display: inline-block;
@@ -55,8 +110,9 @@ li {
 
 .btn-facebook:hover {
   color: #fff;
-  background-color: #5865A5;
-  border-color: #5169A8;
+  background-color: #3b5998;
+  border-color: #3b5998;
+  filter: opacity(85%);
 }
 
 .btn-facebook:focus,
@@ -127,28 +183,32 @@ li {
   box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
 }
 
-
-
 .btn-tiltify {
   color: #fff;
   background: rgb(35, 38, 40);
   border: 1px solid #5e627d;
 }
 
-
-
-
+.btn-tiltify:hover {
+  color: #fff;
+  background: rgb(35, 38, 40);
+  border: 1px solid #5e627d;
+  filter: opacity(85%);
+}
 
 .btn-specialeffect {
+  font-family: 'Bungee', cursive;
   color: #fff;
-  background: radial-gradient(at top left, #1f3e7e 0%, #1f3e7e 60%, rgba(0, 12, 36, 0.5) 100%) no-repeat top center #1f3e7e;
-  border-color: #101c34;
+  background: linear-gradient(45deg, #439ABE, #0072B6, #025B90);
+  border: 2px solid rgba(254, 130, 32, 80%);
 }
 
 .btn-specialeffect:hover {
   color: #fff;
-  background: radial-gradient(at top left, rgba(31, 62, 126, 0.5) 0%, rgba(31, 62, 126, 0.5) 60%, rgba(0, 12, 36, 0.5) 100%) no-repeat top center #385595;
-  border-color: #101c34;
+  /*background: linear-gradient(45deg, #FE8220, #FE8220, #FE8220);*/
+  background: linear-gradient(45deg, #439ABE, #0072B6, #025B90);
+  border: 2px solid rgba(254, 130, 32, 80%);
+  filter: opacity(85%);
 }
 
 .btn-specialeffect:focus,
@@ -177,22 +237,33 @@ li {
   box-shadow: 0 0 0 0.2rem rgba(0, 12, 36, 0.25);
 }
 
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+}
 
-
-
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+  filter: opacity(85%);
+}
 
 
 .btn-gameblast {
   color: #fff;
   background: url('../../../assets/img/GB_Background_nologo.png') no-repeat top center #f58220;
+  background-size: cover;
   border-color: #f58220;
 }
 
 .btn-gameblast:hover {
   color: #fff;
   background: url('../../../assets/img/GB_Background_nologo.png') no-repeat top center #f58220;
+  background-size: cover;
   border-color: #f58220;
-  filter: opacity(80%);
+  filter: opacity(85%);
 }
 
 .btn-gameblast:focus,

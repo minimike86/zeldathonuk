@@ -1,3 +1,47 @@
+.text-bloodmoon {
+  background: linear-gradient(45deg, #E71347, #DA4471, #E7364B, #DA4471, #E71347);
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  background-clip: text;
+  -moz-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
+}
+
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+}
+
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+  filter: opacity(85%);
+}
+
+.bg-bloodmoon {
+  background-color: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.bg-bloodmoon:before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #FFC2E0, #E59FCB, #D96DA9);
+  opacity: 0.15;
+  z-index: -1;
+}
 
 .btn-justgiving {
   color: #fff;

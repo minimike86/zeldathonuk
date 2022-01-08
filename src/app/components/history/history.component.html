@@ -2,7 +2,7 @@
 
   <div class="my-3">
     <div class="mb-5">
-      <h1 class="golden-text text-uppercase">{{ getYearsSince2011() }} Years of ZeldathonUK</h1>
+      <h1 class="text-bloodmoon text-uppercase">{{ getYearsSince2011() }} Years of ZeldathonUK</h1>
     </div>
     <p-timeline [value]="events1" align="alternate" styleClass="customized-timeline">
       <ng-template pTemplate="marker" let-event>
@@ -26,8 +26,10 @@
             </div>
           </ng-template>
           <p>{{ timelineEvent.description }}</p>
-          <a *ngIf="timelineEvent.facebookUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.facebookUrl" target="_blank">Facebook Fundraiser Page</a>
-          <a *ngIf="timelineEvent.justGivingUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.justGivingUrl" target="_blank">JustGiving Page</a>
+          <div class="row row-cols-2 mx-2">
+            <a class="col" *ngIf="timelineEvent.facebookUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.facebookUrl" target="_blank">Facebook Fundraiser Page</a>
+            <a class="col" *ngIf="timelineEvent.justGivingUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.justGivingUrl" target="_blank">JustGiving Page</a>
+          </div>
         </p-card>
       </ng-template>
     </p-timeline>

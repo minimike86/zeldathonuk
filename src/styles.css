@@ -20,3 +20,21 @@ html, body {
 
 body {
 }
+
+p-timeline > div > div > div.p-timeline-event-content > p-card > div {
+  color: white;
+  background: linear-gradient(45deg,
+                              rgba(255, 194, 224, 10%),
+                              rgba(229, 159, 203, 10%),
+                              rgba(255, 194, 224, 10%));
+}
+
+p-timeline > div > div > div.p-timeline-event-content > p-card > div > div > div.p-card-subtitle {
+  color: white!important;
+  opacity: 50%;
+}
+
+p-timeline > div > div > div.p-timeline-event-content > p-card > div > div > div.p-card-content a {
+  color: rgb(229, 159, 203);
+  border: 2px solid rgba(229, 159, 203, 20%);
+}

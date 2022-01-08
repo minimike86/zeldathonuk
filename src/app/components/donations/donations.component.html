@@ -3,7 +3,7 @@
   <div class="container donation-list-container p-3">
 
     <div class="">
-      <h3 class="text-white mb-3">Thank you to all our donors!</h3>
+      <h3 class="text-bloodmoon mb-3">Thank you to all our donors!</h3>
       <p class="text-light">
         On behalf of everyone in the ZeldathonUK team we would like to thank all of the donors below for their generous donations:
       </p>
@@ -52,12 +52,12 @@
                         </div>
                       </div>
                       <div class="">
-                        <h1 class="mb-0">{{ donation.donationAmount | currency:donation.currency }}</h1>
+                        <h1 class="mb-0" style="font-family: 'Bungee', cursive;">{{ donation.donationAmount | currency:donation.currency }}</h1>
                       </div>
                     </div>
 
                     <div class="d-flex justify-content-end">
-                      <span class="text-white-50" style="font-size: 9px;">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
+                      <span class="text-white-50" style="font-size: 0.8em;">{{ timeAgo.format(donation.donationDate.toDate()) }}</span>
                     </div>
 
                   </div>
@@ -72,23 +72,9 @@
           <div class="d-flex justify-content-center h-75">
             <div class="d-flex align-self-center">
               <div class="d-flex flex-column">
-              <h6 class="text-white-50 mb-3">
-                No donors yet! Please consider starting us off!
-              </h6>
-              <div class="d-flex justify-content-around">
-                <div class="d-flex flex-column">
-                  <button class="btn btn-lg btn-facebook me-3" (click)="donateFacebook();">
-                    Donate via Facebook<br/>
-                    <span class="small text-white-50">*no fees</span>
-                  </button>
-                </div>
-                <div class="d-flex flex-column">
-                  <button class="btn btn-lg btn-justgiving" (click)="donateJustGiving();">
-                    Donate via JustGiving<br/>
-                    <span class="small text-warning">*adds fees to donation!</span>
-                  </button>
-                </div>
-              </div>
+                <h6 class="text-white-50 mb-3">
+                  No donors yet! Please consider starting us off!
+                </h6>
               </div>
             </div>
           </div>
@@ -100,15 +86,15 @@
   </div>
 
   <div class="p-3 d-none d-xl-block">
-    <div class="card bg-dark" style="width: 22rem;">
-      <div class="text-center card card-header bg-dark text-light">
-        <h5 class="card-title mb-0">What will your donation do?</h5>
+    <div class="card bg-bloodmoon" style="width: 28rem;">
+      <div class="text-center card card-header text-light">
+        <h5 class="card-title text-bloodmoon mb-0" style="font-size: 1.5em;">What could your donation do?</h5>
       </div>
-      <div class="text-center card card-body bg-dark small">
+      <div class="text-center card card-body small">
         <div class="text-light mb-3">
-          All of <a class="text-info" href="https://www.specialeffect.org.uk/" target="_blank">SpecialEffect</a>'s services are provided <span class="text-warning">free of charge</span>, so they rely entirely on your generosity to keep on transforming lives.
+          <a class="link-warning" [routerLink]="'/charity'">SpecialEffect</a> don’t charge anything at all for their help. That’s why your donations, large or small, really do count. Without your support they wouldn’t be able to help people with physical disabilities to enjoy a better quality of life through their assessments, online resources and collaboration with key developers. Whether your involvement is through a donation of time, skills, or funds, your support is absolutely crucial to the charity’s future impact and success.
         </div>
-        <table class="table table-hover table-striped table-dark small mb-0">
+        <table class="table text-white small mb-0">
           <tbody>
           <tr>
             <td style="vertical-align: middle;">
@@ -118,7 +104,7 @@
             </td>
             <td style="vertical-align: middle;">
               <img class="donation-benefit-img"
-                   src="https://static.dezeen.com/uploads/2018/05/xbox-controller-technology-games-design_dezeen_2364_col_23.jpg"
+                   src="../../../assets/img/donation-items/xbox-controller-technology-games-design_dezeen_2364_col_23_1_-removebg-preview.png"
                    alt="Flexible Fixings">
             </td>
             <td style="vertical-align: middle;">
@@ -133,7 +119,7 @@
             </td>
             <td style="vertical-align: middle;">
               <img class="donation-benefit-img"
-                   src="https://hedaroart.files.wordpress.com/2016/05/infinity4ps-thumbstick-heights.jpg?w=428&h=161"
+                   src="../../../assets/img/donation-items/infinity4ps-thumbstick-heights-removebg-preview.png"
                    alt="Joystick Extensions">
             </td>
             <td style="vertical-align: middle;">
@@ -148,7 +134,7 @@
             </td>
             <td style="vertical-align: middle;">
               <img class="donation-benefit-img"
-                   src="https://www.specialeffect.org.uk/images/sasha_1000.jpg"
+                   src="../../../assets/img/donation-items/sasha_setup-e1628153142123-removebg-preview.png"
                    alt="Deliver Adaptive Gaming Setup">
             </td>
             <td style="vertical-align: middle;">
@@ -163,7 +149,7 @@
             </td>
             <td style="vertical-align: middle;">
               <img class="donation-benefit-img"
-                   src="http://permobilus.com/wp-content/uploads/2016/11/2_ALT_MiniJoystick-min.jpg"
+                   src="../../../assets/img/donation-items/2_ALT_MiniJoystick-min-removebg-preview.png"
                    alt="Low Force Joysticks">
             </td>
             <td style="vertical-align: middle;">
@@ -178,12 +164,12 @@
             </td>
             <td style="vertical-align: middle;">
               <img class="donation-benefit-img"
-                   src="https://compass-ssl.xbox.com/assets/3f/2c/3f2cd0bf-3b0e-402d-9c59-a8fdbd73ff47.png?n=Xbox-Accessibility_Image-0_Adaptive-Controller_1600x658.png"
+                   src="../../../assets/img/donation-items/3f2cd0bf-3b0e-402d-9c59-a8fdbd73ff47.png"
                    alt="Xbox Adaptive Controller">
             </td>
             <td style="vertical-align: middle;">
               <span class="donation-benefit-desc">Will buy an interface box like an
-                <a class="text-info" href="https://www.xbox.com/en-GB/accessories/controllers/xbox-adaptive-controller" target="_blank">Xbox Adaptive Controller</a>
+                <a class="text-danger" href="https://www.xbox.com/en-GB/accessories/controllers/xbox-adaptive-controller" target="_blank">Xbox Adaptive Controller</a>
                 for use as part of a gaming setup.</span>
             </td>
           </tr>
@@ -195,7 +181,7 @@
             </td>
             <td style="vertical-align: middle;">
               <img class="donation-benefit-img"
-                   src="https://i1.wp.com/meru.org.uk/wp-content/uploads/2019/08/mounted-to-chair-in-use.jpg?fit=1184%2C888&ssl=1"
+                   src="../../../assets/img/donation-items/monstertech_table_mount_warthog_joystick_hero_1_-removebg-preview.png"
                    alt="Mounting System">
             </td>
             <td style="vertical-align: middle;">
@@ -210,7 +196,7 @@
             </td>
             <td style="vertical-align: middle;">
               <img class="donation-benefit-img"
-                   src="https://www.evilcontrollers.com/media/pages/gaming/img_01.jpg"
+                   src="../../../assets/img/donation-items/img_01-removebg-preview.png"
                    alt="Single Handed Controller">
             </td>
             <td style="vertical-align: middle;">

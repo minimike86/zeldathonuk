@@ -1,50 +1,33 @@
-.table-gold,
-.table-gold > th,
-.table-gold > td {
-  background-color: #C5B358;
+.text-bloodmoon {
+  background: linear-gradient(45deg, #E71347, #DA4471, #E7364B, #DA4471, #E71347);
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  background-clip: text;
+  -moz-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
 }
 
-.table-gold th,
-.table-gold td,
-.table-gold thead th,
-.table-gold tbody + tbody {
-  border-color: #C5B358;
+.bg-bloodmoon {
+  background-color: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
 }
-
-.table-hover .table-gold:hover {
-  background-color: #D4AF37;
-}
-
-.table-hover .table-gold:hover > td,
-.table-hover .table-gold:hover > th {
-  background-color: #D4AF37;
-}
-
-
-.table-played,
-.table-played > th,
-.table-played > td {
-  background-color: #15202b;
-}
-
-.table-played:nth-child(even) td {
-  background-color: #192734;
-}
-
-.table-played th,
-.table-played td,
-.table-played thead th,
-.table-played tbody + tbody {
-  border-color: #15202b;
-}
-
-.table-hover .table-played:hover {
-  background-color: #22303c;
-}
-
-.table-hover .table-played:hover > td,
-.table-hover .table-played:hover > th {
-  background-color: #22303c;
+.bg-bloodmoon:before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #FFC2E0, #E59FCB, #D96DA9);
+  opacity: 0.15;
+  z-index: -1;
 }
 
 

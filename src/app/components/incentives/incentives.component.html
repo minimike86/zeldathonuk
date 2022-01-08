@@ -1,119 +1,88 @@
-<div class="container p-3" >
+<div class="container p-3 min-vh-100 text-white text-center">
+  <div class="my-3">
 
-  <div class="py-2">
-    <h3 class="text-white">Incentives For Donors</h3>
-    <h6 class="text-white-50">
-      We have a number of donor incentives to help inspire and motivate more people to start donating, give larger donations than they normally would, and engage long-term with our chosen charity.
-    </h6>
-    <div class="d-flex justify-content-around">
-      <a class="btn btn-secondary" (click)="scrollToActivities()">Activities / Challenges</a>
-      <a class="btn btn-secondary" (click)="scrollToRaffle()">Raffle Prizes</a>
-    </div>
-  </div>
+    <div class="mb-5">
+      <h1 class="text-bloodmoon">Incentives For Donors</h1>
 
-  <div class="border-bottom border-light">
-    &nbsp;
-  </div>
-
-
-  <h2 class="text-white mt-4">Activities / Challenges</h2>
-  <h6 class="text-white-50 mb-3">
-    Activites and challenges are designed to help you get us to DO something
-  </h6>
-  <div class="d-flex my-2">
-    <div class="d-inline-flex flex-fill">
-
-      <div class="card text-white bg-secondary w-25 me-2" *ngFor="let incentive of donationIncentives">
-        <div class="card-header">
-          <h5>{{ incentive.name }}</h5>
-          <span class="badge me-1" [ngClass]="incentive.typeColour">{{ incentive.type }}</span>
-          <span class="badge" [ngClass]="incentive.constraintColour">{{ incentive.constraint }}</span>
-        </div>
-        <a [href]="incentive.imageHrefUrl" target="_blank">
-          <img class="card-img" style="height: 120px; object-fit: cover;" [alt]="incentive.name" [src]="incentive.imageSrcUrl">
-        </a>
-        <div class="card-body" [innerHTML]="incentive.description"></div>
-        <div class="card-footer small">
-          Donate: <b>{{ incentive.donationAmount | currency:'GBP' }}</b>
-        </div>
+      <p class="text-light mt-2">
+        We have a number of donor incentives to help inspire and motivate more people to start donating, give larger donations than they normally would, and engage long-term with our chosen charity.
+      </p>
+      <div class="d-flex justify-content-around">
+        <a class="btn btn-bloodmoon p-3 px-5" (click)="scrollToActivities()">Activities / Challenges</a>
+        <a class="btn btn-bloodmoon p-3 px-5" (click)="scrollToRaffle()">Raffle Prizes</a>
       </div>
-
     </div>
-  </div>
 
-
-  <div class="text-center card card-header">
-    <div class="d-flex justify-content-center p-3">
-      <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
+    <div class="border-bottom border-light">
+      &nbsp;
     </div>
-    <div class="d-inline">
-      <button class="btn btn-sm btn-facebook me-3" (click)="donateFacebook();">
-        Donate via Facebook<br/>
-        <span class="small text-white-50">*no fees</span>
-      </button>
-      <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-        Donate via JustGiving<br/>
-        <span class="small text-warning">*adds fees to donation!</span>
-      </button>
-    </div>
-  </div>
-
-  <span #activities></span>
 
 
-  <div class="border-bottom border-light">
-    &nbsp;
-  </div>
+    <h2 class="text-bloodmoon mt-4">Activities / Challenges</h2>
+    <h6 class="text-white mb-3">
+      Activites and challenges are designed to help you get us to DO something
+    </h6>
+    <div class="d-flex my-2">
+      <div class="d-inline-flex flex-fill">
 
-
-  <h2 class="text-white mt-4">Raffle Prizes</h2>
-  <h6 class="text-white-50 mb-3">
-    We will be raffling off all these prizes in exchange for your participation. Eg: donating, raiding or hosting the stream, sharing the stream and otherwise just getting involved in the chat.
-    These we be announced on stream when the raffles are active throughout the zelda marathon so stay tuned in to win!
-  </h6>
-  <div class="d-flex my-2">
-    <div class="d-inline-flex flex-fill">
-
-      <div class="card text-white bg-secondary w-25 me-2" *ngFor="let prize of prizes">
-        <div class="card-header">
-          {{ prize.name }}
+        <div class="card text-white bg-bloodmoon w-25 me-2" *ngFor="let incentive of donationIncentives">
+          <div class="card-header">
+            <h5>{{ incentive.name }}</h5>
+            <span class="badge me-1" [ngClass]="incentive.typeColour">{{ incentive.type }}</span>
+            <span class="badge" [ngClass]="incentive.constraintColour">{{ incentive.constraint }}</span>
+          </div>
+          <a [href]="incentive.imageHrefUrl" target="_blank">
+            <img class="card-img" style="height: 120px; object-fit: cover;" [alt]="incentive.name" [src]="incentive.imageSrcUrl">
+          </a>
+          <div class="card-body" [innerHTML]="incentive.description"></div>
+          <div class="card-footer small">
+            Donate: <b>{{ incentive.donationAmount | currency:'GBP' }}</b>
+          </div>
         </div>
-        <div class="d-flex justify-content-center" style="height: 250px; background: dimgrey;">
-          <img class="card-img align-self-center" [alt]="prize.name" [src]="prize.imageUrl">
-        </div>
-        <div class="card-body" [innerHTML]="prize.description"></div>
-        <div class="card-footer small">
-          <div class="d-flex justify-content-between">
-            <div>
-              Quantity: <b>{{ prize.quantity }}</b>
-            </div>
-            <div>
-              <span class="badge bg-success p-1" *ngIf="prize.won">WON</span>
+
+      </div>
+    </div>
+
+    <span #activities></span>
+
+
+    <div class="border-bottom border-light">
+      &nbsp;
+    </div>
+
+
+    <h2 class="text-bloodmoon mt-4">Raffle Prizes</h2>
+    <h6 class="text-white mb-3">
+      We will be raffling off all these prizes in exchange for your participation. Eg: donating, raiding or hosting the stream, sharing the stream and otherwise just getting involved in the chat.
+      These we be announced on stream when the raffles are active throughout the zelda marathon so stay tuned in to win!
+    </h6>
+    <div class="d-flex my-2">
+      <div class="d-inline-flex flex-fill">
+
+        <div class="card text-white bg-bloodmoon w-25 me-2" *ngFor="let prize of prizes">
+          <div class="card-header">
+            {{ prize.name }}
+          </div>
+          <div class="d-flex justify-content-center" style="height: 250px;">
+            <img class="card-img align-self-center" style="max-height: 250px;" [alt]="prize.name" [src]="prize.imageUrl">
+          </div>
+          <div class="card-body" [innerHTML]="prize.description"></div>
+          <div class="card-footer small">
+            <div class="d-flex justify-content-between">
+              <div>
+                Quantity: <b>{{ prize.quantity }}</b>
+              </div>
+              <div>
+                <span class="badge bg-success p-1" *ngIf="prize.won">WON</span>
+              </div>
             </div>
           </div>
         </div>
+
       </div>
-
     </div>
+
+    <span #raffle></span>
+
   </div>
-
-
-  <div class="text-center card card-header">
-    <div class="d-flex justify-content-center p-3">
-      <img src="../../../assets/img/logo-specialeffect.png" alt="SpecialEffect Logo">
-    </div>
-    <div class="d-inline">
-      <button class="btn btn-sm btn-facebook me-3" (click)="donateFacebook();">
-        Donate via Facebook<br/>
-        <span class="small text-white-50">*no fees</span>
-      </button>
-      <button class="btn btn-sm btn-justgiving" (click)="donateJustGiving();">
-        Donate via JustGiving<br/>
-        <span class="small text-warning">*adds fees to donation!</span>
-      </button>
-    </div>
-  </div>
-
-  <span #raffle></span>
-
 </div>

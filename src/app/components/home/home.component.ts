@@ -20,6 +20,13 @@ export class HomeComponent implements OnInit {
   faYoutube = faYoutube;
   faInfoCircle = faInfoCircle;
 
+  currentGame = '';
+  runnerName = '';
+
+  nextGame = '';
+  nextGameTime = '';
+  nextRunnerName = '';
+
   constructor( private confirmationService: ConfirmationService ) {
   }
 
@@ -51,6 +58,10 @@ export class HomeComponent implements OnInit {
 
   donateFacebook() {
     window.open('https://www.facebook.com/donate/5194665980557244/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
+  }
+
+  donateTiltify() {
+    window.open('https://donate.tiltify.com/@msec/zeldathonuk-gameblast22', '_blank');
   }
 
   donateJustGiving() {

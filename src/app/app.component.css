@@ -4,8 +4,8 @@
 }
 
 .router-outlet {
-  min-height: calc(100vh - 46px - 25px);
-  max-height: calc(100vh - 46px - 25px);
+  min-height: calc(100vh - 46px - 20px);
+  max-height: calc(100vh - 46px - 20px);
 }
 
 .router-outlet-obs {
@@ -13,5 +13,21 @@
 }
 
 .zeldathon-bg {
-  background: #111421;
+  background-color: #4C1324;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.zeldathon-bg:before{
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100vw;
+  height: 100vh;
+  background: url('../assets/img/final_61d923aba32ecb010b4f426b_155572.gif') no-repeat 0 20%;
+  background-size: cover, auto;
+  opacity: 0.2;
+  z-index: -1;
 }
