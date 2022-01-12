@@ -1,7 +1,7 @@
 import { Component, Injectable, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { KeyValue } from '@angular/common';
 
-import { from, Observable, of } from 'rxjs';
+import {BehaviorSubject, from, Observable, of} from 'rxjs';
 import { concatMap, finalize, map } from 'rxjs/operators';
 
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -16,6 +16,8 @@ import { CountUpService } from '../../services/countup-service/countup.service';
 import { TrackedDonation, TrackedDonationId } from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
 import { BreakCountdownService } from '../../services/firebase/break-countdown/break-countdown.service';
+import { HowLongToBeatService } from '../../services/howlongtobeat-service/howlongtobeat.service';
+import { MessageService } from 'primeng/api';
 
 import { ZeldaGame } from '../../models/zelda-game';
 import firebase from 'firebase/compat/app';
@@ -34,6 +36,9 @@ import {
 } from '../../services/firebase/fundraising-pages/fundraising-pages.service';
 import { FundraisingPageDetails, JustGivingDonation } from '../../services/jg-service/fundraising-page';
 import { profanityFilter } from './omnibar/omnibar.component';
+import {HowLongToBeatGameDetail, HowLongToBeatSearchResult} from '../../services/howlongtobeat-service/howlongtobeat-models';
+import {OverlayPanel} from 'primeng/overlaypanel';
+import {PickList} from 'primeng/picklist';
 
 
 @Component({
@@ -57,6 +62,12 @@ export class ObsComponent implements OnInit {
   @ViewChild('addManualDonationModalDialog')
   private addManualDonationModalDialogRef: TemplateRef<any>;
   public addManualDonationModal: NgbActiveModal;
+
+  @ViewChild('searchHowLongToBeatOverlayPanel')
+  private searchHowLongToBeatOverlayPanel: OverlayPanel;
+
+  @ViewChild('pickListSchedule')
+  private pickListSchedule: PickList;
 
   public showObsLayouts = false;
   public showBreakCountdownDate = false;
@@ -100,6 +111,11 @@ export class ObsComponent implements OnInit {
   public sortedGameLineUp: ZeldaGame[];
   public swapGameKey: KeyValue<string, ZeldaGame>;
 
+  public hltbSearchQuery = 'zelda';
+  public hltbSearchResults: HowLongToBeatSearchResult[] = [];
+  public availableGames$: BehaviorSubject<HowLongToBeatGameDetail[]> = new BehaviorSubject<HowLongToBeatGameDetail[]>([]);
+  public activeSchedule$: BehaviorSubject<HowLongToBeatGameDetail[]> = new BehaviorSubject<HowLongToBeatGameDetail[]>([]);
+
   faPlay = faPlay;
   faPause = faPause;
   faStop = faStop;
@@ -118,6 +134,8 @@ export class ObsComponent implements OnInit {
                private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService,
                private jgService: JgService,
+               private messageService: MessageService,
+               private howLongToBeatService: HowLongToBeatService,
                private fundraisingPagesService: FundraisingPagesService ) {
     this.clearTrackedDonation();
     this.clearAddGame();
@@ -356,34 +374,6 @@ export class ObsComponent implements OnInit {
     this.donationTime = '';
   }
 
-  toggleShowObsLayouts() {
-    this.showObsLayouts = !this.showObsLayouts;
-  }
-
-  toggleShowBreakCountdownDate() {
-    this.showBreakCountdownDate = !this.showBreakCountdownDate;
-  }
-
-  toggleShowTimer() {
-    this.showTimer = !this.showTimer;
-  }
-
-  toggleShowRunnerName() {
-    this.showRunnerName = !this.showRunnerName;
-  }
-
-  toggleShowAddDonation() {
-    this.showAddDonation = !this.showAddDonation;
-  }
-
-  toggleShowGameSelect() {
-    this.showGameSelect = !this.showGameSelect;
-  }
-
-  toggleShowGameTracking() {
-    this.showGameTracking = !this.showGameTracking;
-  }
-
   zeroPad(num: number, maxLen: number): string {
     if (maxLen > 2) {
       if (num < 10) {
@@ -431,6 +421,32 @@ export class ObsComponent implements OnInit {
       })).subscribe();
   }
 
+  searchHowLongToBeat(searchQuery: string) {
+    this.howLongToBeatService.search(searchQuery).subscribe((data) => {
+      this.hltbSearchResults = data;
+    });
+  }
+
+  addGameToAvailableGames(gameId: string) {
+    const availableGames: HowLongToBeatGameDetail[] = this.availableGames$.getValue();
+    const activeSchedule: HowLongToBeatGameDetail[] = this.activeSchedule$.getValue();
+    const bothLists: HowLongToBeatGameDetail[] = [...availableGames, ...activeSchedule];
+    if (!bothLists.some(x => x.id === gameId)) {
+      this.howLongToBeatService.getDetail(gameId).subscribe((data) => {
+        if (data.id !== null) {
+          availableGames.push(data);
+          this.availableGames$.next(availableGames);
+          this.searchHowLongToBeatOverlayPanel.toggle(true);
+          const upButton: HTMLElement = document.querySelector('body > app-root > div > div > app-obs > div > div > div > div.my-3.ng-star-inserted > p-picklist > div > div.p-picklist-buttons.p-picklist-source-controls.ng-star-inserted > button:nth-child(1)');
+          upButton.click();
+          this.messageService.add({severity: 'success', detail: data.title + ' added to available games!'});
+        } else {
+          this.messageService.add({severity: 'error', detail: 'Game ID was null!'});
+        }
+      });
+    } else {
+      this.messageService.add({severity: 'error', detail: bothLists.find(x => x.id === gameId).title + ' is already in the available games, or active schedule list!'});
+    }
+  }
+
 }
-
-

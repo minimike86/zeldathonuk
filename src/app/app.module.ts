@@ -22,6 +22,11 @@ import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { ToastModule } from 'primeng/toast';
 import { TimelineModule } from 'primeng/timeline';
 import { CardModule } from 'primeng/card';
+import { PickListModule } from 'primeng/picklist';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { ToggleButtonModule } from 'primeng/togglebutton';
+import { InputTextModule } from 'primeng/inputtext';
+import { ImageModule } from 'primeng/image';
 
 // Environment Variables
 import { environment } from '../environments/environment';
@@ -183,6 +188,11 @@ import { CharityComponent } from './components/charity/charity.component';
     NgxMasonryModule,
     TimelineModule,
     CardModule,
+    PickListModule,
+    OverlayPanelModule,
+    ToggleButtonModule,
+    InputTextModule,
+    ImageModule
   ],
   providers: [
     AuthGuardService,

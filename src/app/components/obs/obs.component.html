@@ -1,13 +1,13 @@
-<div class="d-flex justify-content-start min-vh-100 h-auto w-100" style="background: dimgrey;">
+<div class="d-flex justify-content-start min-vh-100 h-auto w-100" style="background: #4C1324;">
   <div class="d-flex flex-column w-100">
     <app-navbar></app-navbar>
-    <div class="flex-fill container py-2" style="background: lightgrey;">
+    <div class="flex-fill container py-2" style="background: #B92753;">
 
       <!-- OBS Layouts -->
       <div class="">
         <div class="d-flex justify-content-between">
           <h3 class="text-dark pt-2">OBS Layouts</h3>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowObsLayouts();">Show/Hide</button>
+          <p-toggleButton [(ngModel)]="showObsLayouts" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
         </div>
         <div class="w-100" *ngIf="showObsLayouts">
           <ngx-masonry [options]="{ gutter: 10, percentPosition: true }" [ordered]="true">
@@ -70,7 +70,7 @@
       <div class="mb-3">
         <div class="d-flex justify-content-between">
           <h3 class="text-dark pt-2">Timers</h3>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowTimer();toggleShowBreakCountdownDate();">Show/Hide</button>
+          <p-toggleButton [(ngModel)]="showBreakCountdownDate" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
         </div>
         <div class="d-flex flex-column" *ngIf="showBreakCountdownDate">
 
@@ -206,7 +206,7 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowRunnerName();">Show/Hide</button>
+          <p-toggleButton [(ngModel)]="showRunnerName" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
         </div>
         <div class="d-flex" *ngIf="showRunnerName">
 
@@ -230,17 +230,12 @@
       </div>
       <hr class="hr">
 
-      <!-- Edit Schedule -->
-      <div class="mb-3">
-      </div>
-      <hr class="hr">
-
       <!-- Manage Donations -->
       <div class="mb-3">
         <div class="d-flex justify-content-between">
-          <h3 class="text-dark pt-2 me-3">Manage Donation Pages</h3>
+          <h3 class="text-dark pt-2 me-3">Manage Donations</h3>
           <h6 class="d-flex align-self-center text-muted pt-2">&pound;{{ getSumOfJustGivingPages() }}</h6>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowAddDonation();">Show/Hide</button>
+          <p-toggleButton [(ngModel)]="showAddDonation" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
         </div>
         <div class="d-flex flex-column" *ngIf="showAddDonation">
 
@@ -374,6 +369,65 @@
       </div>
       <hr class="hr">
 
+      <!-- Manage Schedule -->
+      <div class="d-flex justify-content-between">
+        <div class="d-flex justify-content-start">
+          <h3 class="text-dark pt-2 me-3">Manage Schedule</h3>
+        </div>
+        <p-toggleButton [(ngModel)]="showEditSchedule" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
+      </div>
+      <div class="my-3" *ngIf="showEditSchedule">
+        <div class="m-3">
+          <p-overlayPanel #searchHowLongToBeatOverlayPanel>
+            <ng-template pTemplate>
+              <div class="p-grid p-fluid" style="min-width: 50vw;">
+                <div class="p-col-12">
+                  <div class="p-inputgroup">
+                    <input type="text" pInputText placeholder="Game Title" [(ngModel)]="hltbSearchQuery">
+                    <button type="button" pButton pRipple label="Search" (click)="searchHowLongToBeat(hltbSearchQuery)"></button>
+                  </div>
+                </div>
+              </div>
+              <div class="p-grid p-fluid">
+                <div class="p-col-12">
+                  <ng-container *ngFor="let hltbSearchResult of hltbSearchResults">
+                    <div class="d-flex justify-content-between my-2">
+                      <div>
+                        <p-image height="50px" [src]="hltbSearchResult.boxArt" alt="Image"></p-image>
+                      </div>
+                      <div class="d-flex flex-column align-self-center">
+                        <div>
+                          {{ hltbSearchResult.title }}
+                        </div>
+                        <div>
+                          <span class="fw-bold small">Time to beat:</span> {{ hltbSearchResult.gameplayMain }}
+                        </div>
+                      </div>
+                      <div class="d-flex align-self-center">
+                        <button type="button" pButton pRipple label="Add" icon="pi pi-plus" class="p-button-sm" (click)="addGameToAvailableGames(hltbSearchResult.id)"></button>
+                      </div>
+                    </div>
+                  </ng-container>
+                </div>
+              </div>
+            </ng-template>
+          </p-overlayPanel>
+          <button pButton type="button" label="Add Game" icon="pi pi-plus" class="p-button-sm" (click)="searchHowLongToBeatOverlayPanel.toggle($event)"></button>
+        </div>
+        <p-pickList [source]="(availableGames$ | async)!" [target]="(activeSchedule$ | async)!" [responsive]="true" [dragdrop]="true"
+                    sourceHeader="Available Games" targetHeader="Active Schedule" #pickListSchedule>
+          <ng-template let-game pTemplate="item">
+            <div class="d-flex justify-content-between">
+              <p-image height="50px" [src]="game.boxArt" alt="Image"></p-image>
+              <div>
+                {{ game.title }} - {{ game.titleGameTimes[0].label }} - {{ game.titleGameTimes[0].time }}
+              </div>
+            </div>
+          </ng-template>
+        </p-pickList>
+      </div>
+      <hr class="hr">
+
       <!-- Select Game -->
       <div class="mb-3">
         <div class="d-flex justify-content-between">
@@ -386,7 +440,7 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowGameSelect();">Show/Hide</button>
+          <p-toggleButton [(ngModel)]="showGameSelect" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
         </div>
         <div class="" *ngIf="showGameSelect">
           <ngx-masonry [options]="{ gutter: 10, percentPosition: true }" [ordered]="true">
@@ -441,7 +495,7 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-sm btn-dark" (click)="toggleShowGameTracking();">Show/Hide</button>
+          <p-toggleButton [(ngModel)]="showGameTracking" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
         </div>
         <div class="" *ngIf="showGameTracking">
           <app-game-tracking></app-game-tracking>
@@ -699,3 +753,4 @@
     </div>
   </div>
 </ng-template>
+<p-toast></p-toast>

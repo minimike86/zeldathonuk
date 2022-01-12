@@ -11,15 +11,15 @@ export class ZeldathonBackendService {
   }
 
   scrapeFacebookFundraiser(facebookFundraiserId: number): Observable<FacebookFundraisingDetails> {
-    return this.http.get<FacebookFundraisingDetails>(`http://localhost:3000/scrape/facebook/fundraiser/${facebookFundraiserId}`);
+    return this.http.get<FacebookFundraisingDetails>(`http://localhost:3000/facebook/fundraiser/${facebookFundraiserId}`);
   }
 
   scrapeTwitterTweetNewDonation(donationTweet: DonationTweet): Observable<any> {
-    return this.http.post(`http://localhost:3000/scrape/twitter/tweet/newDonation`, donationTweet);
+    return this.http.post(`http://localhost:3000/twitter/tweet/newDonation`, donationTweet);
   }
 
   scrapeTwitterTweet(tweetContent: string): Observable<any> {
-    return this.http.post(`http://localhost:3000/scrape/twitter/tweet`, tweetContent);
+    return this.http.post(`http://localhost:3000/twitter/tweet`, tweetContent);
   }
 
 }

@@ -10,4 +10,9 @@
 <body class="d-flex flex-column flex-grow-1" style="font-family: 'Open Sans', sans-serif;">
   <app-root class="d-flex flex-column flex-grow-1 overflow-hidden"></app-root>
 </body>
+<script>
+  if (global === undefined) {
+    var global = window;
+  }
+</script>
 </html>

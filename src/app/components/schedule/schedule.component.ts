@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TwitchService } from '../../services/twitch-service/twitch-service.service';
+import { HowLongToBeatService } from '../../services/howlongtobeat-service/howlongtobeat.service';
 
 import { faFacebook } from '@fortawesome/free-brands-svg-icons';
 
@@ -20,8 +21,9 @@ export class ScheduleComponent implements OnInit {
   public now: Date;
   public isLive = false;
 
-  constructor(private router: Router,
-              private twitchService: TwitchService) {
+  constructor( private router: Router,
+               private twitchService: TwitchService,
+               private hltbService: HowLongToBeatService ) {
   }
 
   ngOnInit() {
@@ -45,14 +47,6 @@ export class ScheduleComponent implements OnInit {
 
   hasBeenPlayed(index: number): boolean {
     return (this.gameList[index]?.startDate.getTime() <= this.now.getTime());
-  }
-
-  donateFacebook() {
-    window.open('https://www.facebook.com/donate/5194665980557244/?fundraiser_source=https://www.zeldathon.co.uk/', '_blank');
-  }
-
-  donateJustGiving() {
-    window.open('https://www.justgiving.com/fundraising/zeldathonuk-gameblast2022', '_blank');
   }
 
   getGames(): Game[] {
