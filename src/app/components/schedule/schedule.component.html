@@ -20,11 +20,6 @@
                 Console
               </div>
             </th>
-            <th scope="col">
-              <div class="d-none d-md-block">
-                Timeline
-              </div>
-            </th>
             <th scope="col">Game</th>
             <th scope="col">
               <div class="d-none d-md-block">
@@ -35,38 +30,30 @@
         </thead>
         <tbody>
 
-          <tr *ngFor="let game of gameList; let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
+          <tr *ngFor="let game of (activeSchedule$ | async); let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
 
             <td class="align-middle">
               <div class="">
-                {{ game.startDate | date:'EEE dd' }}
+                {{ calculateStartDate(i) | date:'EEE dd' }}
               </div>
               <div class="text-white-50">
-                {{ game.startDate | date:'MMM yyyy' }}
+                {{ calculateStartDate(i) | date:'MMM yyyy' }}
               </div>
             </td>
 
             <td class="align-middle">
               <div class="">
-                {{ game.startDate | date:'hh:mm' }}
+                {{ calculateStartDate(i) | date:'hh:mm' }}
               </div>
               <div class="text-white-50">
-                {{ game.startDate | date:'aa' }}
+                {{ calculateStartDate(i) | date:'aa' }}
               </div>
             </td>
 
             <td class="align-middle text-center">
               <div class="d-none d-md-block">
                 <div class="badge rounded-pill bg-secondary p-2">
-                  {{ game.console }}
-                </div>
-              </div>
-            </td>
-
-            <td class="align-middle text-center">
-              <div class="d-none d-md-block">
-                <div class="badge rounded-pill bg-light text-black p-2">
-                  {{ game.timeline }}
+                  {{ game.platform }}
                 </div>
               </div>
             </td>
@@ -74,12 +61,17 @@
             <td class="align-middle">
               <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex flex-column me-2">
-                  <img [src]="game.boxArt" [alt]="game.name + ' Cover Art'" style="max-width: 50px;"
-                       [title]="game.name + ' Cover Art'">
+                  <img [src]="game.gameDetail.boxArt" [alt]="game.gameDetail.title + ' Cover Art'" style="max-width: 50px;"
+                       [title]="game.gameDetail.title + ' Cover Art'">
                 </div>
                 <div class="text-center w-100">
                   <div class="mb-1">
-                    {{ game.name }} ({{ game.releaseDate }})
+                    {{ game.gameDetail.title }}
+                    ({{ (game.gameDetail.detail.releases.EU?.length >= 1 ?
+                           game.gameDetail.detail.releases.EU :
+                           game.gameDetail.detail.releases.NA?.length >= 1 ?
+                             game.gameDetail.detail.releases.NA :
+                             game.gameDetail.detail.releases.JP) | date:'yyyy' }})
                     <ng-container *ngIf="hasBeenPlayed(i) && !isCurrentlyPlaying(i)">
                         <span class="badge bg-warning m-2">
                           COMPLETED
@@ -94,18 +86,24 @@
                       </div>
                     </ng-container>
                   </div>
-                  <ng-container *ngFor="let badge of game.extraBadges">
+                  <ng-container *ngFor="let badge of game.badges">
                     <ng-container *ngIf="badge.url">
-                        <span class="badge m-2" [ngClass]="badge.type">
-                          <a class="text-white" [href]="badge.url" target="_blank">{{ badge.text }}</a>
+                        <span class="badge m-1" [ngClass]="badge.type" [title]="badge.tooltip">
+                          <a class="text-white" [href]="badge.url" target="_blank">{{ badge.name }}</a>
                         </span>
                     </ng-container>
                     <ng-container *ngIf="!badge.url">
-                        <span class="badge m-2" [ngClass]="badge.type">
-                          {{ badge.text }}
+                        <span class="badge m-1" [ngClass]="badge.type" [title]="badge.tooltip">
+                          {{ badge.name }}
                         </span>
                     </ng-container>
                   </ng-container>
+                  <span class="badge m-2 bg-light">
+                      <a target="_blank" class="text-dark" title="How long to beat (Rushed)"
+                         [href]="'https://howlongtobeat.com/game?id=' + game.gameDetail.id">
+                        {{ getTimeToBeatMainStoryRushed(game.gameDetail) }}
+                      </a>
+                    </span>
                 </div>
               </div>
             </td>
@@ -113,7 +111,14 @@
             <td class="align-middle text-center">
               <div class="d-none d-md-block">
                 <ng-container *ngFor="let runner of game.runners">
-                  <a [href]="runner.channelUrl" target="_blank"><span class="badge rounded-pill bg-secondary p-2">{{ runner.name }}</span></a>
+                  <ng-container *ngIf="runner.channelUrl.length >= 1">
+                    <a [href]="runner.channelUrl" target="_blank">
+                      <span class="badge rounded-pill bg-secondary p-2 m-1">{{ runner.name }}</span>
+                    </a>
+                  </ng-container>
+                  <ng-container *ngIf="runner.channelUrl.length === 0">
+                    <span class="badge rounded-pill bg-secondary p-2 m-1">{{ runner.name }}</span>
+                  </ng-container>
                 </ng-container>
               </div>
             </td>

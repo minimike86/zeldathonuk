@@ -2,10 +2,10 @@ import { AfterViewInit, Component, Injectable, OnInit } from '@angular/core';
 import { BehaviorSubject, from, interval, Observable, of } from 'rxjs';
 import { OmnibarContentService } from '../../../services/omnibar-content-service/omnibar-content-service.service';
 import { JgService } from '../../../services/jg-service/jg-service.service';
-import { FundraisingPageDonations, JustGivingDonation } from '../../../services/jg-service/fundraising-page';
-import {TrackedDonation, TrackedDonationId} from '../../../services/firebase/donation-tracking/tracked-donation';
+import { JustGivingDonation } from '../../../services/jg-service/fundraising-page';
+import { TrackedDonation, TrackedDonationId } from '../../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../../services/firebase/donation-tracking/donation-tracking.service';
-import {concatMap, delay, filter, finalize, map, reduce, skipUntil, tap} from 'rxjs/operators';
+import { concatMap, delay, finalize, map } from 'rxjs/operators';
 import firebase from 'firebase/compat/app';
 import Timestamp = firebase.firestore.Timestamp;
 import {
@@ -13,9 +13,9 @@ import {
   FacebookFundraisingDetails,
   ZeldathonBackendService
 } from '../../../services/zeldathon-backend-service/zeldathon-backend-service.service';
-import {sha256} from 'js-sha256';
-import {DonationHighlightService} from '../../../services/firebase/donation-highlight-service/donation-highlight-service.service';
-import {environment, jgEnvironment} from '../../../../environments/environment';
+import { sha256 } from 'js-sha256';
+import { DonationHighlightService } from '../../../services/firebase/donation-highlight-service/donation-highlight-service.service';
+import { jgEnvironment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-omnibar',

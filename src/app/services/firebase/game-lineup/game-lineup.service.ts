@@ -1,22 +1,29 @@
 import { Injectable } from '@angular/core';
-import {AngularFirestore, AngularFirestoreCollection} from '@angular/fire/compat/firestore';
-import {GameLineUp, GameLineUpId} from './game-lineup';
-import {GameItems, GameItemsId} from '../game-item/game-item';
-import {Observable, pipe} from 'rxjs';
-import {map, switchMap, take} from 'rxjs/operators';
-import {ZeldaGame} from '../../../models/zelda-game';
+import { AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument } from '@angular/fire/compat/firestore';
+import { GameLineUp, GameLineUpId } from './game-lineup';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { ScheduledVideoGame, VideoGame } from '../../../models/video-game';
+import firebase from 'firebase/compat/app';
+import FieldValue = firebase.firestore.FieldValue;
+import { Timestamp } from '@firebase/firestore';
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameLineupService {
   private gameLineUpCollection: AngularFirestoreCollection<GameLineUp>;
+  private availableGamesDoc: AngularFirestoreDocument<GameLineUp>;
+  private activeScheduleDoc: AngularFirestoreDocument<GameLineUp>;
 
   constructor(private db: AngularFirestore) {
     this.gameLineUpCollection = db.collection<GameLineUp>('/game-lineup');
+    this.availableGamesDoc = this.gameLineUpCollection.doc('AVAILABLE-GAMES');
+    this.activeScheduleDoc = this.gameLineUpCollection.doc('ACTIVE-SCHEDULE');
   }
 
-  getGameLineUp(): Observable<GameLineUp[]> {
+  getGameLineUp(): Observable<GameLineUpId[]> {
     return this.gameLineUpCollection.snapshotChanges().pipe(
       map(actions => actions.map(a => {
         const id = a.payload.doc.id;
@@ -26,24 +33,58 @@ export class GameLineupService {
     );
   }
 
-  addGameToLineUp(keyString: string, zeldaGame: ZeldaGame) {
-    const newGame: GameLineUp = {
-      // @ts-ignore
-      gameLineUp: {
-        [keyString]: {
-          coverArt: zeldaGame.coverArt,
-          gameName: zeldaGame.gameName,
-          gameType: zeldaGame.gameType,
-          gamePlatform: zeldaGame.gamePlatform,
-          gameRelYear: zeldaGame.gameRelYear,
-          gameEstimate: zeldaGame.gameEstimate,
-          gameProgressKey: zeldaGame.gameProgressKey,
-          active: zeldaGame.active,
-          order: zeldaGame.order
-        }
-      }
-    };
-    this.gameLineUpCollection.doc('ChgBotZzXpt8oeRPAmtg').set(newGame, {merge: true}).then();
+  addAvailableGames(zeldaGames: VideoGame[]): void {
+    console.log('addAvailableGames: ', zeldaGames);
+    this.availableGamesDoc.ref.update({
+      availableGames: FieldValue.arrayUnion(...zeldaGames)
+    }).then(() => {
+      console.log('availableGames Document successfully written!');
+    });
+  }
+
+  removeAvailableGames(zeldaGames: VideoGame[]): void {
+    console.log('removeTrackedDonation: ', zeldaGames);
+    this.availableGamesDoc.ref.update({
+      availableGames: FieldValue.arrayRemove(...zeldaGames)
+    }).then(() => {
+      console.log('availableGames Document successfully written!');
+    });
+  }
+
+  updateGameToActiveSchedule(scheduledZeldaGame: ScheduledVideoGame[]): void {
+    console.log('updateGameToActiveSchedule: ', scheduledZeldaGame);
+    this.activeScheduleDoc.ref.update({
+      activeSchedule: FieldValue.arrayUnion(...scheduledZeldaGame)
+    }).then(() => {
+      console.log('activeSchedule Document successfully written!');
+    });
+  }
+
+  purgeActiveSchedule(): void {
+    console.log('purgeActiveSchedule: ');
+    this.activeScheduleDoc.ref.set({
+      activeSchedule: []
+    }, {merge: true}).then(() => {
+      console.log('activeSchedule Document successfully written!');
+    });
+  }
+
+  removeGameFromActiveSchedule(scheduledZeldaGame: ScheduledVideoGame[]): void {
+    console.log('removeTrackedDonation: ', scheduledZeldaGame);
+    this.activeScheduleDoc.ref.update({
+      activeSchedule: FieldValue.arrayRemove(...scheduledZeldaGame)
+    }).then(() => {
+      console.log('activeSchedule Document successfully written!');
+    });
+  }
+
+  updateActiveScheduleStartTimestamp(date: Date): void {
+    console.log('startTimestamp: ', date);
+    this.activeScheduleDoc.ref.update({
+      startTimestamp: Timestamp.fromDate(date)
+    }).then(() => {
+      console.log('startTimestamp Document successfully written!');
+    });
   }
 
 }

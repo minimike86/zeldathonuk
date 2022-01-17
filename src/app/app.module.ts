@@ -11,7 +11,6 @@ import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireAuthModule } from '@angular/fire/compat/auth';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
-import { Ng9OdometerModule } from 'ng9-odometer';
 import { NgxMasonryModule } from 'ngx-masonry';
 import { TableModule } from 'primeng/table';
 import { RippleModule } from 'primeng/ripple';
@@ -27,6 +26,11 @@ import { OverlayPanelModule } from 'primeng/overlaypanel';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { InputTextModule } from 'primeng/inputtext';
 import { ImageModule } from 'primeng/image';
+import { CalendarModule } from 'primeng/calendar';
+import { DynamicDialogModule } from 'primeng/dynamicdialog';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { CheckboxModule } from 'primeng/checkbox';
+import { DropdownModule } from 'primeng/dropdown';
 
 // Environment Variables
 import { environment } from '../environments/environment';
@@ -36,6 +40,7 @@ import { AuthGuardService } from './router/guards/auth-guard.service';
 import { GameItemService } from './services/firebase/game-item/game-item.service';
 import { FirebaseTimerService } from './services/firebase/firebase-timer/firebase-timer.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { DialogService } from 'primeng/dynamicdialog';
 
 /* COMPONENTS */
 import { AppComponent } from './app.component';
@@ -99,6 +104,8 @@ import { FsaFpsAdPanelComponent } from './components/obs/fsa-four-player-split/f
 import { AboutComponent } from './components/about/about.component';
 import { HistoryComponent } from './components/history/history.component';
 import { CharityComponent } from './components/charity/charity.component';
+import { MoveToScheduleDialogComponent } from './components/obs/move-to-schedule-dialog/move-to-schedule-dialog.component';
+import { EditGameDialogComponent } from './components/obs/edit-game-dialog/edit-game-dialog.component';
 
 
 @NgModule({
@@ -163,7 +170,9 @@ import { CharityComponent } from './components/charity/charity.component';
     FsaFpsAdPanelComponent,
     AboutComponent,
     HistoryComponent,
-    CharityComponent
+    CharityComponent,
+    MoveToScheduleDialogComponent,
+    EditGameDialogComponent
   ],
   imports: [
     BrowserModule,
@@ -174,7 +183,6 @@ import { CharityComponent } from './components/charity/charity.component';
     NgbModule,
     FontAwesomeModule,
     CountdownModule,
-    Ng9OdometerModule.forRoot(),
     AngularFireModule.initializeApp(environment.firebase, 'zeldathonuk'),
     AngularFireAuthModule,
     AngularFirestoreModule,
@@ -192,14 +200,20 @@ import { CharityComponent } from './components/charity/charity.component';
     OverlayPanelModule,
     ToggleButtonModule,
     InputTextModule,
-    ImageModule
+    ImageModule,
+    CalendarModule,
+    DynamicDialogModule,
+    SelectButtonModule,
+    CheckboxModule,
+    DropdownModule,
   ],
   providers: [
     AuthGuardService,
     GameItemService,
     FirebaseTimerService,
     ConfirmationService,
-    MessageService
+    MessageService,
+    DialogService
   ],
   bootstrap: [AppComponent]
 })

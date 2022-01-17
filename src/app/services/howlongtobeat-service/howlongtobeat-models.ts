@@ -41,10 +41,10 @@ export interface TimeLabel {
 export interface HowLongToBeatGameDetailInfo {
   description1: string|null;
   description2: string|null;
-  platforms: string|null;
-  genres: string|null;
-  developer: string|null;
-  publisher: string|null;
+  platforms: string[]|null;
+  genres: string[]|null;
+  developer: string[]|null;
+  publisher: string[]|null;
   releases: {
     NA: string|null;
     EU: string|null;

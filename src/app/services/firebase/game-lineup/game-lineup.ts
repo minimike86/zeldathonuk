@@ -1,9 +1,12 @@
-import {ZeldaGame} from '../../../models/zelda-game';
+import {ScheduledVideoGame, VideoGame} from '../../../models/video-game';
+import {Timestamp} from '@firebase/firestore';
 
 export interface GameLineUpId extends GameLineUp {
   id: string;
 }
 
 export interface GameLineUp {
-  gameLineUp: Map<string, ZeldaGame>;
+  availableGames?: VideoGame[];
+  activeSchedule?: ScheduledVideoGame[];
+  startTimestamp?: Timestamp;
 }

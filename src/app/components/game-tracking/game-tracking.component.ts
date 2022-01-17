@@ -3,7 +3,7 @@ import {map} from 'rxjs/operators';
 import {GameItemService} from '../../services/firebase/game-item/game-item.service';
 import {GameItem, GameItemsId} from '../../services/firebase/game-item/game-item';
 import {CurrentlyPlayingService} from '../../services/firebase/currently-playing/currently-playing.service';
-import {ZeldaGame} from '../../models/zelda-game';
+import {VideoGame} from '../../models/video-game';
 import {CurrentlyPlayingId} from '../../services/firebase/currently-playing/currently-playing';
 import {GameLineupService} from '../../services/firebase/game-lineup/game-lineup.service';
 import {Observable} from 'rxjs';
@@ -16,8 +16,8 @@ import {Observable} from 'rxjs';
 export class GameTrackingComponent implements OnInit {
   public currentlyPlayingId: CurrentlyPlayingId;
   public currentlyPlayingId$: Observable<CurrentlyPlayingId>;
-  private gameLineUp: Map<string, ZeldaGame>;
-  public gameLineUp$: Observable<Map<string, ZeldaGame>>;
+  private gameLineUp: VideoGame[];
+  public gameLineUp$: Observable<VideoGame[]>;
   public gameItemsId: GameItemsId[] = [];
   public gameItemsId$: Observable<GameItemsId[]>;
   public gameProgressKey: string;
@@ -34,7 +34,7 @@ export class GameTrackingComponent implements OnInit {
     }));
 
     this.gameLineUp$ = this.gameLineUpService.getGameLineUp().pipe(map(data => {
-      return this.gameLineUp = data[0].gameLineUp;
+      return this.gameLineUp = data.find(x => x.id === 'AVAILABLE-GAMES').availableGames;
     }));
 
     this.gameItemsId$ = this.gameItemService.getGameItemsIds().pipe(map(data => {

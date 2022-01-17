@@ -5,7 +5,7 @@
       <img class="spt-game-img"
            alt="Cover Art"
            [ngStyle]="{ 'top.px': pos }"
-           [src]="gameDesc.coverArt">
+           [src]="zeldaGame.gameDetail.boxArt">
     </div>
 
     <div class="spt-game p-2">
@@ -15,10 +15,10 @@
         <div class="d-flex justify-content-center spt-game-text">
           <div class="d-flex flex-column align-self-center">
             <h1 class="text-center mb-0" style="overflow-wrap: break-word; line-height: 0.95em;">
-              {{ gameDesc.gameName.split(':')[0] + ':' | uppercase }}
+              {{ zeldaGame.gameDetail.title.split(':')[0] + ':' | uppercase }}
             </h1>
             <h1 class="text-center mb-0" style="overflow-wrap: break-word; line-height: 0.95em;">
-              {{ gameDesc.gameName.split(':')[1] | uppercase }}
+              {{ zeldaGame.gameDetail.title.split(':')[1] | uppercase }}
             </h1>
           </div>
         </div>
@@ -26,7 +26,7 @@
         <div class="spt-type">
           <div class="spt-type-text text-center"
                style="width: 100%;">
-            {{ gameDesc.gameType }}
+            {{ zeldaGame.category }}
           </div>
         </div>
 
@@ -36,7 +36,7 @@
                style="height:30px; width: 90%;">
             <div style="width: 33%;">
               <div class="spt-platform-text br-l p-1">
-                {{ gameDesc.gamePlatform }}
+                {{ zeldaGame.gameDetail.detail.platforms }}
               </div>
               <div class="small text-shadow-black">
                 Platform
@@ -44,7 +44,7 @@
             </div>
             <div style="width: 33%;">
               <div class="spt-platform-text align-items-center br-m mx-1 p-1">
-                {{ gameDesc.gameRelYear }}
+                {{ zeldaGame.gameDetail.detail.releases.EU }}
               </div>
               <div class="small text-shadow-black">
                 Release Year
@@ -52,7 +52,7 @@
             </div>
             <div style="width: 33%;">
               <div class="spt-platform-text br-r p-1">
-                {{ gameDesc.gameEstimate }}
+                {{ zeldaGame.gameDetail.titleGameTimes }}
               </div>
               <div class="small text-shadow-black">
                 Estimate

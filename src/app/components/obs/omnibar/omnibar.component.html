@@ -6,7 +6,7 @@
            src="../../../../assets/img/Zeldathon-Logo-WW-white.svg"
            class="px-3 py-2"
            (click)="testDonation()"
-           style="max-width: 90%;" />
+           style="max-width: 90%;">
     </div>
   </div>
   <div class="flex-grow-1">
@@ -25,18 +25,18 @@
       <div class="dtotal p-3">
         <div class="dtotal-odometer-div">
           <span class="dtotal-odometer-pound me-1">&pound;</span>
-          <ng9-odometer class="dtotal-odometer"
-                        [number]="currentDonationTotal$ | async"
-                        [animation]="'slide'"
-                        [duration]="3000"
-                        [format]="'(,ddd).dd'"
-                        [auto]="true"></ng9-odometer>
+<!--          <ng2-odometer class="dtotal-odometer"-->
+<!--                        [number]="currentDonationTotal$ | async"-->
+<!--                        [animation]="'slide'"-->
+<!--                        [duration]="3000"-->
+<!--                        [format]="'(,ddd).dd'"-->
+<!--                        [auto]="true"></ng2-odometer>-->
         </div>
       </div>
       <img [src]="getCharityLogoUrl()"
            alt="charity logo"
            class="charity-logo-img ps-1 pe-3"
-           style="max-width: 120px;" />
+           style="max-width: 120px;">
     </div>
   </div>
 </div>

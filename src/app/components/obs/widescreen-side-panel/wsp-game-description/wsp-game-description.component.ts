@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {ZeldaGame} from '../../../../models/zelda-game';
+import {VideoGame} from '../../../../models/video-game';
 import {interval, Observable, Subscription} from 'rxjs';
 import {CurrentlyPlayingService} from '../../../../services/firebase/currently-playing/currently-playing.service';
 import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
@@ -13,8 +13,8 @@ import {GameLineupService} from '../../../../services/firebase/game-lineup/game-
 })
 export class WspGameDescriptionComponent implements OnInit {
   public gameId: CurrentlyPlayingId;
-  public gameDesc: ZeldaGame = new ZeldaGame('', '', '', '', '', '', '', false, 0);
-  public gameLineUp: Map<string, ZeldaGame>;
+  public zeldaGame: VideoGame = new VideoGame(null, null, null, null, null, 0);
+  public gameLineUp: VideoGame[];
 
   public pos: number;
   public direction: boolean;
@@ -27,14 +27,14 @@ export class WspGameDescriptionComponent implements OnInit {
     this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
       this.gameId = data[0];
       if (this.gameLineUp) {
-        this.gameDesc = this.gameLineUp[this.gameId.index];
+        this.zeldaGame = this.gameLineUp[this.gameId.index];
       }
       // console.log('this.gameId', this.gameId);
     })).subscribe();
 
     this.gameLineupService.getGameLineUp().pipe(map(data => {
-      this.gameLineUp = data[0].gameLineUp;
-      this.gameDesc = this.gameLineUp[this.gameId.index];
+      this.gameLineUp = data.find(x => x.id === 'AVAILABLE-GAMES').availableGames;
+      this.zeldaGame = this.gameLineUp[this.gameId.index];
       // console.log('gameLineUp', this.gameLineUp);
     })).subscribe();
 
