@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between omnibar">
   <div class="" style="z-index: 100;">
-    <div class="d-flex align-items-center omnibar-brand"
+    <div class="d-flex align-items-center omnibar-brand-bm"
          id="brand_logo">
       <img alt="zeldathonuk_brand_logo"
            src="../../../../assets/img/Zeldathon-Logo-WW-white.svg"
@@ -20,12 +20,13 @@
     </div>
   </div>
   <div class="" style="z-index: 100;">
-    <div class="d-flex align-items-center omnibar-donation-total"
+    <div class="d-flex align-items-center omnibar-donation-total-bm"
          id="donation_total_charity_logo">
-      <div class="dtotal p-3">
-        <div class="dtotal-odometer-div">
-          <span class="dtotal-odometer-pound me-1">&pound;</span>
-<!--          <ng2-odometer class="dtotal-odometer"-->
+      <div class="dtotal-bm px-3">
+        <div class="d-flex align-items-center dtotal-odometer-div">
+          <span class="dtotal-odometer-pound-bm me-1">&pound;</span>
+          <div class="dtotal-odometer-bm">10,000</div>
+<!--          <ng2-odometer class="dtotal-odometer-bm"-->
 <!--                        [number]="currentDonationTotal$ | async"-->
 <!--                        [animation]="'slide'"-->
 <!--                        [duration]="3000"-->
@@ -34,6 +35,7 @@
         </div>
       </div>
       <img [src]="getCharityLogoUrl()"
+           (click)="updateCharityLogoUrl()"
            alt="charity logo"
            class="charity-logo-img ps-1 pe-3"
            style="max-width: 120px;">

@@ -1,7 +1,8 @@
-import {AfterContentInit, ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import { AfterContentInit, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CountUpService } from '../../../../services/countup-service/countup.service';
-import {Observable, of} from 'rxjs';
-import {map} from 'rxjs/operators';
+import { GameLineupService } from '../../../../services/firebase/game-lineup/game-lineup.service';
+import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-ssp-timer',
@@ -14,10 +15,13 @@ export class SspTimerComponent implements OnInit, AfterContentInit {
   public timeToShow = 'local';
   public count = 0;
 
+  public startTimestamp: Date;
+
   public localTime = '';
   public totalTime = '';
 
-  constructor( private countUpService: CountUpService,
+  constructor( private gameLineupService: GameLineupService,
+               private countUpService: CountUpService,
                private cdRef: ChangeDetectorRef ) {
   }
 
@@ -25,6 +29,10 @@ export class SspTimerComponent implements OnInit, AfterContentInit {
     this.countUpTimer$ = this.countUpService.getTimer().pipe(map(countUpTimer => {
       return this.countUpTimer = countUpTimer;
     }));
+    this.startTimestamp = new Date();
+    this.gameLineupService.getGameLineUp().subscribe(startTimestamp => {
+      return this.startTimestamp = startTimestamp[0].startTimestamp.toDate();
+    });
   }
 
   ngAfterContentInit(): void {
@@ -62,7 +70,7 @@ export class SspTimerComponent implements OnInit, AfterContentInit {
   }
 
   getTotalTime(): Observable<string> {
-    const startDate = new Date(2021, 1, 20, 9, 0 , 0, 0);
+    const startDate = this.startTimestamp;
     const endDate = new Date();
     const totalTimeInSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
     const hours = Math.floor(totalTimeInSeconds / 3600);

@@ -194,42 +194,6 @@
       </div>
       <hr class="hr">
 
-      <!-- Runner Name -->
-      <div class="mb-3">
-        <div class="d-flex justify-content-between mb-3">
-          <div class="d-flex justify-content-start">
-            <h3 class="text-dark pt-2 me-3">Runner Name</h3>
-            <div class="align-self-end card border-secondary bg-warning mb-2 p-1">
-              <div class="d-flex flex-row">
-                <span class="small me-2">Current Runner:</span>
-                <h6 class="m-0" style="font-weight: 900;">{{ currentRunner !== undefined ? currentRunner.runnerName + ' (Twitch: ' + currentRunner.runnerHasTwitchAccount + ')' : 'fetching...' }}</h6>
-              </div>
-            </div>
-          </div>
-          <p-toggleButton [(ngModel)]="showRunnerName" onIcon="pi pi-eye-slash" offIcon="pi pi-eye"></p-toggleButton>
-        </div>
-        <div class="d-flex" *ngIf="showRunnerName">
-
-          <div class="input-group input-group-lg">
-
-            <div class="input-group input-group-lg mb-3">
-              <div class="input-group-text">
-                <fa-icon [icon]="faTwitch" class="pe-3"></fa-icon>
-                <input style="width: 20px; height: 20px;"
-                       type="checkbox"
-                       title="Is this runner on twitch?" [(ngModel)]="runnerName.runnerHasTwitchAccount">
-              </div>
-              <input type="text" class="form-control" [(ngModel)]="runnerName.runnerName">
-              <button class="btn btn-primary btn-lg" (click)="updateRunner()">Change Runner</button>
-            </div>
-
-
-          </div>
-
-        </div>
-      </div>
-      <hr class="hr">
-
       <!-- Manage Donations -->
       <div class="mb-3">
         <div class="d-flex justify-content-between">

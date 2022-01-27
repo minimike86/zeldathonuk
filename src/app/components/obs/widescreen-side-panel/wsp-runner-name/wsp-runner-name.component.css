@@ -6,6 +6,14 @@
   font-family: 'Passion One', cursive;
 }
 
+.runner-name-bm {
+  width: 90%;
+  background: -webkit-linear-gradient(0deg, #E71347 10%, #DA4471 40%, #E7364B 65%, transparent);
+  color: rgb(225, 225, 225);
+  -webkit-text-stroke: 0.05em black;
+  font-family: 'Passion One', cursive;
+}
+
 .runner-name-mm {
  width: 90%;
  background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%, transparent);

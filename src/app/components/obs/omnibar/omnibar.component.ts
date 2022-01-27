@@ -185,9 +185,9 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
 
   updateCharityLogoUrl(): void {
     if (this.charityLogoSwap) {
-      this.charityLogoUrl = '../../../../assets/img/GB21_logo_for_website.png';
+      this.charityLogoUrl = '../../../assets/img/GB22_Logo_Linear_DarkBGs_Small.png';
     } else {
-      this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
+      this.charityLogoUrl = '../../../assets/img/logo-specialeffect.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
   }

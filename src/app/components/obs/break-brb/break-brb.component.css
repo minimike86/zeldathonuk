@@ -1,6 +1,6 @@
 .break-container {
   height: calc(1080px - 56px);
-  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.75) 20%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%);
+  background: linear-gradient(45deg, #E71347, #DA4471, #E7364B, #DA4471, #E71347);
 }
 
 .break-container:after {
@@ -42,7 +42,7 @@
 
 .break-title-pretext {
   margin-left: 0.2em;
-  font-family: 'Bungee', cursive;
+  font-family: 'Bebas Neue', serif;
   font-size: 2em;
   color: black;
   -webkit-text-fill-color: white; /* Will override color (regardless of order) */

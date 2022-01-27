@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { interval, Observable, Subscription } from 'rxjs';
-import { VideoGame } from '../../../../models/video-game';
+import {interval, Observable, of, Subscription, switchMap} from 'rxjs';
+import {ScheduledVideoGame, VideoGame} from '../../../../models/video-game';
 import { CurrentlyPlayingService } from '../../../../services/firebase/currently-playing/currently-playing.service';
 import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
 import {GameLineupService} from '../../../../services/firebase/game-lineup/game-lineup.service';
 import {map} from 'rxjs/operators';
+import {HowLongToBeatGameDetail} from '../../../../services/howlongtobeat-service/howlongtobeat-models';
 
 @Component({
   selector: 'app-ssp-game-description',
@@ -12,9 +13,10 @@ import {map} from 'rxjs/operators';
   styleUrls: ['./ssp-game-description.component.css']
 })
 export class SspGameDescriptionComponent implements OnInit {
-  public gameId: CurrentlyPlayingId;
-  public zeldaGame: VideoGame = new VideoGame(null, null, null, null, null, 0);
-  public gameLineUp: VideoGame[];
+  public currentGame$: Observable<string>;
+  public currentGame: string;
+  public gameLineUp: ScheduledVideoGame[];
+  public zeldaGame: ScheduledVideoGame;
 
   public pos: number;
   public direction: boolean;
@@ -23,21 +25,6 @@ export class SspGameDescriptionComponent implements OnInit {
 
   constructor( private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService ) {
-
-    this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
-      this.gameId = data[0];
-      if (this.gameLineUp) {
-        this.zeldaGame = this.gameLineUp[this.gameId.index];
-      }
-      // console.log('this.gameId', this.gameId);
-    })).subscribe();
-
-    this.gameLineupService.getGameLineUp().pipe(map(data => {
-      this.gameLineUp = data.find(x => x.id === 'AVAILABLE-GAMES').availableGames;
-      this.zeldaGame = this.gameLineUp[this.gameId.index];
-      // console.log('gameLineUp', this.gameLineUp);
-    })).subscribe();
-
   }
 
   ngOnInit() {
@@ -47,10 +34,25 @@ export class SspGameDescriptionComponent implements OnInit {
     this.subscription = this.secondsCounter$.pipe(map(n => {
       this.updatePos(n);
     })).subscribe();
+
+    this.gameLineupService.getGameLineUp().pipe(map(data => {
+      this.gameLineUp = data.find(x => x.id === 'ACTIVE-SCHEDULE').activeSchedule;
+      this.zeldaGame = this.gameLineUp?.find(x => x.gameProgressKey === this.currentGame);
+    })).subscribe();
+
+    this.currentGame$ = this.currentlyPlayingService.getCurrentlyPlaying().pipe(switchMap(data => {
+      this.currentGame = data[0].index;
+      this.zeldaGame = this.gameLineUp?.find(x => x.gameProgressKey === this.currentGame);
+      return of(this.currentGame);
+    }));
+  }
+
+  getTimeToBeatMainStory(howLongToBeatGameDetail: HowLongToBeatGameDetail) {
+    return howLongToBeatGameDetail?.titleGameTimes?.find(x => x.label === 'Main Story')?.time;
   }
 
   updatePos(n: number) {
-    const maxCount = 750 - 175;
+    const maxCount = 100;
     if (n % maxCount === 0) {
       this.direction = !this.direction;
     }

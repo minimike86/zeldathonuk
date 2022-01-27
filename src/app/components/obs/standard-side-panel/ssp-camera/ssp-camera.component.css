@@ -2,5 +2,6 @@
   height: 350px;
   width: 100%;
   background-color: transparent;
-  border-bottom: 2px solid darkgoldenrod;
+  border-left: 8px solid #E71347;
+  border-right: 8px solid #E71347;
 }

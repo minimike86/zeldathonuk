@@ -1,7 +1,7 @@
 import { Component, Injectable, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { KeyValue } from '@angular/common';
 
-import {BehaviorSubject, from, Observable, of} from 'rxjs';
+import { BehaviorSubject, from, Observable, of } from 'rxjs';
 import { concatMap, finalize, map } from 'rxjs/operators';
 
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -10,8 +10,6 @@ import { CurrentlyPlayingService } from '../../services/firebase/currently-playi
 import { GameLineupService } from '../../services/firebase/game-lineup/game-lineup.service';
 import { FirebaseTimerService } from '../../services/firebase/firebase-timer/firebase-timer.service';
 import { CountUpTimerId } from '../../services/firebase/firebase-timer/count-up-timer';
-import { RunnerNameService } from '../../services/firebase/runner-name/runner-name.service';
-import { RunnerNameId } from '../../services/firebase/runner-name/runner-name';
 import { CountUpService } from '../../services/countup-service/countup.service';
 import { TrackedDonation, TrackedDonationId } from '../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../services/firebase/donation-tracking/donation-tracking.service';
@@ -19,7 +17,7 @@ import { BreakCountdownService } from '../../services/firebase/break-countdown/b
 import { HowLongToBeatService } from '../../services/howlongtobeat-service/howlongtobeat.service';
 import { MessageService } from 'primeng/api';
 
-import {ScheduledVideoGame, VideoGame} from '../../models/video-game';
+import { ScheduledVideoGame, VideoGame } from '../../models/video-game';
 import firebase from 'firebase/compat/app';
 import Timestamp = firebase.firestore.Timestamp;
 
@@ -29,18 +27,14 @@ import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { faPlay, faPause, faStop, faHistory, faBackward, faSyncAlt, faTrash, faDonate } from '@fortawesome/free-solid-svg-icons';
 
 import { JgService } from '../../services/jg-service/jg-service.service';
-import {
-  FundraisingPage,
-  FundraisingPageId,
-  FundraisingPagesService
-} from '../../services/firebase/fundraising-pages/fundraising-pages.service';
+import { FundraisingPage, FundraisingPageId, FundraisingPagesService } from '../../services/firebase/fundraising-pages/fundraising-pages.service';
 import { FundraisingPageDetails, JustGivingDonation } from '../../services/jg-service/fundraising-page';
 import { profanityFilter } from './omnibar/omnibar.component';
-import {HowLongToBeatGameDetail, HowLongToBeatSearchResult} from '../../services/howlongtobeat-service/howlongtobeat-models';
-import {OverlayPanel} from 'primeng/overlaypanel';
-import {PickList} from 'primeng/picklist';
-import {MoveToScheduleDialogComponent} from './move-to-schedule-dialog/move-to-schedule-dialog.component';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
+import { HowLongToBeatGameDetail, HowLongToBeatSearchResult } from '../../services/howlongtobeat-service/howlongtobeat-models';
+import { OverlayPanel } from 'primeng/overlaypanel';
+import { PickList } from 'primeng/picklist';
+import { MoveToScheduleDialogComponent } from './move-to-schedule-dialog/move-to-schedule-dialog.component';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 
 
 @Component({
@@ -78,7 +72,6 @@ export class ObsComponent implements OnInit {
   public showObsLayouts = false;
   public showBreakCountdownDate = false;
   public showTimer = false;
-  public showRunnerName = false;
   public showAddDonation = false;
   public showEditSchedule = false;
   public showGameSelect = false;
@@ -93,10 +86,6 @@ export class ObsComponent implements OnInit {
 
   public breakCountdownDate: string;
   public breakCountdownTime: string;
-
-  public faTwitch = faTwitch;
-  public runnerName: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
-  public currentRunner: RunnerNameId = {id: '', runnerName: '', runnerHasTwitchAccount: false};
 
   public justGivingPages: FundraisingPage[] = [];
   public inputJustGivingPageUrl = '';
@@ -128,6 +117,7 @@ export class ObsComponent implements OnInit {
 
   public dynamicDialogRef: DynamicDialogRef;
 
+  faTwitch = faTwitch;
   faPlay = faPlay;
   faPause = faPause;
   faStop = faStop;
@@ -142,7 +132,6 @@ export class ObsComponent implements OnInit {
                private countUpService: CountUpService,
                private firebaseTimerService: FirebaseTimerService,
                private donationTrackingService: DonationTrackingService,
-               private runnerNameService: RunnerNameService,
                private gameLineupService: GameLineupService,
                private currentlyPlayingService: CurrentlyPlayingService,
                private jgService: JgService,
@@ -162,15 +151,8 @@ export class ObsComponent implements OnInit {
       this.breakCountdownTime = `${this.zeroPad(date.getHours(), 2)}:${this.zeroPad(date.getMinutes(), 2)}:${this.zeroPad(date.getSeconds(), 2)}`;
     })).subscribe();
 
-    this.runnerNameService.getRunnerName().pipe(map(data => {
-      this.runnerName = data[0];
-      this.currentRunner.runnerName = data[0].runnerName;
-      this.currentRunner.runnerHasTwitchAccount = data[0].runnerHasTwitchAccount;
-    })).subscribe();
-
     this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
       this.currentlyPlaying = data[0];
-      // console.log('currentlyPlaying', this.currentlyPlaying, data);
     })).subscribe();
 
     this.gameLineupService.getGameLineUp().pipe(map((data) => {
@@ -364,13 +346,6 @@ export class ObsComponent implements OnInit {
   getPausedTimer(): Observable<string> {
     const pausedTimer: Date = new Date(this.pauseOffset + 500);
     return of(`${this.zeroPad(pausedTimer.getUTCHours(), 2)}:${this.zeroPad(pausedTimer.getUTCMinutes(), 2)}:${this.zeroPad(pausedTimer.getUTCSeconds(), 2)}`);
-  }
-
-  updateRunner() {
-    this.runnerNameService.setRunnerName({
-        'runnerName': this.runnerName.runnerName,
-        runnerHasTwitchAccount: this.runnerName.runnerHasTwitchAccount
-      });
   }
 
   submitTrackedDonation() {

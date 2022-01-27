@@ -1,6 +1,6 @@
 .advertisement-panel-bg-container {
   position: relative;
-  background: radial-gradient(circle, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 75%, rgba(184,134,11,1) 90%, rgba(184,134,11,1) 100%);
+  background: radial-gradient(ellipse closest-corner, rgba(231,19,71,0.75) 0%, rgba(218,68,113,0.85) 30%, rgba(231,54,75,0.85) 60%, rgba(218,68,113,1) 85%, rgba(231,19,71,1) 100%);
 }
 
 .advertisement-panel-bg {

@@ -1,6 +1,8 @@
 .advertisement-panel-bg-container {
   position: relative;
-  background: radial-gradient(circle, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 75%, rgba(184,134,11,1) 90%, rgba(184,134,11,1) 100%);
+  /* background: radial-gradient(circle, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 75%, rgba(184,134,11,1) 90%, rgba(184,134,11,1) 100%); */
+  background: radial-gradient(circle, rgba(231,19,71,0.75) 0%, rgba(218,68,113,0.85) 25%, rgba(231,54,75,1) 75%, rgba(218,68,113,1) 90%, rgba(231,19,71,1) 100%);
+  border-bottom: 8px solid #E71347;
 }
 
 .advertisement-panel-bg {
@@ -28,7 +30,7 @@
 
 .advertisement-panel {
   position: relative;
-  height: calc(420px - 16px);
+  height: calc(424px - 16px);
   width: calc(100% - 16px);
   color: white;
   opacity: 1;
@@ -70,14 +72,14 @@
 .facebook-donation {
   position: relative;
   z-index:1;
-  overflow:hidden;
+  overflow: hidden;
   background-color: #3b5998;
   border: #344e86 solid 2px;
 }
 
 .facebook-donation::before {
   z-index:-1;
-  position:absolute;
+  position: absolute;
   left: 0;
   top: 0;
   content: url("../../../../../assets/img/thumb_icon_header_image_05_2018.png");
@@ -95,7 +97,7 @@
 
 .justgiving-donation::before {
   z-index:-1;
-  position:absolute;
+  position: absolute;
   left: 0;
   top: 0;
   content: url("../../../../../assets/img/JustGiving_Logo-cropped.png");

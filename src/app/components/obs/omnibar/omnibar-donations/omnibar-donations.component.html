@@ -5,18 +5,18 @@
 
       <div id="last-donors-text">
         <div class="d-flex justify-content-start" [ngClass]="slideIn ? 'slide-in-left' : 'slide-out-left'">
-          <div class="d-flex align-self-center up-next-div">
-            <span class="d-flex justify-content-between align-self-center up-next">LAST {{ lastTenDonations.length >= 10 ? '10 DONORS' :
+          <div class="d-flex align-self-center up-next-div-bm">
+            <span class="d-flex justify-content-between align-self-center up-next-bm">LAST {{ lastTenDonations.length >= 10 ? '10 DONORS' :
                                        lastTenDonations.length == 1 ? 'DONOR' :
                                            lastTenDonations.length + ' DONORS' }}</span>
           </div>
-          <div class="up-next-div-triangle"></div>
+          <div class="up-next-div-triangle-bm"></div>
         </div>
       </div>
 
       <div id="donations" class="flex-grow-1">
         <div class="donation-container mx-2">
-          <div class="donation" [@showDonation]=currentState>
+          <div class="donation-bm" [@showDonation]=currentState>
             <div class="h-100 p-1">
               <div class="d-flex justify-content-between flex-fill" style="max-height: 38px;">
                 <div class="d-flex align-self-center" style="max-width: 10%;">

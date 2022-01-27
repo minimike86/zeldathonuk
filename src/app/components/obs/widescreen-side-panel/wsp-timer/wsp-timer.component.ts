@@ -1,35 +1,64 @@
-import {AfterViewInit, Component, OnInit} from '@angular/core';
+import {AfterContentInit, ChangeDetectorRef, Component, OnInit} from '@angular/core';
 import {CountUpService } from '../../../../services/countup-service/countup.service';
 import {map} from 'rxjs/operators';
 import {Observable, of} from 'rxjs';
+import {GameLineupService} from '../../../../services/firebase/game-lineup/game-lineup.service';
 
 @Component({
   selector: 'app-wsp-timer',
   templateUrl: './wsp-timer.component.html',
   styleUrls: ['./wsp-timer.component.css']
 })
-export class WspTimerComponent implements OnInit, AfterViewInit {
+export class WspTimerComponent implements OnInit, AfterContentInit {
   public countUpTimer$: Observable<string>;
   public countUpTimer: string;
+  public timeToShow = 'local';
   public count = 0;
 
-  public localTime$: Observable<string>;
-  public totalTime$: Observable<string>;
+  public startTimestamp: Date;
 
-  constructor( private countUpService: CountUpService ) {
+  public localTime = '';
+  public totalTime = '';
+
+  constructor( private gameLineupService: GameLineupService,
+               private countUpService: CountUpService,
+               private cdRef: ChangeDetectorRef ) {
   }
 
   ngOnInit() {
     this.countUpTimer$ = this.countUpService.getTimer().pipe(map(countUpTimer => {
       return this.countUpTimer = countUpTimer;
     }));
+    this.startTimestamp = new Date();
+    this.gameLineupService.getGameLineUp().subscribe(startTimestamp => {
+      return this.startTimestamp = startTimestamp[0].startTimestamp.toDate();
+    });
   }
 
-  ngAfterViewInit(): void {
+  ngAfterContentInit(): void {
     setInterval(() => {
-      this.localTime$ = this.getLocalTime();
-      this.totalTime$ = this.getTotalTime();
+      if (this.count >= 0 && this.count < 30) {
+        this.timeToShow = 'total';
+        this.count++;
+      } else if (this.count >= 30 && this.count < 60) {
+        this.timeToShow = 'local';
+        this.count++;
+      } else {
+        this.count = 0;
+      }
+
+      this.getLocalTime().pipe(map(time => {
+        this.localTime = time;
+        this.cdRef.detectChanges();
+      })).subscribe();
+
+      this.getTotalTime().pipe(map(time => {
+        this.totalTime = time;
+        this.cdRef.detectChanges();
+      })).subscribe();
+
     }, 1000);
+
   }
 
   getLocalTime(): Observable<string> {
@@ -41,7 +70,7 @@ export class WspTimerComponent implements OnInit, AfterViewInit {
   }
 
   getTotalTime(): Observable<string> {
-    const startDate = new Date(2021, 1, 20, 9, 0 , 0, 0);
+    const startDate = this.startTimestamp;
     const endDate = new Date();
     const totalTimeInSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
     const hours = Math.floor(totalTimeInSeconds / 3600);

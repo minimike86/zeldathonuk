@@ -7,7 +7,18 @@
 
 .donation {
   background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%),
-                              url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
+  url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
+  border-radius: 5px;
+  height: 44px;
+  width: 70%;
+  margin-left: 20%;
+  margin-top: 6px;
+  z-index: -5;
+}
+
+.donation-bm {
+  background: radial-gradient(ellipse closest-corner, rgba(231,19,71,0.75) 0%, rgba(218,68,113,0.85) 30%, rgba(231,54,75,0.85) 60%, rgba(218,68,113,1) 85%, rgba(231,19,71,1) 100%),
+  url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
   border-radius: 5px;
   height: 44px;
   width: 70%;
@@ -24,9 +35,9 @@
 
 .donation-text {
   color: #f5f5f5;
-  -webkit-text-stroke: 0.045em black;
+  -webkit-text-stroke: 0.025em black;
   font-size: 32px;
-  font-family: 'Bungee', cursive;
+  font-family: 'Passion One', cursive;
   z-index: 0;
 }
 
@@ -48,11 +59,28 @@
   max-height: 56px;
 }
 
+.up-next-div-bm {
+  background: linear-gradient(-45deg, #E71347, #E7364B, #DA4471);
+  width: 300px;
+  height: 56px;
+  max-height: 56px;
+}
+
 .up-next {
   font-family: 'Bungee', cursive;
   font-size: 28px;
   color: white;
   -webkit-text-stroke: 0.040em saddlebrown;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2;
+}
+
+.up-next-bm {
+  font-family: 'Bungee', cursive;
+  font-size: 28px;
+  color: white;
+  -webkit-text-stroke: 0.040em #E71347;
   margin-left: auto;
   margin-right: auto;
   z-index: 2;
@@ -67,6 +95,18 @@
   border-style: solid;
   border-width: 28px 0 28px 24px;
   border-color: transparent transparent transparent darkgoldenrod;
+  z-index: 2;
+}
+
+.up-next-div-triangle-bm {
+  width: 0;
+  height: 0;
+  position: relative;
+  top: 0;
+  left: 0;
+  border-style: solid;
+  border-width: 28px 0 28px 24px;
+  border-color: transparent transparent transparent #E71347;
   z-index: 2;
 }
 

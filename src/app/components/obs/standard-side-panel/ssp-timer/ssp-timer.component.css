@@ -10,10 +10,16 @@
   background: -webkit-linear-gradient(0deg, darkgoldenrod 10%, goldenrod 40%, darkgoldenrod 65%, transparent);
 }
 
+.timer-inner-bm {
+  height: 100%;
+  width: 90%;
+  background: -webkit-linear-gradient(0deg, #E71347 10%, #DA4471 40%, #E7364B 65%, rgba(218,68,113, 0.80) 80%, rgba(231,19,71, 0.65) 90%, transparent);
+}
+
 .timer-text {
   background: rgb(225, 225, 225);
   -webkit-background-clip: text;
-  -webkit-text-stroke: 0.035em black;
+  -webkit-text-stroke: 0.025em black;
   font-size: 3em;
   font-family: 'Bungee', cursive;
   color: transparent;

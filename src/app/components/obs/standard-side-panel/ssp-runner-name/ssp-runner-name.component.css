@@ -7,6 +7,16 @@
   z-index: 5;
 }
 
+.runner-name-bm {
+  width: 90%;
+  height: 56px;
+  background: -webkit-linear-gradient(0deg, #E71347 10%, #DA4471 40%, #E7364B 65%, rgba(218,68,113, 0.80) 80%, rgba(231,19,71, 0.65) 90%, transparent);
+  color: rgb(225, 225, 225);
+  -webkit-text-stroke: 0.05em black;
+  font-family: 'Passion One', cursive;
+  z-index: 5;
+}
+
 .runner-name-mm {
   width: 90%;
   background: -webkit-linear-gradient(0deg, #270266 10%, #3C0C78 40%, #782F99 65%, #371276);

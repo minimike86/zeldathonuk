@@ -1,5 +1,4 @@
 .side-panel {
-  border-right: 2px solid darkgoldenrod;
 }
 
 .screen {
@@ -16,10 +15,11 @@
 
 .small-screen {
   height: 220px;
-  border: darkgoldenrod 2px solid;
-  border-left: darkgoldenrod 0 solid;
+  border: #E71347 4px solid;
+  border-top: #E71347 6px solid;
+  border-left: #E71347 0 solid;
 }
 
 .small-screen:last-child {
-  border-right: 0;
+  border-right: #E71347 4px solid;
 }

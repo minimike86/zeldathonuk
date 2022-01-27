@@ -1,9 +1,9 @@
 .side-panel {
-  border-right: 2px solid darkgoldenrod;
   height:1024px;
   width:479px;
   max-height:1024px;
   max-width:479px;
+  border-top: 8px solid #E71347;
 }
 
 .gameplay-panel {
@@ -25,7 +25,6 @@
 }
 
 .adv-panel {
-  border-top: 1px solid darkgoldenrod;
   height:550px;
   width:479px;
   max-height:550px;
@@ -33,12 +32,11 @@
 }
 
 .bottom-panel {
-  border-top: 2px solid darkgoldenrod;
   height:215px;
   width:1442px;
   max-height:215px;
   max-width:1442px;
-  background: -webkit-linear-gradient(0deg, darkgoldenrod 45%, transparent 55%, transparent);
+  background: -webkit-linear-gradient(0deg, #E71347 45%, transparent 55%, transparent);
 }
 
 .name-timer-panel-container {
@@ -51,12 +49,12 @@
 }
 
 .name-timer-panel {
-  border-right: 2px solid darkgoldenrod;
-  height: 214px;
+  height: 215px;
+  max-height: 215px;
   width: 691px;
-  max-height: 214px;
   max-width: 691px;
-  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%), url("../../../../assets/img/obs-bg/hylian-symbol-1.png");
+  background: radial-gradient(ellipse closest-corner, rgba(231,19,71,0.75) 0%, rgba(218,68,113,0.85) 30%, rgba(231,54,75,0.85) 60%, rgba(218,68,113,1) 85%, rgba(231,19,71,1) 100%),
+  url("../../../../assets/img/obs-bg/hylian-symbol-1.png");
   background-size: cover;
   background-position: bottom;
 }
@@ -79,5 +77,4 @@
   width:750px;
   max-height:215px;
   max-width:750px;
-  top: -1px;
 }
