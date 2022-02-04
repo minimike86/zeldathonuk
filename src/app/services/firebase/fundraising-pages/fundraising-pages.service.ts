@@ -57,6 +57,7 @@ export interface FundraisingPage {
   pageId: number;
   pageShortName: string;
   eventDate: Timestamp;
+  expiryDate: Timestamp;
   image: JgImage;
   title: string;
   story: string;

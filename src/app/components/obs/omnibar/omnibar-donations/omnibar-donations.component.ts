@@ -51,6 +51,7 @@ import {TrackedDonation, TrackedDonationId} from '../../../../services/firebase/
 export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   public trackedDonationArray$: Observable<TrackedDonation[]>;
   public lastTenDonations: TrackedDonation[] = [];
+  public showingDonations = false;
   public highlightedDonation: TrackedDonation;
   public timeAgo: TimeAgo;
   public currentState = 'slideInFromRight';
@@ -69,7 +70,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
 
     this.trackedDonationArray$ = this.donationTrackingService.getTrackedDonationArray().pipe(
       map((trackedDonationIds: TrackedDonationId[]) => {
-        return trackedDonationIds.find(x => x.id === 'TEST-DONATIONS')?.donations;
+        return trackedDonationIds.find(x => x.id === 'DONATIONS')?.donations;
       }),
       map((trackedDonations: TrackedDonation[]) => {
         trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => {
@@ -87,7 +88,9 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
             donationSource: x.donationSource
           };
         }));
-        this.displayDonations();
+        if (!this.showingDonations) {
+          this.displayDonations();
+        }
         return trackedDonations;
       })
     );
@@ -100,34 +103,49 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
     const initialWait: number = 2 * 1000;
     const slideInFromRightDuration: number = 0.5 * 1000;
     const slideOutToLeftDuration: number = 1 * 1000;
-    const showDonationDuration: number = 10 * 1000;
+    const showDonationDuration: number = 5 * 1000;
 
     // iterate donations
-    // console.log('lastTenDonations', this.lastTenDonations);
     if (this.lastTenDonations.length >= 1) {
+      this.showingDonations = true;
 
       from(this.lastTenDonations).pipe(
+        tap(() => console.log('1. delay 2 secs')),
         delay(initialWait),
+        tap(() => console.log('2. concatMap')),
         concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
+          tap(() => console.log('3. delay 1/5 secs')),
           delay(slideInFromRightDuration),
+          tap(() => console.log('4. showDonation')), // dodgy
           tap((donationItem: TrackedDonation) => {
             this.showDonation(donationItem);
           }),
+          tap(() => console.log('5. delay 5 secs')),
           delay(showDonationDuration),
+          tap(() => console.log('6. hideDonation')), // dodgy
           tap(() => {
             this.hideDonation();
           }),
+          tap(() => console.log('7. delay 1 secs')),
           delay(slideOutToLeftDuration)
         )),
+        tap(() => console.log('8. finalize')),
         finalize(() => {
-          // this.displayDonations();
-          this.showNextOmnibarComponent();
+          console.log('9. donationShown');
+          setTimeout(() => {
+            this.slideIn = !this.slideIn;
+            this.omnibarContentService.setCurrentOmnibarContentId(4, 2 * 1000);
+            this.showingDonations = false;
+          }, 1 * 1000);
         })
       ).subscribe();
 
     } else {
 
-      this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 30);
+      setTimeout(() => {
+        this.slideIn = !this.slideIn;
+        this.omnibarContentService.setCurrentOmnibarContentId(4, 2 * 1000);
+      }, 15 * 1000);
 
     }
 
@@ -142,13 +160,6 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
   hideDonation() {
     this.currentState = 'slideInFromRight';
     // console.log('hiding donation');
-  }
-
-  // next omnibar component
-  showNextOmnibarComponent() {
-    this.slideIn = !this.slideIn;
-    this.omnibarContentService.setCurrentOmnibarContentId(4, 1000 * 5);
-    // console.log('next omnibar component', this.lastTenDonations.length);
   }
 
 }

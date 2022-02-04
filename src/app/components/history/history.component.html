@@ -26,8 +26,9 @@
             </div>
           </ng-template>
           <p>{{ timelineEvent.description }}</p>
-          <div class="row row-cols-2 mx-2">
+          <div class="row row-cols-3 mx-2">
             <a class="col" *ngIf="timelineEvent.facebookUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.facebookUrl" target="_blank">Facebook Fundraiser Page</a>
+            <a class="col" *ngIf="timelineEvent.tiltifyUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.tiltifyUrl" target="_blank">Tiltify Page</a>
             <a class="col" *ngIf="timelineEvent.justGivingUrl !== ''" class="btn btn-link text-decoration-none" [href]="timelineEvent.justGivingUrl" target="_blank">JustGiving Page</a>
           </div>
         </p-card>

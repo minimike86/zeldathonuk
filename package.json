@@ -43,7 +43,6 @@
     "masonry-layout": "^4.2.2",
     "mixin-deep": "^2.0.1",
     "moment": "^2.29.1",
-    "odometer": "^0.4.8",
     "ngx-countdown": "^13.0.0",
     "ngx-masonry": "^13.0.0",
     "npm": "^8.3.0",

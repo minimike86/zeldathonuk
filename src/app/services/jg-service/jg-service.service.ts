@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {EMPTY, iif, Observable, of, pipe, range} from 'rxjs';
+import { Observable, of, range } from 'rxjs';
 import { jgEnvironment } from '../../../environments/environment';
-import {FundraisingPageDetails, FundraisingPageDonations, JustGivingDonation, Pagination} from './fundraising-page';
-import {delay, finalize, map, mergeMap, switchMap, tap} from 'rxjs/operators';
+import { FundraisingPageDetails, FundraisingPageDonations, JustGivingDonation } from './fundraising-page';
+import { delay, map, switchMap, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'

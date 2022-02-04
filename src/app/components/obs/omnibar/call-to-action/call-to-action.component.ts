@@ -21,8 +21,8 @@ export class CallToActionComponent implements OnInit {
   ngOnInit() {
     setTimeout(() => {
       this.slideIn = !this.slideIn;
-      this.omnibarContentService.setCurrentOmnibarContentId(3, 1000 * 5);
-    }, 1000 * 10); // 30
+      this.omnibarContentService.setCurrentOmnibarContentId(3, 2 * 1000);
+    }, 15 * 1000); // 30
   }
 
 }

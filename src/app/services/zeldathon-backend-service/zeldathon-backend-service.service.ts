@@ -25,17 +25,36 @@ export class ZeldathonBackendService {
 }
 
 export interface FacebookFundraisingDetails {
+  fundraiserID: number;
+  fundraiserDetails: FacebookFundraiserDetails;
   progressCard: FacebookProgressCard;
-  uniqueDonorCount: number;
   donations: FacebookDonation[];
 }
 
-export interface FacebookProgressCard {
+interface FacebookFundraiserDetails {
+  title: string;
+  story: string;
+  coverImage: string;
+  charity: string;
+  charityUrl: string;
+  fundraiser: string;
+  fundraiserUrl: string;
+  eventDate: string;
+  expiryDate: string;
+  currencyCode: string;
+  currencySymbol: string;
+}
+
+interface FacebookProgressCard {
   total: number;
   goal: number;
+  donated: number;
+  invited: number;
+  shared: number;
 }
 
 export interface FacebookDonation {
+  id: string;
   name: string;
   currency: string;
   amount: number;
@@ -43,6 +62,7 @@ export interface FacebookDonation {
   imgSrc?: string;
   imgDataUri?: string;
   date: Date;
+  message: string;
 }
 
 interface DonationTweet {

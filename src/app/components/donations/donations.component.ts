@@ -26,20 +26,23 @@ export class DonationsComponent implements OnInit {
     TimeAgo.addLocale(en);
     this.timeAgo = new TimeAgo('en-GB');
     this.trackedDonationIds$ = this.donationTrackingService.getTrackedDonationArray().pipe(
-      map((trackedDonationId: TrackedDonationId[]) => trackedDonationId.find(x => x.id === 'TEST-DONATIONS')),
+      map((trackedDonationId: TrackedDonationId[]) => trackedDonationId.find(x => x.id === 'DONATIONS')),
       pluck('donations'),
       map((trackedDonations: TrackedDonation[]) => {
         // console.log('trackedDonations:', trackedDonations);
         if (trackedDonations) {
           trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => b.donationAmount - a.donationAmount);
           for (const donation of trackedDonations) {
-            donation.imgUrl = (donation.imgUrl !== 'undefined') ? donation.imgUrl : this.getRandomThumbnailImageUrl();
+            donation.imgUrl = (donation.imgUrl === 'undefined' || donation.imgUrl === 'unknown' || donation.imgUrl === '')
+              ? this.getRandomThumbnailImageUrl() : donation.imgUrl;
           }
           return trackedDonations;
         }
       })
     );
   }
+
+
 
   getRandomThumbnailImageUrl(): string {
     const imageUrls: string[] = [];

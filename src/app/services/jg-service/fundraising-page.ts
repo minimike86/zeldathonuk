@@ -18,6 +18,7 @@ export interface FundraisingPageDetails {
   showEventDate: boolean;
   eventDate: string;
   showExpiryDate: boolean;
+  expiryDate: string;
   fundraisingTarget: string;
   totalRaisedPercentageOfFundraisingTarget: string;
   totalRaisedOffline: string;

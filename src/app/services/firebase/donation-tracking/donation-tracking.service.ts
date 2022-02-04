@@ -15,6 +15,8 @@ import {FacebookDonation} from '../../zeldathon-backend-service/zeldathon-backen
 import {sha256} from 'js-sha256';
 
 import {TrackedDonation, TrackedDonationArray, TrackedDonationId} from './tracked-donation';
+import {TiltifyCampaignDonation} from '../../tiltify-service/tiltify.service';
+import {FundraisingPage} from '../fundraising-pages/fundraising-pages.service';
 
 
 @Injectable({
@@ -30,10 +32,10 @@ export class DonationTrackingService {
                private db: AngularFirestore ) {
     this.trackedDonations = [];
     this.trackedDonationCollection = db.collection<TrackedDonationArray>('/donations');
-    this.trackedDonationDoc = this.trackedDonationCollection.doc('TEST-DONATIONS');
+    this.trackedDonationDoc = this.trackedDonationCollection.doc('DONATIONS');
     this.getTrackedDonationArray().subscribe( data => {
       this.trackedDonationArray = data;
-      this.trackedDonations = data.find(x => x.id === 'TEST-DONATIONS').donations;
+      this.trackedDonations = data.find(x => x.id === 'DONATIONS').donations;
     });
   }
 
@@ -88,19 +90,35 @@ export class DonationTrackingService {
     };
   }
 
-  convertFacebookDonationToTrackedDonation(donation: FacebookDonation): TrackedDonation {
+  convertFacebookDonationToTrackedDonation(pageShortName: string, donation: FacebookDonation): TrackedDonation {
     return {
-      id: sha256(donation.name + donation.amount + donation.date),
+      id: donation.id,
       name: (donation.name !== null && donation.name !== undefined) ? donation.name : donation.name,
       imgUrl: donation.imgDataUri !== undefined ? donation.imgDataUri : 'undefined',
-      message: '',
+      message: donation.message,
       currency: donation.currency,
       donationAmount: typeof(donation.amount) === 'string'
         ? parseFloat(donation.amount) : donation.amount,
       giftAidAmount: 0,
       donationSource: 'Facebook',
-      pageShortName: 'Facebook',
+      pageShortName: pageShortName,
       donationDate: Timestamp.fromDate(new Date(donation.date))
+    };
+  }
+
+  convertTiltifyCampaignDonationToTrackedDonation(fundraisingPage: FundraisingPage, donation: TiltifyCampaignDonation): TrackedDonation {
+    return {
+      id: donation.id,
+      name: (donation.name !== null && donation.name !== undefined) ? donation.name : donation.name,
+      imgUrl: fundraisingPage.image.url !== undefined ? fundraisingPage.image.url : 'undefined',
+      message: donation.comment,
+      currency: 'GBP',
+      donationAmount: typeof(donation.amount) === 'string'
+        ? parseFloat(donation.amount) : donation.amount,
+      giftAidAmount: 0,
+      donationSource: 'Tiltify',
+      pageShortName: fundraisingPage.pageShortName,
+      donationDate: Timestamp.fromDate(new Date(donation.completedAt))
     };
   }
 

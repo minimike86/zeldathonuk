@@ -42,19 +42,19 @@ export class GameLineupService {
     });
   }
 
-  removeAvailableGames(zeldaGames: VideoGame[]): void {
-    console.log('removeTrackedDonation: ', zeldaGames);
+  removeAvailableGames(videoGames: VideoGame[]): void {
+    console.log('removeTrackedDonation: ', videoGames);
     this.availableGamesDoc.ref.update({
-      availableGames: FieldValue.arrayRemove(...zeldaGames)
+      availableGames: FieldValue.arrayRemove(...videoGames)
     }).then(() => {
       console.log('availableGames Document successfully written!');
     });
   }
 
-  updateGameToActiveSchedule(scheduledZeldaGame: ScheduledVideoGame[]): void {
-    console.log('updateGameToActiveSchedule: ', scheduledZeldaGame);
+  updateGameToActiveSchedule(scheduledVideoGame: ScheduledVideoGame[]): void {
+    console.log('updateGameToActiveSchedule: ', scheduledVideoGame);
     this.activeScheduleDoc.ref.update({
-      activeSchedule: FieldValue.arrayUnion(...scheduledZeldaGame)
+      activeSchedule: FieldValue.arrayUnion(...scheduledVideoGame)
     }).then(() => {
       console.log('activeSchedule Document successfully written!');
     });
@@ -69,10 +69,10 @@ export class GameLineupService {
     });
   }
 
-  removeGameFromActiveSchedule(scheduledZeldaGame: ScheduledVideoGame[]): void {
-    console.log('removeTrackedDonation: ', scheduledZeldaGame);
+  removeGameFromActiveSchedule(scheduledVideoGame: ScheduledVideoGame[]): void {
+    console.log('removeTrackedDonation: ', scheduledVideoGame);
     this.activeScheduleDoc.ref.update({
-      activeSchedule: FieldValue.arrayRemove(...scheduledZeldaGame)
+      activeSchedule: FieldValue.arrayRemove(...scheduledVideoGame)
     }).then(() => {
       console.log('activeSchedule Document successfully written!');
     });

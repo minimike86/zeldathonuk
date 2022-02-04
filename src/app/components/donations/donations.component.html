@@ -22,7 +22,7 @@
               <div ngxMasonryItem style="width: 32.65%;" *ngFor="let donation of tds">
                 <div class="card donor-list mb-2">
 
-                  <div class="d-flex flex-column donation" [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' : 'justgiving-donation'">
+                  <div class="d-flex flex-column donation" [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' : 'JustGiving' ? 'justgiving-donation' : 'tiltify-donation'">
 
                     <div class="d-flex justify-content-between">
                       <div class="d-flex justify-content-start">
@@ -38,7 +38,7 @@
                       </div>
                     </div>
 
-                    <div class="my-2 small text-white-50" *ngIf="donation.message.length >= 1">
+                    <div class="my-2 small text-light" *ngIf="donation.message.length >= 1">
                       <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.2em;">&ldquo;</span>
                       <i class="px-1" style="font-size: 1.2em; font-family: 'Poppins', sans-serif;">{{ donation.message.length >= 1 ? donation.message : '-' }}</i>
                       <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.7em;">&rdquo;</span>

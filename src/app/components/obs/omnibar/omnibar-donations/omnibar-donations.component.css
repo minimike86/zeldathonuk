@@ -134,6 +134,22 @@
   text-shadow: 2px 2px black;
 }
 
+.call-to-action-bm {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: #E71347; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.call-to-action-bm2 {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: #DA4471; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
 
 .slide-in-left {
   -webkit-animation: slide-in-left 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s 1 normal both;

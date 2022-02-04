@@ -22,16 +22,14 @@
   <div class="" style="z-index: 100;">
     <div class="d-flex align-items-center omnibar-donation-total-bm"
          id="donation_total_charity_logo">
+      <ng-container *ngIf="(trackedDonationsTotal$ | async)">
+      </ng-container>
       <div class="dtotal-bm px-3">
         <div class="d-flex align-items-center dtotal-odometer-div">
           <span class="dtotal-odometer-pound-bm me-1">&pound;</span>
-          <div class="dtotal-odometer-bm">10,000</div>
-<!--          <ng2-odometer class="dtotal-odometer-bm"-->
-<!--                        [number]="currentDonationTotal$ | async"-->
-<!--                        [animation]="'slide'"-->
-<!--                        [duration]="3000"-->
-<!--                        [format]="'(,ddd).dd'"-->
-<!--                        [auto]="true"></ng2-odometer>-->
+          <div class="">
+            <div #dtotalOdometer class="dtotal-odometer-bm odometer">{{ (trackedDonationsTotal$ | async) }}</div>
+          </div>
         </div>
       </div>
       <img [src]="getCharityLogoUrl()"

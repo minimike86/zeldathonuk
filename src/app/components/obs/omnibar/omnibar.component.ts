@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, Injectable, OnInit } from '@angular/core';
+import {AfterViewInit, Component, ElementRef, Injectable, OnInit, ViewChild} from '@angular/core';
 import { BehaviorSubject, from, interval, Observable, of } from 'rxjs';
 import { OmnibarContentService } from '../../../services/omnibar-content-service/omnibar-content-service.service';
 import { JgService } from '../../../services/jg-service/jg-service.service';
@@ -26,13 +26,14 @@ import { jgEnvironment } from '../../../../environments/environment';
   providedIn: 'root',
 })
 export class OmnibarComponent implements OnInit, AfterViewInit {
-  public trackedDonations$: Observable<TrackedDonationId[]>;
   public trackedDonations: TrackedDonation[];
+  public trackedDonationsTotal$: Observable<number>;
+  public currentDonationTotal$: BehaviorSubject<number> = new BehaviorSubject(0.00);
+
   public justGivingFundraisingPageDonations$: Observable<JustGivingDonation[]>;
   public facebookFundraisingPageDonations$: Observable<FacebookDonation[]>;
 
   private secondsCounter$: Observable<any>;
-  public currentDonationTotal$: BehaviorSubject<number> = new BehaviorSubject(0.00);
 
   public currentOmnibarContentId$: Observable<number>;
   public charityLogoUrl: string;
@@ -40,32 +41,41 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
 
   public donationAlert: HTMLAudioElement;
 
-  constructor( private omnibarContentService: OmnibarContentService,
-               private donationTrackingService: DonationTrackingService,
-               private donationHighlightService: DonationHighlightService,
-               private zeldathonBackendService: ZeldathonBackendService,
-               private jgService: JgService ) {
+constructor( private omnibarContentService: OmnibarContentService,
+             private donationTrackingService: DonationTrackingService,
+             private donationHighlightService: DonationHighlightService,
+             private zeldathonBackendService: ZeldathonBackendService,
+             private jgService: JgService ) {
     this.secondsCounter$ = interval(15 * 1000);
     this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
-
-    // TRACKED DONATIONS
-    this.trackedDonations$ = this.donationTrackingService.getTrackedDonationArray();
-    this.trackedDonations$.subscribe(data => {
-      this.trackedDonations = data.find(x => x.id === 'TEST-DONATIONS').donations;
-      const trackedDonationsTotal = this.trackedDonations?.reduce((a, b) => a + b.donationAmount, 0);
-      this.transitionCurrentDonationTotal(trackedDonationsTotal);
-    });
-
   }
 
   ngOnInit() {
+    // @ts-ignore
+    window.odometerOptions = {
+      auto: true,
+      format: '(,ddd).dd',
+      duration: 3000,
+      animation: 'slide'
+    };
+    document.querySelector('.dtotal-odometer-bm').innerHTML = 0.00.toFixed(2);
+
+    // TRACKED DONATIONS
+    this.trackedDonationsTotal$ = this.donationTrackingService.getTrackedDonationArray().pipe(map((data) => {
+      this.trackedDonations = data.find(x => x.id === 'DONATIONS').donations;
+      const trackedDonationsTotal = this.trackedDonations?.reduce((a, b) => a + b.donationAmount, 0);
+      this.transitionCurrentDonationTotal(trackedDonationsTotal);
+      console.log('trackedDonationsTotal$', trackedDonationsTotal);
+      return trackedDonationsTotal;
+    }));
+
     this.updateCharityLogoUrl();
     this.secondsCounter$.subscribe(() => {
       this.updateCharityLogoUrl();
     });
 
     this.donationAlert = new Audio();
-    this.donationAlert.src = '../../../assets/audio/BOTW_Fanfare_Item.wav';
+    this.donationAlert.src = '/assets/audio/BOTW_Fanfare_Item.wav';
     this.donationAlert.volume =  0.5;
     this.donationAlert.load();
 
@@ -99,20 +109,21 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
       }
     ));
 
-    // FACEBOOK DONATIONS
-    this.facebookFundraisingPageDonations$ = this.zeldathonBackendService.scrapeFacebookFundraiser(855003971855785).pipe(
+    // FACEBOOK DONATIONS (2022 - 5194665980557244)
+    this.facebookFundraisingPageDonations$ = this.zeldathonBackendService.scrapeFacebookFundraiser(5194665980557244).pipe(
       map((facebookFundraisingDetails: FacebookFundraisingDetails) => {
+        console.log('scrapeFacebookFundraiser', facebookFundraisingDetails.donations, this.trackedDonations);
         from(facebookFundraisingDetails.donations).pipe(
-          map((donation: FacebookDonation) => this.donationTrackingService.convertFacebookDonationToTrackedDonation(donation)),
+          map((donation: FacebookDonation) =>
+            this.donationTrackingService.convertFacebookDonationToTrackedDonation(
+              facebookFundraisingDetails.fundraiserDetails.title, donation)),
           concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
-            // tap((donation: TrackedDonation) => {
-            //   this.donationHighlightService.setDonationHighlight({donation: null, show: false});
-            // }),
             map((donation: TrackedDonation) => {
               const donationExists = this.donationTrackingService.trackedDonationExists(donation);
-              // console.log('trackedDonationExists', trackedDonation, donationExists);
+              console.log('trackedDonationExists', donation, donationExists);
               if (!donationExists) {
                 this.donationTrackingService.addTrackedDonation([donation]);
+                this.donationHighlightService.setDonationHighlight({donation: donation, show: true});
                 this.playDonationGetAudio();
               }
             }),
@@ -124,29 +135,29 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
       })
     );
 
-    this.omnibarContentService.setCurrentOmnibarContentId(1, 1000 * 5);
+    this.omnibarContentService.setCurrentOmnibarContentId(1, 2 * 1000);
 
   }
 
   ngAfterViewInit(): void {
-
-    setTimeout(() => {
+    this.justGivingFundraisingPageDonations$.subscribe();
+    setInterval(() => {
       this.justGivingFundraisingPageDonations$.subscribe();
-      setInterval(() => {
-        this.justGivingFundraisingPageDonations$.subscribe();
-      }, 5 * 60 * 1000);
-    }, 5 * 1000);
+    }, 5 * 60 * 1000);
 
-    // this.facebookFundraisingPageDonations$.subscribe();
-    // setInterval(() => {
-    //   this.facebookFundraisingPageDonations$.subscribe();
-    // }, 5 * 60 * 1000);
+    this.facebookFundraisingPageDonations$.subscribe();
+    setInterval(() => {
+      this.facebookFundraisingPageDonations$.subscribe();
+    }, 5 * 60 * 1000);
   }
 
   transitionCurrentDonationTotal(newDonationTotal: number): void {
     if (newDonationTotal > this.currentDonationTotal$.getValue() + 1) {
-      // console.log('transitionCurrentDonationTotal:', this.currentDonationTotal$.getValue(), newDonationTotal);
+      console.log('transitionCurrentDonationTotal:', this.currentDonationTotal$.getValue(), newDonationTotal);
       this.currentDonationTotal$.next(newDonationTotal);
+      document.querySelector('.dtotal-odometer-bm').innerHTML = newDonationTotal.toFixed(2);
+    } else {
+      document.querySelector('.dtotal-odometer-bm').innerHTML = newDonationTotal.toFixed(2);
     }
   }
 
@@ -181,13 +192,14 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
       name: 'Joe Bloggs (Test)'
     };
     this.donationTrackingService.addTrackedDonation([randomTrackedDonation]);
+    this.playDonationGetAudio();
   }
 
   updateCharityLogoUrl(): void {
     if (this.charityLogoSwap) {
-      this.charityLogoUrl = '../../../assets/img/GB22_Logo_Linear_DarkBGs_Small.png';
+      this.charityLogoUrl = '../../../../assets/img/GB22_Logo_Linear_DarkBGs_Small.png';
     } else {
-      this.charityLogoUrl = '../../../assets/img/logo-specialeffect.png';
+      this.charityLogoUrl = '../../../../assets/img/logo-specialeffect.png';
     }
     this.charityLogoSwap = !this.charityLogoSwap;
   }
