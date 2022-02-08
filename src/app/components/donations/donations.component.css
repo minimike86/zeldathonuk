@@ -44,6 +44,19 @@
   text-transform: uppercase;
 }
 
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+}
+
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #4C1324, #731C37, #B92753, #731C37, #4C1324);
+  border-color: #2B1B25;
+  filter: opacity(85%);
+}
+
 .donation-list-container {
   height: auto;
 }
@@ -80,12 +93,33 @@
 .facebook-donation::before {
   z-index:-1;
   position:absolute;
-  top: -50%;
-  left: -50%;
+  top: -72%;
+  left: -30%;
   width: 200%;
   height: 200%;
   content: "";
   background: url("../../../assets/img/thumb_icon_header_image_05_2018.png") 0 0 no-repeat;
+  transform: rotate(-25deg) scale(0.45);
+  filter: grayscale(100%) opacity(0.2);
+}
+
+.tiltify-donation {
+  position: relative;
+  z-index:1;
+  overflow:hidden;
+  background-color: rgba(231, 19, 71, 50%);
+  border: rgba(231, 19, 71, 50%) solid 2px;
+}
+
+.tiltify-donation::before {
+  z-index:-1;
+  position:absolute;
+  top: -225%;
+  left: -140%;
+  width: 600%;
+  height: 600%;
+  content: "";
+  background: url("../../../assets/img/Tiltify_Logo_FullName.png") 0 0 no-repeat;
   transform: rotate(-25deg) scale(0.45);
   filter: grayscale(100%) opacity(0.2);
 }
@@ -101,13 +135,13 @@
 .justgiving-donation::before {
   z-index:-1;
   position:absolute;
-  top: -350%;
-  left: -350%;
+  top: -325%;
+  left: -345%;
   width: 800%;
   height: 800%;
   content: "";
-  background: url("../../../assets/img/JustGiving_Logo-cropped.png") 0 0 repeat;
-  transform: rotate(-25deg) scale(0.25);
+  background: url("../../../assets/img/JustGiving-logo-EPS-white.png") 0 0 no-repeat;
+  transform: rotate(-25deg) scale(0.10);
   filter: grayscale(100%) opacity(0.2);
 }
 

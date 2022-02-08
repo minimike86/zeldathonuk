@@ -2,7 +2,7 @@ import { Component, Injectable, OnInit, TemplateRef, ViewChild } from '@angular/
 import { KeyValue } from '@angular/common';
 
 import { BehaviorSubject, from, Observable, of } from 'rxjs';
-import {concatMap, finalize, map, switchMap} from 'rxjs/operators';
+import { concatMap, finalize, map } from 'rxjs/operators';
 
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -28,7 +28,7 @@ import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { faPlay, faPause, faStop, faHistory, faBackward, faSyncAlt, faTrash, faDonate } from '@fortawesome/free-solid-svg-icons';
 
 import { JgService } from '../../services/jg-service/jg-service.service';
-import { FundraisingPage, FundraisingPageId, FundraisingPagesService } from '../../services/firebase/fundraising-pages/fundraising-pages.service';
+import { FundraisingPage, FundraisingPagesService } from '../../services/firebase/fundraising-pages/fundraising-pages.service';
 import { FundraisingPageDetails, JustGivingDonation } from '../../services/jg-service/fundraising-page';
 import { profanityFilter } from './omnibar/omnibar.component';
 import { HowLongToBeatGameDetail, HowLongToBeatSearchResult } from '../../services/howlongtobeat-service/howlongtobeat-models';
@@ -116,11 +116,9 @@ export class ObsComponent implements OnInit {
   public donationDate: string;
   public donationTime: string;
 
-  public tempAddZeldaGameKey: string;
-  public tempAddZeldaGame: VideoGame;
-
-  public currentlyPlaying = {id: '', index: ''};
-  public sortedGameLineUp: VideoGame[];
+  public currentlyPlaying: string;
+  public sortedAvailableGames: VideoGame[];
+  public sortedActiveSchedule: ScheduledVideoGame[];
   public swapGameKey: KeyValue<string, VideoGame>;
 
   public hltbSearchQuery = 'zelda';
@@ -160,45 +158,45 @@ export class ObsComponent implements OnInit {
                private howLongToBeatService: HowLongToBeatService,
                private fundraisingPagesService: FundraisingPagesService ) {
     this.clearTrackedDonation();
-    this.clearAddGame();
   }
 
   ngOnInit() {
 
     this.breakCountdownService.getBreakCountdown().pipe(map(data => {
-      const date: Date = data[0].timestamp.toDate();
+      const date: Date = data.find(x => x.id === 'BREAK-COUNTDOWN').timestamp.toDate();
       this.breakCountdownDate = `${date.getFullYear()}-${this.zeroPad(date.getMonth() + 1, 2)}-${this.zeroPad(date.getDate(), 2)}`;
       this.breakCountdownTime = `${this.zeroPad(date.getHours(), 2)}:${this.zeroPad(date.getMinutes(), 2)}:${this.zeroPad(date.getSeconds(), 2)}`;
     })).subscribe();
 
     this.currentlyPlayingService.getCurrentlyPlaying().pipe(map(data => {
-      this.currentlyPlaying = data[0];
+      this.currentlyPlaying = data.find(x => x.id === 'CURRENTLY-PLAYING').index;
     })).subscribe();
 
     this.gameLineupService.getGameLineUp().pipe(map((data) => {
-      this.sortedGameLineUp = data.find(x => x.id === 'AVAILABLE-GAMES').availableGames
+      this.sortedActiveSchedule = data.find(x => x.id === 'ACTIVE-SCHEDULE').activeSchedule
         .sort((a: VideoGame, b: VideoGame) => a.order - b.order);
-      this.availableGames$.next(this.sortedGameLineUp);
-      this.tempAddZeldaGame.order = this.sortedGameLineUp.length;
+      this.sortedAvailableGames = data.find(x => x.id === 'AVAILABLE-GAMES').availableGames
+        .sort((a: VideoGame, b: VideoGame) => a.order - b.order);
+      this.availableGames$.next(this.sortedAvailableGames);
     })).subscribe();
 
     this.gameLineupService.getGameLineUp().pipe(map((data) => {
-      this.activeSchedule$.next(data[0].activeSchedule
+      this.activeSchedule$.next(data.find(x => x.id === 'ACTIVE-SCHEDULE').activeSchedule
         .sort((a: ScheduledVideoGame, b: ScheduledVideoGame) => a.order - b.order));
     })).subscribe();
 
-    this.firebaseTimerService.getCountUpTimer().subscribe(data => {
+    this.firebaseTimerService.getCountUpTimer().subscribe((data) => {
       this.countUpData = data;
     });
 
     this.pauseOffset = 0;
     this.pauseTimestamp = Timestamp.now();
-    this.timer$ = this.countUpService.getTimer().pipe(map((timer: string) => {
+    this.timer$ = this.countUpService.getTimer().pipe(map((timer) => {
       return this.timer = timer;
     }));
 
-    this.fundraisingPagesService.getFundraisingPagesIdArray().pipe(map((data: FundraisingPageId[]) => {
-      this.fundraisingPages = Array.from(Object.values(data[0].fundraisingPages))
+    this.fundraisingPagesService.getFundraisingPagesIdArray().pipe(map((data) => {
+      this.fundraisingPages = Array.from(Object.values(data.find(x => x.id === 'FUNDRAISING-PAGES').fundraisingPages))
         .sort((a: FundraisingPage, b: FundraisingPage) => a.eventDate.seconds - b.eventDate.seconds);
     })).subscribe();
 
@@ -207,11 +205,6 @@ export class ObsComponent implements OnInit {
       this.trackedDonationIds = data.filter(x => x.id === 'DONATIONS');
       this.trackedDonations = data.find(x => x.id === 'DONATIONS').donations;
     });
-  }
-
-  onOpenAddGameModalClick() {
-    this.tempAddZeldaGame.order = this.sortedGameLineUp !== undefined ? this.sortedGameLineUp.length : 0;
-    this.addGameModal = this.modalService.open(this.addGameModalDialogRef);
   }
 
   onOpenAddManualDonationModalClick() {
@@ -304,26 +297,86 @@ export class ObsComponent implements OnInit {
     }
   }
 
-  refreshFundraisingPage(pageShortName: string) {
-    this.jgService.getFundraisingPageDetailsByPageShortName(pageShortName)
-      .subscribe((data: FundraisingPageDetails) => {
-        const temp: FundraisingPage = {
-          pageId: data.pageId,
-          pageShortName: this.inputJustGivingPageUrl,
-          eventDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(data.eventDate)),
-          expiryDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(data.expiryDate)),
-          image: data.image,
-          title: data.title,
-          story: data.story,
-          currencyCode: data.currencyCode,
-          currencySymbol: data.currencySymbol,
-          grandTotalRaisedExcludingGiftAid: data.grandTotalRaisedExcludingGiftAid,
-          vendor: 'JustGiving'
-        };
-        this.fundraisingPages = this.fundraisingPages.filter(x => x.pageShortName !== pageShortName);
-        this.fundraisingPages.push(temp);
-        this.fundraisingPagesService.setFundraisingPages(this.fundraisingPages);
-      });
+  refreshFundraisingPage(fundraisingPage: FundraisingPage) {
+    switch (fundraisingPage.vendor) {
+      case 'Facebook': {
+        this.addingFacebookPage = true;
+        this.zeldathonBackendService.scrapeFacebookFundraiser(fundraisingPage.pageId)
+          .subscribe((data) => {
+            const temp: FundraisingPage = {
+              pageId: data.fundraiserID,
+              pageShortName: data.fundraiserID + '/',
+              eventDate: Timestamp.fromDate(new Date(Date.parse(data.fundraiserDetails.eventDate))),
+              expiryDate: Timestamp.fromDate(new Date(Date.parse(data.fundraiserDetails.expiryDate))),
+              image: {
+                caption: 'facebookFundraiserCoverImage',
+                url: data.fundraiserDetails.coverImage,
+                absoluteUrl: data.fundraiserDetails.coverImage
+              },
+              title: data.fundraiserDetails.title,
+              story: data.fundraiserDetails.story,
+              currencyCode: data.fundraiserDetails.currencyCode,
+              currencySymbol: data.fundraiserDetails.currencySymbol,
+              grandTotalRaisedExcludingGiftAid: data.progressCard.total.toFixed(2),
+              vendor: 'Facebook'
+            };
+            this.fundraisingPages = this.fundraisingPages.filter(x => x.pageId !== fundraisingPage.pageId);
+            this.fundraisingPages.push(temp);
+            this.fundraisingPagesService.setFundraisingPages(this.fundraisingPages);
+            this.addingFacebookPage = false;
+          });
+        break;
+      }
+      case 'Tiltify': {
+        this.tiltifyService.getCampaignById(fundraisingPage.pageId)
+          .subscribe((tiltifyCampaign: TiltifyCampaign) => {
+            const temp: FundraisingPage = {
+              pageId: tiltifyCampaign.data.id,
+              pageShortName: tiltifyCampaign.data.name,
+              eventDate: Timestamp.fromDate(new Date(tiltifyCampaign.data.startsAt)),
+              expiryDate: Timestamp.fromDate(tiltifyCampaign.data.endsAt === null ?
+                moment().add(1, 'years').toDate() : new Date(tiltifyCampaign.data.endsAt)),
+              image: {
+                caption: 'tiltifyFundraiserCoverImage',
+                url: tiltifyCampaign.data.avatar.src,
+                absoluteUrl: tiltifyCampaign.data.user.url + '/' + tiltifyCampaign.data.slug
+              },
+              title: tiltifyCampaign.data.name,
+              story: tiltifyCampaign.data.description,
+              currencyCode: 'GBP',
+              currencySymbol: '£',
+              grandTotalRaisedExcludingGiftAid: tiltifyCampaign.data.totalAmountRaised.toFixed(2),
+              vendor: 'Tiltify'
+            };
+            this.fundraisingPages = this.fundraisingPages.filter(x => x.pageId !== fundraisingPage.pageId);
+            this.fundraisingPages.push(temp);
+            this.fundraisingPagesService.setFundraisingPages(this.fundraisingPages);
+        });
+        break;
+      }
+      case 'JustGiving': {
+        this.jgService.getFundraisingPageDetailsByPageShortName(fundraisingPage.pageShortName)
+          .subscribe((data) => {
+            const temp: FundraisingPage = {
+              pageId: data.pageId,
+              pageShortName: fundraisingPage.pageShortName,
+              eventDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(data.eventDate)),
+              expiryDate: Timestamp.fromDate(this.jgService.parseJustGivingDateString(data.expiryDate)),
+              image: data.image,
+              title: data.title,
+              story: data.story,
+              currencyCode: data.currencyCode,
+              currencySymbol: data.currencySymbol,
+              grandTotalRaisedExcludingGiftAid: data.grandTotalRaisedExcludingGiftAid,
+              vendor: 'JustGiving'
+            };
+            this.fundraisingPages = this.fundraisingPages.filter(x => x.pageId !== fundraisingPage.pageId);
+            this.fundraisingPages.push(temp);
+            this.fundraisingPagesService.setFundraisingPages(this.fundraisingPages);
+          });
+        break;
+      }
+    }
   }
 
   isFundraisingPageExpired(fundraisingPage: FundraisingPage): boolean {
@@ -359,22 +412,6 @@ export class ObsComponent implements OnInit {
       grandTotalRaisedExcludingGiftAid += Number(page.grandTotalRaisedExcludingGiftAid).valueOf();
     });
     return grandTotalRaisedExcludingGiftAid.toFixed(2);
-  }
-
-  submitAddGame() {
-    this.gameLineupService.addAvailableGames([this.tempAddZeldaGame]);
-    this.addGameModal.close();
-    this.clearAddGame();
-  }
-
-  clearAddGame() {
-    this.tempAddZeldaGame = {
-      gameDetail: null,
-      gameProgressKey: null,
-      category: null,
-      active: true,
-      order: this.sortedGameLineUp !== undefined ? this.sortedGameLineUp.length : 0
-    };
   }
 
   onSwapGameClick(game: VideoGame) {
@@ -481,6 +518,7 @@ export class ObsComponent implements OnInit {
   importFundraisingPageDonations(fundraisingPage: FundraisingPage) {
     switch (fundraisingPage.vendor) {
       case 'Facebook': {
+        this.addingFacebookPage = true;
         this.zeldathonBackendService.scrapeFacebookFundraiser(fundraisingPage.pageId).pipe(
           map((facebookFundraiserPage: FacebookFundraisingDetails) => {
             return facebookFundraiserPage.donations.filter(donation => !this.trackedDonations?.some(x => x.id === donation.id));
@@ -505,6 +543,7 @@ export class ObsComponent implements OnInit {
               )),
             ).subscribe();
             // console.log('getAllFacebookDonations:', donations);
+            this.addingFacebookPage = false;
             return newDonations;
           })).subscribe();
         break;
@@ -601,7 +640,7 @@ export class ObsComponent implements OnInit {
             gameProgressKey: this.getGameProgressKey(data.title),
             category: 'category',
             active: true,
-            order: this.sortedGameLineUp !== undefined ? this.sortedGameLineUp.length : 0
+            order: this.sortedActiveSchedule !== undefined ? this.sortedActiveSchedule.length : 0
           };
           this.gameLineupService.addAvailableGames([zeldaGame]);
 

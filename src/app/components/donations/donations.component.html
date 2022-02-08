@@ -2,7 +2,7 @@
 
   <div class="container donation-list-container p-3">
 
-    <div class="">
+    <div class="h-100">
       <h3 class="text-bloodmoon mb-3">Thank you to all our donors!</h3>
       <p class="text-light">
         On behalf of everyone in the ZeldathonUK team we would like to thank all of the donors below for their generous donations:
@@ -22,7 +22,10 @@
               <div ngxMasonryItem style="width: 32.65%;" *ngFor="let donation of tds">
                 <div class="card donor-list mb-2">
 
-                  <div class="d-flex flex-column donation" [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' : 'JustGiving' ? 'justgiving-donation' : 'tiltify-donation'">
+                  <div class="d-flex flex-column donation"
+                       [ngClass]="donation.donationSource === 'Facebook' ? 'facebook-donation' :
+                                  donation.donationSource === 'Tiltify' ? 'tiltify-donation' :
+                                  donation.donationSource === 'JustGiving' ? 'justgiving-donation' : ''">
 
                     <div class="d-flex justify-content-between">
                       <div class="d-flex justify-content-start">
@@ -71,11 +74,130 @@
         <ng-template [ngIf]="tds.length === 0">
           <div class="d-flex justify-content-center h-75">
             <div class="d-flex align-self-center">
-              <div class="d-flex flex-column">
-                <h6 class="text-white-50 mb-3">
-                  No donors yet! Please consider starting us off!
-                </h6>
+
+              <div class="my-5">
+
+                <div class="d-flex justify-content-start">
+                  <h6 class="text-bloodmoon">Make a donation</h6>
+                </div>
+
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4">
+
+                  <div class="col">
+                    <div class="d-flex btn btn-bloodmoon" (click)="donateFacebook();" title="Donate via Facebook">
+                      <div class="d-flex flex-column flex-md-row flex-fill">
+                        <div class="flex-grow-1 justify-content-center align-self-center">
+                          <h4 class="text-nowrap mb-0" style="font-family: 'Bungee', cursive;">
+                            <fa-icon [icon]="faFacebook"></fa-icon>&nbsp;Donate
+                          </h4>
+                          <div class="text-center small">
+                            <span class="d-block font-italic small">using Facebook</span>
+                          </div>
+                        </div>
+                        <div class="">
+                          <div class="d-flex flex-row flex-md-column justify-content-evenly">
+                            <div class="mb-md-1">
+                              <a class="btn btn-outline-light btn-sm" href="https://www.facebook.com/help/901370616673951" target="_blank"
+                                 title="More info on JustGiving Fundraising Fees" style="font-size: 0.65em;">Fees</a>
+                            </div>
+                            <div class="">
+                              <a class="btn btn-outline-light btn-sm" href="https://www.facebook.com/help/728799837303698" target="_blank"
+                                 title="More info on GiftAid" style="font-size: 0.65em;">GiftAid</a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col">
+                    <div class="d-flex btn btn-bloodmoon" (click)="donateTiltify();" title="Donate via Tiltify">
+                      <div class="d-flex flex-column flex-md-row flex-fill">
+                        <div class="flex-grow-1 justify-content-center align-self-center">
+                          <h4 class="text-nowrap mb-0" style="font-family: 'Bungee', cursive;">
+                            <div class="d-inline-block" style="position: relative; width: .9em;">
+                              <img style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"
+                                   src="../../../assets/img/Tiltify_Logo.png" alt="Tiltify logo">
+                            </div> Donate
+                          </h4>
+                          <div class="text-center small">
+                            <span class="d-block font-italic small">using Tiltify</span>
+                          </div>
+                        </div>
+                        <div class="">
+                          <div class="d-flex flex-row flex-md-column justify-content-evenly">
+                            <div class="mb-md-1">
+                              <a class="btn btn-outline-light btn-sm" href="https://info.tiltify.com/support/solutions/articles/43000045885-what-are-the-fees-" target="_blank"
+                                 title="More info on Tiltify Fees" style="font-size: 0.65em;">Fees</a>
+                            </div>
+                            <div class="">
+                              <a class="btn btn-outline-light btn-sm" href="https://www.gov.uk/claim-gift-aid/gift-aid-declarations" target="_blank"
+                                 title="More info on GiftAid" style="font-size: 0.65em;">GiftAid</a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col">
+                    <div class="">
+                      <p-confirmPopup [styleClass]="'w-50'"></p-confirmPopup>
+                    </div>
+                    <div class="d-flex btn btn-bloodmoon" (click)="confirm($event);" title="Donate via JustGiving">
+                      <div class="d-flex flex-column flex-md-row flex-fill">
+                        <div class="flex-grow-1 justify-content-center align-self-center">
+                          <h4 class="text-nowrap mb-0" style="font-family: 'Bungee', cursive;">
+                            <div class="d-inline-block" style="position: relative; width: .9em;">
+                              <img style="max-width: .9em; padding-bottom: .25em; filter: brightness(10);"
+                                   src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo">
+                            </div> Donate
+                          </h4>
+                          <div class="text-center small">
+                            <span class="d-block font-italic small">using JustGiving</span>
+                          </div>
+                        </div>
+                        <div class="">
+                          <div class="d-flex flex-row flex-md-column justify-content-evenly">
+                            <div class="mb-md-1">
+                              <a class="btn btn-outline-light btn-sm" href="https://www.justgiving.com/info/fees" target="_blank"
+                                 title="More info on JustGiving Fundraising Fees" style="font-size: 0.65em;">Fees</a>
+                            </div>
+                            <div class="">
+                              <a class="btn btn-outline-light btn-sm" href="https://help.justgiving.com/hc/en-us/articles/200670391-A-guide-to-Gift-Aid-UK-only-" target="_blank"
+                                 title="More info on GiftAid" style="font-size: 0.65em;">GiftAid</a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col">
+
+                    <div class="d-flex btn btn-bloodmoon h-100" (click)="learnAboutGameBlast();"
+                         title="Find out more about the GameBlast event">
+                      <div class="d-flex flex-column flex-md-row flex-fill">
+                        <div class="flex-grow-1 align-self-center">
+                          <h4 class=" text-center">
+                            <img src="../../../assets/img/GB22_Logo_Linear_DarkBGs_Small.png"
+                                 alt="gameblast22 logo" style="max-height: 2rem;">
+                          </h4>
+                        </div>
+                        <div class="align-self-center">
+                          <div class="small text-white">
+                            <span class="d-block small fw-bolder">25-27<sup>th</sup> Feb 2022</span>
+                            <span class="d-block small">The UK's Biggest Charity Gaming Weekend</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
               </div>
+
             </div>
           </div>
         </ng-template>

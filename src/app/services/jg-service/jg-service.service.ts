@@ -26,9 +26,9 @@ export class JgService {
    * FUNDRAISING ENDPOINTS
    * Create, edit or manage fundraising pages
    */
-  getFundraisingPageDetails(): Observable<FundraisingPageDetails> {
+  getFundraisingPageDetails(pageShortName: string): Observable<FundraisingPageDetails> {
     return this.http.get<FundraisingPageDetails>(jgEnvironment.justgiving.baseUri
-      + `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/`, jgEnvironment.justgiving.httpOptions);
+      + `/fundraising/pages/${pageShortName}/`, jgEnvironment.justgiving.httpOptions);
   }
 
   getFundraisingPageDetailsByPageShortName(pageShortName: string): Observable<FundraisingPageDetails> {
@@ -36,9 +36,9 @@ export class JgService {
       + `/fundraising/pages/${pageShortName}/`, jgEnvironment.justgiving.httpOptions);
   }
 
-  getFundraisingPageDonations(pageSize: number, pageNumber: number): Observable<FundraisingPageDonations> {
+  getFundraisingPageDonations(pageShortName: string, pageSize: number, pageNumber: number): Observable<FundraisingPageDonations> {
     return this.http.get<FundraisingPageDonations>(jgEnvironment.justgiving.baseUri +
-      `/fundraising/pages/${jgEnvironment.justgiving.pageShortName}/donations?pageSize=${pageSize}&pageNumber=${pageNumber}`,
+      `/fundraising/pages/${pageShortName}/donations?pageSize=${pageSize}&pageNumber=${pageNumber}`,
       jgEnvironment.justgiving.httpOptions);
   }
 
@@ -49,10 +49,10 @@ export class JgService {
       jgEnvironment.justgiving.httpOptions);
   }
 
-  getAllJustGivingDonations(): Observable<JustGivingDonation[]> {
+  getAllJustGivingDonations(pageShortName: string): Observable<JustGivingDonation[]> {
     const justGivingDonations: JustGivingDonation[] = [];
     // get first page
-    return this.getFundraisingPageDonations(150, 1).pipe(
+    return this.getFundraisingPageDonations(pageShortName, 150, 1).pipe(
       // get the donations
       map((fundraisingPageDonations: FundraisingPageDonations) => {
         justGivingDonations.push(...fundraisingPageDonations.donations);
@@ -63,7 +63,7 @@ export class JgService {
         delay(5 * 1000),
         tap((pageNumber: number) => {
             console.log('pageNumber', pageNumber);
-            this.getFundraisingPageDonations(150, pageNumber).pipe(
+            this.getFundraisingPageDonations(pageShortName, 150, pageNumber).pipe(
               tap((fundraisingPageDonations: FundraisingPageDonations) => {
                 justGivingDonations.push(...fundraisingPageDonations.donations);
               })

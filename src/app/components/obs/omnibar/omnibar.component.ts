@@ -1,9 +1,9 @@
-import {AfterViewInit, Component, ElementRef, Injectable, OnInit, ViewChild} from '@angular/core';
-import { BehaviorSubject, from, interval, Observable, of } from 'rxjs';
+import {AfterViewInit, Component, Injectable, OnInit } from '@angular/core';
+import {BehaviorSubject, filter, from, interval, Observable, of, switchMap} from 'rxjs';
 import { OmnibarContentService } from '../../../services/omnibar-content-service/omnibar-content-service.service';
 import { JgService } from '../../../services/jg-service/jg-service.service';
 import { JustGivingDonation } from '../../../services/jg-service/fundraising-page';
-import { TrackedDonation, TrackedDonationId } from '../../../services/firebase/donation-tracking/tracked-donation';
+import { TrackedDonation } from '../../../services/firebase/donation-tracking/tracked-donation';
 import { DonationTrackingService } from '../../../services/firebase/donation-tracking/donation-tracking.service';
 import { concatMap, delay, finalize, map } from 'rxjs/operators';
 import firebase from 'firebase/compat/app';
@@ -15,7 +15,9 @@ import {
 } from '../../../services/zeldathon-backend-service/zeldathon-backend-service.service';
 import { sha256 } from 'js-sha256';
 import { DonationHighlightService } from '../../../services/firebase/donation-highlight-service/donation-highlight-service.service';
-import { jgEnvironment } from '../../../../environments/environment';
+import {FundraisingPage, FundraisingPagesService} from '../../../services/firebase/fundraising-pages/fundraising-pages.service';
+import moment from 'moment';
+import {TiltifyCampaignDonation, TiltifyService} from '../../../services/tiltify-service/tiltify.service';
 
 @Component({
   selector: 'app-omnibar',
@@ -32,6 +34,7 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
 
   public justGivingFundraisingPageDonations$: Observable<JustGivingDonation[]>;
   public facebookFundraisingPageDonations$: Observable<FacebookDonation[]>;
+  public tiltifyFundraisingPageDonations$: Observable<TiltifyCampaignDonation[]>;
 
   private secondsCounter$: Observable<any>;
 
@@ -39,12 +42,18 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
   public charityLogoUrl: string;
   public charityLogoSwap = true;
 
+  public activeJustGivingPageShortName$: BehaviorSubject<string> = new BehaviorSubject<string>(null);
+  public activeFacebookFundraiserId$: BehaviorSubject<number> = new BehaviorSubject<number>(null);
+  public activeTiltifyPageId$: BehaviorSubject<FundraisingPage> = new BehaviorSubject<FundraisingPage>(null);
+
   public donationAlert: HTMLAudioElement;
 
 constructor( private omnibarContentService: OmnibarContentService,
+             private fundraisingPagesService: FundraisingPagesService,
              private donationTrackingService: DonationTrackingService,
              private donationHighlightService: DonationHighlightService,
              private zeldathonBackendService: ZeldathonBackendService,
+             private tiltifyService: TiltifyService,
              private jgService: JgService ) {
     this.secondsCounter$ = interval(15 * 1000);
     this.currentOmnibarContentId$ = this.omnibarContentService.getCurrentOmnibarContentId();
@@ -79,61 +88,120 @@ constructor( private omnibarContentService: OmnibarContentService,
     this.donationAlert.volume =  0.5;
     this.donationAlert.load();
 
-    // JUSTGIVING DONATIONS
-    this.justGivingFundraisingPageDonations$ = this.jgService.getAllJustGivingDonations().pipe(
-      map((donations: JustGivingDonation[]) => donations.filter(donation => !this.trackedDonations?.some(x => x.id === donation.id))),
-      map((newDonations: JustGivingDonation[]) => {
-        console.log('getNewJustGivingDonations', newDonations, this.trackedDonations);
-        from(newDonations.reverse()).pipe(
-          map((donation: JustGivingDonation) => this.donationTrackingService
-            .convertJustGivingDonationToTrackedDonation(jgEnvironment.justgiving.pageShortName, donation)),
-          map((trackedDonation: TrackedDonation) => profanityFilter(trackedDonation)),
-          concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
-            map((donation: TrackedDonation) => {
-              const donationExists = this.donationTrackingService.trackedDonationExists(donation);
-              console.log('trackedDonationExists', donation, donationExists);
-              if (!donationExists) {
-                this.donationTrackingService.addTrackedDonation([donation]);
-                this.donationHighlightService.setDonationHighlight({donation: donation, show: true});
-                this.playDonationGetAudio();
-              }
-            }),
-            delay(15 * 1000),
-            finalize(() => {
-              console.log('next donationExists');
-            })
-          )),
-        ).subscribe();
-        // console.log('getAllJustGivingDonations:', donations);
-        return newDonations;
-      }
-    ));
+    this.fundraisingPagesService.getFundraisingPagesIdArray().pipe(map((data) => {
+      this.activeJustGivingPageShortName$.next(data.find(x => x.id === 'FUNDRAISING-PAGES').fundraisingPages
+                                                    .filter(x => x.vendor === 'JustGiving')
+                                                    .filter(x => !this.isFundraisingPageExpired(x))[0].pageShortName);
+      console.log('activeJustGivingPageShortName$', this.activeJustGivingPageShortName$.getValue());
 
-    // FACEBOOK DONATIONS (2022 - 5194665980557244)
-    this.facebookFundraisingPageDonations$ = this.zeldathonBackendService.scrapeFacebookFundraiser(5194665980557244).pipe(
-      map((facebookFundraisingDetails: FacebookFundraisingDetails) => {
-        console.log('scrapeFacebookFundraiser', facebookFundraisingDetails.donations, this.trackedDonations);
-        from(facebookFundraisingDetails.donations).pipe(
-          map((donation: FacebookDonation) =>
-            this.donationTrackingService.convertFacebookDonationToTrackedDonation(
-              facebookFundraisingDetails.fundraiserDetails.title, donation)),
-          concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
-            map((donation: TrackedDonation) => {
-              const donationExists = this.donationTrackingService.trackedDonationExists(donation);
-              console.log('trackedDonationExists', donation, donationExists);
-              if (!donationExists) {
-                this.donationTrackingService.addTrackedDonation([donation]);
-                this.donationHighlightService.setDonationHighlight({donation: donation, show: true});
-                this.playDonationGetAudio();
-              }
-            }),
-            delay(30 * 1000),
-          )),
-        ).subscribe();
-        // console.log('getFundraisingPageDonations:', jgfpds.donations);
-        return facebookFundraisingDetails.donations;
-      })
-    );
+      this.activeFacebookFundraiserId$.next(parseInt(data.find(x => x.id === 'FUNDRAISING-PAGES').fundraisingPages
+                                                    .filter(x => x.vendor === 'Facebook')
+                                                    .filter(x => !this.isFundraisingPageExpired(x))[0].pageShortName, 10));
+      console.log('activeFacebookFundraiserId$', this.activeFacebookFundraiserId$.getValue());
+
+      this.activeTiltifyPageId$.next(data.find(x => x.id === 'FUNDRAISING-PAGES').fundraisingPages
+                                                    .filter(x => x.vendor === 'Tiltify')
+                                                    .filter(x => !this.isFundraisingPageExpired(x))[0]);
+      console.log('activeTiltifyPageId$', this.activeTiltifyPageId$.getValue().pageId);
+    })).subscribe();
+
+    // JUSTGIVING DONATIONS
+    this.justGivingFundraisingPageDonations$ = this.activeJustGivingPageShortName$.pipe(
+      filter(x => x !== null),
+      switchMap((pageShortName: string) => {
+        return this.jgService.getAllJustGivingDonations(pageShortName).pipe(
+        map((donations: JustGivingDonation[]) =>
+          donations.filter(donation => !this.trackedDonations?.some(x => x.id === donation.id))),
+        map((newDonations: JustGivingDonation[]) => {
+          console.log('getNewJustGivingDonations', newDonations, this.trackedDonations);
+          from(newDonations.reverse()).pipe(
+            map((donation: JustGivingDonation) => this.donationTrackingService
+              .convertJustGivingDonationToTrackedDonation(pageShortName, donation)),
+            map((trackedDonation: TrackedDonation) => profanityFilter(trackedDonation)),
+            concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
+              map((donation: TrackedDonation) => {
+                const donationExists = this.donationTrackingService.trackedDonationExists(donation);
+                console.log('trackedDonationExists', donation, donationExists);
+                if (!donationExists) {
+                  this.donationTrackingService.addTrackedDonation([donation]);
+                  this.donationHighlightService.setDonationHighlight({donation: donation, show: true});
+                  this.playDonationGetAudio();
+                }
+              }),
+              delay(15 * 1000),
+              finalize(() => {
+                console.log('next donationExists');
+              })
+            )),
+          ).subscribe();
+          return newDonations;
+        })
+      );
+    }));
+
+    // FACEBOOK DONATIONS
+    this.facebookFundraisingPageDonations$ = this.activeFacebookFundraiserId$.pipe(
+      filter(x => x !== null),
+      switchMap((activeFacebookFundraiserId: number) => {
+        return this.zeldathonBackendService
+          .scrapeFacebookFundraiser(activeFacebookFundraiserId).pipe(
+          map((facebookFundraisingDetails: FacebookFundraisingDetails) => {
+            console.log('scrapeFacebookFundraiser', facebookFundraisingDetails.donations, this.trackedDonations);
+            from(facebookFundraisingDetails.donations).pipe(
+              map((donation: FacebookDonation) =>
+                this.donationTrackingService.convertFacebookDonationToTrackedDonation(
+                  facebookFundraisingDetails.fundraiserDetails.title, donation)),
+              concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
+                map((donation: TrackedDonation) => {
+                  const donationExists = this.donationTrackingService.trackedDonationExists(donation);
+                  console.log('trackedDonationExists', donation, donationExists);
+                  if (!donationExists) {
+                    this.donationTrackingService.addTrackedDonation([donation]);
+                    this.donationHighlightService.setDonationHighlight({donation: donation, show: true});
+                    this.playDonationGetAudio();
+                  }
+                }),
+                delay(15 * 1000),
+              )),
+            ).subscribe();
+            return facebookFundraisingDetails.donations;
+          })
+        );
+      }));
+
+    // TILTIFY DONATIONS
+    this.tiltifyFundraisingPageDonations$ = this.activeTiltifyPageId$.pipe(
+      filter(x => x !== null),
+      switchMap((tiltifyPage: FundraisingPage) => {
+        return this.tiltifyService.getCampaignDonationsById(tiltifyPage.pageId).pipe(
+          map((tiltifyCampaignDonations) =>
+            tiltifyCampaignDonations.data.filter(donation => !this.trackedDonations?.some(x => x.id === donation.id))),
+          map((newDonations: TiltifyCampaignDonation[]) => {
+            console.log('getNewTiltifyDonations', newDonations, this.trackedDonations);
+            from(newDonations.reverse()).pipe(
+              map((donation: TiltifyCampaignDonation) => this.donationTrackingService
+                .convertTiltifyCampaignDonationToTrackedDonation(tiltifyPage, donation)),
+              map((trackedDonation: TrackedDonation) => profanityFilter(trackedDonation)),
+              concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
+                map((donation: TrackedDonation) => {
+                  const donationExists = this.donationTrackingService.trackedDonationExists(donation);
+                  console.log('trackedDonationExists', donation, donationExists);
+                  if (!donationExists) {
+                    this.donationTrackingService.addTrackedDonation([donation]);
+                    this.donationHighlightService.setDonationHighlight({donation: donation, show: true});
+                    this.playDonationGetAudio();
+                  }
+                }),
+                delay(15 * 1000),
+                finalize(() => {
+                  console.log('next donationExists');
+                })
+              )),
+            ).subscribe();
+            return newDonations;
+          })
+        );
+      }));
 
     this.omnibarContentService.setCurrentOmnibarContentId(1, 2 * 1000);
 
@@ -149,6 +217,16 @@ constructor( private omnibarContentService: OmnibarContentService,
     setInterval(() => {
       this.facebookFundraisingPageDonations$.subscribe();
     }, 5 * 60 * 1000);
+
+    this.tiltifyFundraisingPageDonations$.subscribe();
+    setInterval(() => {
+      this.tiltifyFundraisingPageDonations$.subscribe();
+    }, 5 * 60 * 1000);
+  }
+
+  isFundraisingPageExpired(fundraisingPage: FundraisingPage): boolean {
+    const date = fundraisingPage.expiryDate.toDate();
+    return moment(fundraisingPage.expiryDate.toDate()).isBefore(moment());
   }
 
   transitionCurrentDonationTotal(newDonationTotal: number): void {
@@ -192,6 +270,7 @@ constructor( private omnibarContentService: OmnibarContentService,
       name: 'Joe Bloggs (Test)'
     };
     this.donationTrackingService.addTrackedDonation([randomTrackedDonation]);
+    this.donationHighlightService.setDonationHighlight({donation: randomTrackedDonation, show: true});
     this.playDonationGetAudio();
   }
 
