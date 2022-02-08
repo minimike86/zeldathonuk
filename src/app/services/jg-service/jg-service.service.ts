@@ -22,7 +22,6 @@ export class JgService {
     return new Date(parseInt(donationDate.slice(6, donationDate.length - 5), 10));
   }
 
-
   /**
    * FUNDRAISING ENDPOINTS
    * Create, edit or manage fundraising pages
@@ -72,7 +71,7 @@ export class JgService {
           }
         ))),
       switchMap(() => {
-        console.log('switchMap justGivingDonations', justGivingDonations);
+        // console.log('switchMap justGivingDonations', justGivingDonations);
         return of(justGivingDonations);
       })
     );

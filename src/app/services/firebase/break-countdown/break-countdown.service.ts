@@ -15,7 +15,7 @@ export class BreakCountdownService {
   constructor(private db: AngularFirestore) {
     this.breakCountdownCollection = db.collection<BreakCountdown>('/break-countdown');
     this.getBreakCountdown().subscribe( data => {
-      console.log('getBreakCountdown', data);
+      // console.log('getBreakCountdown', data);
       this.breakCountdownData = data;
     });
   }

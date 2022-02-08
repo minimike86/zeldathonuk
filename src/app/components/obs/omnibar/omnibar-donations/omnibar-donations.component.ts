@@ -110,28 +110,28 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
       this.showingDonations = true;
 
       from(this.lastTenDonations).pipe(
-        tap(() => console.log('1. delay 2 secs')),
+        // tap(() => console.log('1. delay 2 secs')),
         delay(initialWait),
-        tap(() => console.log('2. concatMap')),
+        // tap(() => console.log('2. concatMap')),
         concatMap((trackedDonation: TrackedDonation) => of(trackedDonation).pipe(
-          tap(() => console.log('3. delay 1/5 secs')),
+          // tap(() => console.log('3. delay 1/5 secs')),
           delay(slideInFromRightDuration),
-          tap(() => console.log('4. showDonation')), // dodgy
+          // tap(() => console.log('4. showDonation')), // dodgy
           tap((donationItem: TrackedDonation) => {
             this.showDonation(donationItem);
           }),
-          tap(() => console.log('5. delay 5 secs')),
+          // tap(() => console.log('5. delay 5 secs')),
           delay(showDonationDuration),
-          tap(() => console.log('6. hideDonation')), // dodgy
+          // tap(() => console.log('6. hideDonation')), // dodgy
           tap(() => {
             this.hideDonation();
           }),
-          tap(() => console.log('7. delay 1 secs')),
+          // tap(() => console.log('7. delay 1 secs')),
           delay(slideOutToLeftDuration)
         )),
-        tap(() => console.log('8. finalize')),
+        // tap(() => console.log('8. finalize')),
         finalize(() => {
-          console.log('9. donationShown');
+          // console.log('9. donationShown');
           setTimeout(() => {
             this.slideIn = !this.slideIn;
             this.omnibarContentService.setCurrentOmnibarContentId(4, 2 * 1000);
