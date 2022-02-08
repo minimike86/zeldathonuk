@@ -30,6 +30,59 @@
   z-index: -1;
 }
 
+.table-currently-playing,
+ .table-currently-playing > th,
+ .table-currently-playing > td {
+  background-color: rgba(231, 19, 71, 20%);
+ }
+
+.table-currently-playing th,
+.table-currently-playing td,
+.table-currently-playing thead th,
+.table-currently-playing tbody + tbody {
+  background-color: rgba(231, 19, 71, 20%);
+}
+
+.table-currently-playing:hover {
+  background-color: rgba(218,68,113, 50%);
+}
+
+.table-currently-playing:hover > td,
+.table-currently-playing:hover > th {
+  background-color: rgba(218,68,113, 50%);
+}
+
+
+.table-played,
+.table-played > th,
+.table-played > td {
+  background-color: rgba(50, 19, 20, 20%);
+}
+
+.table-played img,
+.table-played .badge {
+  opacity: 30%;
+}
+
+.table-played:nth-child(even) td {
+  background-color: rgba(100, 19, 30, 20%);
+}
+
+.table-played th,
+.table-played td,
+.table-played thead th,
+.table-played tbody + tbody {
+  background-color: rgba(50, 19, 20, 20%);
+}
+
+.table-played:hover {
+  background-color: rgba(50, 19, 20, 20%);
+}
+
+.table-played:hover > td,
+.table-played:hover > th {
+  background-color: rgba(50, 19, 20, 20%);
+}
 
 .live-circle {
   animation: pulse 2s infinite;

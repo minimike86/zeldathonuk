@@ -33,14 +33,34 @@
     <div class="row d-flex justify-content-evenly text-white mb-2" style="font-size: 0.80em;">
       <div class="col-12 col-sm-6 col-md-4 pb-2 ps-3">
         <h6 class="text-bloodmoon">Currently Playing</h6>
-        <ng-container *ngIf="currentGame !== ''; else notLive;">
-          <div><span>{{ currentGame }}</span></div>
-          <div>with {{ runnerName }}</div>
-          <div class="mt-2" style="font-family: 'Bungee', cursive;"
-               [routerLink]="'/incentives'">
-            <button class="btn btn-sm btn-bloodmoon p-2 px-5">Prizes</button>
-          </div>
+        <ng-container *ngIf="isNowBeforeStartDate(startDate$ | async); else beforeStartDate;">
+          <ng-container *ngIf="(currentVideoGame$ | async) as currentVideoGame; else notLive;">
+            <h5><strong>{{ currentVideoGame.gameDetail.title }}</strong></h5>
+            <div class="small">with
+              <div class="d-inline" *ngFor="let runner of currentVideoGame.runners; let i = index;">
+                <ng-container *ngIf="runner.streamer && runner.channelUrl !== ''; else showNonStreamerName;">
+                  {{ i >= 1 ? ',&nbsp;' : '' }}
+                  <a class="text-white" [href]="runner.channelUrl" target="_blank">{{ runner.name }}</a>
+                </ng-container>
+                <ng-template #showNonStreamerName>
+                  {{ i >= 1 ? ',&nbsp;' + runner.name : runner.name }}
+                </ng-template>
+              </div>
+            </div>
+            <div class="mt-2" style="font-family: 'Bungee', cursive;"
+                 [routerLink]="'/incentives'">
+              <button class="btn btn-sm btn-bloodmoon p-2 px-5">Prizes</button>
+            </div>
+          </ng-container>
         </ng-container>
+        <ng-template #beforeStartDate>
+          <h5 class="">ZeldathonUK starts in {{ timeAgo.format(startDate$ | async) }}</h5>
+          <div class="mt-2" style="font-family: 'Bungee', cursive;">
+            <a class="btn btn-sm btn-bloodmoon p-2 px-5"
+               title="Follow Us On Twitch"
+               href="https://www.twitch.tv/zeldathonuk" target="_blank">Follow Us On Twitch</a>
+          </div>
+        </ng-template>
         <ng-template #notLive>
           <h5 class="">ZeldathonUK is Offline</h5>
           <div class="mt-2" style="font-family: 'Bungee', cursive;">
@@ -51,15 +71,48 @@
         </ng-template>
       </div>
       <div class="col-12 col-sm-6 col-md-4 border-start border-2 border-danger pb-2 px-3">
-        <h6 class="text-bloodmoon">Up Next {{ nextGameTime !== '' ? '@ ' + nextGameTime : '' }}</h6>
-        <ng-container *ngIf="nextGame !== ''; else checkSchedule;">
-          <div><strong>{{ nextGame }}</strong></div>
-          <div class="small">with {{ nextRunnerName }}</div>
-          <div class="mt-2" style="font-family: 'Bungee', cursive;"
-               [routerLink]="'/schedule'">
-            <button class="btn btn-sm btn-bloodmoon p-2 px-5">Full Schedule</button>
-          </div>
+        <h6 class="text-bloodmoon">Up Next</h6>
+        <ng-container *ngIf="isNowBeforeStartDate(startDate$ | async); else showFirstGame;">
+          <ng-container *ngIf="(nextVideoGame$ | async) as nextVideoGame; else checkSchedule;">
+            <h5><strong>{{ nextVideoGame.gameDetail.title }}</strong></h5>
+            <div class="small">with
+              <div class="d-inline" *ngFor="let runner of nextVideoGame.runners; let i = index;">
+                <ng-container *ngIf="runner.streamer && runner.channelUrl !== ''; else showNonStreamerName;">
+                  {{ i >= 1 ? ',&nbsp;' : '' }}
+                  <a class="text-white" [href]="runner.channelUrl" target="_blank">{{ runner.name }}</a>
+                </ng-container>
+                <ng-template #showNonStreamerName>
+                  {{ i >= 1 ? ',&nbsp;' + runner.name : runner.name }}
+                </ng-template>
+              </div>
+            </div>
+            <div class="mt-2" style="font-family: 'Bungee', cursive;"
+                 [routerLink]="'/schedule'">
+              <button class="btn btn-sm btn-bloodmoon p-2 px-5">Full Schedule</button>
+            </div>
+          </ng-container>
         </ng-container>
+        <ng-template #showFirstGame>
+          <ng-container *ngIf="(currentVideoGame$ | async) as currentVideoGame; else notLive;">
+            <h5><strong>{{ currentVideoGame.gameDetail.title }}</strong></h5>
+            <div class="small">with
+              <div class="d-inline" *ngFor="let runner of currentVideoGame.runners; let i = index;">
+                <ng-container *ngIf="runner.streamer && runner.channelUrl !== ''; else showNonStreamerName;">
+                  {{ i >= 1 ? ',&nbsp;' : '' }}
+                  <a class="text-white" [href]="runner.channelUrl" target="_blank">{{ runner.name }}</a>
+                </ng-container>
+                <ng-template #showNonStreamerName>
+                  {{ i >= 1 ? ',&nbsp;' + runner.name : runner.name }}
+                </ng-template>
+              </div>
+            </div>
+            <div class="mt-2" style="font-family: 'Bungee', cursive;">
+              <a class="btn btn-sm btn-bloodmoon p-2 px-5"
+                 title="Check The Schedule"
+                 [routerLink]="'/schedule'">Check The Schedule</a>
+            </div>
+          </ng-container>
+        </ng-template>
         <ng-template #checkSchedule>
           <h5 class="">ZeldathonUK is Offline</h5>
           <div class="mt-2" style="font-family: 'Bungee', cursive;">

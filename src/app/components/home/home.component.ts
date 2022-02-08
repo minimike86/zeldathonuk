@@ -3,6 +3,14 @@ import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { faDiscord, faFacebook, faTwitch, faYoutube, faTwitter } from '@fortawesome/free-brands-svg-icons';
 
 import { ConfirmationService } from 'primeng/api';
+import {CurrentlyPlayingService} from '../../services/firebase/currently-playing/currently-playing.service';
+import {BehaviorSubject} from 'rxjs';
+import {map} from 'rxjs/operators';
+import {GameLineupService} from '../../services/firebase/game-lineup/game-lineup.service';
+import {ScheduledVideoGame} from '../../models/video-game';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
+import moment from 'moment';
 
 
 @Component({
@@ -12,6 +20,7 @@ import { ConfirmationService } from 'primeng/api';
 })
 export class HomeComponent implements OnInit {
   innerWidth: any;
+  public timeAgo: TimeAgo;
 
   faDiscord = faDiscord;
   faFacebook = faFacebook;
@@ -20,18 +29,44 @@ export class HomeComponent implements OnInit {
   faYoutube = faYoutube;
   faInfoCircle = faInfoCircle;
 
-  currentGame = '';
-  runnerName = '';
+  scheduledVideoGame$: BehaviorSubject<ScheduledVideoGame[]> = new BehaviorSubject<ScheduledVideoGame[]>([]);
+  currentVideoGame$: BehaviorSubject<ScheduledVideoGame> = new BehaviorSubject<ScheduledVideoGame>(null);
+  nextVideoGame$: BehaviorSubject<ScheduledVideoGame> = new BehaviorSubject<ScheduledVideoGame>(null);
+  currentlyPlaying$: BehaviorSubject<string> = new BehaviorSubject<string>(null);
+  startDate$: BehaviorSubject<Date> = new BehaviorSubject<Date>(null);
 
-  nextGame = '';
-  nextGameTime = '';
-  nextRunnerName = '';
-
-  constructor( private confirmationService: ConfirmationService ) {
+  constructor( private confirmationService: ConfirmationService,
+               private gameLineupService: GameLineupService,
+               private currentlyPlayingService: CurrentlyPlayingService ) {
   }
 
   ngOnInit() {
     this.innerWidth = window.innerWidth;
+    TimeAgo.addLocale(en);
+    this.timeAgo = new TimeAgo('en-GB');
+
+    this.gameLineupService.getGameLineUp().pipe(map((data) => {
+      this.scheduledVideoGame$.next(data.find(x => x.id === 'ACTIVE-SCHEDULE').activeSchedule);
+      this.startDate$.next(data.find(x => x.id === 'ACTIVE-SCHEDULE').startTimestamp.toDate());
+      // console.log('getGameLineUp', this.scheduledVideoGame$.getValue());
+      this.updatePlaylist();
+    })).subscribe();
+
+    this.currentlyPlayingService.getCurrentlyPlaying().subscribe((data) => {
+      this.currentlyPlaying$.next(data.find(x => x.id === 'CURRENTLY-PLAYING').index);
+      // console.log('getCurrentlyPlaying', this.currentlyPlaying$.getValue());
+      this.updatePlaylist();
+    });
+  }
+
+  updatePlaylist() {
+    this.currentVideoGame$.next(this.scheduledVideoGame$.getValue().find(x => x.gameProgressKey === this.currentlyPlaying$.getValue()));
+    this.nextVideoGame$.next(this.scheduledVideoGame$.getValue()[this.scheduledVideoGame$.getValue().findIndex(x =>
+      x.gameProgressKey === this.currentlyPlaying$.getValue()) + 1]);
+  }
+
+  isNowBeforeStartDate(startDate: Date): boolean {
+    return !moment().isBefore(moment(startDate));
   }
 
   @HostListener('window:resize', ['$event'])

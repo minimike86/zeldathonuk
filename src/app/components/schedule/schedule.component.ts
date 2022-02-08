@@ -59,14 +59,15 @@ export class ScheduleComponent implements OnInit {
     });
 
     this.gameLineupService.getGameLineUp().pipe(map((data) => {
-      // console.log('activeSchedule', data[0].activeSchedule);
-      this.activeSchedule$.next(data[0].activeSchedule
+      console.log('getGameLineUp', data.find(x => x.id === 'ACTIVE-SCHEDULE').activeSchedule);
+      this.activeSchedule$.next(data.find(x => x.id === 'ACTIVE-SCHEDULE').activeSchedule
         .sort((a: ScheduledVideoGame, b: ScheduledVideoGame) => a.order - b.order));
-      this.startDate = data[0].startTimestamp.toDate();
+      this.startDate = data.find(x => x.id === 'ACTIVE-SCHEDULE').startTimestamp.toDate();
     })).subscribe();
 
     this.currentlyPlayingService.getCurrentlyPlaying().subscribe((data) => {
-      this.currentGameName = data[0].index;
+      this.currentGameName = data.find(x => x.id === 'CURRENTLY-PLAYING').index;
+      console.log('getCurrentlyPlaying', this.currentGameName);
     });
 
   }
@@ -76,11 +77,13 @@ export class ScheduleComponent implements OnInit {
   }
 
   isCurrentlyPlaying(index: number): boolean {
-    return this.activeSchedule$.getValue()[index].gameDetail.title === this.twitchChannelInfo?.game_name;
+    const game: ScheduledVideoGame = this.activeSchedule$.getValue()[index];
+    return game.gameProgressKey === this.currentGameName;
   }
 
   hasBeenPlayed(index: number): boolean {
-    return this.activeSchedule$.getValue()[index]?.isCompleted;
+    const currentGameIndex: number = this.activeSchedule$.getValue().findIndex(x => x.gameProgressKey === this.currentGameName);
+    return index < currentGameIndex || this.activeSchedule$.getValue()[index]?.isCompleted;
   }
 
   calculateStartDate(i: number): Date {

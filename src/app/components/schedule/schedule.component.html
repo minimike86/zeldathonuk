@@ -30,7 +30,7 @@
         </thead>
         <tbody>
 
-          <tr *ngFor="let game of (activeSchedule$ | async); let i = index" [ngClass]="isCurrentlyPlaying(i) ? 'table-gold' : hasBeenPlayed(i) ? 'table-played' : ''">
+          <tr *ngFor="let game of (activeSchedule$ | async); let i = index" [ngClass]="hasBeenPlayed(i) ? 'table-played' : isCurrentlyPlaying(i) ? 'table-currently-playing' : ''">
 
             <td class="align-middle">
               <div class="">
@@ -65,24 +65,26 @@
                        [title]="game.gameDetail.title + ' Cover Art'">
                 </div>
                 <div class="text-center w-100">
-                  <div class="mb-1">
+                  <div class="">
                     {{ game.gameDetail.title }}
                     ({{ (game.gameDetail.detail.releases.EU?.length >= 1 ?
                            game.gameDetail.detail.releases.EU :
                            game.gameDetail.detail.releases.NA?.length >= 1 ?
                              game.gameDetail.detail.releases.NA :
                              game.gameDetail.detail.releases.JP) | date:'yyyy' }})
-                    <ng-container *ngIf="hasBeenPlayed(i) && !isCurrentlyPlaying(i)">
-                        <span class="badge bg-warning m-2">
+                    <ng-container *ngIf="hasBeenPlayed(i)">
+                      <div class="d-flex justify-content-center">
+                        <div class="rounded-pill bg-dark mt-1 w-50">
                           COMPLETED
-                        </span>
+                        </div>
+                      </div>
                     </ng-container>
                     <ng-container *ngIf="isCurrentlyPlaying(i) && isLive">
                       <div class="d-inline-block m-2" (click)="routeToLiveView()">
-                            <span class="badge bg-danger" style="cursor: pointer;" title="Watch Livestream">
-                              LIVE <span style="color: red;">🔴</span>
-                            </span>
-                        <div class="d-inline-block live-circle ms-1"></div>
+                        <div class="badge bg-light text-dark fw-bold p-2 px-4" style="cursor: pointer;" title="Watch Livestream">
+                          LIVE NOW! <span style="color: red;">
+                            <div class="d-inline-block live-circle ms-1"></div></span>
+                        </div>
                       </div>
                     </ng-container>
                   </div>
