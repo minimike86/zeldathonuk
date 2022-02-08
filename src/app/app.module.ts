@@ -48,9 +48,7 @@ import { HomeComponent } from './components/home/home.component';
 import { PageNotFoundComponent } from './components/page-not-found/page-not-found.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
-import { JgDonationComponent } from './components/jg-donation/jg-donation.component';
 import { TimersComponent } from './components/timers/timers.component';
-import { FbDonationComponent } from './components/fb-donation/fb-donation.component';
 import { CountupComponent } from './components/timers/countup/countup.component';
 import { IncentivesComponent } from './components/incentives/incentives.component';
 import { DonationsComponent } from './components/donations/donations.component';
@@ -115,9 +113,7 @@ import { EditGameDialogComponent } from './components/obs/edit-game-dialog/edit-
     PageNotFoundComponent,
     NavbarComponent,
     FooterComponent,
-    JgDonationComponent,
     TimersComponent,
-    FbDonationComponent,
     CountupComponent,
     IncentivesComponent,
     ScheduleComponent,
