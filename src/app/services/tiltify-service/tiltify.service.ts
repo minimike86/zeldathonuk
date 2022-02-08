@@ -1,26 +1,25 @@
 import { Injectable } from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Observable} from 'rxjs';
+import {tiltifyEnvironment} from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TiltifyService {
 
-  private accessToken =	'';
-
   constructor(private http: HttpClient) {
   }
 
   getCampaignById(id: number): Observable<TiltifyCampaign> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken}`);
+      .set('Authorization', `Bearer ${tiltifyEnvironment.accessToken}`);
     return this.http.get<TiltifyCampaign>(`https://tiltify.com/api/v3/campaigns/${id}`, {headers: httpHeaders});
   }
 
   getCampaignDonationsById(id: number): Observable<TiltifyCampaignDonations> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken}`);
+      .set('Authorization', `Bearer ${tiltifyEnvironment.accessToken}`);
     return this.http.get<TiltifyCampaignDonations>(`https://tiltify.com/api/v3/campaigns/${id}/donations`, {headers: httpHeaders});
   }
 

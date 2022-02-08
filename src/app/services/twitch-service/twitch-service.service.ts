@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import {twitchEnvironment} from '../../../environments/environment';
 
 
 @Injectable({
@@ -9,46 +10,37 @@ import { map } from 'rxjs/operators';
 })
 export class TwitchService {
 
-  private clientId = 'g1aemw0yex5u12xuumeakmmfarie6q';
-  private clientSecret = '######';
-
-  private accessToken: AccessToken = {
-    access_token: '######',
-    expires_in: 5167700,
-    token_type: 'bearer'
-  };
-
   constructor(private http: HttpClient) {
   }
 
   getUserInformation(): Observable<UserInformationData> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken}`)
-      .set('Client-Id', this.clientId);
+      .set('Authorization', `Bearer ${twitchEnvironment.accessToken}`)
+      .set('Client-Id', twitchEnvironment.clientId);
     return this.http.get<UserInformationData>(
       `https://api.twitch.tv/helix/users`, {headers: httpHeaders});
   }
 
   getUserInformationById(userId: number): Observable<UserInformationData> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken}`)
-      .set('Client-Id', this.clientId);
+      .set('Authorization', `Bearer ${twitchEnvironment.accessToken}`)
+      .set('Client-Id', twitchEnvironment.clientId);
     return this.http.get<UserInformationData>(
       `https://api.twitch.tv/helix/users?id=${userId}`, {headers: httpHeaders});
   }
 
   getChannelInformation(broadcasterId: number): Observable<ChannelInformation> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken}`)
-      .set('Client-Id', this.clientId);
+      .set('Authorization', `Bearer ${twitchEnvironment.accessToken}`)
+      .set('Client-Id', twitchEnvironment.clientId);
     return this.http.get<ChannelInformation>(
       `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcasterId}`, {headers: httpHeaders});
   }
 
   getSearchChannels(query: string, first: number, liveOnly: boolean): Observable<SearchChannelsResponse> {
     const httpHeaders = new HttpHeaders()
-      .set('Authorization', `Bearer ${this.accessToken}`)
-      .set('Client-Id', this.clientId);
+      .set('Authorization', `Bearer ${twitchEnvironment.accessToken}`)
+      .set('Client-Id', twitchEnvironment.clientId);
     return this.http.get<RawSearchChannelsResponse>(
       `https://api.twitch.tv/helix/search/channels?query=${query}&first=${first}&live_only=${liveOnly}`,
       {headers: httpHeaders}).pipe(map(rawData => {
