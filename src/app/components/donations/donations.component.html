@@ -41,7 +41,7 @@
                       </div>
                     </div>
 
-                    <div class="my-2 small text-light" *ngIf="donation.message.length >= 1">
+                    <div class="my-2 small text-light" *ngIf="donation.message !== null && donation.message.length >= 1">
                       <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.2em;">&ldquo;</span>
                       <i class="px-1" style="font-size: 1.2em; font-family: 'Poppins', sans-serif;">{{ donation.message.length >= 1 ? donation.message : '-' }}</i>
                       <span class="position-relative" style="font-size: 2em; font-family: 'Poppins', sans-serif; top: 0.7em;">&rdquo;</span>
