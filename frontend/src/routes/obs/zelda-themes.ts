@@ -16,6 +16,7 @@ import { MajorasMaskScene } from './scenes/MajorasMaskScene';
 import { BotwScene } from './scenes/BotwScene';
 import { BotwDeathMountainScene } from './scenes/BotwDeathMountainScene';
 import { TotkScene } from './scenes/TotkScene';
+import { TotkDepthsScene } from './scenes/TotkDepthsScene';
 import { SkywardScene } from './scenes/SkywardScene';
 import { TwilightScene } from './scenes/TwilightScene';
 import { AlttpScene } from './scenes/AlttpScene';
@@ -58,7 +59,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#0b1f2a',
       tertiary: '#a17042',
       glow: 'rgba(90, 214, 198, 0.7)',
-      scenes: [TotkScene],
+      scenes: [TotkScene, TotkDepthsScene],
     },
   },
   {

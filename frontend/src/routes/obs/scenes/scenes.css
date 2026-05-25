@@ -661,8 +661,7 @@
 /* The countdown text should sit on top of scenes. */
 .ac-stage > .ac-title,
 .ac-stage > .ac-clock,
-.ac-stage > .ac-sub,
-.ac-stage > .ac-nowplaying {
+.ac-stage > .ac-sub {
   position: relative;
   z-index: 2;
 }
@@ -2047,6 +2046,78 @@
   to { background-position: 80px -240px, 160px -220px; }
 }
 
+/* Silver Lynel patrolling the depths cavern floor. One keyframe handles
+ * both the X traversal and the horizontal flip at each end so he turns
+ * around at the edges. A small walking bob is layered in via a custom
+ * property so it stacks with the patrol's scaleX without one animation
+ * overwriting the other's transform. */
+@property --lynel-bob {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+@property --lynel-rock {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.totk-depths-lynel {
+  position: absolute;
+  bottom: 6vh;
+  left: 80vw;
+  width: min(160px, 11vw);
+  height: auto;
+  /* Sits above the gloom hands (z-index 6) and the foreground ledge
+   * (z-index 5) so the patrolling lynel reads as the closest thing
+   * to the camera. */
+  z-index: 7;
+  --lynel-bob: 0px;
+  --lynel-rock: 0deg;
+  transform-origin: 50% 100%;
+  /* Dim, dark-red gloom haze — barely there, just enough to tint the
+   * silhouette so he reads as part of the Depths atmosphere. */
+  filter:
+    drop-shadow(0 0 6px rgba(72, 6, 14, 0.35))
+    drop-shadow(0 0 12px rgba(40, 2, 8, 0.25))
+    drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
+  animation:
+    totk-depths-lynel-patrol 54s linear infinite,
+    totk-depths-lynel-bob 0.7s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Walks fully off-screen at each end and flips while invisible, so the
+ * direction change is never seen on stage. Source image faces left, so
+ * scaleX(1) = facing left and scaleX(-1) = facing right. */
+@keyframes totk-depths-lynel-patrol {
+  /* Enter from off-screen right, walking left */
+  0%    { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+  /* Fully off-screen on the left, still facing left */
+  48%   { left: -14vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+  /* Off-screen flip — invisible to the viewer */
+  48.5% { left: -14vw; transform: translateY(var(--lynel-bob)) scaleX(-1) rotate(var(--lynel-rock)); }
+  /* Re-enter from off-screen left, walking right */
+  50%   { left: -14vw; transform: translateY(var(--lynel-bob)) scaleX(-1) rotate(var(--lynel-rock)); }
+  /* Fully off-screen on the right, still facing right */
+  98%   { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(-1) rotate(var(--lynel-rock)); }
+  /* Off-screen flip back to natural orientation, ready for next loop */
+  98.5% { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+  100%  { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+}
+
+/* Trotting cadence — quick up-down bob paired with a small head/body
+ * rock around the hooves. Both values feed the transform via custom
+ * props so the patrol keyframe can compose them without clobbering. */
+@keyframes totk-depths-lynel-bob {
+  0%   { --lynel-bob: 0px;  --lynel-rock: 0deg; }
+  25%  { --lynel-bob: -5px; --lynel-rock: 2deg; }
+  50%  { --lynel-bob: -1px; --lynel-rock: 0deg; }
+  75%  { --lynel-bob: -5px; --lynel-rock: -2deg; }
+  100% { --lynel-bob: 0px;  --lynel-rock: 0deg; }
+}
+
 /* Drifting orange Sheikah embers in the sky */
 .botw-embers {
   position: absolute;
@@ -2354,6 +2425,359 @@
   width: 100%;
   height: 22vh;
   filter: drop-shadow(0 -4px 14px rgba(0, 0, 0, 0.5));
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * TEARS OF THE KINGDOM — DEPTHS SCENE
+ * Underground cavern with chasm sunbeams, Lightroot glow, Brightblooms,
+ * Poe wisps, monsters, and Gloom.
+ * ───────────────────────────────────────────────────────────────────────── */
+.totk-depths-scene {
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(40, 6, 14, 0.4) 0%, transparent 55%),
+    radial-gradient(ellipse at 28% 60%, rgba(20, 80, 100, 0.18) 0%, transparent 50%),
+    linear-gradient(180deg,
+      #050608 0%,
+      #0a0c14 30%,
+      #0c1018 60%,
+      #06060c 100%
+    );
+}
+
+.totk-depths-ceiling {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30vh;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.75));
+}
+
+/* Bright chasm openings in the ceiling */
+.totk-depths-hole {
+  position: absolute;
+  top: 0;
+  width: 90px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    #fff5d0 0%,
+    #ffd380 35%,
+    rgba(255, 180, 80, 0.5) 60%,
+    transparent 85%
+  );
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.totk-depths-hole-1 { left: 18%; }
+.totk-depths-hole-2 { right: 22%; top: 1.5%; }
+
+/* Sunbeams pouring down from each chasm */
+.totk-depths-beam {
+  position: absolute;
+  top: 1%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  filter: blur(8px);
+}
+
+.totk-depths-beam-1 {
+  left: 19%;
+  border-style: solid;
+  border-width: 70vh 80px 0 30px;
+  border-color: rgba(255, 220, 140, 0.18) transparent transparent transparent;
+  transform: translateX(-30px);
+  animation: totk-depths-beam-flicker 4.5s ease-in-out infinite alternate;
+}
+
+.totk-depths-beam-2 {
+  right: 23%;
+  border-style: solid;
+  border-width: 64vh 28px 0 70px;
+  border-color: rgba(255, 220, 140, 0.16) transparent transparent transparent;
+  transform: translateX(28px);
+  animation: totk-depths-beam-flicker 6s ease-in-out infinite alternate;
+  animation-delay: -2s;
+}
+
+@keyframes totk-depths-beam-flicker {
+  from { opacity: 0.7; }
+  to   { opacity: 1; }
+}
+
+/* Falling dust motes inside each beam */
+.totk-depths-dust {
+  position: absolute;
+  width: 120px;
+  height: 60vh;
+  top: 1%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 240, 200, 0.7) 0.8px, transparent 1.5px),
+    radial-gradient(circle, rgba(255, 220, 140, 0.5) 1px, transparent 1.8px);
+  background-size: 80px 90px, 100px 130px;
+  animation: totk-depths-dust-fall 7s linear infinite;
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+.totk-depths-dust-1 { left: 16%; }
+.totk-depths-dust-2 { right: 21%; animation-duration: 9s; animation-delay: -3s; }
+
+@keyframes totk-depths-dust-fall {
+  from { background-position: 0 -90px, 40px -130px; }
+  to   { background-position: 0 90px,  40px 130px; }
+}
+
+/* Floating script ribbons of abstract glyphs flowing across the cavern.
+ * Width is 200% of the scene because the SVG viewBox is 2400 wide with
+ * the glyph pattern duplicated at x=1200; translating by -50% (or +50%)
+ * loops seamlessly. Drop-shadow gives an ethereal teal glow. */
+.totk-depths-script {
+  position: absolute;
+  left: 0;
+  width: 200%;
+  height: 10vh;
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 0 5px rgba(154, 248, 238, 0.85))
+          drop-shadow(0 0 12px rgba(90, 240, 232, 0.45));
+  mix-blend-mode: screen;
+}
+
+.totk-depths-script-1 {
+  top: 28%;
+  opacity: 0.7;
+  animation: totk-script-flow-left 48s linear infinite;
+}
+
+.totk-depths-script-2 {
+  top: 44%;
+  opacity: 0.55;
+  height: 8vh;
+  animation: totk-script-flow-right 60s linear infinite;
+}
+
+@keyframes totk-script-flow-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes totk-script-flow-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+/* Each glyph fades and gently shimmers on its own slow cadence so the
+ * script reads as alive and breathing rather than a static row of marks. */
+.totk-script-glyph {
+  animation: totk-script-wisp 7s ease-in-out infinite;
+}
+
+@keyframes totk-script-wisp {
+  0%, 100% { opacity: 0.2; transform: translateY(0); }
+  25%      { opacity: 0.7; transform: translateY(-2px); }
+  50%      { opacity: 1;   transform: translateY(-4px); }
+  75%      { opacity: 0.5; transform: translateY(-2px); }
+}
+
+/* Malice wisp orbs drifting along the ribbon — red eye-pulses that
+ * breathe and brighten on their own staggered cadence. */
+.totk-malice-wisp {
+  animation: totk-malice-wisp-pulse 3.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes totk-malice-wisp-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1.18); }
+}
+
+/* Wisps in each pass come after the 12 glyphs, so they're nth-child 13–16
+ * in ribbon 1 and 13–15 in ribbon 2. Stagger each so they don't pulse in
+ * lockstep. */
+.totk-script-pass > .totk-malice-wisp:nth-child(13) { animation-delay: 0s;    animation-duration: 3.6s; }
+.totk-script-pass > .totk-malice-wisp:nth-child(14) { animation-delay: -1.4s; animation-duration: 4.2s; }
+.totk-script-pass > .totk-malice-wisp:nth-child(15) { animation-delay: -2.6s; animation-duration: 3.9s; }
+.totk-script-pass > .totk-malice-wisp:nth-child(16) { animation-delay: -0.8s; animation-duration: 4.5s; }
+
+/* Stagger the flicker across the 12 glyphs per pass so the ribbon
+ * shimmers like wind through grass. Both passes share these nth-child
+ * indices, which keeps pass-2 in sync with pass-1 for the seamless loop. */
+.totk-script-pass .totk-script-glyph:nth-child(1)  { animation-delay: 0s;     animation-duration: 6.4s; }
+.totk-script-pass .totk-script-glyph:nth-child(2)  { animation-delay: -0.6s;  animation-duration: 7.2s; }
+.totk-script-pass .totk-script-glyph:nth-child(3)  { animation-delay: -1.2s;  animation-duration: 6.8s; }
+.totk-script-pass .totk-script-glyph:nth-child(4)  { animation-delay: -1.9s;  animation-duration: 7.6s; }
+.totk-script-pass .totk-script-glyph:nth-child(5)  { animation-delay: -2.4s;  animation-duration: 6.6s; }
+.totk-script-pass .totk-script-glyph:nth-child(6)  { animation-delay: -3.0s;  animation-duration: 7.4s; }
+.totk-script-pass .totk-script-glyph:nth-child(7)  { animation-delay: -3.7s;  animation-duration: 7.0s; }
+.totk-script-pass .totk-script-glyph:nth-child(8)  { animation-delay: -4.2s;  animation-duration: 6.5s; }
+.totk-script-pass .totk-script-glyph:nth-child(9)  { animation-delay: -4.8s;  animation-duration: 7.8s; }
+.totk-script-pass .totk-script-glyph:nth-child(10) { animation-delay: -5.3s;  animation-duration: 7.2s; }
+.totk-script-pass .totk-script-glyph:nth-child(11) { animation-delay: -5.9s;  animation-duration: 6.7s; }
+.totk-script-pass .totk-script-glyph:nth-child(12) { animation-delay: -6.4s;  animation-duration: 7.3s; }
+
+/* Atmospheric haze across the mid-band of the cavern */
+.totk-depths-fog {
+  position: absolute;
+  top: 30%;
+  left: 0;
+  right: 0;
+  height: 36vh;
+  background: linear-gradient(180deg,
+    rgba(40, 60, 80, 0.18) 0%,
+    rgba(60, 30, 60, 0.10) 50%,
+    rgba(80, 10, 26, 0.08) 100%
+  );
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+/* Brightbloom seeds scattered across the cavern floor and walls */
+.totk-depths-blooms {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, #5af0e8  1.4px, transparent 2px),
+    radial-gradient(circle, #a8f8f0  1.1px, transparent 1.6px),
+    radial-gradient(circle, #6ae8ff  1px,   transparent 1.4px);
+  background-size: 320px 240px, 220px 180px, 380px 280px;
+  background-position: 60px 50%, 180px 70%, 90px 60%;
+  filter: drop-shadow(0 0 4px rgba(120, 240, 232, 0.85));
+  mix-blend-mode: screen;
+  opacity: 0.95;
+  animation: totk-blooms-pulse 5s ease-in-out infinite alternate;
+}
+
+@keyframes totk-blooms-pulse {
+  from { opacity: 0.75; }
+  to   { opacity: 1; }
+}
+
+/* Drifting Poe wisps — float up gently with side-to-side wander */
+.totk-depths-wisp {
+  position: absolute;
+  width: 50px;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(168, 232, 255, 0.7));
+}
+
+.totk-depths-wisp-1 {
+  left: 12%;
+  bottom: 28vh;
+  width: 56px;
+  animation: totk-wisp-drift-1 9s ease-in-out infinite;
+}
+
+.totk-depths-wisp-2 {
+  left: 42%;
+  bottom: 24vh;
+  width: 46px;
+  animation: totk-wisp-drift-2 11s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.totk-depths-wisp-3 {
+  right: 18%;
+  bottom: 36vh;
+  width: 38px;
+  animation: totk-wisp-drift-3 8s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+@keyframes totk-wisp-drift-1 {
+  0%, 100% { transform: translate(0, 0)     scale(1); opacity: 0.9; }
+  25%      { transform: translate(8px, -10px) scale(1.05); }
+  50%      { transform: translate(-6px, -18px) scale(0.95); opacity: 1; }
+  75%      { transform: translate(4px, -8px)  scale(1.02); }
+}
+
+@keyframes totk-wisp-drift-2 {
+  0%, 100% { transform: translate(0, 0)     scale(1); opacity: 0.85; }
+  30%      { transform: translate(-10px, -14px) scale(1.08); opacity: 1; }
+  60%      { transform: translate(8px, -22px)   scale(0.9); }
+  80%      { transform: translate(2px, -10px)   scale(1.03); }
+}
+
+@keyframes totk-wisp-drift-3 {
+  0%, 100% { transform: translate(0, 0)     scale(0.95); opacity: 0.8; }
+  40%      { transform: translate(6px, -12px)  scale(1.05); opacity: 1; }
+  70%      { transform: translate(-6px, -20px) scale(0.92); }
+}
+
+/* Monster silhouette skulking in the middle distance */
+.totk-depths-monster {
+  position: absolute;
+  bottom: 18vh;
+  left: 32%;
+  width: min(110px, 8vw);
+  height: auto;
+  z-index: 2;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.7));
+  animation: totk-monster-sway 3.2s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+@keyframes totk-monster-sway {
+  0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+  50%      { transform: rotate(1.5deg)  translateY(-2px); }
+}
+
+/* Gloom seeping along the cavern floor */
+.totk-depths-gloom {
+  position: absolute;
+  bottom: 18vh;
+  left: 0;
+  width: 100%;
+  height: 10vh;
+  z-index: 1;
+  filter: drop-shadow(0 0 14px rgba(216, 36, 58, 0.35));
+}
+
+/* Gloom Hands — spindly skeletal arms rising from the Gloom pool. Each
+ * hand sways on its own slow cadence so the group never moves in lockstep. */
+.totk-depths-gloom-hands {
+  position: absolute;
+  bottom: 18vh;
+  left: 12%;
+  width: 76%;
+  height: 28vh;
+  z-index: 6;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(216, 36, 58, 0.4))
+          drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+}
+
+.totk-gloom-hand {
+  transform-origin: 50% 100%;
+  animation: totk-gloom-hand-sway 4s ease-in-out infinite;
+}
+
+.totk-gloom-hand-1 { animation-duration: 4.6s; animation-delay: 0s;     transform-origin: 90px 260px; }
+.totk-gloom-hand-2 { animation-duration: 5.2s; animation-delay: -1.3s;  transform-origin: 216px 260px; }
+.totk-gloom-hand-3 { animation-duration: 3.8s; animation-delay: -0.6s;  transform-origin: 356px 260px; }
+.totk-gloom-hand-4 { animation-duration: 4.9s; animation-delay: -2.1s;  transform-origin: 492px 260px; }
+.totk-gloom-hand-5 { animation-duration: 5.6s; animation-delay: -3.4s;  transform-origin: 626px 260px; }
+
+@keyframes totk-gloom-hand-sway {
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50%      { transform: rotate(2.5deg) translateY(-3px); }
+}
+
+/* Foreground rock ledge — the cliff the camera stands on */
+.totk-depths-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  z-index: 5;
+  filter: drop-shadow(0 -4px 14px rgba(0, 0, 0, 0.6));
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

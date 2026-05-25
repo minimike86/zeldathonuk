@@ -45,6 +45,7 @@ env/
 *.sqlite3-journal
 staticfiles/
 mediafiles/
+backend/media/audio_cache/
 
 # Docker
 .docker/
