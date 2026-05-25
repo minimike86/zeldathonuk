@@ -100,16 +100,29 @@ export function Zelda2Scene() {
         </g>
       </svg>
 
-      {/* Triforce of Courage hovering, pulsing */}
+      {/* Triforce of Courage hovering, pulsing — three identical 5-row
+        * pyramids tessellated so their corners share a pixel column, with
+        * a clean inverted-triangle gap in the middle. */}
       <svg className="z2-triforce" viewBox="-50 -45 100 80" shapeRendering="crispEdges">
         <g fill="#ffd23a">
-          <rect x="-4" y="-30" width="8" height="2" />
-          <rect x="-6" y="-28" width="12" height="2" />
-          <rect x="-8" y="-26" width="16" height="2" />
-          <rect x="-10" y="-24" width="20" height="2" />
-          <rect x="-12" y="-22" width="24" height="2" />
-          <rect x="-14" y="-20" width="28" height="2" />
-          <rect x="-16" y="-18" width="32" height="2" />
+          {/* top triangle — centred on x=0 */}
+          <rect x="-1" y="-22" width="2"  height="2" />
+          <rect x="-3" y="-20" width="6"  height="2" />
+          <rect x="-5" y="-18" width="10" height="2" />
+          <rect x="-7" y="-16" width="14" height="2" />
+          <rect x="-9" y="-14" width="18" height="2" />
+          {/* bottom-left triangle — apex sits directly below the top's left corner */}
+          <rect x="-9"  y="-12" width="2"  height="2" />
+          <rect x="-11" y="-10" width="6"  height="2" />
+          <rect x="-13" y="-8"  width="10" height="2" />
+          <rect x="-15" y="-6"  width="14" height="2" />
+          <rect x="-17" y="-4"  width="18" height="2" />
+          {/* bottom-right triangle — mirror of the bottom-left */}
+          <rect x="7"  y="-12" width="2"  height="2" />
+          <rect x="5"  y="-10" width="6"  height="2" />
+          <rect x="3"  y="-8"  width="10" height="2" />
+          <rect x="1"  y="-6"  width="14" height="2" />
+          <rect x="-1" y="-4"  width="18" height="2" />
         </g>
       </svg>
 
