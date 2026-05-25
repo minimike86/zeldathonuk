@@ -1,0 +1,173 @@
+.obs-index {
+  padding: 1.5rem;
+  color: #fff;
+  min-height: 100vh;
+  background: #4c1324;
+}
+
+.obs-index header {
+  margin-bottom: 2rem;
+}
+
+.obs-index h1.text-bloodmoon,
+.obs-index h2.text-bloodmoon {
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.obs-index h1.text-bloodmoon {
+  font-size: 2.5em;
+}
+
+.obs-index h2.text-bloodmoon {
+  font-size: 1.75em;
+  margin-bottom: 1rem;
+}
+
+.obs-source-card {
+  background: linear-gradient(45deg, rgba(76, 19, 36, 0.95), rgba(115, 28, 55, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.obs-source-card .card-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.obs-source-card code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+/* Shared layout chrome — used by all /obs/layout/* pages */
+.obs-stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  overflow: hidden;
+  color: #fff;
+}
+
+.obs-stage .game-frame {
+  position: absolute;
+  background: #000;
+  border: 2px solid #b92753;
+  box-shadow: 0 0 20px rgba(231, 19, 71, 0.4);
+}
+
+.obs-stage .side-panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
+  background: linear-gradient(180deg, rgba(43, 27, 37, 0.95), rgba(76, 19, 36, 0.95));
+  border-left: 2px solid #b92753;
+}
+
+.obs-stage .panel-block {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(185, 39, 83, 0.5);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.obs-stage .panel-block-title {
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.obs-stage .panel-camera {
+  background: #1a0a10;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.8em;
+}
+
+.obs-stage .panel-timer {
+  font-family: 'VT323', monospace;
+  font-size: 2.5rem;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(231, 19, 71, 0.8);
+}
+
+.obs-stage .panel-runners {
+  font-family: 'Bungee', sans-serif;
+  text-align: center;
+}
+
+/* Items grid panel on the OBS side bar. Collected items glow, uncollected
+ * are grayed out. */
+.obs-stage .obs-items-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.obs-stage .obs-item {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.obs-stage .obs-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.obs-stage .obs-item[data-collected='false'] {
+  opacity: 0.35;
+  filter: grayscale(100%);
+}
+
+.obs-stage .obs-item[data-collected='true'] {
+  border-color: #7fff7f;
+  box-shadow: 0 0 8px rgba(127, 255, 127, 0.5);
+}
+
+.obs-stage .obs-item-fallback {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.7em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* The placeholder dotted box shown when a layout has no game capture yet. */
+.obs-stage .game-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.4);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  font-family: 'Bungee', sans-serif;
+  text-align: center;
+  padding: 1rem;
+}

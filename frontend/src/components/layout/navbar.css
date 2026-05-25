@@ -1,0 +1,68 @@
+/* Ported verbatim from legacy/src/app/components/navbar/navbar.component.css */
+
+.navbar {
+  background: linear-gradient(180deg, #2b1b25, hsla(0, 0%, 100%, 0)), #4c1324 !important;
+  border-bottom: 1px solid #bb225e;
+  padding: 0.25rem 0.5rem;
+  min-height: 56px;
+}
+
+.nav-item {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.navbar-brand {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* The donate buttons in the navbar — Angular pairs the bloodmoon gradient with
+ * a subtle white outline so they pop against the bloodmoon header. */
+.navbar .btn-bloodmoon {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25) inset;
+}
+
+.navbar .btn-bloodmoon:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.nav-link-dark {
+  font-weight: 500;
+  color: white !important;
+  text-shadow: 1px 1px 2px black;
+}
+
+.nav-item-bloodmoon:hover {
+  background: linear-gradient(180deg, #b92753, hsla(0, 0%, 100%, 0)), #b92753 !important;
+}
+
+.nav-icon-bloodmoon {
+  color: #b92753;
+}
+
+.nav-item-bloodmoon:hover .nav-icon-bloodmoon {
+  color: #111421 !important;
+}
+
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
+  border-color: #2b1b25;
+}
+
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
+  border-color: #2b1b25;
+  filter: opacity(85%);
+}
+
+.golden-text {
+  background: linear-gradient(45deg, #f6b100, #fff, #f6b100);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}

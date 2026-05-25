@@ -1,0 +1,54 @@
+.omnibar {
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  overflow: hidden;
+}
+
+.ob-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 2rem;
+  width: 100%;
+  animation: ob-fade-in 0.5s ease-out;
+}
+
+.ob-label {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.8rem;
+  padding: 0.4rem 1rem;
+  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.ob-text {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 1.75rem;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ob-text strong {
+  color: #ffc2e0;
+}
+
+@keyframes ob-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

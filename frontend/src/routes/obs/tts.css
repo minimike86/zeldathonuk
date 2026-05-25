@@ -1,0 +1,43 @@
+.tts-stage {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  pointer-events: none;
+}
+
+.tts-card {
+  background: linear-gradient(135deg, rgba(76, 19, 36, 0.95), rgba(115, 28, 55, 0.95));
+  border: 2px solid #b92753;
+  border-radius: 12px;
+  padding: 2rem;
+  color: #fff;
+  box-shadow: 0 0 40px rgba(231, 19, 71, 0.5);
+  text-align: center;
+  max-width: 60vw;
+}
+
+.tts-donor {
+  font-family: 'Bungee', sans-serif;
+  font-size: 2.5rem;
+}
+
+.tts-amount {
+  font-family: 'VT323', monospace;
+  font-size: 4rem;
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+}
+
+.tts-message {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 1.5rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}

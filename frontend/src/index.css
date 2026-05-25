@@ -1,0 +1,86 @@
+@import 'bootstrap/dist/css/bootstrap.css';
+
+@import url('https://fonts.googleapis.com/css2?family=VT323');
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+@import url('https://fonts.googleapis.com/css?family=Bungee');
+@import url('https://fonts.googleapis.com/css?family=Passion+One');
+@import url('https://fonts.googleapis.com/css?family=Mukta');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Legacy global styles (ported verbatim from legacy/src/styles.css).
+ * ──────────────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  display: none;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: 'Open Sans', sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  background-color: #4c1324;
+  margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * App shell — ported from legacy/src/app/app.component.css
+ * ──────────────────────────────────────────────────────────────────────── */
+.zeldathon-bg {
+  background-color: #4c1324;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.zeldathon-bg::before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100vw;
+  height: 100vh;
+  background: url('https://www.dropbox.com/s/sgi5ghjemn65fm0/final_61d923aba32ecb010b4f426b_599482_818x460.19bff1ced7d62abd.gif?dl=1')
+    no-repeat 0 20%;
+  background-size: cover, auto;
+  opacity: 0.2;
+  z-index: -1;
+}
+
+/* Router outlet fills whatever vertical space is left between navbar and
+ * footer. Avoids the legacy's brittle calc(100vh - 46px - 20px) which
+ * breaks when the navbar grows past 46px. */
+.router-outlet {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.router-outlet-obs {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* PrimeNG/PrimeIcons compatibility — minimal set used by ported pages. */
+i[class^='pi pi-']::before,
+i[class*=' pi pi-']::before {
+  font-family: 'primeicons', sans-serif;
+  display: inline-block;
+}

@@ -1,40 +1,64 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
-
-# compiled output
-/dist
-/tmp
-/out-tsc
-
-# dependencies
-/node_modules
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
-/.angular/cache
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
+# OS
 .DS_Store
 Thumbs.db
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vite / build artefacts
+dist/
+build/
+.cache/
+.parcel-cache/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Django
+*.sqlite3
+*.sqlite3-journal
+staticfiles/
+mediafiles/
+
+# Docker
+.docker/
+
+# Coverage
+coverage/
+.coverage
+htmlcov/
+
+# Fly
+fly.toml.local
+
+# Legacy app (Angular) — keep dependencies and build artefacts out of git
+legacy/node_modules/
+legacy/dist/
+legacy/.angular/
+legacy/coverage/

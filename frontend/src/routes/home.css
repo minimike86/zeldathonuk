@@ -1,0 +1,79 @@
+/* Ported from legacy/src/app/components/home/home.component.css */
+
+.bg-bloodmoon {
+  background-color: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.bg-bloodmoon::before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #ffc2e0, #e59fcb, #d96da9);
+  opacity: 0.15;
+  z-index: -1;
+}
+
+.text-specialeffect-blurb {
+  display: -webkit-box;
+  max-width: 100%;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-bloodmoon {
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 1.65em;
+  text-transform: uppercase;
+}
+
+.btn-specialeffect {
+  font-family: 'Bungee', 'Open Sans', cursive !important;
+  color: #fff;
+  background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
+  border: 2px solid rgba(254, 130, 32, 0.8);
+}
+
+.btn-specialeffect:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
+  border: 2px solid rgba(254, 130, 32, 0.8);
+  filter: opacity(85%);
+}
+
+/* Donate cards — white outline so they pop on bloodmoon. */
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
+  border-color: rgba(255, 255, 255, 0.7);
+  filter: opacity(90%);
+}
+
+/* Bump up Currently Playing / Up Next / Benefitting text — Bootstrap's
+ * default h5 was reading too small inside the 0.80em row. */
+.bg-bloodmoon h5 {
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
+.bg-bloodmoon h6.text-bloodmoon {
+  font-size: 1.5em;
+}

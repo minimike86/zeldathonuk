@@ -1,0 +1,116 @@
+/* Ported from legacy/src/app/components/history/history.component.css
+ * Vertical alternating timeline. Replaces PrimeNG's p-timeline.
+ */
+
+.zth-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+.zth-timeline::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  margin-left: -2px;
+  background: linear-gradient(180deg, #731c37, #b92753, #731c37);
+  border-radius: 2px;
+}
+
+.zth-timeline-item {
+  position: relative;
+  width: 50%;
+  padding: 2rem 2.5rem;
+  box-sizing: border-box;
+}
+
+.zth-timeline-item.left {
+  left: 0;
+  text-align: right;
+}
+
+.zth-timeline-item.right {
+  left: 50%;
+  text-align: left;
+}
+
+.zth-timeline-marker {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2rem;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.zth-timeline-item.left .zth-timeline-marker {
+  right: -1rem;
+}
+
+.zth-timeline-item.right .zth-timeline-marker {
+  left: -1rem;
+}
+
+.zth-timeline-card {
+  background: linear-gradient(
+    45deg,
+    rgba(255, 194, 224, 0.1),
+    rgba(229, 159, 203, 0.1),
+    rgba(255, 194, 224, 0.1)
+  );
+  color: #fff;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(229, 159, 203, 0.2);
+}
+
+.zth-card-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(229, 159, 203, 0.2);
+}
+
+.zth-card-media iframe,
+.zth-card-media img {
+  display: block;
+}
+
+.text-bloodmoon {
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .zth-timeline::before {
+    left: 1rem;
+  }
+  .zth-timeline-item,
+  .zth-timeline-item.left,
+  .zth-timeline-item.right {
+    width: 100%;
+    left: 0;
+    text-align: left;
+    padding-left: 3rem;
+    padding-right: 1rem;
+  }
+  .zth-timeline-item.left .zth-timeline-marker,
+  .zth-timeline-item.right .zth-timeline-marker {
+    left: 0;
+    right: auto;
+  }
+}

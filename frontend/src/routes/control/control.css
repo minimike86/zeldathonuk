@@ -1,0 +1,109 @@
+.control-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: #fff;
+  background: #4c1324;
+}
+
+.control-header {
+  background: linear-gradient(180deg, #2b1b25, hsla(0, 0%, 100%, 0)), #4c1324;
+  border-bottom: 1px solid #bb225e;
+  padding: 1rem 1.5rem;
+}
+
+.control-header h1 {
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: 'Bungee', sans-serif;
+  text-transform: uppercase;
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+}
+
+.control-header nav {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.control-nav-link {
+  padding: 0.4rem 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.control-nav-link:hover {
+  background: rgba(185, 39, 83, 0.3);
+  color: #fff;
+}
+
+.control-nav-link.active {
+  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.control-main {
+  padding: 1.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.control-card {
+  background: linear-gradient(135deg, rgba(43, 27, 37, 0.6), rgba(76, 19, 36, 0.6));
+  border: 1px solid rgba(185, 39, 83, 0.5);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.control-card h2 {
+  margin-top: 0;
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: 'Bungee', sans-serif;
+  text-transform: uppercase;
+  font-size: 1.5rem;
+}
+
+.control-card code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #ffc2e0;
+}
+
+.control-table {
+  width: 100%;
+  color: #fff;
+  border-collapse: collapse;
+}
+
+.control-table th,
+.control-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.control-table th {
+  background: rgba(185, 39, 83, 0.3);
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.control-btn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

@@ -1,0 +1,19 @@
+/* Ported from legacy/src/app/components/footer/footer.component.css */
+
+.footer {
+  height: 20px;
+  background: linear-gradient(180deg, #310c17, hsla(0, 0%, 100%, 0)), #2b1b25 !important;
+  border-top: 1px solid #bb225e;
+}
+
+.footer-text {
+  font-weight: 500;
+  color: white !important;
+  text-shadow: 1px 1px 2px black;
+  font-size: x-small;
+  text-decoration: none;
+}
+
+.footer-text:hover {
+  text-decoration: underline;
+}

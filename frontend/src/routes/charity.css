@@ -1,0 +1,39 @@
+/* Ported from legacy/src/app/components/charity/charity.component.css */
+
+.text-bloodmoon {
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
+}
+
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
+  border-color: #2b1b25;
+}
+
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
+  border-color: #2b1b25;
+  filter: opacity(85%);
+}
+
+.btn-specialeffect {
+  font-family: 'Bungee', cursive;
+  color: #fff;
+  background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
+  border: 2px solid rgba(254, 130, 32, 0.8);
+}
+
+.btn-specialeffect:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
+  border: 2px solid rgba(254, 130, 32, 0.8);
+  filter: opacity(85%);
+}
