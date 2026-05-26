@@ -1,6 +1,9 @@
+/* Companion OBS browser source to the /obs/layout/:layout pages. Sized to
+ * the bottom strip of the 1920×1080 canvas — exactly the height the
+ * layouts subtract from their stage (see `--obs-omnibar-height`). */
 .omnibar {
-  width: 100vw;
-  height: 100vh;
+  width: var(--obs-stage-width, 1920px);
+  height: var(--obs-omnibar-height, 120px);
   background: transparent;
   display: flex;
   align-items: center;

@@ -62,22 +62,31 @@ export function GameDescription({ entry }: { entry: ScheduleEntry | null }) {
       </div>
     );
   }
+  const game = entry.game;
   return (
     <div className="panel-block">
       <div className="panel-block-title">Currently playing</div>
       <div className="d-flex gap-2 align-items-center">
-        {entry.game.box_art_url && (
+        {game?.box_art_url && (
           <img
-            src={entry.game.box_art_url}
-            alt={entry.game.title}
+            src={game.box_art_url}
+            alt={game.title}
             style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 4 }}
           />
         )}
         <div>
-          <div style={{ fontWeight: 600 }}>{entry.game.title}</div>
+          <div style={{ fontWeight: 600 }}>
+            {entry.display_title || game?.title || '—'}
+          </div>
           <div className="small text-white-50">
-            {entry.game.platform}
-            {entry.game.release_year ? ` · ${entry.game.release_year}` : ''}
+            {game ? (
+              <>
+                {game.platform}
+                {game.release_year ? ` · ${game.release_year}` : ''}
+              </>
+            ) : (
+              entry.slot_type !== 'game' ? 'Break' : ''
+            )}
           </div>
         </div>
       </div>
@@ -134,8 +143,10 @@ export function Timer({ entry }: { entry: ScheduleEntry | null }) {
  * see progress live.
  */
 export function ItemsGrid({ entry }: { entry: ScheduleEntry | null }) {
-  if (!entry) return null;
-  const items = entry.game.items.slice().sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  if (!entry || !entry.game) return null;
+  const items = entry.game.items
+    .slice()
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
   if (items.length === 0) return null;
   const collected = new Set(entry.collected_item_ids);
   return (

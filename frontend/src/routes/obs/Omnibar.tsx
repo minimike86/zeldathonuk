@@ -19,10 +19,18 @@ export function Omnibar() {
   const { data: totals } = usePolledQuery(obsApi.donationTotals, 5000);
 
   const currentEntry = cp?.schedule_entry_detail ?? null;
-  const upNext =
-    schedule && currentEntry
-      ? schedule.find((s) => s.order === currentEntry.order + 1)
-      : schedule?.find((s) => !s.is_completed) ?? null;
+  // Restrict the up-next ticker to playable top-level game slots — break
+  // slots have `game: null`, which previously caused `upNext.game.title`
+  // to throw. Sort by order so we always pick the soonest one.
+  const upcomingGames = (schedule ?? [])
+    .filter(
+      (s) =>
+        s.parent_entry == null && s.slot_type === 'game' && !s.is_completed,
+    )
+    .sort((a, b) => a.order - b.order);
+  const upNext = currentEntry
+    ? upcomingGames.find((s) => s.order > currentEntry.order) ?? null
+    : upcomingGames[0] ?? null;
   const lastDonation = donations?.[0];
 
   const cards: Card[] = [
@@ -44,7 +52,7 @@ export function Omnibar() {
         <>
           <span className="ob-label">UP NEXT</span>
           <span className="ob-text">
-            <strong>{upNext.game.title}</strong>{' '}
+            <strong>{upNext.display_title || upNext.game?.title || '—'}</strong>{' '}
             {upNext.runners.length > 0 && (
               <> with {upNext.runners.map((r) => r.name).join(', ')}</>
             )}

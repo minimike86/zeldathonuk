@@ -1,5 +1,231 @@
-/* Ported from legacy/src/app/components/charity/charity.component.css */
+/* Charity page — designed to fit a medium display (~720-900px visible
+ * height) without scrolling. Two-column grid on md+, stacks vertically on
+ * narrow screens. */
 
+.charity-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.charity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.charity-title {
+  margin: 0;
+  font-family: 'Bungee', sans-serif;
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.charity-logo img {
+  height: clamp(40px, 5vw, 60px);
+  width: auto;
+}
+
+/* Single combined panel — left side has heading + blurb + CTAs, right
+ * side has the video. Both columns are stretched to the same height so
+ * the panel reads as a balanced two-up. */
+.charity-shell-body {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .charity-shell-body {
+    grid-template-columns: 1fr 1.2fr;
+  }
+}
+
+.charity-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.charity-side-eyebrow {
+  color: #5cc1ee;
+}
+
+.charity-blurb {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* SpecialEffect-themed blue card — matches the .benefitting-card on the
+ * home page so the brand styling is consistent across surfaces. */
+.charity-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(67, 154, 190, 0.16) 0%,
+    rgba(0, 91, 144, 0.08) 100%
+  );
+  border: 1px solid rgba(67, 154, 190, 0.45);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+/* Flush variant — drops the panel padding so an iframe / image sits
+ * edge-to-edge inside the rounded border. */
+.charity-panel--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+
+/* Two equal-weight call-to-action tiles. On wider viewports they sit
+ * side-by-side at equal height; on narrower ones they stack. Each tile
+ * has a coloured top accent so the two purposes (get help vs. give help)
+ * read at a glance. */
+.charity-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  align-items: stretch;
+  margin-top: auto;
+}
+
+@media (min-width: 560px) {
+  .charity-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.charity-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease,
+    background 0.15s ease;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.charity-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.charity-cta:hover {
+  transform: translateY(-2px);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.charity-cta--learn {
+  border-color: rgba(67, 154, 190, 0.55);
+  color: #5cc1ee;
+}
+
+.charity-cta--learn:hover {
+  border-color: rgba(67, 154, 190, 0.95);
+}
+
+.charity-cta--donate {
+  border-color: rgba(231, 19, 71, 0.55);
+  color: #ff5d83;
+}
+
+.charity-cta--donate:hover {
+  border-color: rgba(231, 19, 71, 0.95);
+}
+
+.charity-cta-eyebrow {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: currentColor;
+}
+
+.charity-cta-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: clamp(1rem, 1.4vw, 1.3rem);
+  color: #fff;
+  line-height: 1.1;
+}
+
+.charity-cta-sub {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.4;
+}
+
+/* Strip default <button> chrome so a DonateButton with custom children
+ * (here, the .charity-cta tile) behaves like a fully-styled card while
+ * keeping native button semantics for click + keyboard activation. The
+ * full-height stretch lets the inner tile match the sibling learn tile. */
+.donate-trigger-reset {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* Video panel — uses the standard blue .charity-panel card, with an inner
+ * frame that holds the 16:9 aspect ratio so the iframe doesn't have to
+ * fight the panel's padding. */
+.charity-video {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.charity-video-eyebrow {
+  color: #5cc1ee;
+}
+
+.charity-video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.charity-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Shared button + bloodmoon styles preserved from the legacy port. */
 .text-bloodmoon {
   background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
   -webkit-background-clip: text;
@@ -7,7 +233,7 @@
   -webkit-text-fill-color: transparent;
   display: inline-block;
   font-weight: bold;
-  font-size: 3em;
+  font-size: 1.4em;
   text-transform: uppercase;
 }
 

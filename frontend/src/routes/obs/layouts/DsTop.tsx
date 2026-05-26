@@ -10,7 +10,7 @@ export function DsTop() {
         style={{ top: '100px', left: '160px', width: '1280px', height: '960px' }}
       />
       <SidePanel
-        position={{ top: '0', right: '0', width: '480px', height: '1080px' }}
+        position={{ top: '0', right: '0', width: '480px', height: 'var(--obs-stage-height)' }}
       />
     </Stage>
   );

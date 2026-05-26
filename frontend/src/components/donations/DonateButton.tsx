@@ -14,26 +14,40 @@ export function DonateButton({
   className,
   size = 'sm',
   label = 'Donate',
+  children,
 }: {
   pages: DonationPage[];
   currencySymbol?: string;
   className?: string;
   size?: 'sm' | 'lg';
   label?: string;
+  /**
+   * Render-as-children — when supplied, the children replace the default
+   * Bungee `Donate` button content. The outer element stays a real
+   * `<button>` so click + keyboard semantics are preserved. Used by the
+   * Charity page to make the whole "Make a donation" tile the trigger.
+   */
+  children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   if (pages.length === 0) return null;
 
   const sizeClass = size === 'lg' ? 'btn-lg' : 'btn-sm';
+  const buttonClass = children
+    ? className ?? ''
+    : `btn btn-bloodmoon ${sizeClass} ${className ?? ''}`.trim();
+  const buttonStyle: React.CSSProperties | undefined = children
+    ? undefined
+    : { fontFamily: "'Bungee', cursive" };
   return (
     <>
       <button
         type="button"
-        className={`btn btn-bloodmoon ${sizeClass} ${className ?? ''}`.trim()}
-        style={{ fontFamily: "'Bungee', cursive" }}
+        className={buttonClass}
+        style={buttonStyle}
         onClick={() => setOpen(true)}
       >
-        {label}
+        {children ?? label}
       </button>
       <DonationPicker
         pages={pages}

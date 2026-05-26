@@ -1,8 +1,10 @@
 import { Stage, GameFrame, SidePanel } from './Layout';
 
 /**
- * 16:9 widescreen — game capture occupies the left ~75%, side panel on the right.
- * Sized for a 1920x1080 OBS canvas.
+ * 16:9 widescreen — game capture occupies the left ~75%, side panel on the
+ * right. Sized for a 1920×(1080 − omnibar) OBS canvas. The omnibar is a
+ * separate browser source added below this one in OBS, so this page only
+ * paints inside `var(--obs-stage-height)`.
  */
 export function Widescreen() {
   return (
@@ -20,27 +22,9 @@ export function Widescreen() {
           top: '0',
           right: '0',
           width: '480px',
-          height: '1080px',
+          height: 'var(--obs-stage-height)',
         }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: '810px',
-          left: '0',
-          width: '1440px',
-          height: '270px',
-          background: 'linear-gradient(180deg, rgba(43, 27, 37, 0.95), rgba(76, 19, 36, 0.95))',
-          borderTop: '2px solid #b92753',
-        }}
-      >
-        {/* Lower-third strip is where the omnibar plugs in. */}
-        <iframe
-          src="/obs/omnibar"
-          title="omnibar"
-          style={{ width: '100%', height: '100%', border: 0, background: 'transparent' }}
-        />
-      </div>
     </Stage>
   );
 }

@@ -20,6 +20,12 @@ import './audio-countdown.css';
 export function AudioCountdown() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 5000);
   const { data: pinned } = usePolledQuery(obsApi.nowPlayingAudio, 1500);
+  const { data: currentlyPlaying } = usePolledQuery(obsApi.currentlyPlaying, 4000);
+  const { data: schedule } = usePolledQuery(
+    () => (event ? obsApi.schedule(event.id) : Promise.resolve([])),
+    10_000,
+    [event?.id],
+  );
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [current, setCurrent] = useState<AudioTrack | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -275,13 +281,94 @@ export function AudioCountdown() {
     };
   }, []);
 
+  const eventStartMs = event ? Date.parse(event.start_time) : 0;
+  const eventStarted = !!event && eventStartMs <= now;
   let remaining = 0;
-  if (event?.start_time) {
-    remaining = Math.max(
-      0,
-      Math.floor((Date.parse(event.start_time) - now) / 1000),
-    );
+  if (event?.start_time && !eventStarted) {
+    remaining = Math.max(0, Math.floor((eventStartMs - now) / 1000));
   }
+
+  // Live entry from the schedule (matches what the control panel marks as
+  // currently playing). Picks the next still-pending top-level game as
+  // up-next so the countdown screen always has context.
+  const currentEntry = currentlyPlaying?.schedule_entry_detail ?? null;
+  const upcoming = (schedule ?? [])
+    .filter(
+      (e) =>
+        e.parent_entry == null && e.slot_type === 'game' && !e.is_completed,
+    )
+    .sort((a, b) => a.order - b.order);
+  const nextEntry =
+    upcoming.find((e) => !currentEntry || e.order > currentEntry.order) ?? null;
+
+  // Countdown to the end of the currently-playing game. Prefer the entry's
+  // real `started_at`; fall back to cumulative schedule time.
+  let currentEndMs = 0;
+  if (currentEntry) {
+    if (currentEntry.started_at) {
+      currentEndMs =
+        Date.parse(currentEntry.started_at) +
+        currentEntry.effective_minutes * 60_000;
+    } else {
+      // Cumulative schedule fallback — walk top-level entries until we hit
+      // the live one, accounting for attached break minutes per slot.
+      let cursor = eventStartMs;
+      const topLevel = (schedule ?? [])
+        .filter((e) => e.parent_entry == null)
+        .sort((a, b) => a.order - b.order);
+      const childMins = new Map<number, number>();
+      for (const e of schedule ?? []) {
+        if (e.parent_entry != null) {
+          childMins.set(
+            e.parent_entry,
+            (childMins.get(e.parent_entry) ?? 0) + e.effective_minutes,
+          );
+        }
+      }
+      for (const top of topLevel) {
+        if (top.id === currentEntry.id) {
+          currentEndMs = cursor + currentEntry.effective_minutes * 60_000;
+          break;
+        }
+        cursor += (top.effective_minutes + (childMins.get(top.id) ?? 0)) * 60_000;
+      }
+    }
+  }
+  const currentRemaining = currentEntry
+    ? Math.max(0, Math.floor((currentEndMs - now) / 1000))
+    : 0;
+
+  // Active break (meal, sleep, etc.) attached to the live entry — when its
+  // wall-clock window contains "now" we surface a break panel instead of
+  // the game countdown.
+  const liveBreak = (() => {
+    if (!currentEntry) return null;
+    const children = (schedule ?? []).filter(
+      (e) => e.parent_entry === currentEntry.id,
+    );
+    if (children.length === 0) return null;
+    const parentStartMs = currentEntry.started_at
+      ? Date.parse(currentEntry.started_at)
+      : currentEndMs - currentEntry.effective_minutes * 60_000;
+    for (const child of children) {
+      const start = parentStartMs + child.start_offset_minutes * 60_000;
+      const end = start + child.effective_minutes * 60_000;
+      if (now >= start && now < end) {
+        return { entry: child, start, end };
+      }
+    }
+    return null;
+  })();
+  const breakRemaining = liveBreak
+    ? Math.max(0, Math.floor((liveBreak.end - now) / 1000))
+    : 0;
+  const breakMeta: Record<string, { label: string; icon: string }> = {
+    start: { label: 'Stream start', icon: '🎬' },
+    meal: { label: 'Meal break', icon: '🍽' },
+    sleep: { label: 'Sleep break', icon: '💤' },
+    break: { label: 'Break', icon: '☕' },
+    end: { label: 'Stream end', icon: '🏁' },
+  };
 
   // Theme from the pinned track first (arrives via 1.5s poll) and fall back
   // to `current.game` (3s playlist poll). Picking the faster source means
@@ -304,8 +391,44 @@ export function AudioCountdown() {
       />
       <SceneCrossfade themeKey={theme.label} Scene={SceneComponent} />
       <h1 className="ac-title">{event?.name ?? 'ZeldathonUK'}</h1>
-      <div className="ac-clock">{formatDhms(remaining)}</div>
-      <div className="ac-sub">until stream start</div>
+      {eventStarted && currentEntry && liveBreak ? (
+        <>
+          <div className="ac-now-game ac-now-game--break">
+            <span className="ac-break-icon">
+              {breakMeta[liveBreak.entry.slot_type]?.icon ?? '☕'}
+            </span>
+            {liveBreak.entry.display_title}
+          </div>
+          <div className="ac-clock">{formatDhms(breakRemaining)}</div>
+          <div className="ac-sub">until we're back</div>
+          <div className="ac-up-next">
+            <span className="ac-up-next-label">Resuming</span>
+            <span className="ac-up-next-title">{currentEntry.display_title}</span>
+          </div>
+        </>
+      ) : eventStarted && currentEntry ? (
+        <>
+          <div className="ac-now-game">{currentEntry.display_title}</div>
+          <div className="ac-clock">{formatDhms(currentRemaining)}</div>
+          <div className="ac-sub">remaining on this game</div>
+          {nextEntry && (
+            <div className="ac-up-next">
+              <span className="ac-up-next-label">Up next</span>
+              <span className="ac-up-next-title">{nextEntry.display_title}</span>
+            </div>
+          )}
+        </>
+      ) : eventStarted ? (
+        <>
+          <div className="ac-clock ac-clock-small">LIVE</div>
+          <div className="ac-sub">stream is in progress</div>
+        </>
+      ) : (
+        <>
+          <div className="ac-clock">{formatDhms(remaining)}</div>
+          <div className="ac-sub">until stream start</div>
+        </>
+      )}
       {current && (
         <div className="ac-nowplaying">
           <div className="ac-np-label">Now playing</div>

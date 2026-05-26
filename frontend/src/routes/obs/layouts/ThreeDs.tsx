@@ -13,7 +13,7 @@ export function ThreeDs() {
         style={{ top: '740px', left: '320px', width: '800px', height: '240px' }}
       />
       <SidePanel
-        position={{ top: '0', right: '0', width: '480px', height: '1080px' }}
+        position={{ top: '0', right: '0', width: '480px', height: 'var(--obs-stage-height)' }}
       />
     </Stage>
   );

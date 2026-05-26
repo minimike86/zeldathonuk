@@ -1,7 +1,9 @@
 import { Stage, GameFrame, SidePanel } from './Layout';
 
 /**
- * 4:3 standard — narrow game frame centered-left, taller side panel on the right.
+ * 4:3 standard — narrow game frame centered-left, taller side panel on
+ * the right. Stage is 1920×(1080 − omnibar); the omnibar is a separate
+ * OBS browser source added below this one.
  */
 export function Standard() {
   return (
@@ -19,26 +21,9 @@ export function Standard() {
           top: '0',
           right: '0',
           width: '660px',
-          height: '1080px',
+          height: 'var(--obs-stage-height)',
         }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: '810px',
-          left: '0',
-          width: '1260px',
-          height: '270px',
-          background: 'linear-gradient(180deg, rgba(43, 27, 37, 0.95), rgba(76, 19, 36, 0.95))',
-          borderTop: '2px solid #b92753',
-        }}
-      >
-        <iframe
-          src="/obs/omnibar"
-          title="omnibar"
-          style={{ width: '100%', height: '100%', border: 0, background: 'transparent' }}
-        />
-      </div>
     </Stage>
   );
 }

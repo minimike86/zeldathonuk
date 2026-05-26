@@ -45,11 +45,25 @@
   border-radius: 4px;
 }
 
-/* Shared layout chrome — used by all /obs/layout/* pages */
+/* Shared layout chrome — used by all /obs/layout/* pages.
+ *
+ * OBS browser sources are designed against a fixed 1920×1080 canvas. The
+ * omnibar is overlaid as a SEPARATE browser source on top of the bottom
+ * `--obs-omnibar-height` pixels, so the layouts only own the remaining
+ * height. Sizing the stage in absolute pixels (rather than 100vw/100vh)
+ * lets the streamer set their browser-source size to match this rect
+ * exactly — no surprises when the OBS scene preview is smaller than the
+ * authoring viewport. */
+:root {
+  --obs-omnibar-height: 120px;
+  --obs-stage-width: 1920px;
+  --obs-stage-height: calc(1080px - var(--obs-omnibar-height));
+}
+
 .obs-stage {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: var(--obs-stage-width);
+  height: var(--obs-stage-height);
   background: transparent;
   overflow: hidden;
   color: #fff;

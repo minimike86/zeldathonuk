@@ -14,7 +14,7 @@ export function DsBoth() {
         style={{ top: '540px', left: '320px', width: '960px', height: '480px' }}
       />
       <SidePanel
-        position={{ top: '0', right: '0', width: '480px', height: '1080px' }}
+        position={{ top: '0', right: '0', width: '480px', height: 'var(--obs-stage-height)' }}
       />
     </Stage>
   );

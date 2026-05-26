@@ -23,7 +23,7 @@ export function FsaSplit() {
         style={{ top: '540px', left: '1080px', width: '360px', height: '540px' }}
       />
       <SidePanel
-        position={{ top: '0', right: '0', width: '480px', height: '1080px' }}
+        position={{ top: '0', right: '0', width: '480px', height: 'var(--obs-stage-height)' }}
       />
     </Stage>
   );

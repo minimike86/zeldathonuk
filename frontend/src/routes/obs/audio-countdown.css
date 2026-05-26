@@ -51,6 +51,8 @@
   text-align: center;
   line-height: 1.1;
   max-width: min(960px, 88vw);
+  position: relative;
+  z-index: 3;
   /* `pretty` avoids single-word orphans on the last line (browser keeps
    * "15TH ANNIVERSARY" together instead of breaking after "15TH"). */
   text-wrap: pretty;
@@ -71,6 +73,8 @@
   white-space: nowrap;
   max-width: 95vw;
   text-align: center;
+  position: relative;
+  z-index: 3;
 }
 
 .ac-sub {
@@ -84,6 +88,82 @@
     0 1px 0 rgba(0, 0, 0, 0.6),
     0 3px 8px rgba(0, 0, 0, 0.85),
     0 0 18px rgba(0, 0, 0, 0.55);
+  position: relative;
+  z-index: 3;
+}
+
+/* When the event is live: name of the game currently being played, shown
+ * above the per-game countdown clock. */
+.ac-now-game {
+  font-family: 'Bungee', sans-serif;
+  font-size: clamp(2rem, 4.5vw, 4rem);
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.4rem;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 3px 10px rgba(0, 0, 0, 0.85),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+  position: relative;
+  z-index: 3;
+}
+
+/* Break variant — same layout as the game header but tinted warm yellow
+ * so viewers immediately register "we're away" rather than gameplay. */
+.ac-now-game--break {
+  color: #ffe69b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 3px 10px rgba(0, 0, 0, 0.85),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.ac-break-icon {
+  display: inline-block;
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+/* Fallback small clock for the "LIVE — no entry selected" state. */
+.ac-clock-small {
+  font-size: clamp(2rem, 6vw, 6rem);
+}
+
+/* Up-next preview chip, sits beneath the per-game clock. */
+.ac-up-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 1.5rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  position: relative;
+  /* Scene crossfade layers (gloom hands etc.) sit at z-index 1-2; lift the
+   * foreground HUD above them so nothing eats the text. */
+  z-index: 3;
+}
+
+.ac-up-next-label {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ac-up-next-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  color: #fff;
 }
 
 .ac-visualiser {

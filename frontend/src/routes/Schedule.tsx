@@ -23,11 +23,31 @@ interface Slot {
   children: ScheduleEntry[];
 }
 
+interface DaySlot {
+  slot: Slot;
+  /**
+   * True when this card represents a slot that started on a previous day
+   * but is still actively running into the current day. The actual playable
+   * card has migrated to today's group; this stays behind as a faded
+   * placeholder so visitors can see the slot began on the prior date.
+   */
+  isGhost: boolean;
+}
+
 interface DayGroup {
   dayKey: string;
   dayLabel: string;
   dateLabel: string;
-  slots: Slot[];
+  slots: DaySlot[];
+}
+
+function dayKeyOf(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function parseDayKey(key: string): number {
+  const [y, m, d] = key.split('-').map((n) => parseInt(n, 10));
+  return new Date(y, m, d).getTime();
 }
 
 export function Schedule() {
@@ -72,11 +92,11 @@ export function Schedule() {
 
   const days = useMemo<DayGroup[]>(() => {
     const groups = new Map<string, DayGroup>();
-    for (const slot of slots) {
-      const d = slot.start;
-      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      if (!groups.has(key)) {
-        groups.set(key, {
+    const ensure = (d: Date): DayGroup => {
+      const key = dayKeyOf(d);
+      let group = groups.get(key);
+      if (!group) {
+        group = {
           dayKey: key,
           dayLabel: d.toLocaleDateString('en-GB', { weekday: 'long' }),
           dateLabel: d.toLocaleDateString('en-GB', {
@@ -85,12 +105,33 @@ export function Schedule() {
             year: 'numeric',
           }),
           slots: [],
-        });
+        };
+        groups.set(key, group);
       }
-      groups.get(key)!.slots.push(slot);
+      return group;
+    };
+
+    const now = new Date();
+    const nowKey = dayKeyOf(now);
+    for (const slot of slots) {
+      const startKey = dayKeyOf(slot.start);
+      const isLive = currentEntryId === slot.entry.id;
+      // Live overnight slot has crossed into a new calendar day → primary
+      // card hops to today's group, ghost stays in the start day's group.
+      const jumped = isLive && nowKey !== startKey && now <= slot.end;
+      if (jumped) {
+        ensure(now).slots.push({ slot, isGhost: false });
+        ensure(slot.start).slots.push({ slot, isGhost: true });
+      } else {
+        ensure(slot.start).slots.push({ slot, isGhost: false });
+      }
     }
-    return Array.from(groups.values());
-  }, [slots]);
+    // Days are inserted in slot order which is also chronological — preserve
+    // that ordering by sorting on the keys' underlying timestamps.
+    return Array.from(groups.values()).sort(
+      (a, b) => parseDayKey(a.dayKey) - parseDayKey(b.dayKey),
+    );
+  }, [slots, currentEntryId]);
 
   const games = slots.filter((s) => s.entry.slot_type === 'game');
   const totalPlay = games.reduce((s, g) => s + g.entry.effective_minutes, 0);
@@ -121,11 +162,12 @@ export function Schedule() {
                 <div className="schedule-day-date">{day.dateLabel}</div>
               </header>
               <div className="schedule-day-slots">
-                {day.slots.map((slot) => (
+                {day.slots.map(({ slot, isGhost }) => (
                   <GameCard
-                    key={slot.entry.id}
+                    key={`${slot.entry.id}-${isGhost ? 'ghost' : 'live'}`}
                     slot={slot}
-                    isPlaying={currentEntryId === slot.entry.id}
+                    isPlaying={!isGhost && currentEntryId === slot.entry.id}
+                    isGhost={isGhost}
                   />
                 ))}
               </div>
@@ -210,7 +252,15 @@ function HeroKpi({ label, value }: { label: string; value: string }) {
   );
 }
 
-function GameCard({ slot, isPlaying }: { slot: Slot; isPlaying: boolean }) {
+function GameCard({
+  slot,
+  isPlaying,
+  isGhost,
+}: {
+  slot: Slot;
+  isPlaying: boolean;
+  isGhost: boolean;
+}) {
   const { entry, start, end, children } = slot;
   const isCompleted = entry.is_completed;
   const game = entry.game;
@@ -229,6 +279,7 @@ function GameCard({ slot, isPlaying }: { slot: Slot; isPlaying: boolean }) {
     'schedule-card',
     isPlaying ? 'is-live' : '',
     isCompleted ? 'is-completed' : '',
+    isGhost ? 'is-ghost' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -294,6 +345,15 @@ function GameCard({ slot, isPlaying }: { slot: Slot; isPlaying: boolean }) {
               title={`Runs across ${daysSpanned + 1} days`}
             >
               🌙 spans {daysSpanned + 1} days
+            </span>
+          )}
+          {isGhost && (
+            <span
+              className="schedule-pill schedule-pill--ghost"
+              title={`Continues into ${end.toLocaleDateString('en-GB', { weekday: 'long' })}`}
+            >
+              ⤳ continues into{' '}
+              {end.toLocaleDateString('en-GB', { weekday: 'short' })}
             </span>
           )}
           {isCompleted && (

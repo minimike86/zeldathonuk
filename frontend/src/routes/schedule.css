@@ -198,6 +198,32 @@
   }
 }
 
+/* Ghost card — placeholder shown on the slot's original day after a live
+ * overnight slot has migrated into the current day. Muted, dashed border,
+ * no animation. */
+.schedule-card.is-ghost {
+  opacity: 0.55;
+  filter: saturate(0.5);
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: none;
+  animation: none;
+}
+
+.schedule-card.is-ghost:hover {
+  opacity: 0.85;
+}
+
+.schedule-card.is-ghost .schedule-card-art {
+  box-shadow: none;
+}
+
+.schedule-pill--ghost {
+  background: rgba(180, 180, 220, 0.12);
+  border-color: rgba(180, 180, 220, 0.35);
+  color: #c8d0e2;
+}
+
 .schedule-card.is-completed {
   opacity: 0.55;
   filter: grayscale(0.4);
