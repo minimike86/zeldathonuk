@@ -3776,14 +3776,123 @@
   opacity: 0.5;
 }
 
-.nes-triforce {
+.nes-triforce,
+.nes-triforce-bg {
   position: absolute;
-  top: 35%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 30vw;
   filter: drop-shadow(0 0 24px rgba(255, 210, 58, 0.6));
   animation: nes-glow 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── NES HUD (top strip, 4 blocks: mini-map, inventory, B/A items, life) ── */
+.nes-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #000;
+  border-bottom: 4px solid #fcfcfc;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.6fr;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  font-family: 'VT323', monospace;
+  color: #fcfcfc;
+  z-index: 5;
+}
+
+.nes-hud-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.nes-hud-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+}
+
+.nes-label-yellow {
+  color: #fcd078;
+}
+
+.nes-hud-mini-map {
+  display: grid;
+  grid-template-columns: repeat(8, 12px);
+  grid-auto-rows: 12px;
+  gap: 1px;
+}
+
+.nes-mini-cell {
+  background: #5a2400;
+  border: 1px solid #000;
+}
+
+.nes-mini-cell.is-here {
+  background: #fc7460;
+}
+
+.nes-hud-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.1rem;
+}
+
+.nes-hud-text {
+  letter-spacing: 0.05em;
+}
+
+.nes-hud-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background: #fcfcfc;
+}
+
+.nes-icon-rupee   { background: #00a844; }
+.nes-icon-key     { background: #fcd078; }
+.nes-icon-bomb    { background: #5a5a5a; border-radius: 50%; }
+.nes-icon-boomerang { background: #fc7460; }
+.nes-icon-sword   { background: #d0d0d0; }
+
+.nes-hud-items {
+  flex-direction: row;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.nes-hud-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.5rem;
+  background: #5a2400;
+  border: 2px solid #fcfcfc;
+  min-width: 44px;
+}
+
+.nes-slot-label {
+  font-size: 0.9rem;
+  color: #fcd078;
+  letter-spacing: 0.05em;
+}
+
+.nes-hud-hearts {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.nes-hud-heart {
+  width: 22px;
+  height: 22px;
 }
 
 @keyframes nes-glow {
