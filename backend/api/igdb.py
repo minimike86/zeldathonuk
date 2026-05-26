@@ -7,6 +7,7 @@ TWITCH_CLIENT_SECRET (app credentials, NOT the user OAuth token used by Helix).
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.parse
 import urllib.request
@@ -51,6 +52,7 @@ class Metadata:
     cover_url: str = ''
     twitch_game_id: str = ''
     hltb_id: str = ''
+    main_story_rushed_minutes: int = 0
 
 
 class MissingCredentials(RuntimeError):
@@ -135,6 +137,63 @@ def lookup_hltb(hltb: HowLongToBeat, title: str) -> str:
     return str(chosen.game_id)
 
 
+# Matches the Main Story row of the game-times table on a HLTB detail page.
+# Columns (post-Polled): Average, Median, Rushed, Leisure. The CSS class names
+# are hashed (e.g. GameTimeTable-module__M5Fuva__...), so we anchor on the
+# "Main Story" label cell instead.
+_HLTB_MAIN_STORY_ROW = re.compile(
+    r'<td[^>]*>\s*Main Story\s*</td>'
+    r'\s*<td[^>]*>[^<]*</td>'      # polled (e.g. "2.8K")
+    r'\s*<td[^>]*>([^<]*)</td>'    # 1: average
+    r'\s*<td[^>]*>[^<]*</td>'      # median
+    r'\s*<td[^>]*>([^<]*)</td>'    # 2: rushed
+    r'\s*<td[^>]*>[^<]*</td>',     # leisure
+    re.IGNORECASE,
+)
+
+
+def _parse_hltb_duration(text: str) -> int:
+    """Parse a HLTB cell like '28h 27m', '50h', '95m', '--' into minutes (0 if unknown)."""
+    t = (text or '').strip().replace('\xa0', ' ')
+    if not t or t in ('--', '—'):
+        return 0
+    minutes = 0
+    h = re.search(r'(\d+(?:\.\d+)?)\s*h', t, re.IGNORECASE)
+    m = re.search(r'(\d+(?:\.\d+)?)\s*m', t, re.IGNORECASE)
+    if h:
+        minutes += int(float(h.group(1)) * 60)
+    if m:
+        minutes += int(float(m.group(1)))
+    if minutes == 0 and '½' in t:
+        minutes = 30
+    return minutes
+
+
+def fetch_main_story_rushed_minutes(hltb_id: str) -> int:
+    """Scrape the HLTB detail page for Main Story Rushed time, in minutes.
+
+    Falls back to Main Story Average when Rushed is missing (small sample sizes
+    can leave the Rushed column empty). Returns 0 on failure — callers should
+    treat that as "leave existing default_play_minutes alone".
+    """
+    if not hltb_id:
+        return 0
+    url = f'https://howlongtobeat.com/game/{hltb_id}'
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            html = r.read().decode('utf-8', errors='replace')
+    except Exception:
+        return 0
+    match = _HLTB_MAIN_STORY_ROW.search(html)
+    if not match:
+        return 0
+    rushed = _parse_hltb_duration(match.group(2))
+    if rushed > 0:
+        return rushed
+    return _parse_hltb_duration(match.group(1))
+
+
 def fetch_metadata(client_id: str, client_secret: str, title: str, platform: str) -> Metadata:
     """One-shot helper that mints a token, calls IGDB + HLTB, returns Metadata."""
     token = get_app_token(client_id, client_secret)
@@ -146,6 +205,7 @@ def fetch_metadata(client_id: str, client_secret: str, title: str, platform: str
         cover_url=igdb['cover_url'],
         twitch_game_id=igdb['twitch_game_id'],
         hltb_id=hltb_id,
+        main_story_rushed_minutes=fetch_main_story_rushed_minutes(hltb_id),
     )
 
 
@@ -171,5 +231,6 @@ def fetch_metadata_batch(client_id: str, client_secret: str, rows: list[tuple[st
             cover_url=igdb['cover_url'],
             twitch_game_id=igdb['twitch_game_id'],
             hltb_id=hltb_id,
+            main_story_rushed_minutes=fetch_main_story_rushed_minutes(hltb_id),
         )
         time.sleep(REQUEST_DELAY_SECONDS)

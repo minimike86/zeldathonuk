@@ -15,7 +15,9 @@ Get tokens via Twitch CLI: `twitch token -u -s channel:manage:schedule`
 """
 from __future__ import annotations
 
+import re
 from datetime import timedelta
+from urllib.parse import urlparse
 
 import requests
 from django.conf import settings
@@ -119,6 +121,89 @@ def _request(method: str, url: str, **kwargs) -> requests.Response:
 
 def _broadcaster_id() -> str:
     return getattr(settings, 'TWITCH_BROADCASTER_ID', '')
+
+
+_TWITCH_LOGIN_RE = re.compile(r'^[a-zA-Z0-9_]{1,25}$')
+
+
+def extract_twitch_login(url: str) -> str | None:
+    """Pull the channel login out of a twitch.tv URL, or return None."""
+    if not url:
+        return None
+    try:
+        parsed = urlparse(url if '://' in url else f'https://{url}')
+    except ValueError:
+        return None
+    host = (parsed.hostname or '').lower()
+    if not host.endswith('twitch.tv'):
+        return None
+    parts = [p for p in parsed.path.split('/') if p]
+    if not parts:
+        return None
+    login = parts[0]
+    return login if _TWITCH_LOGIN_RE.match(login) else None
+
+
+# App access token (client credentials) cache — used for public Helix endpoints
+# like /users that don't need a user OAuth scope. Kept in-memory; refreshed on
+# expiry. Safe to lose on restart since minting a new one is cheap.
+_APP_TOKEN: dict = {'value': None, 'expires_at': None}
+
+
+def get_app_access_token(force_refresh: bool = False) -> str:
+    """Return a valid app access token (client credentials grant)."""
+    if not settings.TWITCH_CLIENT_ID or not settings.TWITCH_CLIENT_SECRET:
+        raise TwitchAuthError('TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET required.')
+    expires_at = _APP_TOKEN['expires_at']
+    valid = (
+        _APP_TOKEN['value']
+        and expires_at is not None
+        and expires_at > timezone.now() + REFRESH_LEEWAY
+    )
+    if valid and not force_refresh:
+        return _APP_TOKEN['value']
+    resp = requests.post(
+        TOKEN_URL,
+        data={
+            'grant_type': 'client_credentials',
+            'client_id': settings.TWITCH_CLIENT_ID,
+            'client_secret': settings.TWITCH_CLIENT_SECRET,
+        },
+        timeout=15,
+    )
+    if not resp.ok:
+        raise TwitchAuthError(f'App token mint failed ({resp.status_code}): {resp.text}')
+    data = resp.json()
+    _APP_TOKEN['value'] = data['access_token']
+    _APP_TOKEN['expires_at'] = timezone.now() + timedelta(seconds=int(data['expires_in']))
+    return _APP_TOKEN['value']
+
+
+def _app_auth_headers() -> dict[str, str]:
+    return {
+        'Authorization': f'Bearer {get_app_access_token()}',
+        'Client-Id': settings.TWITCH_CLIENT_ID,
+    }
+
+
+def fetch_user_profile(login: str) -> dict | None:
+    """Look up a Twitch user by login. Returns the Helix user dict or None.
+
+    Uses an app access token — works without a user OAuth grant.
+    """
+    headers = _app_auth_headers()
+    resp = requests.get(
+        f'{HELIX}/users', headers=headers, params={'login': login}, timeout=15
+    )
+    if resp.status_code == 401:
+        headers = {**_app_auth_headers(), 'Authorization': f'Bearer {get_app_access_token(force_refresh=True)}'}
+        resp = requests.get(
+            f'{HELIX}/users', headers=headers, params={'login': login}, timeout=15
+        )
+    if not resp.ok:
+        return None
+    data = resp.json().get('data') or []
+    return data[0] if data else None
 
 
 @api_view(['POST'])

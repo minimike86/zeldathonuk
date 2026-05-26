@@ -65,6 +65,7 @@ class Runner(models.Model):
     name = models.CharField(max_length=120, unique=True)
     channel_url = models.URLField(blank=True)
     is_streamer = models.BooleanField(default=False)
+    profile_image_url = models.URLField(blank=True)
 
     class Meta:
         ordering = ['name']
@@ -80,6 +81,8 @@ class Event(models.Model):
     start_time = models.DateTimeField()
     currency_symbol = models.CharField(max_length=4, default='£')
     is_active = models.BooleanField(default=False, help_text='Only one event can be active at a time.')
+    logo_url = models.URLField(blank=True, help_text='Square-ish event logo (used in headers, overlays).')
+    banner_url = models.URLField(blank=True, help_text='Wide event poster/banner (used on landing, social cards).')
 
     class Meta:
         ordering = ['-start_time']
@@ -89,20 +92,79 @@ class Event(models.Model):
 
 
 class ScheduleEntry(models.Model):
-    """One game slot in an event's schedule.
+    """One slot in an event's schedule.
 
-    `order` drives playback order. `planned_minutes` overrides Game.default_play_minutes
-    for this specific run. `started_at` / `finished_at` capture the actual run time.
+    Most slots are `slot_type='game'` and point at a Game. Non-game slots
+    (stream intro/outro, meal break, sleep, custom break) have `game=null`
+    and rely on `planned_minutes` and `title` instead.
+
+    `order` drives playback order. `planned_minutes` overrides
+    Game.default_play_minutes for game slots and IS the duration for break
+    slots. `started_at` / `finished_at` capture the actual run time.
     """
 
+    SLOT_GAME = 'game'
+    SLOT_START = 'start'
+    SLOT_MEAL = 'meal'
+    SLOT_SLEEP = 'sleep'
+    SLOT_BREAK = 'break'
+    SLOT_END = 'end'
+    SLOT_TYPE_CHOICES = [
+        (SLOT_GAME, 'Game'),
+        (SLOT_START, 'Stream start'),
+        (SLOT_MEAL, 'Meal break'),
+        (SLOT_SLEEP, 'Sleep break'),
+        (SLOT_BREAK, 'Break'),
+        (SLOT_END, 'Stream end'),
+    ]
+    # Default minutes per break type when the user doesn't override.
+    BREAK_DEFAULT_MINUTES = {
+        SLOT_START: 15,
+        SLOT_MEAL: 30,
+        SLOT_SLEEP: 480,
+        SLOT_BREAK: 15,
+        SLOT_END: 15,
+    }
+
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='schedule')
-    game = models.ForeignKey(Game, on_delete=models.PROTECT, related_name='schedule_entries')
+    slot_type = models.CharField(
+        max_length=16, choices=SLOT_TYPE_CHOICES, default=SLOT_GAME
+    )
+    title = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Optional label override (e.g. "Lunch with the chat"). '
+                  'Game slots fall back to Game.title when blank.',
+    )
+    game = models.ForeignKey(
+        Game,
+        on_delete=models.PROTECT,
+        related_name='schedule_entries',
+        null=True,
+        blank=True,
+    )
+    parent_entry = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='child_breaks',
+        help_text='If set, this slot overlaps the runtime of the parent entry. '
+                  'Used to place meal/sleep breaks during a game without '
+                  'displacing subsequent entries in the schedule.',
+    )
+    start_offset_minutes = models.PositiveIntegerField(
+        default=0,
+        help_text='Only meaningful when parent_entry is set: minutes into the '
+                  'parent game when this break begins.',
+    )
     runners = models.ManyToManyField(Runner, related_name='schedule_entries', blank=True)
     order = models.PositiveIntegerField()
     planned_minutes = models.PositiveIntegerField(
         null=True,
         blank=True,
-        help_text='Override of Game.default_play_minutes for this run.',
+        help_text='Game slots: overrides Game.default_play_minutes. '
+                  'Break slots: the duration of the break.',
     )
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -115,11 +177,24 @@ class ScheduleEntry(models.Model):
         verbose_name_plural = 'schedule entries'
 
     def __str__(self) -> str:
-        return f'{self.event} #{self.order} — {self.game}'
+        label = self.title or (self.game.title if self.game else self.get_slot_type_display())
+        return f'{self.event} #{self.order} — {label}'
 
     @property
     def effective_minutes(self) -> int:
-        return self.planned_minutes or self.game.default_play_minutes
+        if self.planned_minutes:
+            return self.planned_minutes
+        if self.game:
+            return self.game.default_play_minutes
+        return self.BREAK_DEFAULT_MINUTES.get(self.slot_type, 15)
+
+    @property
+    def display_title(self) -> str:
+        if self.title:
+            return self.title
+        if self.game:
+            return self.game.title
+        return self.get_slot_type_display()
 
 
 class TimerRun(models.Model):
@@ -196,6 +271,46 @@ class DonationPlatform(models.TextChoices):
     PAYPAL = 'paypal', 'PayPal'
     DIRECT = 'direct', 'Direct / cash'
     OTHER = 'other', 'Other'
+
+
+class DonationPage(models.Model):
+    """A hosted fundraising page attached to an Event.
+
+    One Event can list many pages — typically one per platform (a JustGiving
+    campaign, a Tiltify campaign, a Twitch Charity link). The control panel
+    surfaces these as CTAs and the polling jobs use `external_id` to know
+    which campaign to fetch donations from.
+    """
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='donation_pages'
+    )
+    platform = models.CharField(max_length=20, choices=DonationPlatform.choices)
+    label = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Display label (e.g. "JustGiving — main page"). '
+                  'Falls back to the platform name when blank.',
+    )
+    url = models.URLField()
+    external_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Platform campaign/page id used by donation polling.',
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        help_text='Promotes this page above others on landing CTAs.',
+    )
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+        indexes = [models.Index(fields=['event'])]
+
+    def __str__(self) -> str:
+        return f'{self.event} → {self.label or self.get_platform_display()}'
 
 
 class Donation(models.Model):

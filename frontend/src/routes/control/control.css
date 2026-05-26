@@ -108,6 +108,29 @@
   flex-wrap: wrap;
 }
 
+.schedule-form {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.schedule-form .form-control,
+.schedule-form .form-select {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.schedule-form .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.schedule-form .form-select option {
+  background: #2b1b25;
+  color: #fff;
+}
+
 /* Mini /obs/audio-countdown scene preview tiles on the Music page.
  * The inner stage is rendered at 1920x1080 and CSS-scaled down so scene
  * positioning (which is authored against a full 16:9 stage) still works. */

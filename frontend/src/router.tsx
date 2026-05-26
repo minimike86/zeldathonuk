@@ -29,6 +29,8 @@ import { ItemsControl } from '@/routes/control/Items';
 import { DonationsControl } from '@/routes/control/Donations';
 import { BrbControl } from '@/routes/control/Brb';
 import { GamesControl } from '@/routes/control/Games';
+import { RunnersControl } from '@/routes/control/Runners';
+import { EventsControl } from '@/routes/control/Events';
 import { AudioControl } from '@/routes/control/Audio';
 
 import { Timers } from '@/routes/api/Timers';
@@ -79,6 +81,8 @@ export const router = createBrowserRouter([
       { path: 'brb', element: <BrbControl /> },
       { path: 'audio', element: <AudioControl /> },
       { path: 'games', element: <GamesControl /> },
+      { path: 'runners', element: <RunnersControl /> },
+      { path: 'events', element: <EventsControl /> },
     ],
   },
   { path: '*', element: <NotFound /> },

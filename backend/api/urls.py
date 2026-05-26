@@ -9,6 +9,7 @@ router.register('runners', views.RunnerViewSet)
 router.register('events', views.EventViewSet)
 router.register('schedule', views.ScheduleEntryViewSet)
 router.register('donations', views.DonationViewSet)
+router.register('donation-pages', views.DonationPageViewSet)
 router.register('brb', views.BrbTimerViewSet)
 
 urlpatterns = [
@@ -28,5 +29,8 @@ urlpatterns = [
     # Dev-only: edits frontend/src/routes/obs/zelda-themes.ts and deletes
     # the scene's .tsx file. Guarded by DEBUG in the view.
     path('dev/scenes/unregister/', dev_scenes.unregister_scene, name='dev-unregister-scene'),
+    # Image upload (multipart) — returns an absolute URL clients can store
+    # in a *_url field.
+    path('uploads/image/', views.upload_image, name='upload-image'),
     path('', include(router.urls)),
 ]

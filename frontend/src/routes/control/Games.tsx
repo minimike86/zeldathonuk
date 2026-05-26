@@ -1,14 +1,71 @@
-import { useState } from 'react';
-import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { useMemo, useState } from 'react';
+import { obsApi, usePolledQuery, type Game } from '@/lib/obsApi';
 import { api } from '@/lib/api';
 
 const platforms = ['NES', 'SNES', 'N64', 'GC', 'Wii', 'WiiU', 'Switch', 'Switch2', 'GB', 'GBC', 'GBA', 'DS', '3DS', 'Other'];
 const layouts = ['16x9', '4x3', '3ds', 'ds-top', 'ds-both', 'fsa-split'];
 
+type SortKey = 'title' | 'platform' | 'layout_type' | 'default_play_minutes' | 'items';
+type SortDir = 'asc' | 'desc';
+
+const fmtHours = (minutes: number): string => {
+  if (!minutes) return '—';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+};
+
+const sortValue = (g: Game, key: SortKey): string | number => {
+  switch (key) {
+    case 'items':
+      return g.items.length;
+    case 'default_play_minutes':
+      return g.default_play_minutes;
+    case 'title':
+    case 'platform':
+    case 'layout_type':
+      return g[key].toLowerCase();
+  }
+};
+
 export function GamesControl() {
   const { data: games } = usePolledQuery(obsApi.games, 5000);
   const [adding, setAdding] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [filter, setFilter] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('title');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const visibleGames = useMemo(() => {
+    if (!games) return [];
+    const q = filter.trim().toLowerCase();
+    const filtered = q
+      ? games.filter(
+          (g) =>
+            g.title.toLowerCase().includes(q) ||
+            g.platform.toLowerCase().includes(q),
+        )
+      : games;
+    const sorted = [...filtered].sort((a, b) => {
+      const av = sortValue(a, sortKey);
+      const bv = sortValue(b, sortKey);
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [games, filter, sortKey, sortDir]);
 
   const remove = async (id: number) => {
     if (!confirm('Delete this game? Schedule entries using it must be removed first.')) return;
@@ -21,13 +78,23 @@ export function GamesControl() {
 
   return (
     <div className="control-card">
-      <header className="d-flex justify-content-between align-items-baseline">
+      <header className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
         <h2 className="m-0">Games catalogue</h2>
-        {!adding && (
-          <button className="btn btn-bloodmoon btn-sm" onClick={() => setAdding(true)}>
-            + Add game
-          </button>
-        )}
+        <div className="d-flex align-items-center gap-2 ms-auto">
+          <input
+            type="search"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter by title or platform…"
+            className="form-control form-control-sm"
+            style={{ width: 240 }}
+          />
+          {!adding && (
+            <button className="btn btn-bloodmoon btn-sm" onClick={() => setAdding(true)}>
+              + Add game
+            </button>
+          )}
+        </div>
       </header>
 
       {adding && (
@@ -39,17 +106,50 @@ export function GamesControl() {
       <table className="control-table mt-3">
         <thead>
           <tr>
-            <th>Title</th>
-            <th>Platform</th>
-            <th>Layout</th>
-            <th>Default min</th>
-            <th>Items</th>
+            <th style={{ width: 64 }}></th>
+            <SortableTh label="Title" sortKey="title" current={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableTh label="Platform" sortKey="platform" current={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableTh label="Layout" sortKey="layout_type" current={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableTh label="Default min" sortKey="default_play_minutes" current={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableTh label="Hours" sortKey="default_play_minutes" current={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableTh label="Items" sortKey="items" current={sortKey} dir={sortDir} onClick={toggleSort} />
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {games?.map((g) => (
+          {visibleGames.map((g) => (
             <tr key={g.id}>
+              <td>
+                {g.box_art_url ? (
+                  <img
+                    src={g.box_art_url}
+                    alt={`${g.title} box art`}
+                    style={{
+                      width: 48,
+                      height: 64,
+                      objectFit: 'cover',
+                      borderRadius: 4,
+                    }}
+                  />
+                ) : (
+                  <div
+                    aria-hidden
+                    style={{
+                      width: 48,
+                      height: 64,
+                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 18,
+                      color: 'rgba(255,255,255,0.4)',
+                    }}
+                  >
+                    {g.title.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </td>
               <td>
                 <strong>{g.title}</strong>
                 {g.release_year && (
@@ -61,6 +161,7 @@ export function GamesControl() {
                 <code>{g.layout_type}</code>
               </td>
               <td>{g.default_play_minutes}</td>
+              <td className="text-white-50 small">{fmtHours(g.default_play_minutes)}</td>
               <td>{g.items.length}</td>
               <td>
                 <button className="btn btn-sm btn-outline-danger" onClick={() => remove(g.id)}>
@@ -69,16 +170,52 @@ export function GamesControl() {
               </td>
             </tr>
           ))}
-          {games?.length === 0 && (
+          {games && games.length === 0 && (
             <tr>
-              <td colSpan={6} className="text-white-50 text-center py-4">
+              <td colSpan={8} className="text-white-50 text-center py-4">
                 No games yet — add one above.
+              </td>
+            </tr>
+          )}
+          {games && games.length > 0 && visibleGames.length === 0 && (
+            <tr>
+              <td colSpan={8} className="text-white-50 text-center py-4">
+                No games match “{filter}”.
               </td>
             </tr>
           )}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function SortableTh({
+  label,
+  sortKey,
+  current,
+  dir,
+  onClick,
+}: {
+  label: string;
+  sortKey: SortKey;
+  current: SortKey;
+  dir: SortDir;
+  onClick: (key: SortKey) => void;
+}) {
+  const active = current === sortKey;
+  const indicator = active ? (dir === 'asc' ? '▲' : '▼') : '';
+  return (
+    <th
+      onClick={() => onClick(sortKey)}
+      style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      {label}
+      <span style={{ marginLeft: 6, opacity: active ? 1 : 0.35 }}>
+        {indicator || '↕'}
+      </span>
+    </th>
   );
 }
 

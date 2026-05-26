@@ -19,7 +19,7 @@ class GameAdmin(admin.ModelAdmin):
     fields = ['title', 'platform', 'layout_type', 'default_play_minutes',
               'release_year', 'igdb_id', 'twitch_game_id', 'hltb_id',
               'box_art_url', 'box_art_preview']
-    actions = ['refresh_igdb_metadata', 'scrape_ocremix_remixes']
+    actions = ['refresh_igdb_metadata', 'refresh_play_times', 'scrape_ocremix_remixes']
 
     @admin.display(description='Cover')
     def box_art_thumb(self, obj):
@@ -76,6 +76,8 @@ class GameAdmin(admin.ModelAdmin):
                     fields_set['twitch_game_id'] = meta.twitch_game_id
                 if meta.hltb_id:
                     fields_set['hltb_id'] = meta.hltb_id
+                if meta.main_story_rushed_minutes:
+                    fields_set['default_play_minutes'] = meta.main_story_rushed_minutes
                 if not fields_set:
                     missed += 1
                     continue
@@ -99,6 +101,30 @@ class GameAdmin(admin.ModelAdmin):
             request,
             f'Refreshed {updated} fully, {partial} partially, {missed} with no matches.',
             level=messages.SUCCESS if updated or partial else messages.WARNING,
+        )
+
+    @admin.action(description='Refresh default play minutes from HLTB (Main Story Rushed)')
+    def refresh_play_times(self, request, queryset):
+        """Re-scrape `default_play_minutes` from HLTB's Main Story Rushed column.
+
+        Lighter than the IGDB action — no token mint, just one HTTP fetch per
+        game that already has an hltb_id. Games without an hltb_id are skipped.
+        """
+        updated = skipped = missed = 0
+        for game in queryset:
+            if not game.hltb_id:
+                skipped += 1
+                continue
+            minutes = igdb.fetch_main_story_rushed_minutes(game.hltb_id)
+            if minutes <= 0:
+                missed += 1
+                continue
+            models.Game.objects.filter(pk=game.pk).update(default_play_minutes=minutes)
+            updated += 1
+        self.message_user(
+            request,
+            f'Updated {updated} games, {missed} with no HLTB time, {skipped} missing hltb_id.',
+            level=messages.SUCCESS if updated else messages.WARNING,
         )
 
     @admin.action(description='Scrape OCRemix remixes for selected games')
@@ -164,6 +190,13 @@ class GameItemAdmin(admin.ModelAdmin):
 class CollectedItemAdmin(admin.ModelAdmin):
     list_display = ['schedule_entry', 'item', 'collected_at']
     list_filter = ['schedule_entry__event']
+
+
+@admin.register(models.DonationPage)
+class DonationPageAdmin(admin.ModelAdmin):
+    list_display = ['event', 'platform', 'label', 'url', 'is_primary', 'order']
+    list_filter = ['event', 'platform']
+    list_editable = ['is_primary', 'order']
 
 
 @admin.register(models.Donation)

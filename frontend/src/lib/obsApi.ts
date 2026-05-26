@@ -33,6 +33,28 @@ export interface Runner {
   name: string;
   channel_url: string;
   is_streamer: boolean;
+  profile_image_url: string;
+}
+
+export type DonationPlatformKey =
+  | 'justgiving'
+  | 'tiltify'
+  | 'facebook'
+  | 'twitch'
+  | 'paypal'
+  | 'direct'
+  | 'other';
+
+export interface DonationPage {
+  id: number;
+  event: number;
+  platform: DonationPlatformKey;
+  platform_label: string;
+  label: string;
+  url: string;
+  external_id: string;
+  is_primary: boolean;
+  order: number;
 }
 
 export interface EventModel {
@@ -41,6 +63,9 @@ export interface EventModel {
   start_time: string;
   currency_symbol: string;
   is_active: boolean;
+  logo_url: string;
+  banner_url: string;
+  donation_pages: DonationPage[];
 }
 
 export interface TimerRun {
@@ -54,10 +79,17 @@ export interface TimerRun {
   total_seconds: number;
 }
 
+export type SlotType = 'game' | 'start' | 'meal' | 'sleep' | 'break' | 'end';
+
 export interface ScheduleEntry {
   id: number;
   event: number;
-  game: Game;
+  slot_type: SlotType;
+  title: string;
+  display_title: string;
+  game: Game | null;
+  parent_entry: number | null;
+  start_offset_minutes: number;
   runners: Runner[];
   order: number;
   planned_minutes: number | null;
@@ -207,14 +239,24 @@ export const obsApi = {
 
 /** Hook that polls the API on an interval. Bare-bones — replace with TanStack
  *  Query if the project grows. */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function usePolledQuery<T>(
   fn: () => Promise<T>,
   intervalMs = 2000,
+  // Pass values whose change should cancel the current tick and re-fetch
+  // immediately. Typical use: `[event?.id]` for a query that depends on a
+  // value loaded by an earlier query — otherwise the first tick fires with
+  // the stale value and the user waits a full interval for the next one.
+  deps: unknown[] = [],
 ): { data: T | null; error: Error | null } {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  // Keep the latest fn in a ref so closures created with dynamic state
+  // (e.g. `() => obsApi.schedule(event.id)`) always read the current value
+  // instead of being frozen at the mount-time closure.
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
 
   useEffect(() => {
     let cancelled = false;
@@ -222,7 +264,7 @@ export function usePolledQuery<T>(
 
     const tick = async () => {
       try {
-        const result = await fn();
+        const result = await fnRef.current();
         if (!cancelled) setData(result);
       } catch (e) {
         if (!cancelled) setError(e as Error);
@@ -237,8 +279,7 @@ export function usePolledQuery<T>(
       cancelled = true;
       if (timer !== null) window.clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intervalMs]);
+  }, [intervalMs, ...deps]);
 
   return { data, error };
 }

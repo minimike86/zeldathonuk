@@ -4,13 +4,17 @@ import './control.css';
 
 const sections = [
   { to: '/control', label: 'Overview', end: true },
+  // Pre-event setup
+  { to: '/control/events', label: 'Events' },
+  { to: '/control/games', label: 'Games' },
+  { to: '/control/runners', label: 'Runners' },
   { to: '/control/schedule', label: 'Schedule' },
+  // Live show
   { to: '/control/timer', label: 'Timer' },
   { to: '/control/items', label: 'Items' },
   { to: '/control/donations', label: 'Donations' },
-  { to: '/control/brb', label: 'BRB' },
   { to: '/control/audio', label: 'Music' },
-  { to: '/control/games', label: 'Games' },
+  { to: '/control/brb', label: 'BRB' },
 ];
 
 export function ControlLayout() {

@@ -101,6 +101,10 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# User-uploaded files (event logos, banners, etc.).
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # ──────────────────────────────────────────────────────────────────────────────
 # CORS — frontend dev server + production origin(s)
 # ──────────────────────────────────────────────────────────────────────────────
