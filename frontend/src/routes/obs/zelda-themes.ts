@@ -19,10 +19,19 @@ import { TotkScene } from './scenes/TotkScene';
 import { TotkDepthsScene } from './scenes/TotkDepthsScene';
 import { SkywardScene } from './scenes/SkywardScene';
 import { TwilightScene } from './scenes/TwilightScene';
+import { TwilightCastleScene } from './scenes/TwilightCastleScene';
+import { TwilightWolfMidnaScene } from './scenes/TwilightWolfMidnaScene';
 import { AlttpScene } from './scenes/AlttpScene';
 import { NesScene } from './scenes/NesScene';
 import { Zelda2Scene } from './scenes/Zelda2Scene';
 import { OracleAgesScene } from './scenes/OracleAgesScene';
+import { OracleSeasonsScene } from './scenes/OracleSeasonsScene';
+import { AlbwScene } from './scenes/AlbwScene';
+import { PhantomHourglassScene } from './scenes/PhantomHourglassScene';
+import { FourSwordsAdventuresScene } from './scenes/FourSwordsAdventuresScene';
+import { SpiritTracksScene } from './scenes/SpiritTracksScene';
+import { MinishCapScene } from './scenes/MinishCapScene';
+import { LinksAwakeningScene } from './scenes/LinksAwakeningScene';
 import './scenes/scenes.css';
 
 export interface ZeldaTheme {
@@ -85,6 +94,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#3d2a6e',
       tertiary: '#a07cff',
       glow: 'rgba(255, 200, 61, 0.7)',
+      scenes: [AlbwScene],
     },
   },
   {
@@ -110,6 +120,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#3e5223',
       tertiary: '#c89c5a',
       glow: 'rgba(139, 195, 74, 0.7)',
+      scenes: [SpiritTracksScene],
     },
   },
   {
@@ -122,6 +133,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#0a3146',
       tertiary: '#f0c54a',
       glow: 'rgba(38, 179, 211, 0.7)',
+      scenes: [PhantomHourglassScene],
     },
   },
   {
@@ -134,7 +146,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#3a1a44',
       tertiary: '#7e2d8e',
       glow: 'rgba(255, 170, 58, 0.7)',
-      scenes: [TwilightScene],
+      scenes: [TwilightScene, TwilightCastleScene, TwilightWolfMidnaScene],
     },
   },
   {
@@ -160,6 +172,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#162045',
       tertiary: '#5dd5ff',
       glow: 'rgba(255, 85, 102, 0.7)',
+      scenes: [FourSwordsAdventuresScene],
     },
   },
   {
@@ -212,6 +225,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#5a2410',
       tertiary: '#ffc960',
       glow: 'rgba(245, 122, 42, 0.75)',
+      scenes: [OracleSeasonsScene],
     },
   },
   {
@@ -224,6 +238,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#225228',
       tertiary: '#ffe566',
       glow: 'rgba(124, 224, 74, 0.7)',
+      scenes: [MinishCapScene],
     },
   },
   {
@@ -236,6 +251,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#1a2d4a',
       tertiary: '#9bd6ff',
       glow: 'rgba(255, 181, 197, 0.7)',
+      scenes: [LinksAwakeningScene],
     },
   },
   {

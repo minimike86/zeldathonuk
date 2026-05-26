@@ -85,12 +85,23 @@ export function AudioCountdown() {
     return next;
   };
 
+  // When a track is pinned and finishes, advance to the next track *from
+  // the same game* (not the entire playlist). Wraps within the game so a
+  // pinned game keeps looping its own tracks instead of jumping to a
+  // random/other game.
   const pickNextInList = (curr: AudioTrack | null): AudioTrack | null => {
     if (tracks.length === 0) return null;
-    const sorted = [...tracks].sort((a, b) => a.order - b.order || a.id - b.id);
-    if (!curr) return sorted[0];
-    const idx = sorted.findIndex((t) => t.id === curr.id);
-    return idx >= 0 ? sorted[(idx + 1) % sorted.length] : sorted[0];
+    if (!curr) {
+      const sorted = [...tracks].sort((a, b) => a.order - b.order || a.id - b.id);
+      return sorted[0];
+    }
+    const sameGame = tracks
+      .filter((t) => t.game === curr.game)
+      .sort((a, b) => a.order - b.order || a.id - b.id);
+    if (sameGame.length === 0) return null;
+    if (sameGame.length === 1) return sameGame[0];
+    const idx = sameGame.findIndex((t) => t.id === curr.id);
+    return idx >= 0 ? sameGame[(idx + 1) % sameGame.length] : sameGame[0];
   };
 
   // Auto-advance on `ended` / `error`. Behaviour depends on the pinned flag:

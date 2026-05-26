@@ -226,6 +226,22 @@ export function OracleSeasonsScene() {
         alt=""
       />
 
+      {/* Link holding the Rod of Seasons — supplied by project owner. Sits on
+        * the right of the pedestal as the hero foreground figure. */}
+      <img
+        className="oos-link"
+        src="/assets/img/link-rod-seasons.png"
+        alt=""
+      />
+
+      {/* Din, the Oracle of Seasons, mid-dance — supplied by project owner.
+        * Floats on the left of the scene with a gentle dance bob. */}
+      <img
+        className="oos-din"
+        src="/assets/img/din-seasons.png"
+        alt=""
+      />
+
       {/* Falling particles — one container per season, each visible only during its slice */}
       <div className="oos-particles oos-blossoms" />
       <div className="oos-particles oos-leaves" />
