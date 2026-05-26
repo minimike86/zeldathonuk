@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { ScheduleEntry } from '@/lib/obsApi';
+import type { EventModel, ScheduleEntry } from '@/lib/obsApi';
 import './schedule.css';
 
 interface SlotMeta {
@@ -16,11 +16,18 @@ const BREAK_META: Record<string, SlotMeta> = {
   end: { label: 'Stream end', icon: '🏁' },
 };
 
-interface Row {
+interface Slot {
   entry: ScheduleEntry;
   start: Date;
   end: Date;
   children: ScheduleEntry[];
+}
+
+interface DayGroup {
+  dayKey: string;
+  dayLabel: string;
+  dateLabel: string;
+  slots: Slot[];
 }
 
 export function Schedule() {
@@ -33,15 +40,14 @@ export function Schedule() {
   const { data: currentlyPlaying } = usePolledQuery(obsApi.currentlyPlaying, 5000);
   const currentEntryId = currentlyPlaying?.schedule_entry ?? null;
 
-  const rows = useMemo<Row[]>(() => {
+  const slots = useMemo<Slot[]>(() => {
     if (!event || !schedule) return [];
     const eventStart = new Date(event.start_time).getTime();
-    const all = [...schedule];
-    const topLevel = all
+    const topLevel = [...schedule]
       .filter((e) => e.parent_entry == null)
       .sort((a, b) => a.order - b.order);
     const childrenByParent = new Map<number, ScheduleEntry[]>();
-    for (const e of all) {
+    for (const e of schedule) {
       if (e.parent_entry != null) {
         const arr = childrenByParent.get(e.parent_entry) ?? [];
         arr.push(e);
@@ -51,222 +57,336 @@ export function Schedule() {
     for (const arr of childrenByParent.values()) {
       arr.sort((a, b) => a.start_offset_minutes - b.start_offset_minutes);
     }
-
-    const out: Row[] = [];
+    const out: Slot[] = [];
     let cursor = eventStart;
     for (const top of topLevel) {
       const start = new Date(cursor);
       const children = childrenByParent.get(top.id) ?? [];
       const childMinutes = children.reduce((s, c) => s + c.effective_minutes, 0);
       const end = new Date(cursor + (top.effective_minutes + childMinutes) * 60_000);
-      // Attached breaks aren't separate rows — they only surface as a live
-      // banner inside the currently-playing row when their wall-clock window
-      // has arrived. Stash them on the row so the renderer can find them.
       out.push({ entry: top, start, end, children });
       cursor = end.getTime();
     }
     return out;
   }, [event, schedule]);
 
-  const totalMinutes = (schedule ?? []).reduce((s, e) => s + e.effective_minutes, 0);
-  const eventEnd = event
-    ? new Date(new Date(event.start_time).getTime() + totalMinutes * 60_000)
-    : null;
+  const days = useMemo<DayGroup[]>(() => {
+    const groups = new Map<string, DayGroup>();
+    for (const slot of slots) {
+      const d = slot.start;
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          dayKey: key,
+          dayLabel: d.toLocaleDateString('en-GB', { weekday: 'long' }),
+          dateLabel: d.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }),
+          slots: [],
+        });
+      }
+      groups.get(key)!.slots.push(slot);
+    }
+    return Array.from(groups.values());
+  }, [slots]);
+
+  const games = slots.filter((s) => s.entry.slot_type === 'game');
+  const totalPlay = games.reduce((s, g) => s + g.entry.effective_minutes, 0);
+  const completed = games.filter((s) => s.entry.is_completed).length;
+  const eventEnd =
+    slots.length > 0 ? slots[slots.length - 1].end : null;
 
   return (
-    <div className="container p-3 min-vh-100 text-white text-center">
-      <div className="my-3">
-        <div className="mb-4">
-          <h1 className="text-bloodmoon">Stream Schedule</h1>
-          {event ? (
-            <p className="text-light mt-2 mb-0">
-              <strong>{event.name}</strong> · {fmtDateTime(new Date(event.start_time))}
-              {eventEnd && (
-                <>
-                  {' '}→ {fmtDateTime(eventEnd)} · {fmtDuration(totalMinutes)} total
-                </>
-              )}
-            </p>
-          ) : (
-            <p className="text-light mt-2 mb-0">
-              No event is currently scheduled. Check back closer to the next stream.
-            </p>
-          )}
-        </div>
+    <div className="schedule-page">
+      <ScheduleHero
+        event={event}
+        eventEnd={eventEnd}
+        totalPlayMinutes={totalPlay}
+        totalGames={games.length}
+        completedGames={completed}
+      />
 
-        {rows.length === 0 ? (
-          <p className="text-white-50">No games on the schedule yet.</p>
-        ) : (
-          <div className="table-responsive">
-            <table
-              className="table bg-bloodmoon text-white align-middle"
-              style={{ fontSize: 13 }}
-            >
-              <thead>
-                <tr>
-                  <th scope="col">Day</th>
-                  <th scope="col">Time</th>
-                  <th scope="col">
-                    <div className="d-none d-md-block">Platform</div>
-                  </th>
-                  <th scope="col">Game</th>
-                  <th scope="col">
-                    <div className="d-none d-md-block">Runner(s)</div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const { entry, start, end, children } = row;
-                  const isPlaying = currentEntryId === entry.id;
-                  const isCompleted = entry.is_completed;
-                  const rowClass = isPlaying
-                    ? 'table-currently-playing'
-                    : isCompleted
-                      ? 'table-played'
-                      : '';
-                  // Attached break currently in progress for the live game?
-                  // Anchor break windows to the entry's real `started_at` if
-                  // set, else fall back to the scheduled start.
-                  const liveBreak =
-                    isPlaying && children.length > 0
-                      ? findActiveBreak(
-                          children,
-                          entry.started_at ? new Date(entry.started_at) : start,
-                        )
-                      : null;
-                  return (
-                    <tr key={entry.id} className={rowClass}>
-                      <td className="align-middle">
-                        <div>{start.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit' })}</div>
-                        <div className="text-white-50">
-                          {start.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
-                        </div>
-                      </td>
-                      <td className="align-middle">
-                        <div>{fmtTime(start)}</div>
-                        <div className="text-white-50">→ {fmtTime(end)}</div>
-                      </td>
-                      <td className="align-middle text-center">
-                        <div className="d-none d-md-block">
-                          {entry.game ? (
-                            <span className="badge rounded-pill bg-secondary p-2">
-                              {entry.game.platform}
-                            </span>
-                          ) : (
-                            <span className="text-white-50">—</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="align-middle">
-                        <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
-                          {entry.game?.box_art_url && (
-                            <img
-                              src={entry.game.box_art_url}
-                              alt={`${entry.display_title} cover art`}
-                              title={`${entry.display_title} cover art`}
-                              style={{ maxWidth: 50, borderRadius: 3 }}
-                            />
-                          )}
-                          <div className="text-center">
-                            <div>
-                              {entry.display_title}
-                              {entry.game?.release_year && (
-                                <span className="text-white-50">
-                                  {' '}
-                                  ({entry.game.release_year})
-                                </span>
-                              )}
-                            </div>
-                            {isCompleted && (
-                              <div className="d-flex justify-content-center">
-                                <div className="rounded-pill bg-dark mt-1 px-3 small">
-                                  COMPLETED
-                                </div>
-                              </div>
-                            )}
-                            {isPlaying && !liveBreak && (
-                              <div className="d-inline-block mt-1">
-                                <a
-                                  className="badge bg-light text-dark fw-bold p-2 px-3"
-                                  href="https://www.twitch.tv/zeldathonuk"
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  title="Watch Livestream"
-                                >
-                                  LIVE NOW!{' '}
-                                  <span style={{ color: 'red' }}>
-                                    <span className="d-inline-block live-circle ms-1" />
-                                  </span>
-                                </a>
-                              </div>
-                            )}
-                            {liveBreak && (
-                              <div className="schedule-break-banner mt-2">
-                                <div className="schedule-break-icon">
-                                  {BREAK_META[liveBreak.entry.slot_type]?.icon ?? '☕'}
-                                </div>
-                                <div className="text-start">
-                                  <strong className="d-block">
-                                    On a {(
-                                      BREAK_META[liveBreak.entry.slot_type]?.label ?? 'break'
-                                    ).toLowerCase()}
-                                  </strong>
-                                  <div className="small text-white-50">
-                                    Back at <strong>{fmtTime(liveBreak.end)}</strong>{' '}
-                                    ({fmtDuration(liveBreak.entry.effective_minutes)})
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            <div className="mt-1">
-                              <span className="badge bg-light text-dark">
-                                {fmtDuration(entry.effective_minutes)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="align-middle text-center">
-                        <div className="d-none d-md-block">
-                          {entry.runners.length === 0 ? (
-                            <span className="text-white-50">—</span>
-                          ) : (
-                            entry.runners.map((r) =>
-                              r.is_streamer && r.channel_url ? (
-                                <a
-                                  key={r.id}
-                                  href={r.channel_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="d-inline-block"
-                                >
-                                  <span className="badge rounded-pill bg-secondary p-2 m-1">
-                                    {r.name}
-                                  </span>
-                                </a>
-                              ) : (
-                                <span
-                                  key={r.id}
-                                  className="badge rounded-pill bg-secondary p-2 m-1"
-                                >
-                                  {r.name}
-                                </span>
-                              ),
-                            )
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {slots.length === 0 ? (
+        <div className="container py-5 text-center text-white-50">
+          <p>The line-up will appear here as soon as it's locked in.</p>
+        </div>
+      ) : (
+        <div className="container schedule-timeline py-4">
+          {days.map((day) => (
+            <section key={day.dayKey} className="schedule-day">
+              <header className="schedule-day-header">
+                <div className="schedule-day-weekday">{day.dayLabel}</div>
+                <div className="schedule-day-date">{day.dateLabel}</div>
+              </header>
+              <div className="schedule-day-slots">
+                {day.slots.map((slot) => (
+                  <GameCard
+                    key={slot.entry.id}
+                    slot={slot}
+                    isPlaying={currentEntryId === slot.entry.id}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScheduleHero({
+  event,
+  eventEnd,
+  totalPlayMinutes,
+  totalGames,
+  completedGames,
+}: {
+  event: EventModel | null;
+  eventEnd: Date | null;
+  totalPlayMinutes: number;
+  totalGames: number;
+  completedGames: number;
+}) {
+  const start = event ? new Date(event.start_time) : null;
+  const banner = event?.banner_url || '';
+  const logo = event?.logo_url || '';
+  const name = event?.name ?? 'Stream Schedule';
+
+  return (
+    <header
+      className="schedule-hero"
+      style={
+        banner
+          ? {
+              backgroundImage: `linear-gradient(180deg, rgba(76,19,36,0.6) 0%, rgba(11,4,8,0.92) 100%), url(${banner})`,
+            }
+          : undefined
+      }
+    >
+      <div className="container schedule-hero-inner">
+        {logo && (
+          <img src={logo} alt={`${name} logo`} className="schedule-hero-logo" />
+        )}
+        <h1 className="schedule-hero-title">{event ? name : 'Stream Schedule'}</h1>
+        {start && eventEnd && (
+          <div className="schedule-hero-dates">
+            <span>{fmtDateTime(start)}</span>
+            <span aria-hidden className="schedule-hero-dash">→</span>
+            <span>{fmtDateTime(eventEnd)}</span>
+          </div>
+        )}
+        {!event && (
+          <p className="text-white-50 mt-3">
+            No event scheduled — check back closer to the next stream.
+          </p>
+        )}
+        {event && (
+          <div className="schedule-hero-kpis">
+            <HeroKpi label="Games" value={String(totalGames)} />
+            <HeroKpi
+              label="Play time"
+              value={fmtDuration(totalPlayMinutes)}
+            />
+            <HeroKpi
+              label="Progress"
+              value={`${completedGames} / ${totalGames}`}
+            />
           </div>
         )}
       </div>
+    </header>
+  );
+}
+
+function HeroKpi({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="schedule-hero-kpi">
+      <div className="schedule-hero-kpi-value">{value}</div>
+      <div className="schedule-hero-kpi-label">{label}</div>
     </div>
   );
+}
+
+function GameCard({ slot, isPlaying }: { slot: Slot; isPlaying: boolean }) {
+  const { entry, start, end, children } = slot;
+  const isCompleted = entry.is_completed;
+  const game = entry.game;
+  const daysSpanned = daysBetween(start, end);
+  // End time crosses midnight (or further) into a later calendar day.
+  const crossesMidnight = daysSpanned >= 1;
+  const liveBreak =
+    isPlaying && children.length > 0
+      ? findActiveBreak(
+          children,
+          entry.started_at ? new Date(entry.started_at) : start,
+        )
+      : null;
+
+  const cardClass = [
+    'schedule-card',
+    isPlaying ? 'is-live' : '',
+    isCompleted ? 'is-completed' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <article
+      className={cardClass}
+      style={
+        game?.box_art_url
+          ? {
+              backgroundImage: `linear-gradient(105deg, rgba(11,4,8,0.92) 0%, rgba(11,4,8,0.78) 45%, rgba(11,4,8,0.55) 100%), url(${game.box_art_url})`,
+            }
+          : undefined
+      }
+    >
+      <div className="schedule-card-time">
+        <div className="schedule-card-time-start">{fmtTime(start)}</div>
+        <div className="schedule-card-time-end">
+          → {fmtTime(end)}
+          {crossesMidnight && (
+            <span
+              className="schedule-moon"
+              title="Ends after midnight"
+              aria-label="Ends after midnight"
+            >
+              🌙
+            </span>
+          )}
+        </div>
+        {daysSpanned >= 1 && (
+          <div className="schedule-card-time-overnight">
+            ends {end.toLocaleDateString('en-GB', { weekday: 'short' })}
+          </div>
+        )}
+      </div>
+
+      {game?.box_art_url ? (
+        <img
+          src={game.box_art_url}
+          alt={`${entry.display_title} cover art`}
+          className="schedule-card-art"
+        />
+      ) : (
+        <div
+          className="schedule-card-art schedule-card-art--break"
+          aria-hidden
+        >
+          {BREAK_META[entry.slot_type]?.icon ?? '⭐'}
+        </div>
+      )}
+
+      <div className="schedule-card-body">
+        <div className="schedule-card-meta">
+          {game?.platform && (
+            <span className="schedule-pill">{game.platform}</span>
+          )}
+          <span className="schedule-pill schedule-pill--duration">
+            {fmtDuration(entry.effective_minutes)}
+          </span>
+          {daysSpanned >= 1 && (
+            <span
+              className="schedule-pill schedule-pill--overnight"
+              title={`Runs across ${daysSpanned + 1} days`}
+            >
+              🌙 spans {daysSpanned + 1} days
+            </span>
+          )}
+          {isCompleted && (
+            <span className="schedule-pill schedule-pill--done">
+              Completed
+            </span>
+          )}
+          {isPlaying && !liveBreak && (
+            <a
+              href="https://www.twitch.tv/zeldathonuk"
+              target="_blank"
+              rel="noreferrer"
+              className="schedule-pill schedule-pill--live"
+            >
+              <span className="schedule-live-dot" />
+              LIVE NOW
+            </a>
+          )}
+        </div>
+
+        <h2 className="schedule-card-title">
+          {entry.display_title}
+          {game?.release_year && (
+            <span className="schedule-card-year">{game.release_year}</span>
+          )}
+        </h2>
+
+        {entry.runners.length > 0 && (
+          <div className="schedule-card-runners">
+            {entry.runners.map((r) =>
+              r.is_streamer && r.channel_url ? (
+                <a
+                  key={r.id}
+                  href={r.channel_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="schedule-runner schedule-runner--linked"
+                >
+                  {r.profile_image_url && (
+                    <img src={r.profile_image_url} alt="" />
+                  )}
+                  <span>{r.name}</span>
+                </a>
+              ) : (
+                <span key={r.id} className="schedule-runner">
+                  {r.profile_image_url && (
+                    <img src={r.profile_image_url} alt="" />
+                  )}
+                  <span>{r.name}</span>
+                </span>
+              ),
+            )}
+          </div>
+        )}
+
+        {liveBreak && (
+          <div className="schedule-break-banner mt-2">
+            <div className="schedule-break-icon">
+              {BREAK_META[liveBreak.entry.slot_type]?.icon ?? '☕'}
+            </div>
+            <div className="text-start">
+              <strong className="d-block">
+                On a{' '}
+                {(
+                  BREAK_META[liveBreak.entry.slot_type]?.label ?? 'break'
+                ).toLowerCase()}
+              </strong>
+              <div className="small text-white-50">
+                Back at <strong>{fmtTime(liveBreak.end)}</strong> (
+                {fmtDuration(liveBreak.entry.effective_minutes)})
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function daysBetween(start: Date, end: Date): number {
+  // Difference in calendar days between two timestamps (rounded down on the
+  // start, up on the end). Returns 0 when start and end share the same date.
+  const startDay = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate(),
+  ).getTime();
+  const endDay = new Date(
+    end.getFullYear(),
+    end.getMonth(),
+    end.getDate(),
+  ).getTime();
+  return Math.max(0, Math.round((endDay - startDay) / (24 * 60 * 60 * 1000)));
 }
 
 function findActiveBreak(

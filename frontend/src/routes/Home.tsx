@@ -110,6 +110,17 @@ export function Home() {
       : null;
   const nextStart = nextEntry ? startTimes.get(nextEntry.id) ?? null : null;
 
+  // Active break attached to the currently-playing entry. Children come
+  // from the full schedule (the detail object on `currentlyPlaying` doesn't
+  // include them) — find the one whose wall-clock window contains "now".
+  const currentChildren = (schedule ?? []).filter(
+    (e) => currentEntry && e.parent_entry === currentEntry.id,
+  );
+  const liveBreak =
+    currentEntry && currentStart && currentChildren.length > 0
+      ? findActiveBreak(currentChildren, currentStart)
+      : null;
+
   return (
     <div className="container-fluid">
       <div className="d-block card card-header mt-2 p-0">
@@ -158,6 +169,7 @@ export function Home() {
                   entry={currentEntry}
                   etaLabel="Estimated end"
                   etaTime={currentEnd}
+                  liveBreak={liveBreak}
                 />
               ) : (
                 <>
@@ -269,14 +281,44 @@ export function Home() {
   );
 }
 
+interface SlotMeta {
+  label: string;
+  icon: string;
+}
+
+const BREAK_META: Record<string, SlotMeta> = {
+  start: { label: 'Stream start', icon: '🎬' },
+  meal: { label: 'Meal break', icon: '🍽' },
+  sleep: { label: 'Sleep break', icon: '💤' },
+  break: { label: 'Break', icon: '☕' },
+  end: { label: 'Stream end', icon: '🏁' },
+};
+
+function findActiveBreak(
+  children: ScheduleEntry[],
+  parentStart: Date,
+): { entry: ScheduleEntry; start: Date; end: Date } | null {
+  const now = Date.now();
+  for (const child of children) {
+    const start = parentStart.getTime() + child.start_offset_minutes * 60_000;
+    const end = start + child.effective_minutes * 60_000;
+    if (now >= start && now < end) {
+      return { entry: child, start: new Date(start), end: new Date(end) };
+    }
+  }
+  return null;
+}
+
 function ScheduleEntryCard({
   entry,
   etaLabel,
   etaTime,
+  liveBreak,
 }: {
   entry: ScheduleEntry;
   etaLabel?: string;
   etaTime?: Date | null;
+  liveBreak?: { entry: ScheduleEntry; start: Date; end: Date } | null;
 }) {
   const game = entry.game;
   const title = entry.display_title || game?.title;
@@ -341,7 +383,30 @@ function ScheduleEntryCard({
             ))}
           </div>
         )}
-        {etaLabel && etaTime && (
+        {liveBreak && (
+          <div
+            className="mt-2 d-inline-flex align-items-center gap-2 px-2 py-1"
+            style={{
+              background: 'rgba(255, 193, 7, 0.18)',
+              border: '1px solid rgba(255, 193, 7, 0.6)',
+              borderRadius: 999,
+              color: '#ffe69b',
+            }}
+          >
+            <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>
+              {BREAK_META[liveBreak.entry.slot_type]?.icon ?? '☕'}
+            </span>
+            <span className="small">
+              <strong>
+                On a{' '}
+                {(BREAK_META[liveBreak.entry.slot_type]?.label ?? 'break').toLowerCase()}
+              </strong>
+              {' · '}
+              back at <strong>{fmtTime(liveBreak.end)}</strong>
+            </span>
+          </div>
+        )}
+        {!liveBreak && etaLabel && etaTime && (
           <div className="small text-white-50 mt-1">
             {etaLabel}:{' '}
             <strong className="text-light">{fmtRelativeTime(etaTime)}</strong>
@@ -350,6 +415,10 @@ function ScheduleEntryCard({
       </div>
     </div>
   );
+}
+
+function fmtTime(d: Date): string {
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 function WaveText({ text }: { text: string }) {

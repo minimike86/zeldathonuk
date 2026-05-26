@@ -12,9 +12,20 @@ export function BotwDeathMountainScene() {
       {/* Volcanic ambient glow behind the mountain */}
       <div className="botw-dm-skyglow" />
 
-      {/* Smoke plume rising from the crater */}
+      {/* Smoke plumes rising from the crater — three columns staggered so
+       *  the volcano looks like it's seething. */}
       <div className="botw-dm-smoke" />
       <div className="botw-dm-smoke botw-dm-smoke-2" />
+      <div className="botw-dm-smoke botw-dm-smoke-3" />
+
+      {/* Fiery rocks erupting from the crater, arcing left + right then
+       *  burning out. Each is independently timed so the volcano never
+       *  feels in sync. */}
+      <FieryRock variant={1} />
+      <FieryRock variant={2} />
+      <FieryRock variant={3} />
+      <FieryRock variant={4} />
+      <FieryRock variant={5} />
 
       {/* Far mountain silhouettes */}
       <svg className="botw-dm-far-mountains" viewBox="0 0 1200 200" preserveAspectRatio="none">
@@ -72,9 +83,11 @@ export function BotwDeathMountainScene() {
         />
       </svg>
 
-      {/* Vah Rudania (salamander) crawling on the cone */}
-      <svg className="botw-dm-rudania" viewBox="0 0 220 100">
-        <g>
+      {/* Vah Rudania prowling along the caldera rim. The wrapper handles
+       *  the horizontal patrol + flip-at-the-ends, the inner SVG handles
+       *  the walking bob — two layers so the transforms don't fight. */}
+      <div className="botw-dm-rudania">
+        <svg className="botw-dm-rudania-art" viewBox="0 0 220 100">
           {/* tail */}
           <path
             d="M0 60 Q20 40 50 55 Q80 70 100 60"
@@ -87,11 +100,11 @@ export function BotwDeathMountainScene() {
           <ellipse cx="120" cy="55" rx="60" ry="22" fill="#1a1018" />
           {/* head */}
           <ellipse cx="186" cy="48" rx="22" ry="16" fill="#1a1018" />
-          {/* legs */}
-          <path d="M85 75 L80 95 L92 95 L96 75" fill="#1a1018" />
-          <path d="M155 75 L150 95 L162 95 L166 75" fill="#1a1018" />
-          {/* spine markings — orange Sheikah glyphs */}
-          <g fill="#f56b1a">
+          {/* legs — animated stomp via CSS */}
+          <path className="botw-dm-rudania-leg-back" d="M85 75 L80 95 L92 95 L96 75" fill="#1a1018" />
+          <path className="botw-dm-rudania-leg-front" d="M155 75 L150 95 L162 95 L166 75" fill="#1a1018" />
+          {/* spine markings — orange Sheikah glyphs, pulsing */}
+          <g className="botw-dm-rudania-spine" fill="#f56b1a">
             <circle cx="80" cy="45" r="3.5" />
             <circle cx="110" cy="40" r="4" />
             <circle cx="140" cy="42" r="4" />
@@ -100,8 +113,13 @@ export function BotwDeathMountainScene() {
           {/* eye glow */}
           <circle cx="195" cy="45" r="3" fill="#f56b1a" />
           <circle cx="195" cy="45" r="1.5" fill="#fff" />
-        </g>
-      </svg>
+          {/* angry breath flickers occasionally */}
+          <g className="botw-dm-rudania-breath">
+            <ellipse cx="220" cy="48" rx="14" ry="4" fill="#ff8a3a" opacity="0.85" />
+            <ellipse cx="230" cy="48" rx="8" ry="3" fill="#ffd23a" />
+          </g>
+        </svg>
+      </div>
 
       {/* Foreground silhouette — Goron-village ridge */}
       <svg className="botw-dm-foreground" viewBox="0 0 1200 200" preserveAspectRatio="none">
@@ -120,6 +138,21 @@ export function BotwDeathMountainScene() {
       {/* Embers drifting up across the whole scene */}
       <div className="botw-dm-embers" />
       <div className="botw-dm-embers botw-dm-embers-2" />
+    </div>
+  );
+}
+
+/* One ejected fiery rock — five variants offset their arc + timing via CSS so
+ * they don't all fire at once. The wrapper handles vertical lift + fade;
+ * the inner svg trails a glowing tail. */
+function FieryRock({ variant }: { variant: 1 | 2 | 3 | 4 | 5 }) {
+  return (
+    <div className={`botw-dm-rock botw-dm-rock-${variant}`} aria-hidden>
+      <svg viewBox="-20 -20 40 40">
+        <circle cx="0" cy="0" r="12" fill="#ff5a18" />
+        <circle cx="-3" cy="-3" r="6" fill="#ffd23a" />
+        <circle cx="0" cy="0" r="16" fill="#ff5a18" opacity="0.35" />
+      </svg>
     </div>
   );
 }

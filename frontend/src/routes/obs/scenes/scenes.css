@@ -2126,10 +2126,87 @@
   opacity: 0.7;
 }
 
+.botw-dm-smoke-3 {
+  width: 32vw;
+  height: 48vh;
+  bottom: 45vh;
+  animation-duration: 11s;
+  animation-delay: -6s;
+  opacity: 0.85;
+  background: radial-gradient(ellipse at center bottom,
+    rgba(70, 30, 28, 0.7) 0%,
+    rgba(40, 20, 30, 0) 75%
+  );
+}
+
 @keyframes botw-dm-smoke-rise {
   0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 0.6; }
   50% { transform: translate(-50%, -30px) scale(1.15); opacity: 0.9; }
 }
+
+/* Fiery rocks ejected from the crater. The wrapper anchors at the
+ * caldera position (centred at the volcano peak) and each variant
+ * stamps its own arc + timing on top via the keyframe. */
+.botw-dm-rock {
+  position: absolute;
+  bottom: calc(6vh + 28vw);
+  left: 50%;
+  width: 2.4vw;
+  height: 2.4vw;
+  pointer-events: none;
+  opacity: 0;
+  filter: drop-shadow(0 0 8px rgba(255, 130, 40, 0.85));
+  mix-blend-mode: screen;
+}
+
+.botw-dm-rock svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes botw-dm-rock-left-tall {
+  0%       { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+  10%      { transform: translate(-80%, -120px) scale(1); opacity: 1; }
+  45%      { transform: translate(-220%, -40px) scale(0.95); opacity: 1; }
+  85%      { transform: translate(-260%, 220px) scale(0.6); opacity: 0.5; }
+  100%     { transform: translate(-280%, 320px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-right-tall {
+  0%       { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+  10%      { transform: translate(-20%, -130px) scale(1); opacity: 1; }
+  45%      { transform: translate(120%, -50px) scale(0.95); opacity: 1; }
+  85%      { transform: translate(160%, 240px) scale(0.6); opacity: 0.5; }
+  100%     { transform: translate(180%, 340px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-left-short {
+  0%       { transform: translate(-50%, 0) scale(0.3); opacity: 0; }
+  15%      { transform: translate(-90%, -70px) scale(0.85); opacity: 1; }
+  60%      { transform: translate(-160%, 80px) scale(0.7); opacity: 0.7; }
+  100%     { transform: translate(-180%, 220px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-right-short {
+  0%       { transform: translate(-50%, 0) scale(0.3); opacity: 0; }
+  15%      { transform: translate(-10%, -80px) scale(0.85); opacity: 1; }
+  60%      { transform: translate(70%, 100px) scale(0.7); opacity: 0.7; }
+  100%     { transform: translate(90%, 240px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-straight-up {
+  0%       { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+  20%      { transform: translate(-55%, -160px) scale(1); opacity: 1; }
+  55%      { transform: translate(-45%, -110px) scale(0.85); opacity: 0.95; }
+  100%     { transform: translate(-50%, 340px) scale(0.3); opacity: 0; }
+}
+
+.botw-dm-rock-1 { animation: botw-dm-rock-left-tall   3.6s linear infinite; animation-delay: 0s;    }
+.botw-dm-rock-2 { animation: botw-dm-rock-right-tall  4.2s linear infinite; animation-delay: -1.4s; }
+.botw-dm-rock-3 { animation: botw-dm-rock-left-short  2.8s linear infinite; animation-delay: -0.8s; }
+.botw-dm-rock-4 { animation: botw-dm-rock-right-short 3.1s linear infinite; animation-delay: -2.2s; }
+.botw-dm-rock-5 { animation: botw-dm-rock-straight-up 5.0s linear infinite; animation-delay: -3.1s; }
 
 .botw-dm-far-mountains {
   position: absolute;
@@ -2155,20 +2232,120 @@
   filter: drop-shadow(0 0 4px rgba(255, 90, 24, 0.8));
 }
 
-.botw-dm-rudania {
-  position: absolute;
-  bottom: 30vh;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(280px, 22vw);
-  filter: drop-shadow(0 0 12px rgba(245, 107, 26, 0.55))
-    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.7));
-  animation: botw-dm-rudania-crawl 14s ease-in-out infinite;
+/* Rudania prowls along the caldera rim. The outer wrapper handles the
+ * horizontal patrol + flip-at-each-end (so he turns around when he
+ * reaches the rim's edge). The inner .botw-dm-rudania-art handles the
+ * walking bob/rock independently so the two animations don't clobber
+ * each other's transform. */
+@property --rudania-bob {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+@property --rudania-rock {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
-@keyframes botw-dm-rudania-crawl {
-  0%, 100% { transform: translate(-50%, 0) rotate(-3deg); }
-  50% { transform: translate(-50%, -10px) rotate(2deg); }
+.botw-dm-rudania {
+  position: absolute;
+  /* Anchored at the volcano's base — the patrol keyframe lifts him up
+   * along the slope via translateY, so the bottom only needs to match
+   * the bottom of the volcano element. */
+  bottom: 6vh;
+  left: 50%;
+  width: min(220px, 14vw);
+  transform-origin: 50% 100%;
+  animation: botw-dm-rudania-patrol 14s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 14px rgba(245, 107, 26, 0.6))
+    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.7));
+}
+
+.botw-dm-rudania-art {
+  display: block;
+  width: 100%;
+  --rudania-bob: 0px;
+  --rudania-rock: 0deg;
+  transform: translateY(var(--rudania-bob)) rotate(var(--rudania-rock));
+  animation:
+    botw-dm-rudania-bob 0.55s ease-in-out infinite,
+    botw-dm-rudania-rock 1.1s ease-in-out infinite;
+}
+
+@keyframes botw-dm-rudania-patrol {
+  /* Walks the upper slope of the volcano: left base → peak → right base,
+   * turns around, walks back. The translateX uses `Xvw - 50%` so the
+   * `-50%` centres the lizard on its own width while Xvw positions him
+   * relative to the volcano's centre. Y is the vertical lift up the cone. */
+
+  /* Forward pass — facing right, going up the left slope and down the right */
+  0%   { transform: translate(calc(-14vw - 50%), -12vw) scaleX(1); }
+  12%  { transform: translate(calc(-8vw - 50%),  -19vw) scaleX(1); }
+  25%  { transform: translate(calc(0vw - 50%),   -26vw) scaleX(1); }
+  37%  { transform: translate(calc(8vw - 50%),   -19vw) scaleX(1); }
+  47%  { transform: translate(calc(14vw - 50%),  -12vw) scaleX(1); }
+  /* Turn around at the right foot */
+  50%  { transform: translate(calc(14vw - 50%),  -12vw) scaleX(-1); }
+  /* Return pass — facing left, going back over the peak */
+  62%  { transform: translate(calc(8vw - 50%),   -19vw) scaleX(-1); }
+  75%  { transform: translate(calc(0vw - 50%),   -26vw) scaleX(-1); }
+  87%  { transform: translate(calc(-8vw - 50%),  -19vw) scaleX(-1); }
+  97%  { transform: translate(calc(-14vw - 50%), -12vw) scaleX(-1); }
+  /* Turn around at the left foot to repeat */
+  100% { transform: translate(calc(-14vw - 50%), -12vw) scaleX(1); }
+}
+
+@keyframes botw-dm-rudania-bob {
+  0%, 100% { --rudania-bob: 0px; }
+  50%      { --rudania-bob: -3px; }
+}
+
+@keyframes botw-dm-rudania-rock {
+  0%, 100% { --rudania-rock: -2deg; }
+  50%      { --rudania-rock: 2deg; }
+}
+
+/* Walking legs alternating stomps. */
+.botw-dm-rudania-leg-front,
+.botw-dm-rudania-leg-back {
+  transform-origin: top center;
+  animation: botw-dm-rudania-leg 0.55s ease-in-out infinite;
+}
+.botw-dm-rudania-leg-front { animation-delay: 0s; }
+.botw-dm-rudania-leg-back  { animation-delay: 0.275s; }
+
+@keyframes botw-dm-rudania-leg {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* Sheikah spine markings pulse with the volcano's heartbeat. */
+.botw-dm-rudania-spine circle {
+  animation: botw-dm-rudania-spine 2s ease-in-out infinite;
+}
+.botw-dm-rudania-spine circle:nth-child(2) { animation-delay: 0.2s; }
+.botw-dm-rudania-spine circle:nth-child(3) { animation-delay: 0.4s; }
+.botw-dm-rudania-spine circle:nth-child(4) { animation-delay: 0.6s; }
+
+@keyframes botw-dm-rudania-spine {
+  0%, 100% { fill: #f56b1a; }
+  50%      { fill: #ffd23a; }
+}
+
+/* Snout-fire blast — appears in flickers, otherwise hidden. */
+.botw-dm-rudania-breath {
+  transform-origin: 196px 48px;
+  opacity: 0;
+  animation: botw-dm-rudania-breath 7s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 130, 40, 0.85));
+}
+
+@keyframes botw-dm-rudania-breath {
+  0%, 80%, 100% { opacity: 0; transform: scaleX(0.6); }
+  85%           { opacity: 1; transform: scaleX(1); }
+  95%           { opacity: 0.4; transform: scaleX(1.4); }
 }
 
 .botw-dm-foreground {
