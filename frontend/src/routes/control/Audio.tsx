@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { AudioTrack } from '@/lib/obsApi';
 import { api } from '@/lib/api';
+import { themeFor } from '../obs/zelda-themes';
+import { ScenePreview } from './ScenePreview';
 
 /**
  * Music control for /obs/audio-countdown. Pick a specific track to play (pin),
@@ -13,6 +15,14 @@ export function AudioControl() {
   const { data: now } = usePolledQuery(obsApi.nowPlayingAudio, 1500);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Game-name keys for which the OBS scene previews are expanded. Toggled
+  // per-game because each scene runs its own animations and rendering them
+  // all at once on this page would be wasteful.
+  const [previewOpen, setPreviewOpen] = useState<Record<string, boolean>>({});
+  // Scene component names that have just been unregistered. Used to hide
+  // the tile immediately while we wait for Vite HMR to re-evaluate
+  // zelda-themes.ts and drop the entry from the cascade.
+  const [removedScenes, setRemovedScenes] = useState<Set<string>>(new Set());
 
   const wrap = async (fn: () => Promise<unknown>) => {
     setErr(null);
@@ -73,6 +83,24 @@ export function AudioControl() {
         body: { enabled: !track.enabled },
       }),
     );
+
+  const unregisterScene = (sceneName: string) =>
+    wrap(async () => {
+      // Source-file edit + file delete — confirm so a misclick doesn't wipe
+      // an authored scene.
+      const ok = window.confirm(
+        `Unregister ${sceneName}?\n\n` +
+          'This rewrites zelda-themes.ts and deletes the .tsx file. ' +
+          'Undo with git checkout.',
+      );
+      if (!ok) return;
+      await obsApi.unregisterScene(sceneName);
+      setRemovedScenes((prev) => {
+        const next = new Set(prev);
+        next.add(sceneName);
+        return next;
+      });
+    });
 
   const groups = groupByGame(tracks ?? []);
   const enabledCount = enabled.length;
@@ -142,9 +170,62 @@ export function AudioControl() {
         {err && <p className="text-danger mt-2">{err}</p>}
       </div>
 
-      {Object.entries(groups).map(([game, gameTracks]) => (
+      {Object.entries(groups).map(([game, gameTracks]) => {
+        const theme = themeFor(game);
+        const scenes = (theme.scenes ?? []).filter(
+          (S) => !removedScenes.has(S.displayName || S.name),
+        );
+        const isOpen = !!previewOpen[game];
+        return (
         <div className="control-card" key={game}>
-          <h2 style={{ fontSize: '1.2rem' }}>{cleanGameName(game)}</h2>
+          <header className="d-flex justify-content-between align-items-baseline flex-wrap gap-2">
+            <h2 style={{ fontSize: '1.2rem' }} className="m-0">{cleanGameName(game)}</h2>
+            <button
+              className="btn btn-outline-light btn-sm"
+              onClick={() =>
+                setPreviewOpen((s) => ({ ...s, [game]: !s[game] }))
+              }
+              title="Preview the OBS audio-countdown scenes registered to this game"
+            >
+              {isOpen ? 'Hide scenes' : `Preview scenes (${scenes.length})`}
+            </button>
+          </header>
+          {isOpen && (
+            scenes.length === 0 ? (
+              <p className="scene-preview-empty">
+                No custom scene registered — falls back to the default Bloodmoon look.
+              </p>
+            ) : (
+              <div className="scene-preview-row">
+                {scenes.map((Scene, i) => {
+                  const sceneName = Scene.displayName || Scene.name || '';
+                  const canDelete = /^[A-Z][A-Za-z0-9]+Scene$/.test(sceneName);
+                  return (
+                    <div className="scene-preview-tile" key={sceneName || i}>
+                      <ScenePreview Scene={Scene} theme={theme} width={320} />
+                      <div className="scene-preview-tile-footer">
+                        <span className="scene-preview-label">
+                          {sceneName || `Scene ${i + 1}`}
+                        </span>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          disabled={busy || !canDelete}
+                          onClick={() => unregisterScene(sceneName)}
+                          title={
+                            canDelete
+                              ? 'Delete this scene file and remove it from zelda-themes.ts'
+                              : 'Scene name not detectable (likely a minified build)'
+                          }
+                        >
+                          🗑 Delete Scene
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
           <table className="control-table">
             <thead>
               <tr>
@@ -197,7 +278,8 @@ export function AudioControl() {
             </tbody>
           </table>
         </div>
-      ))}
+        );
+      })}
 
       <div className="control-card">
         <h2 style={{ fontSize: '1.2rem' }}>Add more music</h2>

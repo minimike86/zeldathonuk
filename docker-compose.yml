@@ -35,6 +35,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      # Mounted so /api/dev/scenes/unregister/ can rewrite zelda-themes.ts
+      # and delete scene .tsx files in dev. Endpoint is DEBUG-gated.
+      - ./frontend:/frontend
     depends_on:
       postgres:
         condition: service_healthy

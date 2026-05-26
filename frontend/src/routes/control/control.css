@@ -107,3 +107,59 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+/* Mini /obs/audio-countdown scene preview tiles on the Music page.
+ * The inner stage is rendered at 1920x1080 and CSS-scaled down so scene
+ * positioning (which is authored against a full 16:9 stage) still works. */
+.scene-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: radial-gradient(circle at center, var(--ac-bg-from, #4c1324) 0%, var(--ac-bg-to, #1a0a10) 100%);
+  flex: 0 0 auto;
+}
+
+.scene-preview-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.scene-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.scene-preview-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.scene-preview-tile-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.scene-preview-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.scene-preview-empty {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.5rem;
+  font-style: italic;
+}

@@ -18,7 +18,6 @@ import { BotwDeathMountainScene } from './scenes/BotwDeathMountainScene';
 import { TotkScene } from './scenes/TotkScene';
 import { TotkDepthsScene } from './scenes/TotkDepthsScene';
 import { SkywardScene } from './scenes/SkywardScene';
-import { TwilightScene } from './scenes/TwilightScene';
 import { TwilightCastleScene } from './scenes/TwilightCastleScene';
 import { TwilightWolfMidnaScene } from './scenes/TwilightWolfMidnaScene';
 import { AlttpScene } from './scenes/AlttpScene';
@@ -146,7 +145,7 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       secondary: '#3a1a44',
       tertiary: '#7e2d8e',
       glow: 'rgba(255, 170, 58, 0.7)',
-      scenes: [TwilightScene, TwilightCastleScene, TwilightWolfMidnaScene],
+      scenes: [TwilightCastleScene, TwilightWolfMidnaScene],
     },
   },
   {
