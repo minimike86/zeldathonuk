@@ -1,6 +1,8 @@
 """Domain models for the ZeldathonUK control panel + OBS browser sources."""
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django.db import models
 from django.utils import timezone
 
@@ -273,6 +275,55 @@ class DonationPlatform(models.TextChoices):
     OTHER = 'other', 'Other'
 
 
+class DonationPlatformProfile(models.Model):
+    """Singleton settings for a donation platform.
+
+    The catalogue of platforms is closed (DonationPlatform.choices) and the
+    fees/Gift Aid links + boilerplate fee warning are the same for every
+    `DonationPage` of a given platform — so they live here, not on each page.
+    DonationPage references the platform by its string key and the serializer
+    denormalises these fields onto each page when serving the API.
+    """
+
+    platform = models.CharField(
+        max_length=20,
+        choices=DonationPlatform.choices,
+        unique=True,
+        primary_key=True,
+    )
+    display_label = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Optional override for the platform display name shown in '
+                  'the donation picker. Falls back to the choice label.',
+    )
+    fees_url = models.URLField(
+        blank=True,
+        help_text='Link to the platform\'s fundraising-fee page.',
+    )
+    gift_aid_url = models.URLField(
+        blank=True,
+        help_text='Link to the platform\'s Gift Aid documentation.',
+    )
+    fee_warning = models.TextField(
+        blank=True,
+        help_text='Inline warning banner shown on the picker row when set.',
+    )
+    minimum_donation_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('1.00'),
+        help_text='Smallest donation the platform accepts. Shown in the '
+                  'picker so donors know the floor before they click through.',
+    )
+
+    class Meta:
+        ordering = ['platform']
+
+    def __str__(self) -> str:
+        return self.display_label or self.get_platform_display()
+
+
 class DonationPage(models.Model):
     """A hosted fundraising page attached to an Event.
 
@@ -311,6 +362,16 @@ class DonationPage(models.Model):
 
     def __str__(self) -> str:
         return f'{self.event} → {self.label or self.get_platform_display()}'
+
+    def save(self, *args, **kwargs):
+        # Only one DonationPage per event should be primary at a time. When
+        # this row is being saved as primary, demote any other primary rows
+        # for the same event in the same transaction.
+        super().save(*args, **kwargs)
+        if self.is_primary:
+            DonationPage.objects.filter(
+                event_id=self.event_id, is_primary=True,
+            ).exclude(pk=self.pk).update(is_primary=False)
 
 
 class Donation(models.Model):

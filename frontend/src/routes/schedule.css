@@ -58,6 +58,35 @@
   background-color: rgba(100, 19, 30, 0.2);
 }
 
+/* Inline banner shown inside the currently-playing row when an attached
+ * break's time window has been reached — e.g. the streamers are eating
+ * or sleeping. Replaces the LIVE NOW badge until the break ends. */
+.schedule-break-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(255, 193, 7, 0.18);
+  border: 1px solid rgba(255, 193, 7, 0.6);
+  border-radius: 999px;
+  color: #ffe69b;
+  animation: schedule-break-pulse 2.4s ease-in-out infinite;
+}
+
+.schedule-break-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+@keyframes schedule-break-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 193, 7, 0);
+  }
+}
+
 .live-circle {
   animation: pulse 2s infinite;
   background-color: rgba(220, 20, 53, 1);

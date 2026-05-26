@@ -39,8 +39,36 @@ class GameSerializer(serializers.ModelSerializer):
         ]
 
 
-class DonationPageSerializer(serializers.ModelSerializer):
+class DonationPlatformProfileSerializer(serializers.ModelSerializer):
     platform_label = serializers.CharField(source='get_platform_display', read_only=True)
+
+    class Meta:
+        model = models.DonationPlatformProfile
+        fields = [
+            'platform',
+            'platform_label',
+            'display_label',
+            'fees_url',
+            'gift_aid_url',
+            'fee_warning',
+            'minimum_donation_amount',
+        ]
+
+
+class DonationPageSerializer(serializers.ModelSerializer):
+    """Donation page denormalised with its platform profile.
+
+    The profile lives in its own model (one row per platform) but the picker
+    UI consumes a flat per-page shape, so we copy `fees_url`, `gift_aid_url`,
+    `fee_warning`, and `minimum_donation_amount` onto every page in the API
+    response.
+    """
+
+    display_label = serializers.SerializerMethodField()
+    fees_url = serializers.SerializerMethodField()
+    gift_aid_url = serializers.SerializerMethodField()
+    fee_warning = serializers.SerializerMethodField()
+    minimum_donation_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = models.DonationPage
@@ -48,13 +76,54 @@ class DonationPageSerializer(serializers.ModelSerializer):
             'id',
             'event',
             'platform',
-            'platform_label',
+            'display_label',
             'label',
             'url',
             'external_id',
             'is_primary',
             'order',
+            'fees_url',
+            'gift_aid_url',
+            'fee_warning',
+            'minimum_donation_amount',
         ]
+
+    def _profile(self, obj):
+        # Bulk-load every platform profile on the first lookup and stash the
+        # dict in the serializer context so a list of N donation pages costs
+        # exactly one query regardless of how many distinct platforms appear.
+        cache = self.context.setdefault('_platform_profiles', None)
+        if cache is None:
+            cache = {
+                p.platform: p
+                for p in models.DonationPlatformProfile.objects.all()
+            }
+            self.context['_platform_profiles'] = cache
+        return cache.get(obj.platform)
+
+    def get_display_label(self, obj) -> str:
+        # The profile's display_label override, falling back to the platform
+        # choice's verbose name (e.g. "Twitch Charity") if not set.
+        p = self._profile(obj)
+        if p and p.display_label:
+            return p.display_label
+        return obj.get_platform_display()
+
+    def get_fees_url(self, obj) -> str:
+        p = self._profile(obj)
+        return p.fees_url if p else ''
+
+    def get_gift_aid_url(self, obj) -> str:
+        p = self._profile(obj)
+        return p.gift_aid_url if p else ''
+
+    def get_fee_warning(self, obj) -> str:
+        p = self._profile(obj)
+        return p.fee_warning if p else ''
+
+    def get_minimum_donation_amount(self, obj) -> str:
+        p = self._profile(obj)
+        return str(p.minimum_donation_amount) if p else '0.00'
 
 
 class EventSerializer(serializers.ModelSerializer):

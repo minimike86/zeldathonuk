@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFacebook } from '@fortawesome/free-brands-svg-icons';
+import { DonateButton } from '@/components/donations/DonateButton';
+import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import type { ScheduleEntry } from '@/lib/obsApi';
 import './home.css';
 
-const FB_URL =
-  'https://www.facebook.com/donate/5194665980557244/?fundraiser_source=https://www.zeldathon.co.uk/';
-const TILTIFY_URL = 'https://donate.tiltify.com/@msec/zeldathonuk-gameblast22';
-const JG_URL = 'https://www.justgiving.com/fundraising/zeldathonuk-gameblast2022';
 const SPECIALEFFECT_URL = 'https://www.specialeffect.org.uk/what-we-do';
-const GAMEBLAST_URL = 'https://www.gameblast.org.uk/about/';
 
 // Pass every plausible parent so Twitch's iframe security check passes
 // whether you're on localhost, the docker network, or the real domain.
@@ -38,14 +34,81 @@ function useInnerWidth() {
 
 export function Home() {
   const innerWidth = useInnerWidth();
-  const [jgWarnOpen, setJgWarnOpen] = useState(false);
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const donationPages = event?.donation_pages ?? [];
+  const { data: currentlyPlaying } = usePolledQuery(
+    obsApi.currentlyPlaying,
+    5000,
+  );
+  const { data: schedule } = usePolledQuery(
+    () => (event ? obsApi.schedule(event.id) : Promise.resolve([])),
+    10_000,
+    [event?.id],
+  );
+  const currentEntry = currentlyPlaying?.schedule_entry_detail ?? null;
+  // Upcoming queue = every top-level game (skip breaks + attached children)
+  // that isn't completed and is ordered after the live entry — sorted by
+  // schedule order so the homepage can cycle through them.
+  const upcoming = (schedule ?? [])
+    .filter((e) => e.parent_entry == null && e.slot_type === 'game' && !e.is_completed)
+    .sort((a, b) => a.order - b.order)
+    .filter((e) => !currentEntry || e.order > currentEntry.order);
 
-  // currentVideoGame / nextVideoGame / startDate were sourced from Firebase
-  // in the legacy app. With Firebase removed we render the equivalent of the
-  // `notLive` and `checkSchedule` templates until the Django backend takes
-  // over those reads.
-  const currentVideoGame = null;
-  const nextVideoGame = null;
+  // Rotate through the queue so the page feels alive — header text adapts
+  // to position (Up Next → Coming up → Also playing → The rest of the
+  // line-up). Auto-advances every 5s and wraps around.
+  const [upcomingIdx, setUpcomingIdx] = useState(0);
+  useEffect(() => {
+    if (upcoming.length <= 1) {
+      setUpcomingIdx(0);
+      return;
+    }
+    setUpcomingIdx((i) => (i >= upcoming.length ? 0 : i));
+    const t = window.setInterval(() => {
+      setUpcomingIdx((i) => (i + 1) % upcoming.length);
+    }, 5000);
+    return () => window.clearInterval(t);
+  }, [upcoming.length]);
+  const nextEntry = upcoming[upcomingIdx] ?? null;
+  const nextLabel = labelForQueuePosition(upcomingIdx);
+
+  // Cumulative scheduled start times per top-level entry. Each slot's wall-
+  // clock span includes any attached child breaks so subsequent entries
+  // correctly reflect the pushed start.
+  const startTimes = new Map<number, Date>();
+  if (event && schedule) {
+    const eventStart = new Date(event.start_time).getTime();
+    const topLevel = schedule
+      .filter((e) => e.parent_entry == null)
+      .sort((a, b) => a.order - b.order);
+    const childTotals = new Map<number, number>();
+    for (const e of schedule) {
+      if (e.parent_entry != null) {
+        childTotals.set(
+          e.parent_entry,
+          (childTotals.get(e.parent_entry) ?? 0) + e.effective_minutes,
+        );
+      }
+    }
+    let cursor = eventStart;
+    for (const e of topLevel) {
+      startTimes.set(e.id, new Date(cursor));
+      cursor += (e.effective_minutes + (childTotals.get(e.id) ?? 0)) * 60_000;
+    }
+  }
+
+  // Current entry ETA — prefer the real started_at, else fall back to the
+  // scheduled cumulative start.
+  const currentStart = currentEntry
+    ? currentEntry.started_at
+      ? new Date(currentEntry.started_at)
+      : startTimes.get(currentEntry.id) ?? null
+    : null;
+  const currentEnd =
+    currentEntry && currentStart
+      ? new Date(currentStart.getTime() + currentEntry.effective_minutes * 60_000)
+      : null;
+  const nextStart = nextEntry ? startTimes.get(nextEntry.id) ?? null : null;
 
   return (
     <div className="container-fluid">
@@ -84,297 +147,276 @@ export function Home() {
         )}
       </div>
 
-      <div className="d-block bg-bloodmoon p-2 mb-2">
-        <div
-          className="row d-flex justify-content-evenly text-white mb-2"
-          style={{ fontSize: '0.80em' }}
-        >
-          <div className="col-12 col-sm-6 col-md-4 pb-2 ps-3">
-            <h6 className="text-bloodmoon">Currently Playing</h6>
-            {currentVideoGame ? null : (
-              <>
-                <h5>ZeldathonUK is Offline</h5>
-                <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
-                  <a
-                    className="btn btn-sm btn-bloodmoon p-2 px-5"
-                    title="Follow Us On Twitch"
-                    href="https://www.twitch.tv/zeldathonuk"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Follow Us On Twitch
-                  </a>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="col-12 col-sm-6 col-md-4 border-start border-2 border-danger pb-2 px-3">
-            <h6 className="text-bloodmoon">Up Next</h6>
-            {nextVideoGame ? null : (
-              <>
-                <h5>Check the schedule</h5>
-                <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
-                  <Link
-                    className="btn btn-sm btn-bloodmoon p-2 px-5"
-                    title="Check The Schedule"
-                    to="/schedule"
-                  >
-                    Check The Schedule
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="col-12 col-sm-12 col-md-4 border-start border-2 border-danger pb-2 ps-3">
-            <h6 className="text-bloodmoon">Benefitting</h6>
-            <div
-              className="text-center"
-              onClick={() => openExternal(SPECIALEFFECT_URL)}
-              role="button"
-              tabIndex={0}
-            >
-              <img
-                src="/assets/img/specialeffect-logo.svg"
-                alt="SpecialEffect logo"
-                style={{ maxHeight: '2.5rem', cursor: 'pointer' }}
-              />
+      <div className="d-block bg-bloodmoon p-3 mb-2">
+        <div className="row g-4 text-white" style={{ fontSize: '0.85em' }}>
+          {/* Left column: Currently Playing on top, Up Next stacked beneath. */}
+          <div className="col-lg-5 d-flex flex-column gap-3">
+            <div className="ps-3">
+              <h6 className="text-bloodmoon">Currently Playing</h6>
+              {currentEntry ? (
+                <ScheduleEntryCard
+                  entry={currentEntry}
+                  etaLabel="Estimated end"
+                  etaTime={currentEnd}
+                />
+              ) : (
+                <>
+                  <h5>ZeldathonUK is Offline</h5>
+                  <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
+                    <a
+                      className="btn btn-sm btn-bloodmoon p-2 px-5"
+                      title="Follow Us On Twitch"
+                      href="https://www.twitch.tv/zeldathonuk"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Follow Us On Twitch
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
-            <div className="row">
-              <div className="col-7">
-                <p className="text-specialeffect-blurb mb-0">
-                  SpecialEffect is transforming the lives of people with physical
-                  challenges; optimising their inclusion, enjoyment and quality of life
-                  through accessible technology to control video games to the best of
-                  their abilities.
+
+            <div
+              className="ps-3"
+              style={{ borderTop: '2px solid var(--bs-danger)', paddingTop: '0.75rem' }}
+            >
+              {nextEntry ? (
+                <>
+                  <h6 className="text-bloodmoon">
+                    <WaveText text={nextLabel} />
+                  </h6>
+                  <div key={nextEntry.id} className="upnext-card">
+                    <ScheduleEntryCard
+                      entry={nextEntry}
+                      etaLabel="Expected start"
+                      etaTime={nextStart}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h6 className="text-bloodmoon">Up Next</h6>
+                  <h5>Check the schedule</h5>
+                  <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
+                    <Link
+                      className="btn btn-sm btn-bloodmoon p-2 px-5"
+                      title="Check The Schedule"
+                      to="/schedule"
+                    >
+                      Check The Schedule
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Right column: Benefitting / SpecialEffect with a prominent Donate CTA. */}
+          <div
+            className="col-lg-7 ps-3"
+            style={{ borderLeft: '2px solid var(--bs-danger)' }}
+          >
+            <h6 className="text-bloodmoon">Benefitting</h6>
+            <div className="benefitting-card">
+              <a
+                href={SPECIALEFFECT_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="benefitting-logo"
+                title="SpecialEffect — what we do"
+              >
+                <img
+                  src="/assets/img/specialeffect-logo.svg"
+                  alt="SpecialEffect logo"
+                />
+              </a>
+              <div className="benefitting-body">
+                <p className="text-specialeffect-blurb mb-3">
+                  <strong className="text-light">SpecialEffect</strong> is transforming
+                  the lives of people with physical challenges — optimising their
+                  inclusion, enjoyment, and quality of life through accessible
+                  technology that helps them play video games to the best of their
+                  abilities.
                 </p>
-              </div>
-              <div className="col align-self-center">
                 <button
-                  className="btn btn-specialeffect w-100"
+                  className="btn btn-specialeffect"
                   onClick={() => openExternal(SPECIALEFFECT_URL)}
                 >
                   CAN THEY HELP YOU?
                 </button>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div>
-          <h6 className="text-bloodmoon" style={{ fontSize: '1.35em' }}>
-            Make a donation
-          </h6>
-          <div className="row row-cols-1 row-cols-sm-2 row-cols-md-4">
-            <DonationCard
-              title="Donate"
-              subtitle="using Facebook"
-              feesUrl="https://www.facebook.com/help/901370616673951"
-              giftAidUrl="https://www.facebook.com/help/728799837303698"
-              onClick={() => openExternal(FB_URL)}
-              icon={<FontAwesomeIcon icon={faFacebook} />}
-              label="Facebook"
-            />
-            <DonationCard
-              title="Donate"
-              subtitle="using Tiltify"
-              feesUrl="https://info.tiltify.com/support/solutions/articles/43000045885-what-are-the-fees-"
-              giftAidUrl="https://www.gov.uk/claim-gift-aid/gift-aid-declarations"
-              onClick={() => openExternal(TILTIFY_URL)}
-              icon={
-                <img
-                  style={{
-                    maxWidth: '.9em',
-                    paddingBottom: '.25em',
-                    filter: 'brightness(10)',
-                  }}
-                  src="/assets/img/Tiltify_Logo.png"
-                  alt="Tiltify logo"
+            {donationPages.length > 0 && (
+              <div className="mt-4">
+                <h6 className="text-bloodmoon" style={{ fontSize: '1.35em' }}>
+                  Make a donation
+                </h6>
+                <DonateButton
+                  pages={donationPages}
+                  currencySymbol={event?.currency_symbol}
+                  size="lg"
+                  className="w-100"
+                  label="Donate now"
                 />
-              }
-              label="Tiltify"
-            />
-            <DonationCard
-              title="Donate"
-              subtitle="using JustGiving"
-              feesUrl="https://www.justgiving.com/info/fees"
-              giftAidUrl="https://help.justgiving.com/hc/en-us/articles/200670391-A-guide-to-Gift-Aid-UK-only-"
-              onClick={() => setJgWarnOpen(true)}
-              icon={
-                <img
-                  style={{
-                    maxWidth: '.9em',
-                    paddingBottom: '.25em',
-                    filter: 'brightness(10)',
-                  }}
-                  src="/assets/img/justgiving-g.svg"
-                  alt="JustGiving logo"
-                />
-              }
-              label="JustGiving"
-            />
-
-            <div className="col">
-              <div
-                className="d-flex btn btn-bloodmoon h-100"
-                onClick={() => openExternal(GAMEBLAST_URL)}
-                title="Find out more about the GameBlast event"
-              >
-                <div className="d-flex flex-column flex-md-row flex-fill">
-                  <div className="flex-grow-1 align-self-center">
-                    <h4 className="text-center">
-                      <img
-                        src="/assets/img/GB22_Logo_Linear_DarkBGs_Small.png"
-                        alt="gameblast22 logo"
-                        style={{ maxHeight: '2rem' }}
-                      />
-                    </h4>
-                  </div>
-                  <div className="align-self-center">
-                    <div className="small text-white">
-                      <span className="d-block small fw-bolder">
-                        25-27<sup>th</sup> Feb 2022
-                      </span>
-                      <span className="d-block small">
-                        The UK's Biggest Charity Gaming Weekend
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {jgWarnOpen && (
-        <JustGivingFeeWarning
-          onClose={() => setJgWarnOpen(false)}
-          onConfirm={() => {
-            setJgWarnOpen(false);
-            openExternal(JG_URL);
+function ScheduleEntryCard({
+  entry,
+  etaLabel,
+  etaTime,
+}: {
+  entry: ScheduleEntry;
+  etaLabel?: string;
+  etaTime?: Date | null;
+}) {
+  const game = entry.game;
+  const title = entry.display_title || game?.title;
+  return (
+    <div className="d-flex align-items-center gap-3 mt-2">
+      {game?.box_art_url ? (
+        <img
+          src={game.box_art_url}
+          alt={`${title} box art`}
+          style={{
+            width: 56,
+            height: 76,
+            objectFit: 'cover',
+            borderRadius: 4,
+            flexShrink: 0,
           }}
         />
+      ) : (
+        <div
+          aria-hidden
+          style={{
+            width: 56,
+            height: 76,
+            borderRadius: 4,
+            background: 'rgba(255,255,255,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 22,
+            color: 'rgba(255,255,255,0.5)',
+            flexShrink: 0,
+          }}
+        >
+          {(title ?? '?').charAt(0).toUpperCase()}
+        </div>
       )}
-    </div>
-  );
-}
-
-function DonationCard({
-  title,
-  subtitle,
-  feesUrl,
-  giftAidUrl,
-  onClick,
-  icon,
-  label,
-}: {
-  title: string;
-  subtitle: string;
-  feesUrl: string;
-  giftAidUrl: string;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <div className="col">
-      <div
-        className="d-flex btn btn-bloodmoon"
-        onClick={onClick}
-        title={`Donate via ${label}`}
-      >
-        <div className="d-flex flex-column flex-md-row flex-fill">
-          <div className="flex-grow-1 justify-content-center align-self-center">
-            <h4 className="text-nowrap mb-0" style={{ fontFamily: "'Bungee', cursive" }}>
-              {typeof icon === 'string' ? (
-                <span>{icon}</span>
-              ) : (
-                <span
-                  className="d-inline-block"
-                  style={{ position: 'relative', width: '.9em' }}
-                >
-                  {icon}
-                </span>
-              )}{' '}
-              {title}
-            </h4>
-            <div className="text-center small">
-              <span className="d-block font-italic small">{subtitle}</span>
-            </div>
+      <div style={{ minWidth: 0 }}>
+        <h5 className="mb-1">{title}</h5>
+        {game && (
+          <div className="small text-white-50">{game.platform}</div>
+        )}
+        {entry.runners.length > 0 && (
+          <div className="small text-white-50">
+            with{' '}
+            {entry.runners.map((r, i) => (
+              <span key={r.id}>
+                {i > 0 && ', '}
+                {r.is_streamer && r.channel_url ? (
+                  <a
+                    href={r.channel_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-warning"
+                    title={`Watch ${r.name} on their channel`}
+                  >
+                    {r.name}
+                  </a>
+                ) : (
+                  r.name
+                )}
+              </span>
+            ))}
           </div>
-          <div>
-            <div className="d-flex flex-row flex-md-column justify-content-evenly">
-              <div className="mb-md-1">
-                <a
-                  className="btn btn-outline-light btn-sm"
-                  href={feesUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={`More info on ${label} Fundraising Fees`}
-                  style={{ fontSize: '0.65em' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Fees
-                </a>
-              </div>
-              <div>
-                <a
-                  className="btn btn-outline-light btn-sm"
-                  href={giftAidUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="More info on GiftAid"
-                  style={{ fontSize: '0.65em' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  GiftAid
-                </a>
-              </div>
-            </div>
+        )}
+        {etaLabel && etaTime && (
+          <div className="small text-white-50 mt-1">
+            {etaLabel}:{' '}
+            <strong className="text-light">{fmtRelativeTime(etaTime)}</strong>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
-function JustGivingFeeWarning({
-  onClose,
-  onConfirm,
-}: {
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
+function WaveText({ text }: { text: string }) {
+  // Bump a counter whenever the text changes so React remounts the per-char
+  // spans (via the key) and each one's staggered animation replays from
+  // scratch. The label visibly "wave-rewrites" itself across the row.
+  const [version, setVersion] = useState(0);
+  const lastTextRef = useRef(text);
+  useEffect(() => {
+    if (lastTextRef.current !== text) {
+      lastTextRef.current = text;
+      setVersion((v) => v + 1);
+    }
+  }, [text]);
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-      style={{ background: 'rgba(0,0,0,0.6)', zIndex: 1080 }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white text-dark rounded p-4 mx-3"
-        style={{ maxWidth: 540 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="mb-3">
-          Don't be fooled by JustGiving's "0% Platform Fee"! JustGiving charges
-          non-profits a £39 (+VAT) monthly charge in addition to deducting a "Platform
-          Processing Fee" of 1.9% + £0.20 from every donation. JustGiving will further
-          deduct 5% from any GiftAid added by eligible UK tax payers.
-        </p>
-        <div className="d-flex justify-content-end gap-2">
-          <button className="btn btn-outline-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-warning" onClick={onConfirm}>
-            Donate Anyway
-          </button>
-        </div>
-      </div>
-    </div>
+    <span className="wave-text">
+      {Array.from(text).map((ch, i) => (
+        <span key={`${version}-${i}`} style={{ animationDelay: `${i * 45}ms` }}>
+          {ch === ' ' ? ' ' : ch}
+        </span>
+      ))}
+    </span>
   );
+}
+
+const QUEUE_LABELS: string[] = [
+  'Up Next',
+  'Coming Up',
+  'Then…',
+  'Also Playing',
+  'Later On',
+  'On Deck',
+  'Stay Tuned For',
+  "Don't Miss",
+  'Plus…',
+  'And Then…',
+  'Watch Out For',
+  'Saving For Last',
+];
+
+function labelForQueuePosition(idx: number): string {
+  if (idx < QUEUE_LABELS.length) return QUEUE_LABELS[idx];
+  return 'The Rest Of The Line-up';
+}
+
+function fmtRelativeTime(date: Date): string {
+  const now = Date.now();
+  const diffMs = date.getTime() - now;
+  const absMin = Math.abs(diffMs) / 60_000;
+  const abs = (() => {
+    if (absMin < 60) return `${Math.round(absMin)}m`;
+    const h = Math.floor(absMin / 60);
+    const m = Math.round(absMin % 60);
+    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+  })();
+  const clock = date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const sameDay = new Date(now).toDateString() === date.toDateString();
+  const dayLabel = sameDay
+    ? clock
+    : `${date.toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+      })} ${clock}`;
+  if (diffMs >= 0) return `in ${abs} (${dayLabel})`;
+  return `${abs} ago (${dayLabel})`;
 }

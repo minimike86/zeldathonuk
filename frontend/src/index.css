@@ -20,6 +20,11 @@ html,
 body {
   height: 100%;
   font-family: 'Open Sans', sans-serif;
+  /* The whole site sits on a dark bloodmoon palette, so tell the browser
+   * (and Bootstrap, via data-bs-theme on <html>) to render with the dark
+   * colour-scheme — keeps button text, form controls and scrollbars
+   * readable against the dark backgrounds. */
+  color-scheme: dark;
 }
 
 body {

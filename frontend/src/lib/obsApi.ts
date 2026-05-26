@@ -49,12 +49,18 @@ export interface DonationPage {
   id: number;
   event: number;
   platform: DonationPlatformKey;
-  platform_label: string;
+  display_label: string;
   label: string;
   url: string;
   external_id: string;
   is_primary: boolean;
   order: number;
+  // Denormalised from DonationPlatformProfile — same for every page of the
+  // same platform. Kept on the page payload so the picker UI stays flat.
+  fees_url: string;
+  gift_aid_url: string;
+  fee_warning: string;
+  minimum_donation_amount: string; // DecimalField serialises as string.
 }
 
 export interface EventModel {
@@ -119,6 +125,7 @@ export interface Donation {
 export interface DonationTotals {
   by_platform: Array<{
     platform: string;
+    display_label: string;
     currency: string;
     total: string;
     count: number;

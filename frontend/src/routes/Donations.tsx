@@ -1,13 +1,8 @@
 import { Link } from 'react-router';
 import { DonationCards } from '@/components/DonationCards';
+import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import type { Donation } from '@/lib/obsApi';
 import './donations.css';
-
-/**
- * Real donor data was sourced from Firebase. Until the Django backend is
- * wired up the donor list is empty and the page renders the legacy
- * "empty state" view (donate-cards + SpecialEffect benefits sidebar).
- */
-const trackedDonations: unknown[] = [];
 
 const benefitRows = [
   {
@@ -56,6 +51,23 @@ const benefitRows = [
 ];
 
 export function Donations() {
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const { data: donations } = usePolledQuery(
+    () => (event ? obsApi.donations(event.id) : Promise.resolve([] as Donation[])),
+    5000,
+    [event?.id],
+  );
+  const { data: totals } = usePolledQuery(
+    () =>
+      event
+        ? obsApi.donationTotals(event.id)
+        : Promise.resolve({ by_platform: [], grand_total: '0', donation_count: 0 }),
+    5000,
+    [event?.id],
+  );
+  const currency = event?.currency_symbol ?? '£';
+  const hasDonations = (donations?.length ?? 0) > 0;
+
   return (
     <div className="d-flex flex-row min-vh-100">
       <div className="container donation-list-container p-3">
@@ -66,7 +78,33 @@ export function Donations() {
             the donors below for their generous donations:
           </p>
 
-          {trackedDonations.length === 0 && (
+          {hasDonations && (
+            <>
+              <div className="row g-2 mb-3">
+                <DonationKpi
+                  label="Raised so far"
+                  value={`${currency}${Number(totals?.grand_total ?? 0).toFixed(2)}`}
+                  accent
+                />
+                <DonationKpi
+                  label="Donations"
+                  value={String(totals?.donation_count ?? 0)}
+                />
+              </div>
+
+              <div className="row g-3">
+                {donations!.map((d) => (
+                  <DonationTile key={d.id} donation={d} currency={currency} />
+                ))}
+              </div>
+
+              <div className="d-flex justify-content-center mt-3">
+                <DonationCards />
+              </div>
+            </>
+          )}
+
+          {!hasDonations && (
             <div className="d-flex justify-content-center h-75">
               <div className="d-flex align-self-center">
                 <div className="my-5">
@@ -124,6 +162,143 @@ export function Donations() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DonationTile({
+  donation: d,
+  currency,
+}: {
+  donation: Donation;
+  currency: string;
+}) {
+  const initial = (d.donor_name || 'A').charAt(0).toUpperCase();
+  const when = new Date(d.donated_at);
+  return (
+    <div className="col-12 col-md-6">
+      <div
+        style={{
+          background:
+            'linear-gradient(160deg, rgba(231,19,71,0.08) 0%, rgba(0,0,0,0.35) 100%)',
+          border: '1px solid rgba(231, 19, 71, 0.35)',
+          borderRadius: 10,
+          padding: '14px 16px',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        <div className="d-flex align-items-center gap-3">
+          <div
+            aria-hidden
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: '50%',
+              background:
+                'linear-gradient(135deg, #e71347 0%, #731c37 100%)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: 18,
+              flexShrink: 0,
+            }}
+          >
+            {initial}
+          </div>
+          <div className="flex-grow-1" style={{ minWidth: 0 }}>
+            <div className="text-light" style={{ fontWeight: 600 }}>
+              {d.donor_name || 'Anonymous'}
+            </div>
+            <div className="small text-white-50">
+              {when.toLocaleDateString('en-GB', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </div>
+          </div>
+          <div
+            style={{
+              fontFamily: "'Bungee', sans-serif",
+              fontSize: 22,
+              background: 'linear-gradient(45deg, #e71347, #da4471, #e7364b)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              flexShrink: 0,
+            }}
+          >
+            {currency}
+            {Number(d.amount).toFixed(2)}
+          </div>
+        </div>
+
+        {d.message && (
+          <blockquote
+            className="text-light small m-0"
+            style={{
+              paddingLeft: 12,
+              borderLeft: '3px solid rgba(231,19,71,0.55)',
+              fontStyle: 'italic',
+              whiteSpace: 'pre-line',
+            }}
+          >
+            {d.message}
+          </blockquote>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DonationKpi({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="col-6 col-md-3">
+      <div
+        style={{
+          background: 'rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8,
+          padding: '10px 14px',
+          height: '100%',
+        }}
+      >
+        <div
+          className="small text-white-50 text-uppercase"
+          style={{ letterSpacing: 0.5 }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
+            fontSize: accent ? 28 : 22,
+            fontWeight: 700,
+            lineHeight: 1.1,
+            ...(accent && {
+              fontFamily: "'Bungee', sans-serif",
+              background: 'linear-gradient(45deg, #e71347, #da4471, #e7364b)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }),
+          }}
+        >
+          {value}
         </div>
       </div>
     </div>

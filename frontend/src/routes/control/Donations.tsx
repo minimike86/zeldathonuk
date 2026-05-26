@@ -1,7 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { EventModel } from '@/lib/obsApi';
+import type { Donation, EventModel } from '@/lib/obsApi';
 import { api } from '@/lib/api';
+
+type SortKey = 'donated_at' | 'donor_name' | 'platform' | 'amount';
+type SortDir = 'asc' | 'desc';
+
+const sortValue = (d: Donation, key: SortKey): string | number => {
+  switch (key) {
+    case 'donated_at':
+      return new Date(d.donated_at).getTime();
+    case 'amount':
+      return Number(d.amount);
+    case 'donor_name':
+    case 'platform':
+      return d[key].toLowerCase();
+  }
+};
 
 const platforms: Array<{ value: string; label: string; color: string }> = [
   { value: 'justgiving', label: 'JustGiving', color: '#ad29b6' },
@@ -28,6 +43,39 @@ export function DonationsControl() {
   );
 
   const [adding, setAdding] = useState(false);
+  const [filter, setFilter] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('donated_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const visibleDonations = useMemo(() => {
+    if (!donations) return [];
+    const q = filter.trim().toLowerCase();
+    const filtered = q
+      ? donations.filter(
+          (d) =>
+            d.donor_name.toLowerCase().includes(q) ||
+            d.message.toLowerCase().includes(q) ||
+            d.platform.toLowerCase().includes(q),
+        )
+      : donations;
+    const sorted = [...filtered].sort((a, b) => {
+      const av = sortValue(a, sortKey);
+      const bv = sortValue(b, sortKey);
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [donations, filter, sortKey, sortDir]);
 
   if (!event) {
     return (
@@ -42,68 +90,66 @@ export function DonationsControl() {
     <>
       <div className="control-card">
         <h2>Donations · totals</h2>
-        <div className="d-flex flex-wrap gap-3 align-items-baseline">
-          <div>
-            <div className="small text-white-50">Grand total</div>
-            <div
-              style={{
-                fontFamily: "'Bungee', sans-serif",
-                fontSize: '2.5rem',
-                background: 'linear-gradient(45deg, #e71347, #da4471, #e7364b)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              £{totals?.grand_total ?? '0.00'}
-            </div>
-          </div>
-          <div>
-            <div className="small text-white-50">Count</div>
-            <div style={{ fontSize: '1.5rem' }}>{totals?.donation_count ?? 0}</div>
-          </div>
-          <div style={{ flex: 1, minWidth: 320 }}>
-            <div className="small text-white-50 mb-1">Per platform</div>
-            <table className="control-table">
-              <thead>
-                <tr>
-                  <th>Platform</th>
-                  <th>Total</th>
-                  <th>#</th>
+        <div className="row g-2 mt-2">
+          <DonationKpi
+            label="Grand total"
+            value={`${event.currency_symbol}${Number(totals?.grand_total ?? 0).toFixed(2)}`}
+            accent
+          />
+          <DonationKpi label="Count" value={String(totals?.donation_count ?? 0)} />
+        </div>
+        <div className="mt-4">
+          <div className="small text-white-50 mb-1">Per platform</div>
+          <table className="control-table">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Total</th>
+                <th>#</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(totals?.by_platform ?? []).map((row) => (
+                <tr key={row.platform + row.currency}>
+                  <td>
+                    <PlatformChip value={row.platform} label={row.display_label} />
+                  </td>
+                  <td>
+                    {row.currency} {Number(row.total).toFixed(2)}
+                  </td>
+                  <td>{row.count}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {(totals?.by_platform ?? []).map((row) => (
-                  <tr key={row.platform + row.currency}>
-                    <td>
-                      <PlatformChip value={row.platform} />
-                    </td>
-                    <td>
-                      {row.currency} {Number(row.total).toFixed(2)}
-                    </td>
-                    <td>{row.count}</td>
-                  </tr>
-                ))}
-                {totals?.by_platform.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="text-white-50">
-                      No donations yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {totals?.by_platform.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="text-white-50">
+                    No donations yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div className="control-card">
-        <header className="d-flex justify-content-between align-items-baseline">
+        <header className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
           <h2 className="m-0">Donations · list</h2>
-          {!adding && (
-            <button className="btn btn-bloodmoon btn-sm" onClick={() => setAdding(true)}>
-              + Add donation
-            </button>
-          )}
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            <input
+              type="search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter by donor, message, platform…"
+              className="form-control form-control-sm"
+              style={{ width: 280 }}
+            />
+            {!adding && (
+              <button className="btn btn-bloodmoon btn-sm" onClick={() => setAdding(true)}>
+                + Add donation
+              </button>
+            )}
+          </div>
         </header>
 
         {adding && (
@@ -117,16 +163,41 @@ export function DonationsControl() {
         <table className="control-table mt-3">
           <thead>
             <tr>
-              <th>When</th>
-              <th>Donor</th>
-              <th>Platform</th>
-              <th>Amount</th>
+              <SortableTh
+                label="When"
+                sortKey="donated_at"
+                current={sortKey}
+                dir={sortDir}
+                onClick={toggleSort}
+              />
+              <SortableTh
+                label="Donor"
+                sortKey="donor_name"
+                current={sortKey}
+                dir={sortDir}
+                onClick={toggleSort}
+              />
+              <SortableTh
+                label="Platform"
+                sortKey="platform"
+                current={sortKey}
+                dir={sortDir}
+                onClick={toggleSort}
+                minWidth={220}
+              />
+              <SortableTh
+                label="Amount"
+                sortKey="amount"
+                current={sortKey}
+                dir={sortDir}
+                onClick={toggleSort}
+              />
               <th>Message</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {donations?.map((d) => (
+            {visibleDonations.map((d) => (
               <tr key={d.id}>
                 <td className="small text-white-50">
                   {new Date(d.donated_at).toLocaleString('en-GB')}
@@ -154,10 +225,17 @@ export function DonationsControl() {
                 </td>
               </tr>
             ))}
-            {donations?.length === 0 && (
+            {donations && donations.length === 0 && (
               <tr>
                 <td colSpan={6} className="text-white-50 text-center py-4">
                   No donations yet — add the first one above.
+                </td>
+              </tr>
+            )}
+            {donations && donations.length > 0 && visibleDonations.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-white-50 text-center py-4">
+                  No donations match “{filter}”.
                 </td>
               </tr>
             )}
@@ -168,7 +246,43 @@ export function DonationsControl() {
   );
 }
 
-function PlatformChip({ value }: { value: string }) {
+function SortableTh({
+  label,
+  sortKey,
+  current,
+  dir,
+  onClick,
+  minWidth,
+}: {
+  label: string;
+  sortKey: SortKey;
+  current: SortKey;
+  dir: SortDir;
+  onClick: (key: SortKey) => void;
+  minWidth?: number;
+}) {
+  const active = current === sortKey;
+  const indicator = active ? (dir === 'asc' ? '▲' : '▼') : '';
+  return (
+    <th
+      onClick={() => onClick(sortKey)}
+      style={{
+        cursor: 'pointer',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+        minWidth,
+      }}
+      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      {label}
+      <span style={{ marginLeft: 6, opacity: active ? 1 : 0.35 }}>
+        {indicator || '↕'}
+      </span>
+    </th>
+  );
+}
+
+function PlatformChip({ value, label }: { value: string; label?: string }) {
   const p = platforms.find((x) => x.value === value);
   return (
     <span
@@ -179,10 +293,58 @@ function PlatformChip({ value }: { value: string }) {
         borderRadius: 4,
         fontSize: '0.75rem',
         fontWeight: 600,
+        whiteSpace: 'nowrap',
+        display: 'inline-block',
       }}
     >
-      {p?.label ?? value}
+      {label ?? p?.label ?? value}
     </span>
+  );
+}
+
+function DonationKpi({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="col-6 col-md-3">
+      <div
+        style={{
+          background: 'rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8,
+          padding: '10px 14px',
+          height: '100%',
+        }}
+      >
+        <div
+          className="small text-white-50 text-uppercase"
+          style={{ letterSpacing: 0.5 }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
+            fontSize: accent ? 28 : 22,
+            fontWeight: 700,
+            lineHeight: 1.1,
+            ...(accent && {
+              fontFamily: "'Bungee', sans-serif",
+              background: 'linear-gradient(45deg, #e71347, #da4471, #e7364b)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }),
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -268,6 +268,35 @@ class DonationViewSet(viewsets.ModelViewSet):
             qs = qs.filter(event_id=event_id)
         return qs
 
+    @action(detail=False, methods=['get'])
+    def totals(self, request: Request) -> Response:
+        qs = self.get_queryset()
+        rows = list(
+            qs.values('platform', 'currency')
+            .annotate(total=Sum('amount'), count=Count('id'))
+            .order_by('-total')
+        )
+        # Attach the human-friendly display label from DonationPlatformProfile
+        # (falls back to the choice's verbose name when no profile override
+        # is set). Bulk-loaded so the response cost stays O(platforms).
+        profile_labels = {
+            p.platform: p.display_label
+            for p in models.DonationPlatformProfile.objects.all()
+            if p.display_label
+        }
+        choice_labels = dict(models.DonationPlatform.choices)
+        for row in rows:
+            key = row['platform']
+            row['display_label'] = profile_labels.get(key) or choice_labels.get(key, key)
+        grand_total = qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        return Response(
+            {
+                'by_platform': rows,
+                'grand_total': grand_total,
+                'donation_count': qs.count(),
+            }
+        )
+
 
 class DonationPageViewSet(viewsets.ModelViewSet):
     queryset = models.DonationPage.objects.all()
@@ -279,23 +308,6 @@ class DonationPageViewSet(viewsets.ModelViewSet):
         if event_id:
             qs = qs.filter(event_id=event_id)
         return qs
-
-    @action(detail=False, methods=['get'])
-    def totals(self, request: Request) -> Response:
-        qs = self.get_queryset()
-        rows = (
-            qs.values('platform', 'currency')
-            .annotate(total=Sum('amount'), count=Count('id'))
-            .order_by('-total')
-        )
-        grand_total = qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
-        return Response(
-            {
-                'by_platform': list(rows),
-                'grand_total': grand_total,
-                'donation_count': qs.count(),
-            }
-        )
 
 
 class BrbTimerViewSet(viewsets.ModelViewSet):

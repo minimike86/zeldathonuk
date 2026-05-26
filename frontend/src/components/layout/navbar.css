@@ -1,10 +1,15 @@
 /* Ported verbatim from legacy/src/app/components/navbar/navbar.component.css */
 
 .navbar {
+  --bs-navbar-padding-y: 0 !important;
+  --bs-navbar-padding-x: 0 !important;
   background: linear-gradient(180deg, #2b1b25, hsla(0, 0%, 100%, 0)), #4c1324 !important;
   border-bottom: 1px solid #bb225e;
-  padding: 0.25rem 0.5rem;
-  min-height: 56px;
+  min-height: 46px;
+}
+
+.navbar .navbar-nav {
+  --bs-nav-link-padding-y: 0 !important;
 }
 
 .nav-item {

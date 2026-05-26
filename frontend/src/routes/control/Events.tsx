@@ -728,14 +728,17 @@ function DonationPagesEditor({ event }: { event: EventModel }) {
             ) : (
               <li
                 key={p.id}
-                className="d-flex align-items-center gap-2 flex-wrap py-2"
-                style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                className="d-flex align-items-center gap-2 flex-wrap py-2 px-2"
+                style={{
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: p.is_primary ? 'rgba(231, 19, 71, 0.12)' : undefined,
+                  borderLeft: p.is_primary
+                    ? '3px solid rgba(231, 19, 71, 0.7)'
+                    : '3px solid transparent',
+                  borderRadius: 4,
+                }}
               >
-                <span className="badge bg-secondary">{p.platform_label}</span>
-                {p.is_primary && (
-                  <span className="badge bg-warning text-dark">primary</span>
-                )}
-                <strong>{p.label || p.platform_label}</strong>
+                <strong>{p.label || p.display_label}</strong>
                 <a
                   className="text-warning small text-truncate"
                   style={{ maxWidth: 380 }}

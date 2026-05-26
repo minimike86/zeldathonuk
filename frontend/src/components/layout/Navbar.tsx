@@ -11,9 +11,11 @@ import {
   faHistory,
   faCaretUp,
 } from '@fortawesome/free-solid-svg-icons';
-import { faFacebook, faAccessibleIcon } from '@fortawesome/free-brands-svg-icons';
+import { faAccessibleIcon } from '@fortawesome/free-brands-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import { cn } from '@/lib/utils';
+import { DonateButton } from '@/components/donations/DonateButton';
+import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import './navbar.css';
 
 type Glyph = FontAwesomeIconProps['icon'];
@@ -68,19 +70,11 @@ const navItems: NavItem[] = [
   },
 ];
 
-const FB_URL =
-  'https://www.facebook.com/donate/5194665980557244/?fundraiser_source=https://www.zeldathon.co.uk/';
-const TILTIFY_URL = 'https://donate.tiltify.com/@msec/zeldathonuk-gameblast22';
-const JG_URL = 'https://www.justgiving.com/fundraising/zeldathonuk-gameblast2022';
-
-function openExternal(url: string) {
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
 export function Navbar() {
   const [collapsed, setCollapsed] = useState(true);
-  const [jgWarnOpen, setJgWarnOpen] = useState(false);
   const navigate = useNavigate();
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const donationPages = event?.donation_pages ?? [];
 
   return (
     <nav className="navbar navbar-expand-lg">
@@ -171,130 +165,17 @@ export function Navbar() {
           </div>
 
           <div className="d-flex flex-shrink-0 align-items-center">
-            <ul className="navbar-nav">
-              <li className={cn('nav-item d-flex ms-2', !collapsed && 'p-1')}>
-                <div className="align-self-center">
-                  <button
-                    className="btn btn-sm btn-bloodmoon"
-                    onClick={() => openExternal(FB_URL)}
-                    style={{ fontFamily: "'Bungee', cursive" }}
-                  >
-                    <div className="d-flex" title="Donate via Facebook!">
-                      <div
-                        className="d-flex align-self-center"
-                        style={{ width: '.9em' }}
-                      >
-                        <FontAwesomeIcon
-                          icon={faFacebook}
-                          style={{ position: 'relative', top: 2 }}
-                        />
-                      </div>
-                      <span style={{ position: 'relative', top: 2 }}>&nbsp;Donate</span>
-                    </div>
-                  </button>
-                </div>
-              </li>
-              <li className={cn('nav-item d-flex ms-2', !collapsed && 'p-1')}>
-                <div className="align-self-center">
-                  <button
-                    className="btn btn-sm btn-bloodmoon"
-                    onClick={() => openExternal(TILTIFY_URL)}
-                    style={{ fontFamily: "'Bungee', cursive" }}
-                  >
-                    <div className="d-flex" title="Donate via Tiltify!">
-                      <div
-                        className="d-flex align-self-center"
-                        style={{ width: '.9em' }}
-                      >
-                        <img
-                          style={{ maxWidth: '.9em', filter: 'brightness(10)' }}
-                          src="/assets/img/Tiltify_Logo.png"
-                          alt="Tiltify logo"
-                        />
-                      </div>
-                      <span style={{ position: 'relative', top: 1 }}>&nbsp;Donate</span>
-                    </div>
-                  </button>
-                </div>
-              </li>
-              <li className={cn('nav-item d-flex ms-2', !collapsed && 'p-1')}>
-                <div className="align-self-center">
-                  <button
-                    className="btn btn-sm btn-bloodmoon"
-                    onClick={() => setJgWarnOpen(true)}
-                    style={{ fontFamily: "'Bungee', cursive" }}
-                  >
-                    <div className="d-flex" title="Donate via JustGiving!">
-                      <div
-                        className="d-flex align-self-center"
-                        style={{ width: '.9em' }}
-                      >
-                        <img
-                          style={{ maxWidth: '.9em', filter: 'brightness(10)' }}
-                          src="/assets/img/justgiving-g.svg"
-                          alt="JustGiving logo"
-                        />
-                      </div>
-                      <span style={{ position: 'relative', top: 1 }}>&nbsp;Donate</span>
-                    </div>
-                  </button>
-                </div>
-              </li>
-            </ul>
+            {donationPages.length > 0 && (
+              <div className={cn('me-3', !collapsed && 'p-1')}>
+                <DonateButton
+                  pages={donationPages}
+                  currencySymbol={event?.currency_symbol}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      <JustGivingFeeWarning
-        open={jgWarnOpen}
-        onClose={() => setJgWarnOpen(false)}
-        onConfirm={() => {
-          setJgWarnOpen(false);
-          openExternal(JG_URL);
-        }}
-      />
     </nav>
-  );
-}
-
-function JustGivingFeeWarning({
-  open,
-  onClose,
-  onConfirm,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
-  if (!open) return null;
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-      style={{ background: 'rgba(0,0,0,0.6)', zIndex: 1080 }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white text-dark rounded p-4 mx-3"
-        style={{ maxWidth: 540 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="mb-3">
-          Don't be fooled by JustGiving's "0% Platform Fee"! JustGiving charges
-          non-profits a £39 (+VAT) monthly charge in addition to deducting a "Platform
-          Processing Fee" of 1.9% + £0.20 from every donation. JustGiving will further
-          deduct 5% from any GiftAid added by eligible UK tax payers.
-        </p>
-        <div className="d-flex justify-content-end gap-2">
-          <button className="btn btn-outline-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-warning" onClick={onConfirm}>
-            Donate Anyway
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }

@@ -192,11 +192,39 @@ class CollectedItemAdmin(admin.ModelAdmin):
     list_filter = ['schedule_entry__event']
 
 
+@admin.register(models.DonationPlatformProfile)
+class DonationPlatformProfileAdmin(admin.ModelAdmin):
+    """Per-platform settings (fees, Gift Aid, fee warning, min donation).
+
+    Singleton-per-platform — DonationPage rows look these up by platform key,
+    so editing one row here updates every event's page for that platform.
+    """
+    list_display = ['platform', 'display_label', 'minimum_donation_amount',
+                    'has_fees_url', 'has_gift_aid_url', 'has_fee_warning']
+    list_filter = ['platform']
+    fields = ['platform', 'display_label', 'fees_url', 'gift_aid_url',
+              'fee_warning', 'minimum_donation_amount']
+
+    @admin.display(boolean=True, description='Fees URL?')
+    def has_fees_url(self, obj):
+        return bool(obj.fees_url)
+
+    @admin.display(boolean=True, description='Gift Aid URL?')
+    def has_gift_aid_url(self, obj):
+        return bool(obj.gift_aid_url)
+
+    @admin.display(boolean=True, description='Fee warning?')
+    def has_fee_warning(self, obj):
+        return bool(obj.fee_warning)
+
+
 @admin.register(models.DonationPage)
 class DonationPageAdmin(admin.ModelAdmin):
     list_display = ['event', 'platform', 'label', 'url', 'is_primary', 'order']
     list_filter = ['event', 'platform']
     list_editable = ['is_primary', 'order']
+    fields = ['event', 'platform', 'label', 'url', 'external_id', 'is_primary',
+              'order']
 
 
 @admin.register(models.Donation)

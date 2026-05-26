@@ -1,295 +1,307 @@
-import moment from 'moment';
 import { useMemo } from 'react';
+import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import type { ScheduleEntry } from '@/lib/obsApi';
 import './schedule.css';
 
-type Runner = { name: string; channelUrl: string };
-type Badge = { name: string; type: string; tooltip: string; url?: string };
-type ScheduledGame = {
-  gameProgressKey: string;
-  title: string;
-  releaseYear: string;
-  boxArt: string;
-  platform: string;
-  runners: Runner[];
-  badges: Badge[];
-  durationHours: number;
-  durationMinutes: number;
-  howLongToBeatId: string;
-  isCompleted?: boolean;
+interface SlotMeta {
+  label: string;
+  icon: string;
+}
+
+const BREAK_META: Record<string, SlotMeta> = {
+  start: { label: 'Stream start', icon: '🎬' },
+  meal: { label: 'Meal break', icon: '🍽' },
+  sleep: { label: 'Sleep break', icon: '💤' },
+  break: { label: 'Break', icon: '☕' },
+  end: { label: 'Stream end', icon: '🏁' },
 };
 
-/**
- * Placeholder GameBlast22 schedule. Mirrors the shape the legacy Firebase
- * `gameLineupService` returned. Will be replaced with a live read from the
- * Django backend once the schema is in place.
- */
-const startDate = new Date('2022-02-25T17:00:00+00:00');
-const currentGameKey = '';
-const isLive = false;
-
-const games: ScheduledGame[] = [
-  {
-    gameProgressKey: 'wind-waker',
-    title: 'The Legend of Zelda: The Wind Waker HD',
-    releaseYear: '2013',
-    boxArt:
-      'https://howlongtobeat.com/games/Wind_Waker_HD.jpg',
-    platform: 'Wii U',
-    runners: [{ name: 'msec', channelUrl: 'https://www.twitch.tv/msec' }],
-    badges: [],
-    durationHours: 12,
-    durationMinutes: 0,
-    howLongToBeatId: '4138',
-  },
-  {
-    gameProgressKey: 'ocarina-of-time',
-    title: 'The Legend of Zelda: Ocarina of Time',
-    releaseYear: '1998',
-    boxArt: 'https://howlongtobeat.com/games/Ocarina_of_Time.jpg',
-    platform: 'N64',
-    runners: [
-      { name: 'msec', channelUrl: 'https://www.twitch.tv/msec' },
-      { name: 'lottie', channelUrl: '' },
-    ],
-    badges: [
-      { name: '100%', type: 'bg-warning text-dark', tooltip: 'Going for 100% completion' },
-    ],
-    durationHours: 14,
-    durationMinutes: 30,
-    howLongToBeatId: '4456',
-  },
-  {
-    gameProgressKey: 'majoras-mask',
-    title: "The Legend of Zelda: Majora's Mask",
-    releaseYear: '2000',
-    boxArt: 'https://howlongtobeat.com/games/Majoras_Mask.jpg',
-    platform: 'N64',
-    runners: [{ name: 'msec', channelUrl: 'https://www.twitch.tv/msec' }],
-    badges: [],
-    durationHours: 10,
-    durationMinutes: 0,
-    howLongToBeatId: '4459',
-  },
-  {
-    gameProgressKey: 'breath-of-the-wild',
-    title: 'The Legend of Zelda: Breath of the Wild',
-    releaseYear: '2017',
-    boxArt: 'https://howlongtobeat.com/games/Breath_of_the_Wild.jpg',
-    platform: 'Switch',
-    runners: [
-      { name: 'msec', channelUrl: 'https://www.twitch.tv/msec' },
-      { name: 'henry', channelUrl: '' },
-    ],
-    badges: [
-      { name: 'Boss Rush', type: 'bg-danger', tooltip: 'All-bosses run' },
-    ],
-    durationHours: 8,
-    durationMinutes: 0,
-    howLongToBeatId: '38050',
-  },
-  {
-    gameProgressKey: 'skyward-sword',
-    title: 'The Legend of Zelda: Skyward Sword HD',
-    releaseYear: '2021',
-    boxArt: 'https://howlongtobeat.com/games/Skyward_Sword_HD.jpg',
-    platform: 'Switch',
-    runners: [{ name: 'lottie', channelUrl: '' }],
-    badges: [],
-    durationHours: 12,
-    durationMinutes: 30,
-    howLongToBeatId: '88306',
-  },
-  {
-    gameProgressKey: 'links-awakening',
-    title: "The Legend of Zelda: Link's Awakening",
-    releaseYear: '2019',
-    boxArt: 'https://howlongtobeat.com/games/Links_Awakening_Remake.jpg',
-    platform: 'Switch',
-    runners: [{ name: 'henry', channelUrl: '' }],
-    badges: [],
-    durationHours: 9,
-    durationMinutes: 0,
-    howLongToBeatId: '78782',
-  },
-];
+interface Row {
+  entry: ScheduleEntry;
+  start: Date;
+  end: Date;
+  children: ScheduleEntry[];
+}
 
 export function Schedule() {
-  const rows = useMemo(() => {
-    let cursor = startDate.getTime();
-    return games.map((game) => {
-      const start = new Date(cursor);
-      cursor +=
-        game.durationHours * 60 * 60 * 1000 + game.durationMinutes * 60 * 1000;
-      return { ...game, startDate: start };
-    });
-  }, []);
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 30_000);
+  const { data: schedule } = usePolledQuery(
+    () => (event ? obsApi.schedule(event.id) : Promise.resolve([] as ScheduleEntry[])),
+    10_000,
+    [event?.id],
+  );
+  const { data: currentlyPlaying } = usePolledQuery(obsApi.currentlyPlaying, 5000);
+  const currentEntryId = currentlyPlaying?.schedule_entry ?? null;
 
-  const currentIndex = rows.findIndex((g) => g.gameProgressKey === currentGameKey);
+  const rows = useMemo<Row[]>(() => {
+    if (!event || !schedule) return [];
+    const eventStart = new Date(event.start_time).getTime();
+    const all = [...schedule];
+    const topLevel = all
+      .filter((e) => e.parent_entry == null)
+      .sort((a, b) => a.order - b.order);
+    const childrenByParent = new Map<number, ScheduleEntry[]>();
+    for (const e of all) {
+      if (e.parent_entry != null) {
+        const arr = childrenByParent.get(e.parent_entry) ?? [];
+        arr.push(e);
+        childrenByParent.set(e.parent_entry, arr);
+      }
+    }
+    for (const arr of childrenByParent.values()) {
+      arr.sort((a, b) => a.start_offset_minutes - b.start_offset_minutes);
+    }
+
+    const out: Row[] = [];
+    let cursor = eventStart;
+    for (const top of topLevel) {
+      const start = new Date(cursor);
+      const children = childrenByParent.get(top.id) ?? [];
+      const childMinutes = children.reduce((s, c) => s + c.effective_minutes, 0);
+      const end = new Date(cursor + (top.effective_minutes + childMinutes) * 60_000);
+      // Attached breaks aren't separate rows — they only surface as a live
+      // banner inside the currently-playing row when their wall-clock window
+      // has arrived. Stash them on the row so the renderer can find them.
+      out.push({ entry: top, start, end, children });
+      cursor = end.getTime();
+    }
+    return out;
+  }, [event, schedule]);
+
+  const totalMinutes = (schedule ?? []).reduce((s, e) => s + e.effective_minutes, 0);
+  const eventEnd = event
+    ? new Date(new Date(event.start_time).getTime() + totalMinutes * 60_000)
+    : null;
 
   return (
     <div className="container p-3 min-vh-100 text-white text-center">
       <div className="my-3">
-        <div className="mb-5">
+        <div className="mb-4">
           <h1 className="text-bloodmoon">Stream Schedule</h1>
-          <p className="text-light mt-2">
-            Check the dates and times below to see when (roughly) we will be playing
-            your favourite titles so that you won't miss out!
-          </p>
+          {event ? (
+            <p className="text-light mt-2 mb-0">
+              <strong>{event.name}</strong> · {fmtDateTime(new Date(event.start_time))}
+              {eventEnd && (
+                <>
+                  {' '}→ {fmtDateTime(eventEnd)} · {fmtDuration(totalMinutes)} total
+                </>
+              )}
+            </p>
+          ) : (
+            <p className="text-light mt-2 mb-0">
+              No event is currently scheduled. Check back closer to the next stream.
+            </p>
+          )}
         </div>
 
-        <div className="table-responsive">
-          <table className="table bg-bloodmoon text-white" style={{ fontSize: 12 }}>
-            <thead>
-              <tr>
-                <th scope="col">Day</th>
-                <th scope="col">Time</th>
-                <th scope="col">
-                  <div className="d-none d-md-block">Console</div>
-                </th>
-                <th scope="col">Game</th>
-                <th scope="col">
-                  <div className="d-none d-md-block">Runner(s)</div>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((game, i) => {
-                const played =
-                  game.isCompleted || (currentIndex >= 0 && i < currentIndex);
-                const playing = currentIndex === i;
-                const rowClass = played
-                  ? 'table-played'
-                  : playing
-                  ? 'table-currently-playing'
-                  : '';
-                return (
-                  <tr key={game.gameProgressKey} className={rowClass}>
-                    <td className="align-middle">
-                      <div>{moment(game.startDate).format('ddd DD')}</div>
-                      <div className="text-white-50">
-                        {moment(game.startDate).format('MMM YYYY')}
-                      </div>
-                    </td>
-                    <td className="align-middle">
-                      <div>{moment(game.startDate).format('hh:mm')}</div>
-                      <div className="text-white-50">
-                        {moment(game.startDate).format('a')}
-                      </div>
-                    </td>
-                    <td className="align-middle text-center">
-                      <div className="d-none d-md-block">
-                        <div className="badge rounded-pill bg-secondary p-2">
-                          {game.platform}
+        {rows.length === 0 ? (
+          <p className="text-white-50">No games on the schedule yet.</p>
+        ) : (
+          <div className="table-responsive">
+            <table
+              className="table bg-bloodmoon text-white align-middle"
+              style={{ fontSize: 13 }}
+            >
+              <thead>
+                <tr>
+                  <th scope="col">Day</th>
+                  <th scope="col">Time</th>
+                  <th scope="col">
+                    <div className="d-none d-md-block">Platform</div>
+                  </th>
+                  <th scope="col">Game</th>
+                  <th scope="col">
+                    <div className="d-none d-md-block">Runner(s)</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const { entry, start, end, children } = row;
+                  const isPlaying = currentEntryId === entry.id;
+                  const isCompleted = entry.is_completed;
+                  const rowClass = isPlaying
+                    ? 'table-currently-playing'
+                    : isCompleted
+                      ? 'table-played'
+                      : '';
+                  // Attached break currently in progress for the live game?
+                  // Anchor break windows to the entry's real `started_at` if
+                  // set, else fall back to the scheduled start.
+                  const liveBreak =
+                    isPlaying && children.length > 0
+                      ? findActiveBreak(
+                          children,
+                          entry.started_at ? new Date(entry.started_at) : start,
+                        )
+                      : null;
+                  return (
+                    <tr key={entry.id} className={rowClass}>
+                      <td className="align-middle">
+                        <div>{start.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit' })}</div>
+                        <div className="text-white-50">
+                          {start.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
                         </div>
-                      </div>
-                    </td>
-                    <td className="align-middle">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="d-flex flex-column me-2">
-                          <img
-                            src={game.boxArt}
-                            alt={`${game.title} Cover Art`}
-                            title={`${game.title} Cover Art`}
-                            style={{ maxWidth: 50 }}
-                          />
+                      </td>
+                      <td className="align-middle">
+                        <div>{fmtTime(start)}</div>
+                        <div className="text-white-50">→ {fmtTime(end)}</div>
+                      </td>
+                      <td className="align-middle text-center">
+                        <div className="d-none d-md-block">
+                          {entry.game ? (
+                            <span className="badge rounded-pill bg-secondary p-2">
+                              {entry.game.platform}
+                            </span>
+                          ) : (
+                            <span className="text-white-50">—</span>
+                          )}
                         </div>
-                        <div className="text-center w-100">
-                          <div>
-                            {game.title} ({game.releaseYear})
-                            {played && (
+                      </td>
+                      <td className="align-middle">
+                        <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                          {entry.game?.box_art_url && (
+                            <img
+                              src={entry.game.box_art_url}
+                              alt={`${entry.display_title} cover art`}
+                              title={`${entry.display_title} cover art`}
+                              style={{ maxWidth: 50, borderRadius: 3 }}
+                            />
+                          )}
+                          <div className="text-center">
+                            <div>
+                              {entry.display_title}
+                              {entry.game?.release_year && (
+                                <span className="text-white-50">
+                                  {' '}
+                                  ({entry.game.release_year})
+                                </span>
+                              )}
+                            </div>
+                            {isCompleted && (
                               <div className="d-flex justify-content-center">
-                                <div className="rounded-pill bg-dark mt-1 w-50">
+                                <div className="rounded-pill bg-dark mt-1 px-3 small">
                                   COMPLETED
                                 </div>
                               </div>
                             )}
-                            {playing && isLive && (
-                              <div className="d-inline-block m-2">
-                                <div
-                                  className="badge bg-light text-dark fw-bold p-2 px-4"
-                                  style={{ cursor: 'pointer' }}
+                            {isPlaying && !liveBreak && (
+                              <div className="d-inline-block mt-1">
+                                <a
+                                  className="badge bg-light text-dark fw-bold p-2 px-3"
+                                  href="https://www.twitch.tv/zeldathonuk"
+                                  target="_blank"
+                                  rel="noreferrer"
                                   title="Watch Livestream"
                                 >
                                   LIVE NOW!{' '}
                                   <span style={{ color: 'red' }}>
-                                    <div className="d-inline-block live-circle ms-1" />
+                                    <span className="d-inline-block live-circle ms-1" />
                                   </span>
+                                </a>
+                              </div>
+                            )}
+                            {liveBreak && (
+                              <div className="schedule-break-banner mt-2">
+                                <div className="schedule-break-icon">
+                                  {BREAK_META[liveBreak.entry.slot_type]?.icon ?? '☕'}
+                                </div>
+                                <div className="text-start">
+                                  <strong className="d-block">
+                                    On a {(
+                                      BREAK_META[liveBreak.entry.slot_type]?.label ?? 'break'
+                                    ).toLowerCase()}
+                                  </strong>
+                                  <div className="small text-white-50">
+                                    Back at <strong>{fmtTime(liveBreak.end)}</strong>{' '}
+                                    ({fmtDuration(liveBreak.entry.effective_minutes)})
+                                  </div>
                                 </div>
                               </div>
                             )}
+                            <div className="mt-1">
+                              <span className="badge bg-light text-dark">
+                                {fmtDuration(entry.effective_minutes)}
+                              </span>
+                            </div>
                           </div>
-                          {game.badges.map((badge, b) =>
-                            badge.url ? (
-                              <span
-                                key={b}
-                                className={`badge m-1 ${badge.type}`}
-                                title={badge.tooltip}
-                              >
+                        </div>
+                      </td>
+                      <td className="align-middle text-center">
+                        <div className="d-none d-md-block">
+                          {entry.runners.length === 0 ? (
+                            <span className="text-white-50">—</span>
+                          ) : (
+                            entry.runners.map((r) =>
+                              r.is_streamer && r.channel_url ? (
                                 <a
-                                  className="text-white"
-                                  href={badge.url}
+                                  key={r.id}
+                                  href={r.channel_url}
                                   target="_blank"
                                   rel="noreferrer"
+                                  className="d-inline-block"
                                 >
-                                  {badge.name}
+                                  <span className="badge rounded-pill bg-secondary p-2 m-1">
+                                    {r.name}
+                                  </span>
                                 </a>
-                              </span>
-                            ) : (
-                              <span
-                                key={b}
-                                className={`badge m-1 ${badge.type}`}
-                                title={badge.tooltip}
-                              >
-                                {badge.name}
-                              </span>
-                            ),
+                              ) : (
+                                <span
+                                  key={r.id}
+                                  className="badge rounded-pill bg-secondary p-2 m-1"
+                                >
+                                  {r.name}
+                                </span>
+                              ),
+                            )
                           )}
-                          <span className="badge m-2 bg-light">
-                            <a
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-dark"
-                              title="How long to beat"
-                              href={`https://howlongtobeat.com/game?id=${game.howLongToBeatId}`}
-                            >
-                              {game.durationHours}h {game.durationMinutes}m
-                            </a>
-                          </span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="align-middle text-center">
-                      <div className="d-none d-md-block">
-                        {game.runners.map((runner, r) =>
-                          runner.channelUrl ? (
-                            <a
-                              key={r}
-                              href={runner.channelUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <span className="badge rounded-pill bg-secondary p-2 m-1">
-                                {runner.name}
-                              </span>
-                            </a>
-                          ) : (
-                            <span
-                              key={r}
-                              className="badge rounded-pill bg-secondary p-2 m-1"
-                            >
-                              {runner.name}
-                            </span>
-                          ),
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+function findActiveBreak(
+  children: ScheduleEntry[],
+  parentStart: Date,
+): { entry: ScheduleEntry; start: Date; end: Date } | null {
+  const now = Date.now();
+  for (const child of children) {
+    const start = parentStart.getTime() + child.start_offset_minutes * 60_000;
+    const end = start + child.effective_minutes * 60_000;
+    if (now >= start && now < end) {
+      return { entry: child, start: new Date(start), end: new Date(end) };
+    }
+  }
+  return null;
+}
+
+function fmtTime(d: Date): string {
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDateTime(d: Date): string {
+  return d.toLocaleString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function fmtDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }
