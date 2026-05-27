@@ -85,6 +85,21 @@ class Event(models.Model):
     is_active = models.BooleanField(default=False, help_text='Only one event can be active at a time.')
     logo_url = models.URLField(blank=True, help_text='Square-ish event logo (used in headers, overlays).')
     banner_url = models.URLField(blank=True, help_text='Wide event poster/banner (used on landing, social cards).')
+    gameblast_logo_url = models.URLField(
+        blank=True,
+        help_text="SpecialEffect's current GameBlast campaign logo (e.g. GB22, "
+                  'GB23…). Surfaced in the OBS omnibar and ad-panel carousel. '
+                  'Refresh this each year when the campaign rebrands.',
+    )
+    omnibar_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Per-event omnibar lane composition. Shape: '
+                  '{ "lanes": [{ "id": "top", "mode": "rotating|pinned", '
+                  '"intervalMs": 12000, "panels": ["current-game", ...] }] }. '
+                  'Empty dict falls back to the default layout in '
+                  'frontend/src/routes/obs/omnibar/hooks/useLayoutConfig.ts.',
+    )
 
     class Meta:
         ordering = ['-start_time']
@@ -171,6 +186,21 @@ class ScheduleEntry(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
+    was_skipped = models.BooleanField(
+        default=False,
+        help_text='Operator marked the entry as abandoned without completing. '
+                  'Distinct from is_completed — both are terminal states but '
+                  'the omnibar treats them differently (skipped: muted, '
+                  'completed: celebration).',
+    )
+    current_objective = models.CharField(
+        max_length=240,
+        blank=True,
+        help_text='Operator-set free text describing what the runner is trying '
+                  'to do RIGHT NOW (e.g. "Find the Master Sword", "Beat '
+                  'Ganondorf, second phase"). Surfaced in the omnibar '
+                  'ObjectivePanel when set; hidden when blank.',
+    )
     notes = models.TextField(blank=True)
 
     class Meta:
@@ -232,7 +262,11 @@ class GameItem(models.Model):
 
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='items')
     name = models.CharField(max_length=120)
-    image_url = models.URLField(blank=True)
+    image_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Absolute URL or site-relative path (e.g. /assets/img/game-items/oot/Master.png).',
+    )
     category = models.CharField(
         max_length=40,
         blank=True,
@@ -539,3 +573,395 @@ class TwitchOAuthToken(models.Model):
     def get(cls) -> 'TwitchOAuthToken':
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class ThemeSettings(models.Model):
+    """A row in the theme library.
+
+    The frontend's <ThemeProvider> reads the active row via /api/theme/ and
+    writes each field onto :root as a CSS custom property so theme-aware
+    styles can reference --theme-primary etc. instead of hard-coding the
+    bloodmoon palette. /control/theme manages the library — only one row
+    can be `is_active` at a time, mirroring the Event activation pattern.
+    """
+
+    name = models.CharField(
+        max_length=80, default='Bloodmoon',
+        help_text='Label shown in the control panel — purely cosmetic.',
+    )
+    is_active = models.BooleanField(
+        default=False,
+        help_text='Only one theme can be active at a time. The active row is '
+                  'what /api/theme/ returns to the frontend.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    # ── Palette ──────────────────────────────────────────────────────────
+    primary = models.CharField(
+        max_length=20, default='#e71347',
+        help_text='Main brand accent (--theme-primary).',
+    )
+    primary_bright = models.CharField(
+        max_length=20, default='#da4471',
+        help_text='Bright variant for hover/glow (--theme-primary-bright).',
+    )
+    secondary = models.CharField(
+        max_length=20, default='#731c37',
+        help_text='Secondary / darker brand colour (--theme-secondary).',
+    )
+    background_from = models.CharField(
+        max_length=20, default='#4c1324',
+        help_text='Top stop of the page background gradient (--theme-bg-from).',
+    )
+    background_to = models.CharField(
+        max_length=20, default='#1a0a10',
+        help_text='Bottom stop of the page background gradient (--theme-bg-to).',
+    )
+    text_color = models.CharField(
+        max_length=20, default='#ffffff',
+        help_text='Default text colour (--theme-text).',
+    )
+    text_muted = models.CharField(
+        max_length=40, default='rgba(255, 255, 255, 0.6)',
+        help_text='Muted/subdued text colour (--theme-text-muted).',
+    )
+    line_color = models.CharField(
+        max_length=40, default='rgba(185, 39, 83, 0.5)',
+        help_text='Borders / dividers / lines (--theme-line).',
+    )
+
+    # ── Branding ─────────────────────────────────────────────────────────
+    logo_url = models.URLField(
+        blank=True,
+        help_text='Hero / navbar wordmark. Falls back to bundled SVG when blank.',
+    )
+    logo_small_url = models.URLField(
+        blank=True,
+        help_text='Compact mark used in tight spaces (omnibar pill).',
+    )
+    favicon_url = models.URLField(
+        blank=True,
+        help_text='Browser tab icon. Blank = use the default favicon.',
+    )
+
+    # ── Background media ────────────────────────────────────────────────
+    background_video_url = models.URLField(
+        blank=True,
+        help_text='Optional looping background video for the page shell. '
+                  'When blank the gradient alone is shown.',
+    )
+    background_image_url = models.URLField(
+        blank=True,
+        help_text='Optional static background image used when no video is set.',
+    )
+
+    # ── Buttons + lines ─────────────────────────────────────────────────
+    button_gradient_from = models.CharField(
+        max_length=20, default='#4c1324',
+        help_text='First stop of the primary button gradient.',
+    )
+    button_gradient_to = models.CharField(
+        max_length=20, default='#b92753',
+        help_text='Last stop of the primary button gradient.',
+    )
+    button_text_color = models.CharField(
+        max_length=20, default='#ffffff',
+        help_text='Button label colour.',
+    )
+    button_border_color = models.CharField(
+        max_length=40, default='rgba(255, 255, 255, 0.4)',
+        help_text='Default border colour around buttons.',
+    )
+    divider_thickness = models.PositiveSmallIntegerField(
+        default=2,
+        help_text='Decorative divider/line thickness in pixels.',
+    )
+    image_hue_rotate = models.IntegerField(
+        default=-50,
+        help_text='Degrees to rotate hue of decorative images (carousel '
+                  'photos, etc.) so they tint to the theme. e.g. -50 = '
+                  'bloodmoon red, +180 = teal/blue, 0 = sepia neutral.',
+    )
+    link_color = models.CharField(
+        max_length=40, default='#ffc2e0',
+        help_text='Inline anchor colour (--theme-link).',
+    )
+    link_hover_color = models.CharField(
+        max_length=40, default='#ffffff',
+        help_text='Inline anchor hover colour (--theme-link-hover).',
+    )
+
+    # ── Fonts (optional overrides) ──────────────────────────────────────
+    heading_font = models.CharField(
+        max_length=80, default="'Bungee', sans-serif",
+        help_text='Heading font-family stack (--theme-font-heading).',
+    )
+    body_font = models.CharField(
+        max_length=80, default="'Open Sans', sans-serif",
+        help_text='Body font-family stack (--theme-font-body).',
+    )
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Theme'
+        verbose_name_plural = 'Themes'
+        ordering = ['-is_active', 'name']
+
+    def save(self, *args, **kwargs):
+        # Mirror Event.activate: when this row becomes active, demote every
+        # other row in the same transaction so only one is active at a time.
+        super().save(*args, **kwargs)
+        if self.is_active:
+            ThemeSettings.objects.filter(is_active=True).exclude(pk=self.pk).update(
+                is_active=False,
+            )
+
+    def __str__(self) -> str:
+        return self.name or 'Theme'
+
+    @classmethod
+    def get_active(cls) -> 'ThemeSettings':
+        """Return the currently-active theme — or create a default Bloodmoon
+        row if none exists. Used by the /api/theme/ endpoint."""
+        active = cls.objects.filter(is_active=True).first()
+        if active:
+            return active
+        # Bootstrap path — first time the endpoint is hit.
+        return cls.objects.create(name='Bloodmoon', is_active=True)
+
+
+# ── Omnibar v2 ─────────────────────────────────────────────────────────────
+#
+# Three generic kind+payload tables back the new omnibar's three streams:
+#
+#   PlaythroughEvent — operator/system signals attached to one playthrough
+#                      (boss-defeated, item-collected, player-death, …).
+#                      The omnibar polls for events since its last tick and
+#                      routes each to a registered handler by `kind`.
+#
+#   OmnibarOverride  — operator-triggered urgent/spotlight content. Pushes
+#                      the omnibar into urgent mode for the duration of
+#                      starts_at..expires_at. Priority breaks ties when
+#                      multiple are active simultaneously.
+#
+#   ExternalEvent    — inbound webhook payloads from Twitch/Discord/etc.
+#                      `source` identifies the origin, `kind` the event
+#                      type within that source. Same routing pattern as
+#                      PlaythroughEvent.
+#
+# Two typed-shape models cover the most-used broadcast features:
+#
+#   Incentive  — donation target with progress + reached flag.
+#   Milestone  — fixed donation threshold with optional fanfare audio.
+#
+# Adding a new event kind, override kind, or external source is a row
+# insert with a new `kind` string — no migration needed. The frontend
+# registers a handler for the new kind and shows it. Unknown kinds fall
+# through to a generic toast handler so unrecognised payloads don't break
+# the bar.
+
+
+class PlaythroughEvent(models.Model):
+    """Discrete operator/system signal attached to a single playthrough.
+
+    Events are append-only and read by the omnibar via polling
+    ``/api/playthrough/{entry_id}/events/?since={iso}``. They drive
+    transient animations (flashes, fanfares) without changing the
+    parent ScheduleEntry's state — that's what TimerRun + is_completed
+    are for.
+    """
+
+    schedule_entry = models.ForeignKey(
+        ScheduleEntry,
+        on_delete=models.CASCADE,
+        related_name='events',
+    )
+    kind = models.CharField(
+        max_length=64,
+        db_index=True,
+        help_text='Open string. Conventional values: boss-defeated, '
+                  'shrine-cleared, item-collected, player-death, '
+                  'segment-complete, runner-swap. New kinds can be '
+                  'introduced by inserting a row — the frontend will '
+                  'fall through to a generic handler until a specific '
+                  'one is registered.',
+    )
+    payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When non-null, the omnibar will not replay this event '
+                  'after this timestamp. Used to bound the replay window '
+                  'so a freshly-mounted browser source doesn\'t fire ten '
+                  'minutes of stale animations.',
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['schedule_entry', '-created_at'])]
+
+    def __str__(self) -> str:
+        return f'{self.kind} @ {self.schedule_entry_id}'
+
+
+class OmnibarOverride(models.Model):
+    """Operator-triggered spotlight that preempts the normal rotation.
+
+    Active overrides drive the OmnibarFSM into ``urgent`` mode and dim
+    the regular lanes. ``priority`` breaks ties when multiple overlap;
+    higher priority wins. ``is_active`` is a soft delete — operators
+    can deactivate without losing the audit trail.
+    """
+
+    kind = models.CharField(
+        max_length=64,
+        db_index=True,
+        help_text='Open string. Conventional values: urgent, '
+                  'announcement, sponsor-shout, raid-alert, raffle.',
+    )
+    payload = models.JSONField(default=dict, blank=True)
+    starts_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    priority = models.SmallIntegerField(
+        default=0,
+        help_text='Higher wins when multiple overrides overlap.',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-priority', '-starts_at']
+        indexes = [models.Index(fields=['is_active', 'expires_at'])]
+
+    def __str__(self) -> str:
+        return f'{self.kind} ({self.starts_at:%H:%M}–{self.expires_at:%H:%M})'
+
+    @property
+    def is_live(self) -> bool:
+        now = timezone.now()
+        return self.is_active and self.starts_at <= now <= self.expires_at
+
+
+class ExternalEvent(models.Model):
+    """Inbound from Twitch / Discord / etc. webhooks.
+
+    One table per upstream source would mean a migration per integration;
+    instead we keep them all here with ``source`` discriminating. ``kind``
+    is the event type within the source (e.g. source='twitch',
+    kind='channel.subscribe'). ``consumed_at`` lets the omnibar pull
+    only-not-yet-shown rows on each poll.
+    """
+
+    SOURCE_TWITCH = 'twitch'
+    SOURCE_DISCORD = 'discord'
+    SOURCE_WEBHOOK = 'webhook'
+
+    source = models.CharField(max_length=32, db_index=True)
+    kind = models.CharField(max_length=64, db_index=True)
+    payload = models.JSONField(default=dict)
+    occurred_at = models.DateTimeField(db_index=True)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-occurred_at']
+        indexes = [models.Index(fields=['source', 'kind', '-occurred_at'])]
+
+    def __str__(self) -> str:
+        return f'{self.source}/{self.kind} @ {self.occurred_at:%H:%M:%S}'
+
+
+class Incentive(models.Model):
+    """Donation target — viewers donate toward a goal, omnibar shows progress.
+
+    ``current_amount`` is bumped by ``contribute`` action on the viewset
+    (or manually via admin). When ``current_amount >= goal_amount`` for
+    the first time, ``reached_at`` is set and the omnibar fires an
+    ``incentive-unlocked`` event so the corresponding fanfare runs.
+
+    Optionally bound to a ScheduleEntry — incentives tied to a specific
+    game (e.g. "buy the runner a coffee during BOTW") only surface
+    while that entry is the active playthrough. Null = event-wide.
+    """
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='incentives')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    image_url = models.URLField(blank=True)
+    goal_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    current_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    is_active = models.BooleanField(default=True)
+    reached_at = models.DateTimeField(null=True, blank=True)
+    schedule_entry = models.ForeignKey(
+        ScheduleEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='incentives',
+        help_text='When set, this incentive is only shown while this '
+                  'schedule entry is the active playthrough.',
+    )
+    order = models.PositiveIntegerField(default=0)
+    payload = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Reserved for future extensions (bid-war options, '
+                  'tiered rewards). Frontend reads kind-specific keys '
+                  'where defined.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.current_amount}/{self.goal_amount})'
+
+    @property
+    def progress_pct(self) -> float:
+        if self.goal_amount <= 0:
+            return 0.0
+        return min(100.0, float(self.current_amount / self.goal_amount * 100))
+
+    @property
+    def is_reached(self) -> bool:
+        return self.reached_at is not None
+
+
+class Milestone(models.Model):
+    """Fixed donation threshold (£5k, £10k, …) celebrated when crossed.
+
+    Independent of Incentive — milestones track the cumulative event
+    total, not a goal the audience opts into. The omnibar polls
+    milestones + totals together and fires ``milestone-reached`` when
+    a threshold is crossed for the first time.
+    """
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='milestones')
+    name = models.CharField(max_length=120)
+    threshold_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    celebration_message = models.TextField(
+        blank=True,
+        help_text='Surfaced on the omnibar when the milestone is hit. '
+                  'Markdown not supported — plain text only.',
+    )
+    reached_at = models.DateTimeField(null=True, blank=True)
+    audio_url = models.URLField(
+        blank=True,
+        help_text='Optional fanfare audio. The OBS browser source plays '
+                  'this once when the milestone is crossed.',
+    )
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['threshold_amount']
+
+    def __str__(self) -> str:
+        return f'{self.name} (£{self.threshold_amount})'
+
+    @property
+    def is_reached(self) -> bool:
+        return self.reached_at is not None

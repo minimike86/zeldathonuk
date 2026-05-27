@@ -283,6 +283,38 @@ class NowPlayingAudioAdmin(admin.ModelAdmin):
     list_display = ['track', 'updated_at']
 
 
+@admin.register(models.ThemeSettings)
+class ThemeSettingsAdmin(admin.ModelAdmin):
+    """Library of named themes. The row with `is_active=True` is what
+    /api/theme/ returns, and toggling it in this admin demotes the rest
+    on save (mirrors Event activation)."""
+    list_display = ['__str__', 'is_active', 'primary', 'secondary', 'updated_at']
+    list_filter = ['is_active']
+    readonly_fields = ['created_at', 'updated_at']
+    fieldsets = (
+        ('Identity', {'fields': ('name', 'is_active')}),
+        ('Palette', {
+            'fields': ('primary', 'primary_bright', 'secondary',
+                       'background_from', 'background_to',
+                       'text_color', 'text_muted', 'line_color'),
+        }),
+        ('Branding', {
+            'fields': ('logo_url', 'logo_small_url', 'favicon_url'),
+        }),
+        ('Background media', {
+            'fields': ('background_video_url', 'background_image_url'),
+        }),
+        ('Buttons + lines', {
+            'fields': ('button_gradient_from', 'button_gradient_to',
+                       'button_text_color', 'button_border_color',
+                       'divider_thickness'),
+        }),
+        ('Fonts', {'fields': ('heading_font', 'body_font')}),
+        (None, {'fields': ('created_at', 'updated_at')}),
+    )
+    list_editable = ['is_active']
+
+
 @admin.register(models.TwitchOAuthToken)
 class TwitchOAuthTokenAdmin(admin.ModelAdmin):
     """Singleton row — Twitch user OAuth token + refresh metadata.
@@ -311,3 +343,49 @@ class TwitchOAuthTokenAdmin(admin.ModelAdmin):
             self.message_user(request, str(exc), level=messages.ERROR)
             return
         self.message_user(request, 'Twitch token refreshed.', level=messages.SUCCESS)
+
+
+# ── Omnibar v2 ─────────────────────────────────────────────────────────────
+
+
+@admin.register(models.PlaythroughEvent)
+class PlaythroughEventAdmin(admin.ModelAdmin):
+    list_display = ['kind', 'schedule_entry', 'created_at', 'expires_at']
+    list_filter = ['kind']
+    search_fields = ['kind', 'schedule_entry__title']
+    date_hierarchy = 'created_at'
+    readonly_fields = ['created_at']
+
+
+@admin.register(models.OmnibarOverride)
+class OmnibarOverrideAdmin(admin.ModelAdmin):
+    list_display = ['kind', 'is_active', 'is_live', 'priority',
+                    'starts_at', 'expires_at']
+    list_filter = ['kind', 'is_active']
+    search_fields = ['kind']
+    readonly_fields = ['is_live', 'created_at']
+
+
+@admin.register(models.ExternalEvent)
+class ExternalEventAdmin(admin.ModelAdmin):
+    list_display = ['source', 'kind', 'occurred_at', 'consumed_at']
+    list_filter = ['source', 'kind']
+    search_fields = ['source', 'kind']
+    date_hierarchy = 'occurred_at'
+
+
+@admin.register(models.Incentive)
+class IncentiveAdmin(admin.ModelAdmin):
+    list_display = ['name', 'event', 'current_amount', 'goal_amount',
+                    'progress_pct', 'is_active', 'reached_at']
+    list_filter = ['event', 'is_active']
+    search_fields = ['name', 'description']
+    readonly_fields = ['progress_pct', 'is_reached', 'created_at', 'updated_at']
+
+
+@admin.register(models.Milestone)
+class MilestoneAdmin(admin.ModelAdmin):
+    list_display = ['name', 'event', 'threshold_amount', 'reached_at']
+    list_filter = ['event']
+    search_fields = ['name']
+    readonly_fields = ['is_reached', 'created_at']

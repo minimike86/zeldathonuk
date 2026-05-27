@@ -139,6 +139,8 @@ class EventSerializer(serializers.ModelSerializer):
             'is_active',
             'logo_url',
             'banner_url',
+            'gameblast_logo_url',
+            'omnibar_layout',
             'donation_pages',
         ]
 
@@ -263,6 +265,8 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'started_at',
             'finished_at',
             'is_completed',
+            'was_skipped',
+            'current_objective',
             'notes',
             'timer',
             'collected_item_ids',
@@ -307,3 +311,77 @@ class CurrentlyPlayingSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CurrentlyPlaying
         fields = ['schedule_entry', 'schedule_entry_detail', 'updated_at']
+
+
+class ThemeSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ThemeSettings
+        fields = [
+            'id', 'name', 'is_active',
+            'primary', 'primary_bright', 'secondary',
+            'background_from', 'background_to',
+            'text_color', 'text_muted', 'line_color',
+            'logo_url', 'logo_small_url', 'favicon_url',
+            'background_video_url', 'background_image_url',
+            'button_gradient_from', 'button_gradient_to',
+            'button_text_color', 'button_border_color',
+            'divider_thickness', 'image_hue_rotate',
+            'link_color', 'link_hover_color',
+            'heading_font', 'body_font',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+# ── Omnibar v2 ─────────────────────────────────────────────────────────────
+
+class PlaythroughEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.PlaythroughEvent
+        fields = ['id', 'schedule_entry', 'kind', 'payload',
+                  'created_at', 'expires_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class OmnibarOverrideSerializer(serializers.ModelSerializer):
+    is_live = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = models.OmnibarOverride
+        fields = ['id', 'kind', 'payload', 'starts_at', 'expires_at',
+                  'priority', 'is_active', 'is_live', 'created_at']
+        read_only_fields = ['id', 'created_at', 'is_live']
+
+
+class ExternalEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ExternalEvent
+        fields = ['id', 'source', 'kind', 'payload',
+                  'occurred_at', 'consumed_at']
+        read_only_fields = ['id']
+
+
+class IncentiveSerializer(serializers.ModelSerializer):
+    progress_pct = serializers.FloatField(read_only=True)
+    is_reached = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = models.Incentive
+        fields = ['id', 'event', 'name', 'description', 'image_url',
+                  'goal_amount', 'current_amount', 'is_active',
+                  'reached_at', 'schedule_entry', 'order', 'payload',
+                  'progress_pct', 'is_reached',
+                  'created_at', 'updated_at']
+        read_only_fields = ['id', 'reached_at', 'progress_pct', 'is_reached',
+                            'created_at', 'updated_at']
+
+
+class MilestoneSerializer(serializers.ModelSerializer):
+    is_reached = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = models.Milestone
+        fields = ['id', 'event', 'name', 'threshold_amount',
+                  'celebration_message', 'reached_at', 'audio_url',
+                  'order', 'is_reached', 'created_at']
+        read_only_fields = ['id', 'reached_at', 'is_reached', 'created_at']

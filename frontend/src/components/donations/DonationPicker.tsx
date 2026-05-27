@@ -53,8 +53,8 @@ export function DonationPicker({
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
-          background: '#2b1b25',
-          border: '1px solid rgba(231, 19, 71, 0.45)',
+          background: 'var(--theme-bg-from, #2b1b25)',
+          border: 'var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.45))',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -111,9 +111,11 @@ function DonationRow({
     <div
       className="p-3 rounded-3"
       style={{
-        background: emphasised ? 'rgba(231, 19, 71, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+        background: emphasised
+          ? 'var(--theme-line, rgba(231, 19, 71, 0.12))'
+          : 'rgba(255, 255, 255, 0.04)',
         border: emphasised
-          ? '1px solid rgba(231, 19, 71, 0.55)'
+          ? '1px solid var(--theme-primary, rgba(231, 19, 71, 0.55))'
           : '1px solid rgba(255, 255, 255, 0.1)',
       }}
     >

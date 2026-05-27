@@ -212,7 +212,9 @@ function ScheduleHero({
         {logo && (
           <img src={logo} alt={`${name} logo`} className="schedule-hero-logo" />
         )}
-        <h1 className="schedule-hero-title">{event ? name : 'Stream Schedule'}</h1>
+        <h1 className="schedule-hero-title">
+          {event ? renderTitleWithLogo(name) : 'Stream Schedule'}
+        </h1>
         {start && eventEnd && (
           <div className="schedule-hero-dates">
             <span>{fmtDateTime(start)}</span>
@@ -462,6 +464,28 @@ function findActiveBreak(
     }
   }
   return null;
+}
+
+/**
+ * Render an event name, swapping the "ZeldathonUK" substring with the
+ * gold-flash wordmark SVG when present. Falls back to plain text otherwise.
+ */
+function renderTitleWithLogo(name: string): React.ReactNode {
+  const match = name.match(/zeldathonuk/i);
+  if (!match) return name;
+  const before = name.slice(0, match.index).trim();
+  const after = name.slice(match.index! + match[0].length).trim();
+  const remainder = [before, after].filter(Boolean).join(' ');
+  return (
+    <>
+      <img
+        src="/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg"
+        alt="ZeldathonUK"
+        className="schedule-hero-logo-inline"
+      />
+      {remainder && <span className="schedule-hero-title-remainder">{remainder}</span>}
+    </>
+  );
 }
 
 function fmtTime(d: Date): string {

@@ -4,7 +4,14 @@ import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { AudioTrack } from '@/lib/obsApi';
 import { env } from '@/lib/env';
 import { themeFor, themeToCssVars } from './zelda-themes';
+import { onThemeChanged } from '@/lib/themeBus';
 import './audio-countdown.css';
+
+/** Fallback when the active sitewide theme hasn't set its own logo. The
+ *  animated gold-flash Zeldathon wordmark gives the pre-stream screen a
+ *  living, theatrical feel; the static gold mark is reserved for places
+ *  that need a calmer brand (header, favicon, social). */
+const DEFAULT_AC_LOGO = '/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg';
 
 /**
  * Pre-stream countdown with a frequency-bar visualiser fed by a Zelda OCRemix
@@ -18,7 +25,18 @@ import './audio-countdown.css';
  *     /now-playing/ so the control panel reflects what's actually playing.
  */
 export function AudioCountdown() {
+  // Theme push: re-fetch the moment another tab swaps themes so the
+  // wordmark in the title swaps with it. See `lib/themeBus.ts`.
+  const [themeBump, setThemeBump] = useState(0);
+  useEffect(() => onThemeChanged(() => setThemeBump((b) => b + 1)), []);
+
   const { data: event } = usePolledQuery(obsApi.activeEvent, 5000);
+  const { data: themeSettings } = usePolledQuery(
+    obsApi.themeSettings,
+    60_000,
+    [themeBump],
+  );
+  const titleLogo = themeSettings?.logo_url || DEFAULT_AC_LOGO;
   const { data: pinned } = usePolledQuery(obsApi.nowPlayingAudio, 1500);
   const { data: currentlyPlaying } = usePolledQuery(obsApi.currentlyPlaying, 4000);
   const { data: schedule } = usePolledQuery(
@@ -390,7 +408,20 @@ export function AudioCountdown() {
         aria-hidden
       />
       <SceneCrossfade themeKey={theme.label} Scene={SceneComponent} />
-      <h1 className="ac-title">{event?.name ?? 'ZeldathonUK'}</h1>
+      <h1 className="ac-title">
+        <img
+          className="ac-title-logo"
+          src={titleLogo}
+          alt={event?.name ?? 'ZeldathonUK'}
+        />
+        {event?.name && (
+          /* Event-specific tagline (e.g. "15TH ANNIVERSARY") rendered
+           * beneath the wordmark. The logo replaces the brand name; the
+           * tagline keeps the event context the wordmark alone can't
+           * convey. */
+          <span className="ac-title-event">{stripBrand(event.name)}</span>
+        )}
+      </h1>
       {eventStarted && currentEntry && liveBreak ? (
         <>
           <div className="ac-now-game ac-now-game--break">
@@ -501,6 +532,17 @@ function formatDhms(totalSeconds: number): string {
 
 function cleanGameName(raw: string): string {
   return raw.split('[')[0].trim();
+}
+
+/** Strip the "ZeldathonUK" / "Zeldathon" prefix from an event name when
+ *  the wordmark logo already says it — leaves only the descriptive part
+ *  (e.g. "ZeldathonUK 15th Anniversary" → "15th Anniversary"). Returns
+ *  the original string when no brand prefix is present so non-standard
+ *  event names render verbatim. */
+function stripBrand(name: string): string {
+  const trimmed = name.trim();
+  const stripped = trimmed.replace(/^zeldathon(uk)?\b[\s:–—-]*/i, '').trim();
+  return stripped || trimmed;
 }
 
 interface SceneLayer {

@@ -1,0 +1,28 @@
+/* Per-character drop-and-bounce wave used by <WaveText />. Each letter
+ * falls in with a small stagger (set via inline animationDelay) so the
+ * wave propagates left-to-right. Colour inherits from the surrounding
+ * text by default — host CSS can override when the parent uses
+ * `-webkit-text-fill-color: transparent` for gradient text. */
+
+.wave-text {
+  display: inline-block;
+}
+
+.wave-text > span {
+  display: inline-block;
+  animation: wave-char-enter 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes wave-char-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) rotate(-6deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px) rotate(0deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+}

@@ -1,0 +1,42 @@
+/* Horizontal scroll for text that overflows its container. The
+ * MarqueeText component measures container + content widths and sets
+ * --marquee-start / --marquee-end to exact pixel values, so the px/s
+ * rate stays the same regardless of message length. Static (non-
+ * overflowing) text drops the .is-scrolling class and renders at the
+ * left edge with no animation. */
+
+.ob-marquee {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.ob-marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.ob-marquee-text.is-scrolling {
+  /* Absolute pixel offsets from the component — see MarqueeText.tsx for
+   * the maths. The text starts off the right edge and ends off the left
+   * edge so the entire message passes through the visible area.
+   * `fill-mode: both` so the text holds at its start position during
+   * any animation-delay (used to wait for the tag slide-in to land). */
+  animation-name: ob-marquee-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+}
+
+@keyframes ob-marquee-scroll {
+  from {
+    transform: translateX(var(--marquee-start));
+  }
+  to {
+    transform: translateX(var(--marquee-end));
+  }
+}

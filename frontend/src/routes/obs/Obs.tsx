@@ -14,7 +14,18 @@ type Source = {
  * decides what each source actually shows.
  */
 const sources: Source[] = [
-  // Game layouts — pick whichever matches the aspect ratio of the game being played.
+  // One-and-done source — picks the layout automatically and stacks the
+  // omnibar below. Drop this into OBS instead of pairing layout + omnibar
+  // sources by hand.
+  {
+    path: '/obs/full',
+    title: 'Unified (auto layout + omnibar)',
+    description:
+      'Single browser source that switches layout based on the live game and pins the omnibar to the bottom strip.',
+    category: 'layout',
+  },
+  // Individual game layouts — pick whichever matches the aspect ratio of
+  // the game being played. Useful when you want to compose your own scene.
   {
     path: '/obs/layout/16x9',
     title: '16:9 widescreen',
@@ -74,6 +85,13 @@ const sources: Source[] = [
     path: '/obs/omnibar',
     title: 'Omnibar (bottom ticker)',
     description: 'Rotating bottom strip — donations, up next, calls to action',
+    category: 'event',
+  },
+  {
+    path: '/obs/chest-announcer',
+    title: 'Chest announcer (donation pull)',
+    description:
+      'Pixel hero walks in, opens a chest and holds each new donation card overhead before it confettis. Silent — pair with the omnibar / TTS source for narration. Scales to whatever rect you give it in OBS.',
     category: 'event',
   },
 ];

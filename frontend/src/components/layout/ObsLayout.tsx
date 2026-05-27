@@ -1,4 +1,6 @@
 import { Outlet } from 'react-router';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { useRouteTitle } from '@/lib/usePageTitle';
 
 /**
  * Bare layout for OBS overlays and the /obs index. No navbar/footer — what
@@ -7,8 +9,10 @@ import { Outlet } from 'react-router';
  * the actual OBS layout pages (which pin themselves to 100vh) still fit.
  */
 export function ObsLayout() {
+  useRouteTitle();
   return (
     <div className="router-outlet-obs">
+      <ThemeProvider />
       <Outlet />
     </div>
   );

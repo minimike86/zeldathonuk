@@ -108,6 +108,102 @@
   flex-wrap: wrap;
 }
 
+/* /control/theme — picker on the left, editor on the right. */
+.theme-shell {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 991px) {
+  .theme-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+.theme-rail {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.theme-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.theme-list-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.theme-list-item.is-selected {
+  border-color: rgba(231, 19, 71, 0.55);
+  background: rgba(231, 19, 71, 0.12);
+}
+
+.theme-list-item.is-active {
+  outline: 1px solid rgba(255, 193, 7, 0.55);
+}
+
+.theme-list-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.6rem;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-list-swatch {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.theme-list-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-list-actions {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0 0.5rem 0.55rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.theme-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.theme-editor .control-card {
+  margin-bottom: 0;
+}
+
 .schedule-form {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.08);

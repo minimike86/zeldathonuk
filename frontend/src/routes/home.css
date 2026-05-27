@@ -85,7 +85,14 @@
 }
 
 .text-bloodmoon {
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -107,20 +114,6 @@
   background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
   border: 2px solid rgba(254, 130, 32, 0.8);
   filter: opacity(85%);
-}
-
-/* Donate cards — white outline so they pop on bloodmoon. */
-.btn-bloodmoon {
-  color: #fff;
-  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-.btn-bloodmoon:hover {
-  color: #fff;
-  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
-  border-color: rgba(255, 255, 255, 0.7);
-  filter: opacity(90%);
 }
 
 /* Bump up Currently Playing / Up Next / Benefitting text — Bootstrap's
@@ -151,34 +144,12 @@
   }
 }
 
-/* Bouncing per-character wave used to swap the Up Next header text.
- * Each <span> inside .wave-text gets a staggered delay set via inline style;
- * the keyframe drops the letter in from above and gives it a tiny bounce
- * at the end so the wave reads as it propagates left-to-right. */
-.wave-text {
-  display: inline-block;
-}
-
-.wave-text > span {
-  display: inline-block;
-  /* Parent `.text-bloodmoon` uses `-webkit-text-fill-color: transparent` for
-   * its gradient-text trick, which makes inner spans invisible. Re-establish
-   * a solid fill colour on each character so the wave is visible. */
-  -webkit-text-fill-color: #e71347;
-  color: #e71347;
-  animation: wave-char-enter 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes wave-char-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(-18px) rotate(-6deg);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(4px) rotate(0deg);
-  }
-  100% {
-    transform: translateY(0) rotate(0);
-  }
+/* WaveText is styled in its own component CSS (components/WaveText.css).
+ * Here we just override the per-character colour when the wave is used
+ * inside a .text-bloodmoon ancestor — that class paints text via a
+ * gradient background with transparent -webkit-text-fill-color, which
+ * would otherwise leave every wave character invisible. */
+.text-bloodmoon .wave-text > span {
+  -webkit-text-fill-color: var(--theme-primary, #e71347);
+  color: var(--theme-primary, #e71347);
 }

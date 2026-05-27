@@ -2,14 +2,38 @@
 
 .faq-row {
   padding-bottom: 2.5em;
-  border-width: 0 0 2px;
+  border-width: 0 0 var(--theme-divider-thickness, 2px);
   border-style: solid;
   border-image-slice: 1;
-  border-image-source: linear-gradient(90deg, #731c37, #b92753);
+  border-image-source: linear-gradient(
+    90deg,
+    var(--theme-secondary, #731c37),
+    var(--theme-primary, #b92753)
+  );
+}
+
+/* Carousel image — desaturated then re-tinted to the active theme via a
+ * sepia + hue-rotate trick. The hue-rotate amount is theme-tunable via
+ * --theme-image-hue-rotate (defaults to 0 = neutral sepia). */
+.about-carousel-img {
+  filter:
+    grayscale(100%)
+    brightness(45%)
+    sepia(60%)
+    saturate(300%)
+    hue-rotate(var(--theme-image-hue-rotate, 0deg))
+    contrast(0.85);
 }
 
 .text-bloodmoon {
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -37,4 +61,27 @@
   background: linear-gradient(45deg, #ffc2e0, #e59fcb, #d96da9);
   opacity: 0.15;
   z-index: -1;
+}
+
+/* Heading on the /about page — "About" word followed by the ZeldathonUK
+ * wordmark SVG instead of plain text. */
+.about-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.about-heading-text {
+  margin: 0;
+  /* Match the wordmark's height so the baselines line up. */
+  font-size: clamp(2rem, 4vw, 3em);
+}
+
+.about-heading-logo {
+  display: inline-block;
+  height: clamp(2.4rem, 5.5vw, 4rem);
+  width: auto;
+  filter: drop-shadow(0 4px 18px rgba(231, 19, 71, 0.35));
 }

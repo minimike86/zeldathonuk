@@ -4,6 +4,15 @@
  * callers use this.
  */
 import { api } from '@/lib/api';
+import { notifyThemeChanged } from '@/lib/themeBus';
+
+/** Pass-through `.then()` callback that fires a theme-changed broadcast
+ *  and returns the response unchanged. Use on any mutation that can
+ *  affect what /api/theme/ returns so other tabs re-fetch instantly. */
+function withThemeBroadcast<T>(value: T): T {
+  notifyThemeChanged();
+  return value;
+}
 
 export type LayoutKey = '16x9' | '4x3' | '3ds' | 'ds-top' | 'ds-both' | 'fsa-split';
 
@@ -71,6 +80,10 @@ export interface EventModel {
   is_active: boolean;
   logo_url: string;
   banner_url: string;
+  /** SpecialEffect's current GameBlast campaign logo for this event.
+   *  Updated annually in /control/events. Blank → consumers fall back
+   *  to the static GB22 asset shipped in /public/assets/img/. */
+  gameblast_logo_url: string;
   donation_pages: DonationPage[];
 }
 
@@ -120,6 +133,37 @@ export interface Donation {
   external_id: string;
   gift_aid_amount: string | null;
   image_url: string;
+}
+
+export interface ThemeSettings {
+  id: number;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  primary: string;
+  primary_bright: string;
+  secondary: string;
+  background_from: string;
+  background_to: string;
+  text_color: string;
+  text_muted: string;
+  line_color: string;
+  logo_url: string;
+  logo_small_url: string;
+  favicon_url: string;
+  background_video_url: string;
+  background_image_url: string;
+  button_gradient_from: string;
+  button_gradient_to: string;
+  button_text_color: string;
+  button_border_color: string;
+  divider_thickness: number;
+  image_hue_rotate: number;
+  link_color: string;
+  link_hover_color: string;
+  heading_font: string;
+  body_font: string;
+  updated_at: string;
 }
 
 export interface DonationTotals {
@@ -173,6 +217,74 @@ export interface NowPlayingAudioPatch {
   is_paused?: boolean;
 }
 
+// ── Omnibar v2 ─────────────────────────────────────────────────────────────
+
+export interface PlaythroughEvent {
+  id: number;
+  schedule_entry: number;
+  kind: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface OmnibarOverride {
+  id: number;
+  kind: string;
+  payload: Record<string, unknown>;
+  starts_at: string;
+  expires_at: string;
+  priority: number;
+  is_active: boolean;
+  is_live: boolean;
+  created_at: string;
+}
+
+export interface ExternalEvent {
+  id: number;
+  source: string;
+  kind: string;
+  payload: Record<string, unknown>;
+  occurred_at: string;
+  consumed_at: string | null;
+}
+
+export interface Incentive {
+  id: number;
+  event: number;
+  name: string;
+  description: string;
+  image_url: string;
+  goal_amount: string;
+  current_amount: string;
+  is_active: boolean;
+  reached_at: string | null;
+  schedule_entry: number | null;
+  order: number;
+  payload: Record<string, unknown>;
+  progress_pct: number;
+  is_reached: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IncentiveContributeResult extends Incentive {
+  newly_reached: boolean;
+}
+
+export interface Milestone {
+  id: number;
+  event: number;
+  name: string;
+  threshold_amount: string;
+  celebration_message: string;
+  reached_at: string | null;
+  audio_url: string;
+  order: number;
+  is_reached: boolean;
+  created_at: string;
+}
+
 export const obsApi = {
   // Reads
   games: () => api<Game[]>('/api/games/'),
@@ -185,6 +297,33 @@ export const obsApi = {
     ),
   scheduleEntry: (id: number) => api<ScheduleEntry>(`/api/schedule/${id}/`),
   currentlyPlaying: () => api<CurrentlyPlaying>('/api/currently-playing/'),
+  themeSettings: () => api<ThemeSettings>('/api/theme/'),
+  // Theme mutations broadcast via themeBus on success so other tabs in
+  // the same browser re-fetch immediately. Cross-browser / cross-device
+  // updates ride <ThemeProvider>'s 3s poll. Centralising the notify
+  // here means any caller (current or future) gets push-to-tabs
+  // semantics without having to remember to fire it themselves.
+  updateThemeSettings: (patch: Partial<ThemeSettings>, token?: string | null) =>
+    api<ThemeSettings>('/api/theme/', { method: 'PATCH', body: patch, token }).then(
+      withThemeBroadcast,
+    ),
+  themesList: () => api<ThemeSettings[]>('/api/themes/'),
+  themeCreate: (body: Partial<ThemeSettings>) =>
+    api<ThemeSettings>('/api/themes/', { method: 'POST', body }).then(withThemeBroadcast),
+  themeUpdate: (id: number, body: Partial<ThemeSettings>) =>
+    api<ThemeSettings>(`/api/themes/${id}/`, { method: 'PATCH', body }).then(
+      withThemeBroadcast,
+    ),
+  themeDelete: (id: number) =>
+    api<void>(`/api/themes/${id}/`, { method: 'DELETE' }).then(withThemeBroadcast),
+  themeActivate: (id: number) =>
+    api<ThemeSettings>(`/api/themes/${id}/activate/`, { method: 'POST' }).then(
+      withThemeBroadcast,
+    ),
+  themeDuplicate: (id: number) =>
+    api<ThemeSettings>(`/api/themes/${id}/duplicate/`, { method: 'POST' }).then(
+      withThemeBroadcast,
+    ),
   donations: (eventId?: number) =>
     api<Donation[]>(eventId ? `/api/donations/?event=${eventId}` : '/api/donations/'),
   donationTotals: (eventId?: number) =>
@@ -242,6 +381,109 @@ export const obsApi = {
     api<BrbTimer>('/api/brb/', { method: 'POST', body: payload }),
   updateBrb: (id: number, payload: Partial<BrbTimer>) =>
     api<BrbTimer>(`/api/brb/${id}/`, { method: 'PATCH', body: payload }),
+
+  // ── Omnibar v2 ────────────────────────────────────────────────────────
+  // Streams: PlaythroughEvent, OmnibarOverride, ExternalEvent, Incentive,
+  // Milestone. The omnibar polls *Since variants on a fast interval; the
+  // control panel uses the full lists + mutation actions.
+
+  // Playthrough events (boss-defeated, item-collected, …)
+  playthroughEvents: (params?: { scheduleEntryId?: number; since?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.scheduleEntryId != null) qs.set('schedule_entry', String(params.scheduleEntryId));
+    if (params?.since) qs.set('since', params.since);
+    const tail = qs.toString();
+    return api<PlaythroughEvent[]>(
+      tail ? `/api/playthrough-events/?${tail}` : '/api/playthrough-events/',
+    );
+  },
+  createPlaythroughEvent: (body: {
+    schedule_entry: number;
+    kind: string;
+    payload?: Record<string, unknown>;
+    expires_at?: string;
+  }) => api<PlaythroughEvent>('/api/playthrough-events/', { method: 'POST', body }),
+  deletePlaythroughEvent: (id: number) =>
+    api<void>(`/api/playthrough-events/${id}/`, { method: 'DELETE' }),
+
+  // Overrides
+  overrides: () => api<OmnibarOverride[]>('/api/overrides/'),
+  overridesActive: () => api<OmnibarOverride[]>('/api/overrides/active/'),
+  createOverride: (body: {
+    kind: string;
+    payload?: Record<string, unknown>;
+    starts_at?: string;
+    expires_at: string;
+    priority?: number;
+    is_active?: boolean;
+  }) => api<OmnibarOverride>('/api/overrides/', { method: 'POST', body }),
+  activateOverride: (id: number) =>
+    api<OmnibarOverride>(`/api/overrides/${id}/activate/`, { method: 'POST' }),
+  deactivateOverride: (id: number) =>
+    api<OmnibarOverride>(`/api/overrides/${id}/deactivate/`, { method: 'POST' }),
+  deleteOverride: (id: number) =>
+    api<void>(`/api/overrides/${id}/`, { method: 'DELETE' }),
+
+  // External events (Twitch / Discord / …)
+  externalEvents: (params?: { source?: string; since?: string; unconsumed?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.source) qs.set('source', params.source);
+    if (params?.since) qs.set('since', params.since);
+    if (params?.unconsumed) qs.set('unconsumed', 'true');
+    const tail = qs.toString();
+    return api<ExternalEvent[]>(
+      tail ? `/api/external-events/?${tail}` : '/api/external-events/',
+    );
+  },
+  consumeExternalEvent: (id: number) =>
+    api<ExternalEvent>(`/api/external-events/${id}/consume/`, { method: 'POST' }),
+
+  // Incentives
+  incentives: (params?: { eventId?: number; activeOnly?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.eventId != null) qs.set('event', String(params.eventId));
+    if (params?.activeOnly) qs.set('active', 'true');
+    const tail = qs.toString();
+    return api<Incentive[]>(tail ? `/api/incentives/?${tail}` : '/api/incentives/');
+  },
+  createIncentive: (body: {
+    event: number;
+    name: string;
+    goal_amount: string;
+    description?: string;
+    image_url?: string;
+    is_active?: boolean;
+    schedule_entry?: number | null;
+    order?: number;
+  }) => api<Incentive>('/api/incentives/', { method: 'POST', body }),
+  contributeToIncentive: (id: number, amount: string) =>
+    api<IncentiveContributeResult>(
+      `/api/incentives/${id}/contribute/`,
+      { method: 'POST', body: { amount } },
+    ),
+  deleteIncentive: (id: number) =>
+    api<void>(`/api/incentives/${id}/`, { method: 'DELETE' }),
+
+  // Milestones
+  milestones: (params?: { eventId?: number; reached?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.eventId != null) qs.set('event', String(params.eventId));
+    if (params?.reached != null) qs.set('reached', params.reached ? 'true' : 'false');
+    const tail = qs.toString();
+    return api<Milestone[]>(tail ? `/api/milestones/?${tail}` : '/api/milestones/');
+  },
+  createMilestone: (body: {
+    event: number;
+    name: string;
+    threshold_amount: string;
+    celebration_message?: string;
+    audio_url?: string;
+    order?: number;
+  }) => api<Milestone>('/api/milestones/', { method: 'POST', body }),
+  markMilestoneReached: (id: number) =>
+    api<Milestone>(`/api/milestones/${id}/mark_reached/`, { method: 'POST' }),
+  deleteMilestone: (id: number) =>
+    api<void>(`/api/milestones/${id}/`, { method: 'DELETE' }),
 };
 
 /** Hook that polls the API on an interval. Bare-bones — replace with TanStack

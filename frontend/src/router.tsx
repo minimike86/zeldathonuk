@@ -17,10 +17,12 @@ import { GameTracking } from '@/routes/GameTracking';
 
 import { Obs } from '@/routes/obs/Obs';
 import { ObsLayoutRoute } from '@/routes/obs/Layout';
+import { UnifiedLayout } from '@/routes/obs/Unified';
 import { AudioCountdown } from '@/routes/obs/AudioCountdown';
 import { Brb } from '@/routes/obs/Brb';
 import { Tts } from '@/routes/obs/Tts';
 import { Omnibar } from '@/routes/obs/Omnibar';
+import { ChestAnnouncer } from '@/routes/obs/ChestAnnouncer';
 
 import { ControlLayout } from '@/routes/control/Dashboard';
 import { ScheduleControl } from '@/routes/control/Schedule';
@@ -31,7 +33,9 @@ import { BrbControl } from '@/routes/control/Brb';
 import { GamesControl } from '@/routes/control/Games';
 import { RunnersControl } from '@/routes/control/Runners';
 import { EventsControl } from '@/routes/control/Events';
+import { ThemeControl } from '@/routes/control/Theme';
 import { AudioControl } from '@/routes/control/Audio';
+import { OmnibarControl } from '@/routes/control/Omnibar';
 
 import { Timers } from '@/routes/api/Timers';
 import { CountUp } from '@/routes/api/CountUp';
@@ -61,10 +65,12 @@ export const router = createBrowserRouter([
     children: [
       { path: '/obs', element: <Obs /> },
       { path: '/obs/layout/:layout', element: <ObsLayoutRoute /> },
+      { path: '/obs/full', element: <UnifiedLayout /> },
       { path: '/obs/audio-countdown', element: <AudioCountdown /> },
       { path: '/obs/brb', element: <Brb /> },
       { path: '/obs/tts', element: <Tts /> },
       { path: '/obs/omnibar', element: <Omnibar /> },
+      { path: '/obs/chest-announcer', element: <ChestAnnouncer /> },
       { path: '/tracking/:game', element: <GameTracking /> },
       { path: '/api/timers', element: <Timers /> },
       { path: '/api/count-up', element: <CountUp /> },
@@ -83,6 +89,8 @@ export const router = createBrowserRouter([
       { path: 'games', element: <GamesControl /> },
       { path: 'runners', element: <RunnersControl /> },
       { path: 'events', element: <EventsControl /> },
+      { path: 'theme', element: <ThemeControl /> },
+      { path: 'omnibar', element: <OmnibarControl /> },
     ],
   },
   { path: '*', element: <NotFound /> },

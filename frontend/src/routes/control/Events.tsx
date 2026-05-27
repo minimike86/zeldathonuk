@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { DonationPage, DonationPlatformKey, EventModel } from '@/lib/obsApi';
 import { api } from '@/lib/api';
+import { notifyEventChanged } from '@/lib/eventBus';
 
 type SortKey = 'name' | 'start_time' | 'currency_symbol' | 'is_active' | 'donation_pages';
 type SortDir = 'asc' | 'desc';
@@ -80,6 +81,7 @@ export function EventsControl() {
     }
     try {
       await api(`/api/events/${id}/`, { method: 'DELETE' });
+      notifyEventChanged();
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -88,6 +90,7 @@ export function EventsControl() {
   const activate = async (id: number) => {
     try {
       await api(`/api/events/${id}/activate/`, { method: 'POST' });
+      notifyEventChanged();
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -296,6 +299,9 @@ function EventForm({
   const [isActive, setIsActive] = useState(event?.is_active ?? false);
   const [logoUrl, setLogoUrl] = useState(event?.logo_url ?? '');
   const [bannerUrl, setBannerUrl] = useState(event?.banner_url ?? '');
+  const [gameblastLogoUrl, setGameblastLogoUrl] = useState(
+    event?.gameblast_logo_url ?? '',
+  );
   const [pendingPages, setPendingPages] = useState<DonationPageDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -312,6 +318,7 @@ function EventForm({
         is_active: isActive,
         logo_url: logoUrl.trim(),
         banner_url: bannerUrl.trim(),
+        gameblast_logo_url: gameblastLogoUrl.trim(),
       };
       if (isEdit) {
         await api(`/api/events/${event.id}/`, { method: 'PATCH', body });
@@ -324,6 +331,11 @@ function EventForm({
           });
         }
       }
+      // Push the change to every other open tab so OBS browser sources
+      // (omnibar charity logo, ad-panel carousel, schedule chrome…)
+      // re-fetch and re-skin in the next render frame rather than
+      // waiting for their next 10s poll tick.
+      notifyEventChanged();
       onSaved();
     } catch (e) {
       setErr((e as Error).message);
@@ -389,6 +401,19 @@ function EventForm({
           <ImageDropzone
             value={logoUrl}
             onChange={setLogoUrl}
+            previewStyle={{ width: 96, height: 96, borderRadius: 6 }}
+          />
+        </div>
+        <div style={{ minWidth: 280, flex: 1 }}>
+          <label
+            className="d-block small text-white-50"
+            title="Updated each campaign year — surfaces in the OBS omnibar + ad-panel carousel"
+          >
+            GameBlast logo (this year's campaign)
+          </label>
+          <ImageDropzone
+            value={gameblastLogoUrl}
+            onChange={setGameblastLogoUrl}
             previewStyle={{ width: 96, height: 96, borderRadius: 6 }}
           />
         </div>

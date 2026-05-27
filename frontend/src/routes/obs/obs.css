@@ -55,9 +55,31 @@
  * exactly — no surprises when the OBS scene preview is smaller than the
  * authoring viewport. */
 :root {
-  --obs-omnibar-height: 120px;
+  --obs-omnibar-height: 56px;
   --obs-stage-width: 1920px;
   --obs-stage-height: calc(1080px - var(--obs-omnibar-height));
+  /* OBS layout chrome inherits the sitewide theme so a /control theme
+   * change instantly re-skins every OBS browser source. Fallback to the
+   * bloodmoon palette so the layouts still render correctly if the
+   * theme hasn't loaded (or fails to load) yet. */
+  --obs-accent: var(--theme-primary, #e71347);
+  --obs-accent-bright: var(--theme-primary-bright, #da4471);
+  --obs-accent-deep: var(--theme-secondary, #731c37);
+  --obs-bg-from: var(--theme-bg-from, #4c1324);
+  --obs-bg-to: var(--theme-bg-to, #1a0a10);
+  /* Translucent flavours of the accent for radial gradients / glows.
+   * `color-mix` keeps them in sync with the live theme colour. */
+  --obs-accent-75: color-mix(in srgb, var(--obs-accent) 75%, transparent);
+  --obs-accent-bright-85: color-mix(in srgb, var(--obs-accent-bright) 85%, transparent);
+  --obs-accent-85: color-mix(in srgb, var(--obs-accent) 85%, transparent);
+  --obs-bg-from-95: color-mix(in srgb, var(--obs-bg-from) 95%, transparent);
+  --obs-bg-from-85: color-mix(in srgb, var(--obs-bg-from) 85%, transparent);
+  /* Accent muted toward the dark bg — used for large surfaces (panel
+   * fills, wide borders, chrome) so non-red palettes don't flood the
+   * scene with full-saturation colour. Hot accent (--obs-accent et al.)
+   * stays reserved for thin highlights, text gradients, small glows. */
+  --obs-accent-muted: color-mix(in srgb, var(--obs-accent) 55%, var(--obs-bg-from));
+  --obs-accent-muted-soft: color-mix(in srgb, var(--obs-accent) 30%, var(--obs-bg-from));
 }
 
 .obs-stage {
@@ -69,11 +91,12 @@
   color: #fff;
 }
 
+/* OBS display-capture: the game frame must be fully transparent so the
+ * actual game capture (a separate OBS source positioned under this
+ * browser source) shows through. No background, no border, no shadow. */
 .obs-stage .game-frame {
   position: absolute;
-  background: #000;
-  border: 2px solid #b92753;
-  box-shadow: 0 0 20px rgba(231, 19, 71, 0.4);
+  background: transparent;
 }
 
 .obs-stage .side-panel {
@@ -82,19 +105,23 @@
   flex-direction: column;
   padding: 1rem;
   gap: 1rem;
-  background: linear-gradient(180deg, rgba(43, 27, 37, 0.95), rgba(76, 19, 36, 0.95));
-  border-left: 2px solid #b92753;
+  background: linear-gradient(180deg, var(--obs-bg-to, #2b1b25), var(--obs-bg-from, #4c1324));
+  border-left: 2px solid var(--obs-accent-deep, #b92753);
 }
 
 .obs-stage .panel-block {
   background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(185, 39, 83, 0.5);
+  border: 1px solid var(--theme-line, rgba(185, 39, 83, 0.5));
   border-radius: 6px;
   padding: 0.75rem;
 }
 
 .obs-stage .panel-block-title {
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  background: linear-gradient(
+    90deg,
+    var(--obs-accent, #e71347) 0%,
+    var(--obs-accent-bright, #da4471) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -119,8 +146,8 @@
   font-family: 'VT323', monospace;
   font-size: 2.5rem;
   text-align: center;
-  color: #fff;
-  text-shadow: 0 0 8px rgba(231, 19, 71, 0.8);
+  color: var(--theme-text, #fff);
+  text-shadow: 0 0 8px var(--obs-accent, #e71347);
 }
 
 .obs-stage .panel-runners {
@@ -184,4 +211,325 @@
   font-family: 'Bungee', sans-serif;
   text-align: center;
   padding: 1rem;
+}
+
+/* ── Widescreen layout primitives ──────────────────────────────────────
+ * Matches the legacy widescreen-side-panel CSS so an existing OBS scene
+ * collection drops in unchanged. */
+
+/* Camera reservation — transparent so the OBS camera capture shows
+ * through. Vertical accent bars on the left/right hint at where the
+ * camera should sit. */
+.obs-stage .obs-camera-frame {
+  position: absolute;
+  background: transparent;
+  border-left: 6px solid var(--obs-accent-muted);
+  border-right: 6px solid var(--obs-accent-muted);
+  box-shadow:
+    inset 1px 0 0 var(--obs-accent),
+    inset -1px 0 0 var(--obs-accent);
+  pointer-events: none;
+}
+
+/* Sponsor / ad / sigil block — opaque bloodmoon gradient. Borders match
+ * the camera frame below so the red accent reads as a continuous frame
+ * down both edges of the right column. */
+.obs-stage .obs-ad-panel {
+  position: absolute;
+  background: linear-gradient(135deg, var(--obs-bg-to, #2b1b25) 0%, var(--obs-bg-from, #4c1324) 100%);
+  border-top: 6px solid var(--obs-accent-muted);
+  border-left: 6px solid var(--obs-accent-muted);
+  border-right: 6px solid var(--obs-accent-muted);
+  box-shadow:
+    inset 0 1px 0 var(--obs-accent),
+    inset 1px 0 0 var(--obs-accent),
+    inset -1px 0 0 var(--obs-accent);
+  overflow: hidden;
+}
+
+/* Carousel layer that sits behind the charity logo — fades between
+ * random background images on every 15s tick (timer lives in <AdPanel>
+ * in Layout.tsx). */
+.obs-stage .obs-ad-panel-bg {
+  position: absolute;
+  inset: 0;
+  background-color: #000;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-size: cover;
+  transition: background-image 1.5s linear;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+/* Charity logo centred above the carousel. */
+.obs-stage .obs-ad-panel-logo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1;
+  box-shadow: 0 0 120px 120px rgba(0, 0, 0, 0.5) inset;
+}
+
+.obs-stage .obs-ad-panel-logo img {
+  max-width: 70%;
+  max-height: 70%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+
+/* Runner + timer card — radial bloodmoon gradient with the Hylian symbol
+ * watermark, layered text on top. */
+.obs-stage .obs-runner-timer-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 1.25rem;
+  color: var(--theme-text, #fff);
+  /* Dark-grounded panel: bg-from/bg-to dominate, the accent only blooms
+   * softly through the centre. Previous design filled the entire card
+   * with full-saturation accent which overpowered non-red themes. */
+  background:
+    radial-gradient(
+      ellipse at center,
+      var(--obs-accent-muted) 0%,
+      var(--obs-accent-muted-soft) 35%,
+      var(--obs-bg-from, #4c1324) 75%,
+      var(--obs-bg-to, #1a0a10) 100%
+    ),
+    url('/assets/img/obs-bg/hylian-symbol-1.png');
+  background-size: cover;
+  background-position: bottom;
+  border-top: 2px solid var(--obs-accent);
+  box-shadow: 0 0 60px 60px rgba(0, 0, 0, 0.45) inset;
+  font-family: 'Bungee', sans-serif;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.obs-rt-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.obs-rt-label {
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.85);
+  width: 130px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.obs-rt-runners {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.obs-rt-runner-name {
+  font-size: 1.75rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.obs-rt-timer {
+  font-family: 'Bungee', sans-serif;
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.obs-rt-side {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  min-width: 150px;
+}
+
+.obs-rt-side-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.obs-rt-side-value {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* Game description — bloodmoon gradient with box art on the left, title /
+ * badges / platform / release / ETA on the right. */
+.obs-stage .obs-game-desc-card {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  color: var(--theme-text, #fff);
+  background:
+    radial-gradient(
+      ellipse at right,
+      var(--obs-bg-from-85, rgba(76, 19, 36, 0.85)) 0%,
+      var(--obs-bg-from-95, rgba(43, 27, 37, 0.95)) 70%,
+      var(--obs-bg-to, rgba(43, 27, 37, 1)) 100%
+    ),
+    url('/assets/img/obs-bg/hylian-symbol-1.png');
+  background-size: cover;
+  background-position: center;
+  border-top: 4px solid var(--obs-accent);
+  font-family: 'Bungee', sans-serif;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.obs-gd-art {
+  width: 130px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
+}
+
+.obs-gd-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  height: 100%;
+  justify-content: center;
+}
+
+.obs-gd-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.45rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.obs-gd-title-line {
+  line-height: 1.05;
+}
+
+.obs-gd-badges {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.obs-gd-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.7rem;
+  background: var(--obs-accent-muted);
+  border: 1px solid var(--obs-accent);
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.obs-gd-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  text-align: center;
+  margin-top: auto;
+}
+
+.obs-gd-meta-cell {
+  padding: 0.25rem 0.4rem;
+}
+
+.obs-gd-meta-cell--mid {
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.obs-gd-meta-value {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.1;
+}
+
+.obs-gd-meta-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 0.1rem;
+}
+
+.obs-gd-empty {
+  width: 100%;
+  text-align: center;
+  font-family: 'Bungee', sans-serif;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── 3DS layout overrides ─────────────────────────────────────────────
+ * Structural-only: the 3DS layout has a different chrome arrangement
+ * than widescreen (camera gets a bottom-only border, a vertical divider
+ * runs full-height between the two columns, runner-timer card has a
+ * right border, etc.). Colour values inherit from the active theme via
+ * --obs-accent, so a /control theme swap re-skins this layout in
+ * lock-step with the rest of the OBS sources. */
+.obs-stage.layout-3ds .obs-camera-frame {
+  /* Legacy 3DS camera had a single bottom accent, not the left/right
+   * vertical bars widescreen uses. */
+  border-left: none;
+  border-right: none;
+  border-bottom: 2px solid var(--obs-accent, #e71347);
+}
+
+.obs-stage.layout-3ds .obs-ad-panel {
+  /* Drop the 8px borders the widescreen ad-panel uses — the 3DS
+   * variant relies on the column separator + a thin top accent. */
+  border-top: 1px solid var(--obs-accent, #e71347);
+  border-left: none;
+  border-right: none;
+}
+
+.obs-stage.layout-3ds .obs-runner-timer-card {
+  border-right: 2px solid var(--obs-accent, #e71347);
+}
+
+.obs-stage.layout-3ds .obs-game-desc-card {
+  border-top: 1px solid var(--obs-accent, #e71347);
+}
+
+/* Vertical separator between the left column (bottom screen + camera +
+ * ad panel) and the right column (top screen + runner/timer + game
+ * desc), replicating the legacy `.side-panel` border-right divider. */
+.obs-stage.layout-3ds::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 552px;
+  width: 2px;
+  height: 100%;
+  background: var(--obs-accent, #e71347);
+  pointer-events: none;
+  z-index: 1;
 }

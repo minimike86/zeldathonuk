@@ -1,0 +1,298 @@
+/* ChestAnnouncer — pixel-art hero who walks to a chest and pulls each
+ * incoming donation out as a card.
+ *
+ * Everything sizes from the container height (`--ca-h`) via a container
+ * query, so this overlay scales correctly whether OBS positions it over
+ * the 554×204 ad-panel, the 1366×204 runner+desc strip, the full 1920×204
+ * bottom band, or the entire 1920×1080 stage. No fixed pixel sizes.
+ *
+ * Theme tinting: card, ground line and confetti all read --obs-accent
+ * etc. from obs.css so the active theme (Bloodmoon, Golden Goddess…)
+ * re-skins the announcer live.
+ */
+
+.ca-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  container-type: size;
+  container-name: ca;
+
+  /* All derived sizes hang off --ca-h. cqh covers modern browsers; a
+   * ResizeObserver in the component writes a px fallback for engines
+   * where container queries on the root element misbehave. */
+  --ca-h: 100cqh;
+  --ca-hero-px: calc(var(--ca-h) * 0.5);
+  --ca-chest-px: calc(var(--ca-h) * 0.42);
+  --ca-ground-pct: 12%;
+  --ca-card-w: max(120px, calc(var(--ca-h) * 1.6));
+  --ca-card-h: calc(var(--ca-h) * 0.6);
+}
+
+/* Ground line — same idiom as the camera-frame trim in obs.css: a muted
+ * accent stripe with a thin hot-accent highlight on top. Reads as a
+ * subtle stage floor without dominating the scene. */
+.ca-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--ca-ground-pct) - 4px);
+  height: 4px;
+  background: var(--obs-accent-muted, rgba(231, 19, 71, 0.4));
+  box-shadow: inset 0 1px 0 var(--obs-accent, #e71347);
+}
+
+/* Shared sprite-element rules — every animated sprite uses these. */
+.ca-sprite {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────
+ *
+ * --ca-hero-x: percentage along the walk path. Component drives it via
+ * inline style. The walk path runs 0% → 100% of the container width;
+ * a transform: translateX(-50%) centres the hero around that anchor.
+ *
+ * --ca-hero-dir: 1 for walking right (toward chest), -1 for walking left
+ * (off-screen). Used to mirror the walk-cycle sprite.
+ */
+.ca-hero {
+  bottom: var(--ca-ground-pct);
+  width: var(--ca-hero-px);
+  height: var(--ca-hero-px);
+  left: var(--ca-hero-x, -20%);
+  transform: translateX(-50%) scaleX(var(--ca-hero-dir, 1));
+  transform-origin: center bottom;
+  transition: left var(--ca-walk-ms, 3000ms) linear;
+}
+
+.ca-hero[data-anim='walk'] {
+  background-image: var(--ca-hero-walk-src);
+  background-size: calc(var(--ca-hero-px) * 4) var(--ca-hero-px);
+  animation: ca-step-4 500ms steps(4) infinite;
+}
+
+.ca-hero[data-anim='idle'] {
+  background-image: var(--ca-hero-idle-src);
+  background-size: calc(var(--ca-hero-px) * 2) var(--ca-hero-px);
+  animation: ca-step-2 900ms steps(2) infinite;
+}
+
+.ca-hero[data-anim='reach'] {
+  background-image: var(--ca-hero-reach-src);
+  background-size: calc(var(--ca-hero-px) * 2) var(--ca-hero-px);
+  animation: ca-step-2-once 500ms steps(2) 1 forwards;
+}
+
+.ca-hero[data-anim='hold'] {
+  background-image: var(--ca-hero-hold-src);
+  background-size: var(--ca-hero-px) var(--ca-hero-px);
+  animation: ca-hero-bob 1200ms ease-in-out infinite alternate;
+}
+
+@keyframes ca-step-4 {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-hero-px) * -4) 0; }
+}
+@keyframes ca-step-2 {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-hero-px) * -2) 0; }
+}
+@keyframes ca-step-2-once {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-hero-px) * -2) 0; }
+}
+@keyframes ca-hero-bob {
+  from { transform: translateX(-50%) translateY(0) scaleX(var(--ca-hero-dir, 1)); }
+  to   { transform: translateX(-50%) translateY(-3%) scaleX(var(--ca-hero-dir, 1)); }
+}
+
+/* ── Chest ────────────────────────────────────────────────────────────
+ *
+ * Always positioned at --ca-chest-x (default 50% of the container).
+ * Stepping plays forward for opening and reverse for closing. The
+ * `data-state` attribute drives which animation applies.
+ */
+.ca-chest {
+  bottom: var(--ca-ground-pct);
+  left: var(--ca-chest-x, 50%);
+  width: var(--ca-chest-px);
+  height: var(--ca-chest-px);
+  transform: translateX(-50%);
+  background-image: var(--ca-chest-src);
+  background-size: calc(var(--ca-chest-px) * 4) var(--ca-chest-px);
+  background-position: 0 0;
+}
+
+.ca-chest[data-state='closed'] { background-position: 0 0; }
+.ca-chest[data-state='open']   { background-position: calc(var(--ca-chest-px) * -3) 0; }
+.ca-chest[data-state='opening'] {
+  animation: ca-chest-open 600ms steps(3) 1 forwards;
+}
+.ca-chest[data-state='closing'] {
+  animation: ca-chest-close 600ms steps(3) 1 forwards;
+}
+
+@keyframes ca-chest-open {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-chest-px) * -3) 0; }
+}
+@keyframes ca-chest-close {
+  from { background-position: calc(var(--ca-chest-px) * -3) 0; }
+  to   { background-position: 0 0; }
+}
+
+/* Subtle glow that pulses when the chest is open — sells the "treasure
+ * inside" feeling without needing a separate sprite. */
+.ca-chest-glow {
+  position: absolute;
+  left: var(--ca-chest-x, 50%);
+  bottom: calc(var(--ca-ground-pct) + var(--ca-chest-px) * 0.45);
+  width: calc(var(--ca-chest-px) * 1.4);
+  height: calc(var(--ca-chest-px) * 0.6);
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 243, 160, 0.55) 0%,
+    rgba(255, 243, 160, 0.15) 45%,
+    transparent 75%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease-out;
+}
+.ca-chest-glow[data-visible='true'] {
+  opacity: 1;
+  animation: ca-glow-pulse 1.6s ease-in-out infinite alternate;
+}
+@keyframes ca-glow-pulse {
+  from { transform: translateX(-50%) scale(0.95); }
+  to   { transform: translateX(-50%) scale(1.08); }
+}
+
+/* ── Donation card + confetti ─────────────────────────────────────────
+ *
+ * The card pops out of the chest, floats above the hero, then bursts
+ * into confetti. All themed via --obs-accent so the active palette
+ * re-skins this live.
+ */
+.ca-card-wrap {
+  position: absolute;
+  left: var(--ca-card-x, 50%);
+  bottom: calc(var(--ca-ground-pct) + var(--ca-hero-px) + var(--ca-h) * 0.04);
+  transform: translateX(-50%);
+  width: var(--ca-card-w);
+  height: var(--ca-card-h);
+  pointer-events: none;
+  transition: left 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ca-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 4% 6%;
+  color: var(--theme-text, #fff);
+  background: linear-gradient(
+    180deg,
+    var(--obs-bg-from, #4c1324) 0%,
+    var(--obs-bg-to, #1a0a10) 100%
+  );
+  border: 2px solid var(--obs-accent, #e71347);
+  border-radius: 6px;
+  box-shadow:
+    0 0 12px var(--obs-accent-75, rgba(231, 19, 71, 0.75)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  font-family: 'Bungee', sans-serif;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.7),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+}
+
+.ca-card[data-phase='enter'] {
+  animation: ca-card-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) 1 forwards;
+}
+.ca-card[data-phase='hold'] {
+  opacity: 1;
+  animation: ca-card-float 1.4s ease-in-out infinite alternate;
+}
+.ca-card[data-phase='burst'] {
+  opacity: 1;
+  animation: ca-card-burst 200ms ease-in 1 forwards;
+}
+
+@keyframes ca-card-pop {
+  0%   { transform: scale(0.2) translateY(40%); opacity: 0; }
+  60%  { transform: scale(1.06) translateY(-6%); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes ca-card-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-4%); }
+}
+@keyframes ca-card-burst {
+  from { transform: scale(1); opacity: 1; }
+  to   { transform: scale(1.35); opacity: 0; }
+}
+
+.ca-card-donor {
+  font-size: calc(var(--ca-h) * 0.12);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.1;
+  margin-bottom: 4%;
+}
+.ca-card-amount {
+  font-size: calc(var(--ca-h) * 0.2);
+  color: var(--obs-accent-bright, #ffd166);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* Confetti — 18 spans laid out around the card centre. Each particle
+ * gets a deterministic angle via --i and a colour pulled from --c.
+ * Pure CSS, no JS animation loop. */
+.ca-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ca-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--ca-h) * 0.06);
+  height: calc(var(--ca-h) * 0.06);
+  background: var(--c, var(--obs-accent, #e71347));
+  border-radius: 1px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: ca-particle-fly 900ms cubic-bezier(0.16, 1, 0.3, 1) 1 forwards;
+}
+@keyframes ca-particle-fly {
+  0% {
+    transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg)) translateX(0)
+      rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg))
+      translateX(calc(var(--ca-h) * 1.2)) rotate(540deg);
+    opacity: 0;
+  }
+}

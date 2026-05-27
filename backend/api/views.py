@@ -331,3 +331,237 @@ def currently_playing(request: Request) -> Response:
     cp.schedule_entry_id = schedule_entry_id
     cp.save()
     return Response(serializers.CurrentlyPlayingSerializer(cp).data)
+
+
+@api_view(['GET', 'PATCH'])
+def theme_settings(request: Request) -> Response:
+    """Returns / updates the **currently active** theme.
+
+    The frontend's <ThemeProvider> hits this endpoint to apply the live
+    theme. PATCH updates the active row in-place — useful for
+    quick-and-dirty colour tweaks. Use /api/themes/ for library
+    management (create, activate a different theme, delete).
+    """
+    theme = models.ThemeSettings.get_active()
+    if request.method == 'GET':
+        return Response(serializers.ThemeSettingsSerializer(theme).data)
+    ser = serializers.ThemeSettingsSerializer(theme, data=request.data, partial=True)
+    ser.is_valid(raise_exception=True)
+    ser.save()
+    return Response(ser.data)
+
+
+class ThemeSettingsViewSet(viewsets.ModelViewSet):
+    """Library of themes. CRUD + an `activate` action that mirrors the
+    Event activation pattern (sets `is_active=True` here, demotes the
+    rest)."""
+
+    queryset = models.ThemeSettings.objects.all()
+    serializer_class = serializers.ThemeSettingsSerializer
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request: Request, pk=None) -> Response:
+        theme = self.get_object()
+        if not theme.is_active:
+            theme.is_active = True
+            theme.save()  # The model's save() demotes every other row.
+        return Response(self.get_serializer(theme).data)
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request: Request, pk=None) -> Response:
+        """Clone the row into a new inactive theme. Lets the user fork an
+        existing theme as a starting point for a new one."""
+        source = self.get_object()
+        clone = models.ThemeSettings.objects.create(
+            name=f'{source.name} (copy)',
+            is_active=False,
+            primary=source.primary,
+            primary_bright=source.primary_bright,
+            secondary=source.secondary,
+            background_from=source.background_from,
+            background_to=source.background_to,
+            text_color=source.text_color,
+            text_muted=source.text_muted,
+            line_color=source.line_color,
+            logo_url=source.logo_url,
+            logo_small_url=source.logo_small_url,
+            favicon_url=source.favicon_url,
+            background_video_url=source.background_video_url,
+            background_image_url=source.background_image_url,
+            button_gradient_from=source.button_gradient_from,
+            button_gradient_to=source.button_gradient_to,
+            button_text_color=source.button_text_color,
+            button_border_color=source.button_border_color,
+            divider_thickness=source.divider_thickness,
+            heading_font=source.heading_font,
+            body_font=source.body_font,
+        )
+        return Response(self.get_serializer(clone).data, status=status.HTTP_201_CREATED)
+
+
+# ── Omnibar v2 ─────────────────────────────────────────────────────────────
+
+
+class PlaythroughEventViewSet(viewsets.ModelViewSet):
+    """CRUD on per-playthrough events.
+
+    The omnibar polls ``GET /api/playthrough-events/?schedule_entry={id}&since={iso}``
+    for new events; the control panel issues ``POST`` to fire a moment
+    (boss-defeated, item-collected, …) and the OBS browser source picks
+    it up on the next poll cycle.
+    """
+    queryset = models.PlaythroughEvent.objects.all()
+    serializer_class = serializers.PlaythroughEventSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        entry_id = self.request.query_params.get('schedule_entry')
+        if entry_id:
+            qs = qs.filter(schedule_entry_id=entry_id)
+        since = self.request.query_params.get('since')
+        if since:
+            qs = qs.filter(created_at__gt=since)
+        return qs
+
+
+class OmnibarOverrideViewSet(viewsets.ModelViewSet):
+    """CRUD on operator-triggered omnibar overrides.
+
+    Active overrides (is_active + within starts_at..expires_at) drive
+    the OmnibarFSM into ``urgent`` mode. Custom actions:
+
+      - ``POST /api/overrides/{id}/activate/``   — flip is_active=True
+      - ``POST /api/overrides/{id}/deactivate/`` — flip is_active=False
+      - ``GET  /api/overrides/active/``          — live ones only
+    """
+    queryset = models.OmnibarOverride.objects.all()
+    serializer_class = serializers.OmnibarOverrideSerializer
+
+    @action(detail=False, methods=['get'])
+    def active(self, request: Request) -> Response:
+        now = timezone.now()
+        qs = self.get_queryset().filter(
+            is_active=True, starts_at__lte=now, expires_at__gt=now,
+        ).order_by('-priority', '-starts_at')
+        return Response(self.get_serializer(qs, many=True).data)
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request: Request, pk=None) -> Response:
+        obj = self.get_object()
+        obj.is_active = True
+        obj.save(update_fields=['is_active'])
+        return Response(self.get_serializer(obj).data)
+
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request: Request, pk=None) -> Response:
+        obj = self.get_object()
+        obj.is_active = False
+        obj.save(update_fields=['is_active'])
+        return Response(self.get_serializer(obj).data)
+
+
+class ExternalEventViewSet(viewsets.ModelViewSet):
+    """CRUD on inbound webhook events (Twitch / Discord / …).
+
+    Filterable via ``?source=twitch&since={iso}&unconsumed=true``.
+    """
+    queryset = models.ExternalEvent.objects.all()
+    serializer_class = serializers.ExternalEventSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        source = self.request.query_params.get('source')
+        if source:
+            qs = qs.filter(source=source)
+        since = self.request.query_params.get('since')
+        if since:
+            qs = qs.filter(occurred_at__gt=since)
+        if self.request.query_params.get('unconsumed') == 'true':
+            qs = qs.filter(consumed_at__isnull=True)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def consume(self, request: Request, pk=None) -> Response:
+        """Mark an event as consumed by the omnibar so it doesn't replay."""
+        obj = self.get_object()
+        if obj.consumed_at is None:
+            obj.consumed_at = timezone.now()
+            obj.save(update_fields=['consumed_at'])
+        return Response(self.get_serializer(obj).data)
+
+
+class IncentiveViewSet(viewsets.ModelViewSet):
+    """CRUD on donation incentives.
+
+    Filterable via ``?event={id}&active=true``. Custom action:
+
+      - ``POST /api/incentives/{id}/contribute/`` body ``{ "amount": "5.00" }``
+        bumps current_amount, sets reached_at if the goal is crossed, and
+        returns ``{ "newly_reached": bool }`` so the caller knows whether
+        to fire the ``incentive-unlocked`` event.
+    """
+    queryset = models.Incentive.objects.all()
+    serializer_class = serializers.IncentiveSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        if self.request.query_params.get('active') == 'true':
+            qs = qs.filter(is_active=True)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def contribute(self, request: Request, pk=None) -> Response:
+        try:
+            amount = Decimal(str(request.data.get('amount', '0')))
+        except Exception:
+            return Response({'detail': 'Invalid amount.'}, status=status.HTTP_400_BAD_REQUEST)
+        if amount <= 0:
+            return Response({'detail': 'Amount must be positive.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        obj = self.get_object()
+        was_reached = obj.is_reached
+        obj.current_amount = obj.current_amount + amount
+        newly_reached = False
+        if not was_reached and obj.current_amount >= obj.goal_amount:
+            obj.reached_at = timezone.now()
+            newly_reached = True
+        obj.save(update_fields=['current_amount', 'reached_at'])
+        return Response({
+            **self.get_serializer(obj).data,
+            'newly_reached': newly_reached,
+        })
+
+
+class MilestoneViewSet(viewsets.ModelViewSet):
+    """CRUD on event milestones.
+
+    Filterable via ``?event={id}&reached=true|false``. Custom action:
+
+      - ``POST /api/milestones/{id}/mark_reached/`` — sets reached_at to
+        now if not already set. Idempotent; returns the milestone.
+    """
+    queryset = models.Milestone.objects.all()
+    serializer_class = serializers.MilestoneSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        reached = self.request.query_params.get('reached')
+        if reached == 'true':
+            qs = qs.filter(reached_at__isnull=False)
+        elif reached == 'false':
+            qs = qs.filter(reached_at__isnull=True)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def mark_reached(self, request: Request, pk=None) -> Response:
+        obj = self.get_object()
+        if obj.reached_at is None:
+            obj.reached_at = timezone.now()
+            obj.save(update_fields=['reached_at'])
+        return Response(self.get_serializer(obj).data)

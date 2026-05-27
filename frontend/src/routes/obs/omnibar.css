@@ -1,57 +1,551 @@
-/* Companion OBS browser source to the /obs/layout/:layout pages. Sized to
- * the bottom strip of the 1920×1080 canvas — exactly the height the
- * layouts subtract from their stage (see `--obs-omnibar-height`). */
+/* Companion OBS browser source to /obs/layout/:layout. Sized to the
+ * bottom strip of the 1920×1080 canvas, exactly the height the layouts
+ * subtract from their stage (see `--obs-omnibar-height` in obs.css). */
+
 .omnibar {
+  --ob-height: var(--obs-omnibar-height, 56px);
+  --ob-chevron: 22px; /* depth of the brand/total/tag arrow points */
+  /* Shared animation beat. Every entrance (tag slide, WaveText char
+   * drop, donation flash, body content reveal) reads off these tokens
+   * so the omnibar moves as one rhythmic unit. */
+  --ob-enter-ms: 520ms;
+  --ob-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ob-flash-ms: 900ms;
+  --ob-body-reveal-ms: 260ms;
+  /* Stacking context so .ob-brand and .ob-total can sit ABOVE the
+   * sliding tag pill while it's still moving across their territory. */
+  position: relative;
+  /* Pill gradient — pulls from the active sitewide theme via the
+   * --obs-accent / --obs-accent-bright pipeline so a /control theme
+   * change re-skins the omnibar in lock-step with the layouts. */
+  --ob-bloodmoon: linear-gradient(
+    45deg,
+    var(--obs-accent, #e71347) 20%,
+    var(--obs-accent-bright, #da4471) 45%,
+    var(--obs-accent, #e7364b) 70%,
+    var(--obs-accent-bright, #da4471)
+  );
+  --ob-bloodmoon-text: linear-gradient(
+    45deg,
+    var(--obs-accent, #e71347),
+    var(--obs-accent-bright, #da4471),
+    var(--obs-accent, #e7364b),
+    var(--obs-accent-bright, #da4471),
+    var(--obs-accent, #e71347)
+  );
+  --ob-font: var(--theme-font-heading, 'Bungee', sans-serif);
+
   width: var(--obs-stage-width, 1920px);
-  height: var(--obs-omnibar-height, 120px);
-  background: transparent;
+  height: var(--ob-height);
+  background: linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #41454b 100%);
+  border-top: 1px solid var(--obs-accent, #e71347);
+  display: flex;
+  align-items: stretch;
+  color: var(--theme-text, #fff);
+  overflow: hidden;
+  font-family: var(--ob-font);
+  font-feature-settings: 'tnum';
+}
+
+/* ── Brand ─────────────────────────────────────────────────────────── */
+
+.ob-brand {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--ob-bloodmoon);
+  /* Chevron-shaped right edge in one shape, so the gradient stays seamless. */
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ob-chevron)) 0,
+    100% 50%,
+    calc(100% - var(--ob-chevron)) 100%,
+    0 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  overflow: hidden;
+  padding: 0.4rem calc(var(--ob-chevron) + 0.4rem) 0.4rem 1rem;
+  /* Sits ABOVE the rotating content lane. The tag pill in .ob-content
+   * extends leftward via margin so its left-notch dovetails with this
+   * chevron at rest; during its slide-in animation the tag travels
+   * across the brand's footprint and the brand has to paint on top so
+   * viewers don't see the tag emerging out of nowhere — it appears to
+   * exit cleanly from the chevron tip. */
+  position: relative;
+  z-index: 3;
 }
 
-.ob-inner {
+.ob-brand img {
+  max-height: 38px;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+/* ── Rotating middle lane ─────────────────────────────────────────── */
+
+.ob-content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  /* NO overflow:hidden — the tag pill's notched left edge needs to
+   * extend INTO the brand pill's footprint via margin-left so its
+   * notch can dovetail with the brand chevron at rest. The brand and
+   * total lanes are at z-index 3 to paint over the tag's slide-in
+   * motion; the omnibar's own overflow:hidden clips anything that
+   * escapes the bar bounds. */
+}
+
+/* Only the active slot is mounted (Omnibar.tsx renders one at a time),
+ * so the slot itself doesn't transition — its children animate on mount:
+ *   - the tag pill slides in from the left (ob-tag-slide-in keyframe)
+ *   - the body text waves in per-character via <WaveText />
+ * When the rotation advances, the old slot unmounts and the new one
+ * mounts, replaying both. */
+.ob-slot {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 0 2rem;
+  pointer-events: none;
+}
+
+.ob-row {
   width: 100%;
-  animation: ob-fade-in 0.5s ease-out;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
 }
 
-.ob-label {
-  font-family: 'Bungee', sans-serif;
-  font-size: 1.8rem;
-  padding: 0.4rem 1rem;
-  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 4px;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.ob-text {
-  font-family: 'Open Sans', sans-serif;
-  font-size: 1.75rem;
+.ob-row-body {
   flex: 1;
-  white-space: nowrap;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0 1rem 0 1.5rem;
   overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.ob-text strong {
-  color: #ffc2e0;
+/* Body content waits for the tag pill's slide-in to land before
+ * appearing — sequential reveal, not concurrent. Each direct child
+ * fades+rises into place after --ob-enter-ms. WaveText spans inside
+ * `.ob-text-strong` carry their own per-character animations whose
+ * delays already account for the same offset (see WaveText callsites
+ * in Omnibar.tsx — they pass startDelayMs = body reveal delay). */
+.ob-row-body > * {
+  opacity: 0;
+  animation: ob-body-reveal var(--ob-body-reveal-ms) var(--ob-enter-ease)
+    var(--ob-enter-ms) both;
 }
 
-@keyframes ob-fade-in {
+@keyframes ob-body-reveal {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
+.ob-row-body--center {
+  justify-content: center;
+  /* Symmetric padding so the centered content sits on the geometric
+   * centre of the lane instead of being shoved 0.5rem right by the
+   * asymmetric padding (which exists to give the tag pill breathing
+   * room from its chevron). */
+  padding-left: 1rem;
+}
+
+/* Tag pill on the left edge of a content row. Its LEFT edge is a notch
+ * cut exactly to the shape of the brand pill's right chevron, so when
+ * margin-left: -chevron slides the tag back over the brand's bounding
+ * box, the brand's protruding triangle slots into the tag's notch and
+ * the two pink shapes fuse into a single seamless banner.
+ *
+ * Default RIGHT edge: flat — most slots don't want an arrow pointing
+ * into the body. Add the `--arrow` modifier (used only by UP NEXT,
+ * where the directional cue actually means something) to switch in the
+ * right-pointing chevron clip-path.
+ *
+ * Mount animation: slides in from the left so each rotation reads as
+ * a new banner arriving rather than a flap or fade. */
+.ob-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin-left: calc(-1 * var(--ob-chevron));
+  padding: 0 1rem 0 calc(var(--ob-chevron) + 0.5rem);
+  background: var(--ob-bloodmoon);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    var(--ob-chevron) 50%
+  );
+  color: #fff;
+  font-family: var(--ob-font);
+  font-size: 1.05rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
+  animation: ob-tag-slide-in var(--ob-enter-ms) var(--ob-enter-ease) both;
+}
+
+/* Donation arrival flash. Stacks on top of the slide-in so the pill
+ * lands and then pulses gold once, drawing the eye to the new event
+ * before the marquee starts scrolling. */
+.ob-tag--flash {
+  animation:
+    ob-tag-slide-in var(--ob-enter-ms) var(--ob-enter-ease) both,
+    ob-tag-flash var(--ob-flash-ms) ease-out var(--ob-enter-ms) 2;
+}
+
+@keyframes ob-tag-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 58, 0); }
+  35% { box-shadow: 0 0 0 6px rgba(255, 210, 58, 0.55); }
+  70% { box-shadow: 0 0 0 14px rgba(255, 210, 58, 0); }
+}
+
+.ob-tag--arrow {
+  padding-right: calc(var(--ob-chevron) + 0.6rem);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ob-chevron)) 0,
+    100% 50%,
+    calc(100% - var(--ob-chevron)) 100%,
+    0 100%,
+    var(--ob-chevron) 50%
+  );
+}
+
+@keyframes ob-tag-slide-in {
+  from {
+    transform: translateX(calc(-100% - var(--ob-chevron)));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ── Right lane: live total + charity logo ────────────────────────── */
+
+.ob-total {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0 1rem 0 1.25rem;
+  background: var(--ob-bloodmoon);
+  /* Flat left edge — no chevron. The arrow shape is reserved for the
+   * UP NEXT tag pill, where the leftward directional cue actually
+   * carries meaning. Sits at the same z-index as the brand so the tag
+   * pill's slide-in is hidden when it crosses the right lane (which
+   * shouldn't normally happen, but belt-and-braces). */
+  min-width: 300px;
+  position: relative;
+  z-index: 3;
+}
+
+.ob-total-amount-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.ob-total-currency {
+  font-family: var(--ob-font);
+  font-size: 1.15rem;
+  color: #fff;
+  line-height: 1;
+}
+
+.ob-total-amount {
+  font-family: var(--ob-font);
+  font-size: 1.95rem;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Charity logos — 3D coin flip between layers. Each logo rotates around
+ * its vertical axis: the outgoing one flips edge-on to the right while
+ * the incoming flips in from edge-on on the left. With the stagger they
+ * read as a single continuous flip across the same axis, like a
+ * physical card being turned over. */
+.ob-charity {
+  position: relative;
+  width: 120px;
+  height: 40px;
+  flex-shrink: 0;
+  perspective: 700px;
+  transform-style: preserve-3d;
+}
+
+.ob-charity-logo {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  opacity: 0;
+  transform: rotateY(-90deg);
+  transform-origin: center center;
+  backface-visibility: hidden;
+  transition:
+    transform 460ms cubic-bezier(0.7, 0, 0.84, 0),
+    opacity 280ms ease-in;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+.ob-charity-logo[data-visible='true'] {
+  opacity: 1;
+  transform: rotateY(0deg);
+  transition:
+    transform 540ms 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 320ms 320ms ease-out;
+}
+
+/* ── Inline text variants used inside content rows ────────────────── */
+
+.ob-text-strong {
+  font-family: var(--ob-font);
+  color: #fff;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.ob-text-muted {
+  font-family: var(--ob-font);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+}
+
+.ob-text-soft {
+  font-family: var(--ob-font);
+  font-size: 1.05rem;
+  color: #ffc2e0;
+  letter-spacing: 0.08em;
+}
+
+.ob-text-accent {
+  font-family: var(--ob-font);
+  font-size: 1.35rem;
+  background: var(--ob-bloodmoon-text);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ob-accent-shimmer 6s linear infinite;
+}
+
+@keyframes ob-accent-shimmer {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+/* ── Donor row ────────────────────────────────────────────────────── */
+
+/* Outer wrapper is only a positioning context for the pagination dots —
+ * the actual grid lives inside .ob-donor-content so a key change on
+ * that wrapper retriggers the slide-in animation without disturbing the
+ * dots (which animate independently via their data-active attribute). */
+.ob-donor {
+  position: relative;
+  width: 100%;
+}
+
+.ob-donor-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 1rem;
+  row-gap: 0.05rem;
+  align-items: baseline;
+  /* Slot-machine reel entry: donor block rolls up from below the bar
+   * with a soft bounce at the top. The amount column lights up briefly
+   * via the secondary ob-donor-amount-pop animation for extra punch. */
+  animation: ob-donor-reel 520ms cubic-bezier(0.34, 1.45, 0.64, 1);
+  transform-origin: center bottom;
+}
+
+@keyframes ob-donor-reel {
+  0% {
+    opacity: 0;
+    transform: translateY(110%) scaleY(0.85);
+    filter: blur(2px);
+  }
+  45% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+  }
+}
+
+.ob-donor-name {
+  font-family: var(--ob-font);
+  font-size: 1.25rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.ob-donor-amount {
+  font-family: var(--ob-font);
+  font-size: 1.3rem;
+  color: #ffd23a;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ob-donor-message {
+  grid-column: 1 / -1;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.78);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+/* Tiny pagination dots under the donor row showing which of the recent
+ * donors is currently on screen. Subtle — viewers don't need to count,
+ * but it telegraphs that the panel is cycling. */
+.ob-donor-dots {
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  display: flex;
+  gap: 4px;
+}
+
+.ob-donor-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 250ms ease, transform 250ms ease;
+}
+
+.ob-donor-dots span[data-active='true'] {
+  background: #ffd23a;
+  transform: scale(1.4);
+}
+
+/* ── Schedule game card chip (platform / year) ────────────────────── */
+
+/* Sits inline with the strong title to give viewers the platform +
+ * year at a glance without crowding the text. Soft pill, themed border. */
+.ob-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--ob-font);
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Recent-donor recap line ──────────────────────────────────────── */
+
+.ob-donor-line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+/* ── Live donation card ───────────────────────────────────────────── */
+
+/* Two-row layout: headline (donor name + amount) sits above the
+ * marquee message so the eye gets the "who/how much" instantly while
+ * the message scrolls beneath. Both rows share the omnibar height —
+ * which is tight (56px) — so we lean on tabular numerics and tight
+ * line-heights to keep it readable. */
+.ob-live-donation {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  row-gap: 0.05rem;
+  padding: 0.2rem 0;
+}
+
+.ob-live-headline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  line-height: 1.05;
+}
+
+.ob-live-headline .wave-text {
+  font-family: var(--ob-font);
+  font-size: 1.25rem;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.ob-live-amount {
+  font-family: var(--ob-font);
+  font-size: 1.3rem;
+  color: #ffd23a;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  font-variant-numeric: tabular-nums;
+  /* Subtle pulse to amplify the donation moment — peaks while the
+   * tag pill is also flashing so the two cues read as one event. */
+  animation: ob-amount-pop var(--ob-flash-ms) ease-out var(--ob-enter-ms) both;
+}
+
+@keyframes ob-amount-pop {
+  0% { transform: scale(0.92); filter: brightness(1.4) drop-shadow(0 0 6px rgba(255, 210, 58, 0.7)); }
+  60% { transform: scale(1.08); filter: brightness(1.15); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.ob-live-message {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.92rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.01em;
+}
+
+/* ── Right lane pending indicator ─────────────────────────────────── */
+
+/* When a donation is queued and waiting for its slot, give the right
+ * lane a gentle gold halo. Tiny anticipatory tell — viewers learn the
+ * cue without it being intrusive. */
+.ob-total.is-pending {
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 58, 0.45);
+}
+

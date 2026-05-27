@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { DonateButton } from '@/components/donations/DonateButton';
+import { WaveText } from '@/components/WaveText';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { ScheduleEntry } from '@/lib/obsApi';
 import './home.css';
@@ -150,7 +151,7 @@ export function Home() {
             frameBorder="0"
             scrolling="no"
             id="chat_embed_mobile"
-            src={`https://www.twitch.tv/embed/zeldathonuk/chat?darkpopout&parent=${TWITCH_PARENT}`}
+            src={`https://www.twitch.tv/embed/zeldathonuk/chat?darkpopout&${TWITCH_PARENT_QS}`}
             height="250px"
             width="100%"
             title="Twitch chat"
@@ -191,7 +192,11 @@ export function Home() {
 
             <div
               className="ps-3"
-              style={{ borderTop: '2px solid var(--bs-danger)', paddingTop: '0.75rem' }}
+              style={{
+                borderTop:
+                  'var(--theme-divider-thickness, 2px) solid var(--theme-primary, var(--bs-danger))',
+                paddingTop: '0.75rem',
+              }}
             >
               {nextEntry ? (
                 <>
@@ -227,7 +232,10 @@ export function Home() {
           {/* Right column: Benefitting / SpecialEffect with a prominent Donate CTA. */}
           <div
             className="col-lg-7 ps-3"
-            style={{ borderLeft: '2px solid var(--bs-danger)' }}
+            style={{
+              borderLeft:
+                'var(--theme-divider-thickness, 2px) solid var(--theme-primary, var(--bs-danger))',
+            }}
           >
             <h6 className="text-bloodmoon">Benefitting</h6>
             <div className="benefitting-card">
@@ -419,29 +427,6 @@ function ScheduleEntryCard({
 
 function fmtTime(d: Date): string {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-}
-
-function WaveText({ text }: { text: string }) {
-  // Bump a counter whenever the text changes so React remounts the per-char
-  // spans (via the key) and each one's staggered animation replays from
-  // scratch. The label visibly "wave-rewrites" itself across the row.
-  const [version, setVersion] = useState(0);
-  const lastTextRef = useRef(text);
-  useEffect(() => {
-    if (lastTextRef.current !== text) {
-      lastTextRef.current = text;
-      setVersion((v) => v + 1);
-    }
-  }, [text]);
-  return (
-    <span className="wave-text">
-      {Array.from(text).map((ch, i) => (
-        <span key={`${version}-${i}`} style={{ animationDelay: `${i * 45}ms` }}>
-          {ch === ' ' ? ' ' : ch}
-        </span>
-      ))}
-    </span>
-  );
 }
 
 const QUEUE_LABELS: string[] = [

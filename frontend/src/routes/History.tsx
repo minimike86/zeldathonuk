@@ -159,16 +159,29 @@ export function History() {
   return (
     <div className="container p-3 min-vh-100 text-white text-center">
       <div className="my-3">
-        <div className="mb-5">
-          <h1 className="text-bloodmoon text-uppercase">
-            {yearsSince2011()} Years of ZeldathonUK
+        <div className="mb-5 history-heading">
+          <h1 className="text-bloodmoon text-uppercase history-heading-text">
+            {yearsSince2011()} Years of
           </h1>
+          <img
+            src="/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg"
+            alt="ZeldathonUK"
+            className="history-heading-logo"
+          />
         </div>
 
         <ul className="zth-timeline">
-          {events.map((ev, i) => (
+          {events.map((ev, i) => {
+            // The first row is the upcoming / most-recent event; subsequent
+            // rows are historical. Tint via the theme palette rather than
+            // the per-event hardcoded colour so the marker dots follow the
+            // active theme.
+            const isCurrent = i === 0;
+            return (
             <li key={ev.status} className={`zth-timeline-item ${i % 2 ? 'right' : 'left'}`}>
-              <span className="zth-timeline-marker" style={{ backgroundColor: ev.color }}>
+              <span
+                className={`zth-timeline-marker ${isCurrent ? 'is-current' : 'is-past'}`}
+              >
                 <i className={ev.icon} />
               </span>
               <div className="zth-timeline-card text-start">
@@ -228,7 +241,8 @@ export function History() {
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
     </div>

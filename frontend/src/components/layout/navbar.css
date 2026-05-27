@@ -3,8 +3,11 @@
 .navbar {
   --bs-navbar-padding-y: 0 !important;
   --bs-navbar-padding-x: 0 !important;
-  background: linear-gradient(180deg, #2b1b25, hsla(0, 0%, 100%, 0)), #4c1324 !important;
-  border-bottom: 1px solid #bb225e;
+  background:
+    linear-gradient(180deg, #2b1b25, hsla(0, 0%, 100%, 0)),
+    var(--theme-bg-from, #4c1324) !important;
+  border-bottom: var(--theme-divider-thickness, 1px) solid
+    var(--theme-primary, #bb225e);
   min-height: 46px;
 }
 
@@ -40,28 +43,17 @@
 }
 
 .nav-item-bloodmoon:hover {
-  background: linear-gradient(180deg, #b92753, hsla(0, 0%, 100%, 0)), #b92753 !important;
+  background:
+    linear-gradient(180deg, var(--theme-primary, #b92753), hsla(0, 0%, 100%, 0)),
+    var(--theme-primary, #b92753) !important;
 }
 
 .nav-icon-bloodmoon {
-  color: #b92753;
+  color: var(--theme-primary, #b92753);
 }
 
 .nav-item-bloodmoon:hover .nav-icon-bloodmoon {
   color: #111421 !important;
-}
-
-.btn-bloodmoon {
-  color: #fff;
-  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
-  border-color: #2b1b25;
-}
-
-.btn-bloodmoon:hover {
-  color: #fff;
-  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
-  border-color: #2b1b25;
-  filter: opacity(85%);
 }
 
 .golden-text {

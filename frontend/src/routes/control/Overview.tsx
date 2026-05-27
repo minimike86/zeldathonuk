@@ -50,6 +50,15 @@ export function ControlOverview() {
         </p>
         <ul style={{ columnCount: 2, columnGap: '2rem' }}>
           {[
+            // Recommended single source — picks the right layout from the
+            // currently-playing game and pins the omnibar to the bottom
+            // strip. Use this instead of pairing a layout + omnibar source
+            // by hand. Listed first so it's the obvious default.
+            {
+              path: '/obs/full',
+              label: 'Unified (auto layout + omnibar)',
+              highlight: true,
+            },
             { path: '/obs/layout/16x9', label: '16:9 layout' },
             { path: '/obs/layout/4x3', label: '4:3 layout' },
             { path: '/obs/layout/3ds', label: '3DS layout' },
@@ -60,9 +69,13 @@ export function ControlOverview() {
             { path: '/obs/brb', label: 'BRB' },
             { path: '/obs/tts', label: 'TTS' },
             { path: '/obs/omnibar', label: 'Omnibar' },
+            { path: '/obs/chest-announcer', label: 'Chest announcer' },
           ].map((s) => (
             <li key={s.path}>
-              <Link to={s.path} className="text-warning">
+              <Link
+                to={s.path}
+                className={s.highlight ? 'text-warning fw-bold' : 'text-warning'}
+              >
                 {s.label}
               </Link>{' '}
               <code className="small text-white-50">{s.path}</code>

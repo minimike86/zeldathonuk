@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { ControlOverview } from './Overview';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { useRouteTitle } from '@/lib/usePageTitle';
 import './control.css';
 
 const sections = [
@@ -15,14 +17,19 @@ const sections = [
   { to: '/control/donations', label: 'Donations' },
   { to: '/control/audio', label: 'Music' },
   { to: '/control/brb', label: 'BRB' },
+  { to: '/control/omnibar', label: 'Omnibar' },
+  // Visual / branding
+  { to: '/control/theme', label: 'Theme' },
 ];
 
 export function ControlLayout() {
+  useRouteTitle();
   const location = useLocation();
   const isRoot = location.pathname === '/control' || location.pathname === '/control/';
 
   return (
     <div className="control-shell">
+      <ThemeProvider renderBackgroundMedia />
       <header className="control-header">
         <h1>Control Panel</h1>
         <nav>

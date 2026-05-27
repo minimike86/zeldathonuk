@@ -10,11 +10,19 @@ router.register('events', views.EventViewSet)
 router.register('schedule', views.ScheduleEntryViewSet)
 router.register('donations', views.DonationViewSet)
 router.register('donation-pages', views.DonationPageViewSet)
+router.register('themes', views.ThemeSettingsViewSet)
 router.register('brb', views.BrbTimerViewSet)
+# Omnibar v2 streams
+router.register('playthrough-events', views.PlaythroughEventViewSet)
+router.register('overrides', views.OmnibarOverrideViewSet)
+router.register('external-events', views.ExternalEventViewSet)
+router.register('incentives', views.IncentiveViewSet)
+router.register('milestones', views.MilestoneViewSet)
 
 urlpatterns = [
     path('healthz/', views.healthz, name='api-healthz'),
     path('currently-playing/', views.currently_playing, name='currently-playing'),
+    path('theme/', views.theme_settings, name='theme-settings'),
     # Webhook intake — one path per platform plus a generic fallback.
     path('webhooks/justgiving/', webhooks.justgiving_webhook, name='wh-justgiving'),
     path('webhooks/tiltify/', webhooks.tiltify_webhook, name='wh-tiltify'),

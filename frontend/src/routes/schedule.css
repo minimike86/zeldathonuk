@@ -16,7 +16,7 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  border-bottom: 1px solid rgba(231, 19, 71, 0.4);
+  border-bottom: var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.4));
   overflow: hidden;
 }
 
@@ -27,7 +27,7 @@
   pointer-events: none;
   background: radial-gradient(
     circle at 50% 100%,
-    rgba(231, 19, 71, 0.25) 0%,
+    var(--theme-line, rgba(231, 19, 71, 0.25)) 0%,
     transparent 60%
   );
 }
@@ -51,11 +51,40 @@
   letter-spacing: 0.05em;
   line-height: 1.05;
   margin: 0;
-  background: linear-gradient(45deg, #e71347, #ffc2e0, #e7364b, #ffc2e0, #e71347);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-link, #ffc2e0),
+    var(--theme-primary, #e7364b),
+    var(--theme-link, #ffc2e0),
+    var(--theme-primary, #e71347)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 4px 30px rgba(231, 19, 71, 0.45);
+  text-shadow: 0 4px 30px var(--theme-line, rgba(231, 19, 71, 0.45));
+  /* Stack the wordmark on top of the remaining title text. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* Wordmark SVG that replaces the "ZeldathonUK" substring — sits on its own
+ * row above the rest of the title. */
+.schedule-hero-logo-inline {
+  display: block;
+  height: clamp(2.6rem, 6vw, 5rem);
+  width: auto;
+  max-width: min(70vw, 720px);
+  filter: drop-shadow(0 4px 18px var(--theme-line, rgba(231, 19, 71, 0.4)));
+}
+
+.schedule-hero-title-remainder {
+  display: block;
+  font-size: 0.55em;
+  line-height: 1.1;
 }
 
 .schedule-hero-dates {
@@ -71,7 +100,7 @@
 }
 
 .schedule-hero-dash {
-  color: rgba(231, 19, 71, 0.85);
+  color: var(--theme-primary, rgba(231, 19, 71, 0.85));
   font-size: 1.2em;
 }
 
@@ -87,7 +116,7 @@
   min-width: 140px;
   padding: 0.85rem 1.25rem;
   background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(231, 19, 71, 0.45);
+  border: var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.45));
   border-radius: 10px;
   backdrop-filter: blur(4px);
 }
@@ -96,7 +125,12 @@
   font-family: 'Bungee', sans-serif;
   font-size: 1.6rem;
   line-height: 1;
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -129,7 +163,7 @@
   padding: 0.85rem 1rem;
   margin: 0 -1rem 1rem;
   background: #0b0408;
-  border-bottom: 1px solid rgba(231, 19, 71, 0.45);
+  border-bottom: var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.45));
   /* Subtle inner glow so the header reads as a slab, not a flat strip. */
   box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.85);
 }
@@ -137,7 +171,12 @@
 .schedule-day-weekday {
   font-family: 'Bungee', sans-serif;
   font-size: clamp(1.4rem, 2.4vw, 2rem);
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -174,27 +213,27 @@
 
 .schedule-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(231, 19, 71, 0.4);
+  border-color: var(--theme-primary, rgba(231, 19, 71, 0.4));
 }
 
 .schedule-card.is-live {
-  border-color: rgba(231, 19, 71, 0.85);
+  border-color: var(--theme-primary, rgba(231, 19, 71, 0.85));
   box-shadow:
-    0 0 0 1px rgba(231, 19, 71, 0.5),
-    0 0 32px rgba(231, 19, 71, 0.45);
+    0 0 0 1px var(--theme-line, rgba(231, 19, 71, 0.5)),
+    0 0 32px var(--theme-line, rgba(231, 19, 71, 0.45));
   animation: schedule-card-pulse 3s ease-in-out infinite;
 }
 
 @keyframes schedule-card-pulse {
   0%, 100% {
     box-shadow:
-      0 0 0 1px rgba(231, 19, 71, 0.5),
-      0 0 32px rgba(231, 19, 71, 0.45);
+      0 0 0 1px var(--theme-line, rgba(231, 19, 71, 0.5)),
+      0 0 32px var(--theme-line, rgba(231, 19, 71, 0.45));
   }
   50% {
     box-shadow:
-      0 0 0 1px rgba(231, 19, 71, 0.7),
-      0 0 48px rgba(231, 19, 71, 0.65);
+      0 0 0 1px var(--theme-line, rgba(231, 19, 71, 0.7)),
+      0 0 48px var(--theme-line, rgba(231, 19, 71, 0.65));
   }
 }
 
@@ -243,7 +282,12 @@
   font-size: clamp(1.5rem, 2.4vw, 2.1rem);
   line-height: 1;
   letter-spacing: 0.02em;
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -301,8 +345,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(231, 19, 71, 0.12);
-  border: 1px dashed rgba(231, 19, 71, 0.55);
+  background: var(--theme-line, rgba(231, 19, 71, 0.12));
+  border: 1px dashed var(--theme-line, rgba(231, 19, 71, 0.55));
   font-size: 2.4rem;
 }
 
@@ -342,8 +386,8 @@
 }
 
 .schedule-pill--live {
-  background: rgba(231, 19, 71, 0.25);
-  border-color: rgba(231, 19, 71, 0.85);
+  background: var(--theme-line, rgba(231, 19, 71, 0.25));
+  border-color: var(--theme-primary, rgba(231, 19, 71, 0.85));
   color: #ffd2dd;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -357,8 +401,8 @@
   width: 0.55em;
   height: 0.55em;
   border-radius: 50%;
-  background: #ff2244;
-  box-shadow: 0 0 8px rgba(255, 34, 68, 0.95);
+  background: var(--theme-primary-bright, #ff2244);
+  box-shadow: 0 0 8px var(--theme-primary, rgba(255, 34, 68, 0.95));
   animation: schedule-live-pulse 1.4s ease-in-out infinite;
 }
 
@@ -418,12 +462,12 @@
 }
 
 .schedule-runner--linked {
-  border-color: rgba(231, 19, 71, 0.55);
-  background: rgba(231, 19, 71, 0.12);
+  border-color: var(--theme-line, rgba(231, 19, 71, 0.55));
+  background: var(--theme-line, rgba(231, 19, 71, 0.12));
 }
 
 .schedule-runner--linked:hover {
-  background: rgba(231, 19, 71, 0.25);
+  background: var(--theme-line, rgba(231, 19, 71, 0.25));
   color: #fff;
 }
 
@@ -476,7 +520,14 @@
  * are referenced from other routes. Keep them defined so nothing breaks
  * when a stray class lands on this page. */
 .text-bloodmoon {
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

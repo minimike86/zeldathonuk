@@ -31,8 +31,15 @@ export function About() {
   return (
     <div className="container p-3 min-vh-100 text-center text-white">
       <div className="my-3">
-        <div className="mb-5">
-          <h1 className="text-bloodmoon text-uppercase">About ZeldathonUK</h1>
+        <div className="mb-5 about-heading">
+          <h1 className="text-bloodmoon text-uppercase about-heading-text">
+            About
+          </h1>
+          <img
+            src="/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg"
+            alt="ZeldathonUK"
+            className="about-heading-logo"
+          />
         </div>
 
         <div
@@ -48,11 +55,8 @@ export function About() {
               <img
                 src={images[index]}
                 alt={alts[index]}
-                style={{
-                  maxHeight: 200,
-                  filter:
-                    'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(500%) contrast(0.8)',
-                }}
+                className="about-carousel-img"
+                style={{ maxHeight: 200 }}
               />
             </div>
           </a>

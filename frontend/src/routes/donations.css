@@ -35,7 +35,14 @@
 }
 
 .text-bloodmoon {
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -43,19 +50,6 @@
   font-weight: bold;
   font-size: 3em;
   text-transform: uppercase;
-}
-
-.btn-bloodmoon {
-  color: #fff;
-  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
-  border-color: #2b1b25;
-}
-
-.btn-bloodmoon:hover {
-  color: #fff;
-  background: linear-gradient(45deg, #4c1324, #731c37, #b92753, #731c37, #4c1324);
-  border-color: #2b1b25;
-  filter: opacity(85%);
 }
 
 .donation-list-container {

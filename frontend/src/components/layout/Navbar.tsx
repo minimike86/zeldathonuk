@@ -18,6 +18,8 @@ import { DonateButton } from '@/components/donations/DonateButton';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import './navbar.css';
 
+const DEFAULT_LOGO = '/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg';
+
 type Glyph = FontAwesomeIconProps['icon'];
 
 type NavItem = {
@@ -74,7 +76,9 @@ export function Navbar() {
   const [collapsed, setCollapsed] = useState(true);
   const navigate = useNavigate();
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const { data: theme } = usePolledQuery(obsApi.themeSettings, 60_000);
   const donationPages = event?.donation_pages ?? [];
+  const logoSrc = theme?.logo_url || DEFAULT_LOGO;
 
   return (
     <nav className="navbar navbar-expand-lg">
@@ -100,8 +104,8 @@ export function Navbar() {
           alt="GB Flag"
         />
         <img
-          src="/assets/img/Zeldathon-Logo-WW-white.svg"
-          style={{ minWidth: 120, maxHeight: '1.5em', filter: 'opacity(0.95)' }}
+          src={logoSrc}
+          style={{ minWidth: 140, maxHeight: '2em', filter: 'opacity(0.95)' }}
           title="ZeldathonUK"
           alt="ZeldathonUK"
         />

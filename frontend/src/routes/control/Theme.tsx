@@ -1,0 +1,531 @@
+import { useEffect, useState } from 'react';
+import type { ThemeSettings } from '@/lib/obsApi';
+import { obsApi } from '@/lib/obsApi';
+import { applyTheme } from '@/components/ThemeProvider';
+
+/**
+ * /control/theme — library of themes. The list on the left lets the user
+ * activate, duplicate, delete, or add a new theme. The selected theme is
+ * edited live on the right; changes preview instantly by writing CSS
+ * variables onto :root, and `Save` persists. Activating a theme is its
+ * own one-click action so quick switches don't need a save.
+ */
+export function ThemeControl() {
+  const [themes, setThemes] = useState<ThemeSettings[] | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [draft, setDraft] = useState<ThemeSettings | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+
+  // Initial fetch — pick the active theme as the default selection.
+  useEffect(() => {
+    void obsApi.themesList().then((list) => {
+      setThemes(list);
+      const active = list.find((t) => t.is_active) ?? list[0] ?? null;
+      if (active) {
+        setSelectedId(active.id);
+        setDraft(active);
+      }
+    });
+  }, []);
+
+  // Switching selection drops any unsaved draft for the previous theme.
+  useEffect(() => {
+    if (selectedId == null || !themes) return;
+    const fresh = themes.find((t) => t.id === selectedId) ?? null;
+    setDraft(fresh);
+    setSavedAt(null);
+  }, [selectedId, themes]);
+
+  // Live-preview: any edit applies immediately to CSS vars (only when the
+  // draft is the active theme, so non-active themes don't override the
+  // live look while you're poking at them).
+  useEffect(() => {
+    if (draft && draft.is_active) applyTheme(draft);
+  }, [draft]);
+
+  const dirty = !!(
+    draft &&
+    themes &&
+    themes.find((t) => t.id === draft.id) &&
+    JSON.stringify(draft) !== JSON.stringify(themes.find((t) => t.id === draft.id))
+  );
+
+  const set = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+  };
+
+  const refresh = async () => {
+    const list = await obsApi.themesList();
+    setThemes(list);
+    return list;
+  };
+
+  const save = async () => {
+    if (!draft) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const fresh = await obsApi.themeUpdate(draft.id, draft);
+      setDraft(fresh);
+      const list = await refresh();
+      // If the edit was on the active theme, re-apply so live values match.
+      if (fresh.is_active) applyTheme(fresh);
+      else {
+        const active = list.find((t) => t.is_active);
+        if (active) applyTheme(active);
+      }
+      setSavedAt(new Date());
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const activate = async (id: number) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const activated = await obsApi.themeActivate(id);
+      await refresh();
+      applyTheme(activated);
+      if (id === selectedId) {
+        setDraft(activated);
+        setSavedAt(new Date());
+      }
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const duplicate = async (id: number) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const clone = await obsApi.themeDuplicate(id);
+      await refresh();
+      setSelectedId(clone.id);
+      setDraft(clone);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id: number) => {
+    const t = themes?.find((x) => x.id === id);
+    if (!t) return;
+    if (t.is_active) {
+      alert("Can't delete the active theme — activate another one first.");
+      return;
+    }
+    if (!confirm(`Delete the "${t.name}" theme?`)) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.themeDelete(id);
+      const list = await refresh();
+      if (selectedId === id) {
+        const fallback = list.find((x) => x.is_active) ?? list[0] ?? null;
+        setSelectedId(fallback?.id ?? null);
+        setDraft(fallback);
+      }
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createNew = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const created = await obsApi.themeCreate({ name: 'New theme' });
+      await refresh();
+      setSelectedId(created.id);
+      setDraft(created);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const revert = () => {
+    if (!themes || !draft) return;
+    const fresh = themes.find((t) => t.id === draft.id) ?? null;
+    setDraft(fresh);
+    if (fresh?.is_active) applyTheme(fresh);
+  };
+
+  if (!themes) {
+    return (
+      <div className="control-card">
+        <h2>Theme library</h2>
+        <p className="text-white-50">Loading themes…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="theme-shell">
+      <aside className="control-card theme-rail">
+        <header className="d-flex justify-content-between align-items-center">
+          <h2 className="m-0">Themes</h2>
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            onClick={createNew}
+            disabled={busy}
+          >
+            + New
+          </button>
+        </header>
+        <ul className="theme-list">
+          {themes.map((t) => (
+            <li
+              key={t.id}
+              className={`theme-list-item${selectedId === t.id ? ' is-selected' : ''}${t.is_active ? ' is-active' : ''}`}
+            >
+              <button
+                type="button"
+                className="theme-list-button"
+                onClick={() => setSelectedId(t.id)}
+              >
+                <div
+                  className="theme-list-swatch"
+                  style={{
+                    background: `linear-gradient(135deg, ${t.primary} 0%, ${t.primary_bright} 50%, ${t.secondary} 100%)`,
+                  }}
+                  aria-hidden
+                />
+                <div className="theme-list-name">
+                  <strong>{t.name}</strong>
+                  {t.is_active && (
+                    <span className="badge bg-warning text-dark ms-2">Active</span>
+                  )}
+                </div>
+              </button>
+              <div className="theme-list-actions">
+                {!t.is_active && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light"
+                    onClick={() => activate(t.id)}
+                    disabled={busy}
+                    title="Make this theme live"
+                  >
+                    Activate
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-light"
+                  onClick={() => duplicate(t.id)}
+                  disabled={busy}
+                  title="Duplicate as a starting point"
+                >
+                  ⎘
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => remove(t.id)}
+                  disabled={busy || t.is_active}
+                  title={t.is_active ? 'Activate another theme first' : 'Delete'}
+                >
+                  ✕
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </aside>
+
+      <section className="theme-editor">
+        {!draft ? (
+          <div className="control-card">
+            <p className="text-white-50 m-0">Select a theme to edit.</p>
+          </div>
+        ) : (
+          <ThemeEditor
+            draft={draft}
+            set={set}
+            dirty={dirty}
+            busy={busy}
+            err={err}
+            savedAt={savedAt}
+            onSave={save}
+            onRevert={revert}
+            onActivate={() => activate(draft.id)}
+          />
+        )}
+      </section>
+    </div>
+  );
+}
+
+function ThemeEditor({
+  draft,
+  set,
+  dirty,
+  busy,
+  err,
+  savedAt,
+  onSave,
+  onRevert,
+  onActivate,
+}: {
+  draft: ThemeSettings;
+  set: <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => void;
+  dirty: boolean;
+  busy: boolean;
+  err: string | null;
+  savedAt: Date | null;
+  onSave: () => void;
+  onRevert: () => void;
+  onActivate: () => void;
+}) {
+  return (
+    <>
+      <div className="control-card">
+        <header className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+          <div className="d-flex align-items-center gap-3">
+            <h2 className="m-0">{draft.name}</h2>
+            {draft.is_active ? (
+              <span className="badge bg-warning text-dark">Active</span>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-sm btn-bloodmoon"
+                onClick={onActivate}
+                disabled={busy}
+              >
+                Activate
+              </button>
+            )}
+          </div>
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            {savedAt && !dirty && (
+              <span className="small text-white-50">
+                Saved {savedAt.toLocaleTimeString('en-GB')}
+              </span>
+            )}
+            {dirty && <span className="small text-warning">Unsaved changes</span>}
+            <button
+              className="btn btn-sm btn-outline-light"
+              disabled={!dirty || busy}
+              onClick={onRevert}
+            >
+              Revert
+            </button>
+            <button
+              className="btn btn-sm btn-bloodmoon"
+              disabled={!dirty || busy}
+              onClick={onSave}
+            >
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </header>
+        {err && <div className="text-danger small mt-2">{err}</div>}
+
+        <div className="mb-3 mt-3">
+          <label className="d-block small text-white-50">Name</label>
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            value={draft.name}
+            onChange={(e) => set('name', e.target.value)}
+            style={{ maxWidth: 280 }}
+          />
+        </div>
+      </div>
+
+      <div className="control-card">
+        <h2>Palette</h2>
+        <div className="row g-3 mt-2">
+          <ColorField label="Primary" value={draft.primary} onChange={(v) => set('primary', v)} />
+          <ColorField label="Primary (bright)" value={draft.primary_bright} onChange={(v) => set('primary_bright', v)} />
+          <ColorField label="Secondary" value={draft.secondary} onChange={(v) => set('secondary', v)} />
+          <ColorField label="Background — top" value={draft.background_from} onChange={(v) => set('background_from', v)} />
+          <ColorField label="Background — bottom" value={draft.background_to} onChange={(v) => set('background_to', v)} />
+          <ColorField label="Text" value={draft.text_color} onChange={(v) => set('text_color', v)} />
+          <TextField label="Muted text" value={draft.text_muted} onChange={(v) => set('text_muted', v)} placeholder="rgba(255,255,255,0.6)" />
+          <TextField label="Lines / borders" value={draft.line_color} onChange={(v) => set('line_color', v)} placeholder="rgba(185,39,83,0.5)" />
+        </div>
+      </div>
+
+      <div className="control-card">
+        <h2>Branding</h2>
+        <div className="row g-3 mt-2">
+          <TextField label="Logo URL (wordmark)" value={draft.logo_url} onChange={(v) => set('logo_url', v)} placeholder="/assets/img/your-logo.svg" preview="image" />
+          <TextField label="Logo URL (small / compact)" value={draft.logo_small_url} onChange={(v) => set('logo_small_url', v)} placeholder="/assets/img/your-mark.svg" preview="image" />
+          <TextField label="Favicon URL" value={draft.favicon_url} onChange={(v) => set('favicon_url', v)} placeholder="/assets/img/favicon.png" preview="image" />
+        </div>
+      </div>
+
+      <div className="control-card">
+        <h2>Background media</h2>
+        <div className="row g-3 mt-2">
+          <TextField label="Background video URL" value={draft.background_video_url} onChange={(v) => set('background_video_url', v)} placeholder="https://…/loop.mp4" preview="video" />
+          <TextField label="Background image URL" value={draft.background_image_url} onChange={(v) => set('background_image_url', v)} placeholder="https://…/bg.jpg" preview="image" />
+        </div>
+      </div>
+
+      <div className="control-card">
+        <h2>Buttons + lines</h2>
+        <div className="row g-3 mt-2">
+          <ColorField label="Button gradient — from" value={draft.button_gradient_from} onChange={(v) => set('button_gradient_from', v)} />
+          <ColorField label="Button gradient — to" value={draft.button_gradient_to} onChange={(v) => set('button_gradient_to', v)} />
+          <ColorField label="Button text" value={draft.button_text_color} onChange={(v) => set('button_text_color', v)} />
+          <TextField label="Button border" value={draft.button_border_color} onChange={(v) => set('button_border_color', v)} placeholder="rgba(255,255,255,0.4)" />
+          <div className="col-md-3">
+            <label className="d-block small text-white-50">Divider thickness</label>
+            <input
+              type="number"
+              min={0}
+              max={12}
+              className="form-control form-control-sm"
+              value={draft.divider_thickness}
+              onChange={(e) => set('divider_thickness', Number(e.target.value) || 0)}
+              style={{ maxWidth: 120 }}
+            />
+          </div>
+          <div className="col-md-3">
+            <label className="d-block small text-white-50">Image hue rotate (°)</label>
+            <input
+              type="number"
+              min={-180}
+              max={360}
+              className="form-control form-control-sm"
+              value={draft.image_hue_rotate}
+              onChange={(e) => set('image_hue_rotate', Number(e.target.value) || 0)}
+              style={{ maxWidth: 120 }}
+            />
+            <div className="small text-white-50 mt-1">
+              Tint applied to decorative images so they match the palette.
+              −50 = bloodmoon, 0 = sepia, +180 = teal.
+            </div>
+          </div>
+          <ColorField
+            label="Link colour"
+            value={draft.link_color}
+            onChange={(v) => set('link_color', v)}
+          />
+          <ColorField
+            label="Link hover"
+            value={draft.link_hover_color}
+            onChange={(v) => set('link_hover_color', v)}
+          />
+        </div>
+      </div>
+
+      <div className="control-card">
+        <h2>Fonts</h2>
+        <div className="row g-3 mt-2">
+          <TextField label="Heading font-family" value={draft.heading_font} onChange={(v) => set('heading_font', v)} placeholder="'Bungee', sans-serif" />
+          <TextField label="Body font-family" value={draft.body_font} onChange={(v) => set('body_font', v)} placeholder="'Open Sans', sans-serif" />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const isHex = /^#[0-9a-f]{6}$/i.test(value);
+  return (
+    <div className="col-md-3">
+      <label className="d-block small text-white-50">{label}</label>
+      <div className="d-flex gap-2 align-items-center">
+        {isHex && (
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            style={{ width: 36, height: 36, padding: 0, border: 0, background: 'transparent' }}
+          />
+        )}
+        <input
+          type="text"
+          className="form-control form-control-sm"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          spellCheck={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  preview,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  preview?: 'image' | 'video';
+}) {
+  return (
+    <div className="col-md-4">
+      <label className="d-block small text-white-50">{label}</label>
+      <input
+        type="text"
+        className="form-control form-control-sm"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        spellCheck={false}
+      />
+      {preview === 'image' && value && (
+        <img
+          src={value}
+          alt=""
+          style={{
+            marginTop: 8,
+            maxHeight: 64,
+            maxWidth: '100%',
+            background: 'rgba(0,0,0,0.25)',
+            padding: 4,
+            borderRadius: 4,
+          }}
+        />
+      )}
+      {preview === 'video' && value && (
+        <video
+          src={value}
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={{
+            marginTop: 8,
+            maxHeight: 96,
+            maxWidth: '100%',
+            borderRadius: 4,
+            background: 'rgba(0,0,0,0.25)',
+          }}
+        />
+      )}
+    </div>
+  );
+}
