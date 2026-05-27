@@ -108,8 +108,24 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ──────────────────────────────────────────────────────────────────────────────
 # CORS — frontend dev server + production origin(s)
 # ──────────────────────────────────────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['http://localhost:5173'])
+CORS_ALLOWED_ORIGINS = env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=['http://localhost:5173', 'http://127.0.0.1:5173'],
+)
+CORS_ALLOWED_ORIGIN_REGEXES = env.list(
+    'CORS_ALLOWED_ORIGIN_REGEXES',
+    default=(
+        [
+            r'^http://192\.168\.\d+\.\d+:5173$',
+            r'^http://10\.\d+\.\d+\.\d+:5173$',
+            r'^http://172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+:5173$',
+        ]
+        if DEBUG else
+        []
+    ),
+)
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_PRIVATE_NETWORK = env.bool('CORS_ALLOW_PRIVATE_NETWORK', default=DEBUG)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DRF — no auth wired yet; everything is AllowAny until auth is added
