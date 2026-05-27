@@ -1,10 +1,81 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { Donation, EventModel } from '@/lib/obsApi';
+import type { Donation, EventModel, MuteReason, MuteReasonChoice } from '@/lib/obsApi';
 import { api } from '@/lib/api';
+import { useResizableColumns, ResizeHandle } from './resizableColumns';
 
 type SortKey = 'donated_at' | 'donor_name' | 'platform' | 'amount';
 type SortDir = 'asc' | 'desc';
+
+/** Character budget for the message column before truncation. Roughly
+ *  a single line of the column at typical desktop widths — long
+ *  enough that short donation messages render in full, short enough
+ *  that pasted essays don't push every other row off-screen. The
+ *  "Show more" toggle lets the operator open any row inline. */
+const MESSAGE_TRUNCATE_LEN = 80;
+
+/** Last-resort labels used before the /api/donation-mute-reasons/ poll
+ *  resolves on first paint, or if the request fails. Kept in sync with
+ *  `models.MuteReason.choices`; the live values supersede this list as
+ *  soon as the fetch lands. */
+const FALLBACK_MUTE_REASONS: MuteReasonChoice[] = [
+  { value: '', label: '— not muted —' },
+  { value: 'naughty_name', label: 'Inappropriate donor name' },
+  { value: 'naughty_message', label: 'Inappropriate message text' },
+  { value: 'naughty_image', label: 'Inappropriate donor image' },
+  { value: 'already_announced', label: 'Already announced on stream' },
+  { value: 'other', label: 'Other / manual' },
+];
+
+function labelForMuteReason(
+  reason: MuteReason,
+  choices: MuteReasonChoice[] | null | undefined,
+): string {
+  const list = choices ?? FALLBACK_MUTE_REASONS;
+  const hit = list.find((c) => c.value === reason);
+  return hit?.label ?? reason;
+}
+
+type ColumnKey = 'when' | 'donor' | 'platform' | 'amount' | 'message' | 'actions';
+
+/** Default column widths (pixels). Operator drags from these as the
+ *  starting point; persisted widths in localStorage win once set. */
+const DEFAULT_COLUMN_WIDTHS_PX: Record<ColumnKey, number> = {
+  when: 144,    // 9rem  — "27/05 18:30"
+  donor: 192,   // 12rem — donor name + NOW READING pip
+  platform: 144,// 9rem  — platform chip
+  amount: 96,   // 6rem  — "£5.00"
+  message: 480, // 30rem — fluid by nature; this is the starting width
+  actions: 280, // ~17.5rem — Chest + Replay + Mute select + Delete
+};
+
+const COLUMN_WIDTH_STORAGE_KEY = 'control.donations.column-widths';
+
+/** Compact "When" column rendering: "27/05 18:30" instead of the full
+ *  "27/05/2026, 18:30:42" so the column stays narrow. Full timestamp
+ *  surfaces via the cell's `title` attribute for hover detail. */
+function fmtDonatedAt(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Currency code → display symbol. Falls back to the code for
+ *  anything unknown so the amount cell never goes blank. Keeping the
+ *  amount glyph compact ("£5.00" vs "GBP 5.00") lets us shrink the
+ *  Amount column from ~9rem to ~6rem. */
+function currencySymbol(code: string): string {
+  switch (code) {
+    case 'GBP':
+      return '£';
+    case 'USD':
+      return '$';
+    case 'EUR':
+      return '€';
+    default:
+      return `${code} `;
+  }
+}
 
 const sortValue = (d: Donation, key: SortKey): string | number => {
   switch (key) {
@@ -46,11 +117,36 @@ export function DonationsControl() {
   // bad donation mid-utterance, so latency matters.
   const { data: nowReading } = usePolledQuery(obsApi.ttsNowReading, 1500);
   const liveTtsId = nowReading?.donation_id ?? null;
+  // Mute-reason dropdown options — source of truth is models.MuteReason
+  // on the backend; refresh hourly so new reasons land without a
+  // hard refresh.
+  const { data: muteReasons } = usePolledQuery(obsApi.donationMuteReasons, 3_600_000);
+  // Per-column widths, drag-resizable from the right edge of each
+  // header. Persisted to localStorage so the operator's layout
+  // survives reloads — pet peeve relief.
+  const { widths: colWidths, startResize } = useResizableColumns(
+    COLUMN_WIDTH_STORAGE_KEY,
+    DEFAULT_COLUMN_WIDTHS_PX,
+  );
 
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('donated_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  // Ids of donations whose message is currently expanded. Stored as a
+  // Set so a row toggle is O(1) regardless of how many donations are
+  // on screen, and so the expanded state survives re-renders from the
+  // 3s donations poll.
+  const [expandedMessageIds, setExpandedMessageIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const toggleMessageExpanded = (id: number) =>
+    setExpandedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -175,12 +271,17 @@ export function DonationsControl() {
         <table className="control-table">
           <thead>
             <tr>
+              {/* Every header is drag-resizable from its right edge;
+               *  widths persist in localStorage via useResizableColumns
+               *  so the operator's layout sticks across reloads. */}
               <SortableTh
                 label="When"
                 sortKey="donated_at"
                 current={sortKey}
                 dir={sortDir}
                 onClick={toggleSort}
+                width={colWidths.when}
+                onResizeStart={(e) => startResize('when', e)}
               />
               <SortableTh
                 label="Donor"
@@ -188,6 +289,8 @@ export function DonationsControl() {
                 current={sortKey}
                 dir={sortDir}
                 onClick={toggleSort}
+                width={colWidths.donor}
+                onResizeStart={(e) => startResize('donor', e)}
               />
               <SortableTh
                 label="Platform"
@@ -195,7 +298,8 @@ export function DonationsControl() {
                 current={sortKey}
                 dir={sortDir}
                 onClick={toggleSort}
-                minWidth={220}
+                width={colWidths.platform}
+                onResizeStart={(e) => startResize('platform', e)}
               />
               <SortableTh
                 label="Amount"
@@ -203,9 +307,28 @@ export function DonationsControl() {
                 current={sortKey}
                 dir={sortDir}
                 onClick={toggleSort}
+                width={colWidths.amount}
+                onResizeStart={(e) => startResize('amount', e)}
               />
-              <th>Message</th>
-              <th></th>
+              <th
+                style={{
+                  width: colWidths.message,
+                  minWidth: colWidths.message,
+                  position: 'relative',
+                }}
+              >
+                Message
+                <ResizeHandle onMouseDown={(e) => startResize('message', e)} />
+              </th>
+              <th
+                style={{
+                  width: colWidths.actions,
+                  minWidth: colWidths.actions,
+                  position: 'relative',
+                }}
+              >
+                <ResizeHandle onMouseDown={(e) => startResize('actions', e)} />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -219,8 +342,12 @@ export function DonationsControl() {
                     : undefined
                 }
               >
-                <td className="small text-white-50">
-                  {new Date(d.donated_at).toLocaleString('en-GB')}
+                <td
+                  className="small text-white-50"
+                  style={{ whiteSpace: 'nowrap' }}
+                  title={new Date(d.donated_at).toLocaleString('en-GB')}
+                >
+                  {fmtDonatedAt(d.donated_at)}
                 </td>
                 <td>
                   {d.donor_name}
@@ -233,27 +360,78 @@ export function DonationsControl() {
                 <td>
                   <PlatformChip value={d.platform} />
                 </td>
-                <td>
+                <td
+                  style={{ whiteSpace: 'nowrap', textAlign: 'right' }}
+                  title={`${d.currency} ${Number(d.amount).toFixed(2)}`}
+                >
                   <strong>
-                    {d.currency} {Number(d.amount).toFixed(2)}
+                    {currencySymbol(d.currency)}
+                    {Number(d.amount).toFixed(2)}
                   </strong>
                 </td>
                 <td
-                  className="text-white-50"
+                  className="text-white-50 donation-message-cell"
                   style={d.is_muted ? { opacity: 0.45, textDecoration: 'line-through' } : undefined}
-                  title={d.is_muted ? 'Muted — this message is suppressed in TTS and the omnibar' : undefined}
+                  title={
+                    d.is_muted
+                      ? `Muted (${labelForMuteReason(d.mute_reason, muteReasons)}) — suppressed in TTS and the omnibar`
+                      : undefined
+                  }
                 >
-                  {d.message}
+                  <MessageText
+                    message={d.message}
+                    expanded={expandedMessageIds.has(d.id)}
+                    onToggle={() => toggleMessageExpanded(d.id)}
+                  />
+                  {d.is_muted && (
+                    <span className="donation-mute-reason-pip">
+                      🔇 {labelForMuteReason(d.mute_reason, muteReasons)}
+                    </span>
+                  )}
                 </td>
                 <td>
-                  <div className="d-flex gap-1">
+                  <div className="donation-actions">
                     <button
-                      className="btn btn-sm btn-outline-light"
-                      disabled={d.is_muted}
+                      className="btn btn-sm btn-outline-warning donation-action-btn"
+                      aria-label="Retrigger the chest-announcer for this donation (unmutes first if needed)"
                       title={
+                        d.is_muted
+                          ? 'Chest replay — unmute first, then re-fire the chest-announcer card + fanfare'
+                          : 'Chest replay — re-fire the chest-announcer card + fanfare'
+                      }
+                      onClick={async () => {
+                        try {
+                          // Unmute first if the donation has been
+                          // muted — the chest-announcer skips muted
+                          // donations at queue-entry and aborts ones
+                          // muted mid-display, so replay would be a
+                          // no-op without clearing the flag.
+                          if (d.is_muted) {
+                            await api(`/api/donations/${d.id}/`, {
+                              method: 'PATCH',
+                              body: { mute_reason: '' },
+                            });
+                          }
+                          await obsApi.requestChestReplay(d.id);
+                        } catch (e) {
+                          alert(`Chest replay failed: ${(e as Error).message}`);
+                        }
+                      }}
+                    >
+                      📦
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-light donation-action-btn"
+                      disabled={d.is_muted}
+                      aria-label={
                         d.is_muted
                           ? 'Donation is muted — unmute first to replay'
                           : 'Re-announce this donation in the /obs/tts overlay'
+                      }
+                      title={
+                        d.is_muted
+                          ? 'Donation is muted — unmute first to replay'
+                          : 'Replay TTS — re-announce in /obs/tts'
                       }
                       onClick={async () => {
                         try {
@@ -263,37 +441,50 @@ export function DonationsControl() {
                         }
                       }}
                     >
-                      🔊 Replay TTS
+                      🔊
                     </button>
-                    <button
-                      className={`btn btn-sm ${d.is_muted ? 'btn-warning' : 'btn-outline-light'}`}
+                    {/* Reason dropdown replaces the old two-state Mute
+                     *  button. Choosing a non-empty reason mutes the
+                     *  donation with that tag; choosing "— not muted —"
+                     *  unmutes. The select renders the same width
+                     *  whether muted or not so the action column
+                     *  doesn't shift size as rows toggle. */}
+                    <select
+                      className={`form-select form-select-sm donation-mute-select${d.is_muted ? ' is-muted' : ''}`}
+                      value={d.mute_reason}
                       title={
                         d.is_muted
-                          ? 'Unmute — let TTS and omnibar announce this donation again'
-                          : 'Mute — skip this donation in TTS and the omnibar (profanity, repeats, etc.)'
+                          ? 'Reason this donation is muted — change to reclassify or pick "— not muted —" to unmute'
+                          : 'Mute this donation in TTS and the omnibar — pick a reason (profanity, repeat, etc.)'
                       }
-                      onClick={async () => {
+                      onChange={async (e) => {
+                        const next = e.target.value as Donation['mute_reason'];
                         try {
                           await api(`/api/donations/${d.id}/`, {
                             method: 'PATCH',
-                            body: { is_muted: !d.is_muted },
+                            body: { mute_reason: next },
                           });
-                        } catch (e) {
-                          alert(`Mute toggle failed: ${(e as Error).message}`);
+                        } catch (err) {
+                          alert(`Mute change failed: ${(err as Error).message}`);
                         }
                       }}
                     >
-                      {d.is_muted ? '🔈 Unmute' : '🔇 Mute'}
-                    </button>
+                      {(muteReasons ?? FALLBACK_MUTE_REASONS).map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.value === '' ? '🔈 Not muted' : `🔇 ${r.label}`}
+                        </option>
+                      ))}
+                    </select>
                     <button
-                      className="btn btn-sm btn-outline-danger"
+                      className="btn btn-sm btn-outline-danger donation-action-btn"
+                      aria-label="Delete this donation"
                       title="Delete this donation"
                       onClick={async () => {
                         if (!confirm('Delete this donation?')) return;
                         await api(`/api/donations/${d.id}/`, { method: 'DELETE' });
                       }}
                     >
-                      ✕ Delete
+                      ✕
                     </button>
                   </div>
                 </td>
@@ -321,20 +512,68 @@ export function DonationsControl() {
   );
 }
 
+/** Message cell content: shows the full text when expanded, otherwise
+ *  truncates to `MESSAGE_TRUNCATE_LEN` chars and appends a "Show more"
+ *  toggle. Messages shorter than the threshold render verbatim with no
+ *  toggle (the operator never needs to expand them). The toggle button
+ *  uses `type="button"` so it can't accidentally submit a parent form,
+ *  and lives inline so the row height only changes when content
+ *  actually requires it. */
+function MessageText({
+  message,
+  expanded,
+  onToggle,
+}: {
+  message: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (!message) return null;
+  if (message.length <= MESSAGE_TRUNCATE_LEN) return <>{message}</>;
+  // Cut on a word boundary when possible so the truncation reads cleanly
+  // ("Here is a really…") rather than splitting words mid-letter
+  // ("Here is a real…ly long…"). Falls back to a hard cut at the limit
+  // if no whitespace exists in the budget (e.g. pasted URLs).
+  const hardCut = message.slice(0, MESSAGE_TRUNCATE_LEN);
+  const lastSpace = hardCut.lastIndexOf(' ');
+  const shown = expanded
+    ? message
+    : (lastSpace > MESSAGE_TRUNCATE_LEN / 2 ? hardCut.slice(0, lastSpace) : hardCut) + '…';
+  return (
+    <>
+      {shown}{' '}
+      <button
+        type="button"
+        className="btn btn-link btn-sm donation-message-toggle"
+        onClick={onToggle}
+        title={expanded ? 'Collapse this message' : 'Show the full message'}
+      >
+        {expanded ? 'Show less' : 'Show more'}
+      </button>
+    </>
+  );
+}
+
 function SortableTh({
   label,
   sortKey,
   current,
   dir,
   onClick,
-  minWidth,
+  width,
+  onResizeStart,
 }: {
   label: string;
   sortKey: SortKey;
   current: SortKey;
   dir: SortDir;
   onClick: (key: SortKey) => void;
-  minWidth?: number;
+  /** Explicit column width in px — driven by the resizable-columns
+   *  hook so the operator's drags persist across reloads. */
+  width: number;
+  /** Mouse-down handler for the resize handle; wires into
+   *  `useResizableColumns().startResize(key, e)`. */
+  onResizeStart: (e: React.MouseEvent) => void;
 }) {
   const active = current === sortKey;
   const indicator = active ? (dir === 'asc' ? '▲' : '▼') : '';
@@ -345,7 +584,11 @@ function SortableTh({
         cursor: 'pointer',
         userSelect: 'none',
         whiteSpace: 'nowrap',
-        minWidth,
+        width,
+        minWidth: width,
+        // Needed so the absolutely-positioned ResizeHandle anchors
+        // to the th's right edge rather than the table.
+        position: 'relative',
       }}
       aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
     >
@@ -353,6 +596,7 @@ function SortableTh({
       <span style={{ marginLeft: 6, opacity: active ? 1 : 0.35 }}>
         {indicator || '↕'}
       </span>
+      <ResizeHandle onMouseDown={onResizeStart} />
     </th>
   );
 }

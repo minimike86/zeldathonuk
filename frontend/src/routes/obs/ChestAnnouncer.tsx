@@ -9,7 +9,8 @@ import {
   HERO_HOLD_SRC,
   CHEST_SRC,
 } from './chest-placeholders';
-import { playFanfare, warmUpFanfare } from './fanfare';
+import { playFanfare, warmUpFanfare, type PlaybackHandle } from './fanfare';
+import { pickTrigger, playSound } from './chestSoundTriggers';
 import './chest-announcer.css';
 
 /**
@@ -70,11 +71,24 @@ const POLL_MS = 3000;
 // in /control/chest-announcer takes effect on the next reveal without
 // the streamer having to refresh the OBS browser source.
 const SETTINGS_POLL_MS = 5000;
+// Triggers change rarely (operator edits them once between runs). 30s
+// is plenty fast for "I just added a new trigger, fire a test donation".
+const TRIGGERS_POLL_MS = 30_000;
+// Current-game id used for `game`-kind triggers. Same 3s cadence as the
+// omnibar so a game change is reflected before the next donation lands.
+const CURRENT_GAME_POLL_MS = 3000;
 const WALK_MS = 3000;
 const AT_CHEST_SETTLE_MS = 200;
 const CHEST_OPEN_MS = 600;
 const PULL_MS = 500;
-const CARD_HOLD_MS = 2800;
+// Default min/max card-hold times, used when the settings poll hasn't
+// returned yet. Live values are configured in /control/chest-announcer
+// and pulled into refs below.
+const DEFAULT_CARD_MIN_HOLD_MS = 2800;
+const DEFAULT_CARD_MAX_HOLD_MS = 20_000;
+// Client-side clamp ranges so a bad value can't freeze the queue.
+const MIN_HOLD_RANGE: [number, number] = [500, 60_000];
+const MAX_HOLD_RANGE: [number, number] = [500, 300_000];
 const CONFETTI_MS = 900;
 
 // ── Walk path anchors (percentage of container width) ─────────────────
@@ -106,10 +120,18 @@ type Phase =
   | 'pulling_item'
   | 'showing_card'
   | 'confetti'
+  // Brief idle pause at the chest between cards when the queue still
+  // has more donations to read. Configurable via the operator's
+  // `between_cards_ms` setting so streamers can tune the rhythm of
+  // multi-donation bursts to match their stream's pacing.
+  | 'between_cards'
   | 'walking_out';
 
 interface ActiveCard {
   uid: string;
+  /** Backend donation id, used by the live-mute watcher to detect
+   *  when the operator mutes the donation currently on screen. */
+  donationId: number;
   donor: string;
   amount: string;
   currency: string;
@@ -175,6 +197,57 @@ function ChestAnnouncerScene() {
   );
   const audioEnabledRef = useRef(false);
   audioEnabledRef.current = settings?.audio_enabled === true;
+  // Clamp the inter-card delay to a sane range — server validates with
+  // PositiveIntegerField but accidentally setting 10 minutes shouldn't
+  // freeze the queue.
+  const betweenCardsMsRef = useRef(1500);
+  betweenCardsMsRef.current = Math.max(
+    0,
+    Math.min(10_000, settings?.between_cards_ms ?? 1500),
+  );
+  // Min/max card hold also come from settings, with the same clamping
+  // story. The showing_card phase reads these refs each time, so a
+  // live edit in /control takes effect on the next reveal.
+  const cardMinHoldMsRef = useRef(DEFAULT_CARD_MIN_HOLD_MS);
+  cardMinHoldMsRef.current = Math.max(
+    MIN_HOLD_RANGE[0],
+    Math.min(
+      MIN_HOLD_RANGE[1],
+      settings?.card_min_hold_ms ?? DEFAULT_CARD_MIN_HOLD_MS,
+    ),
+  );
+  const cardMaxHoldMsRef = useRef(DEFAULT_CARD_MAX_HOLD_MS);
+  // Max gets clamped to be at least min so a bad config can't end up
+  // shorter than the minimum (which would make min unreachable).
+  cardMaxHoldMsRef.current = Math.max(
+    cardMinHoldMsRef.current,
+    Math.min(
+      MAX_HOLD_RANGE[1],
+      settings?.card_max_hold_ms ?? DEFAULT_CARD_MAX_HOLD_MS,
+    ),
+  );
+
+  // Sound triggers — per-rule audio overrides keyed on game / amount /
+  // keyword. Refreshed on a slow poll because operators edit these
+  // between runs, not per-donation. Stored in a ref so the scheduled
+  // reveal callback (which fires inside a setTimeout) sees the latest
+  // list without becoming a dep of the phase effect.
+  const { data: triggers } = usePolledQuery(
+    obsApi.chestAnnouncerSoundTriggers,
+    TRIGGERS_POLL_MS,
+  );
+  const triggersRef = useRef<typeof triggers>([]);
+  triggersRef.current = triggers ?? [];
+
+  // Currently-playing game — drives `game` kind trigger matching. Don't
+  // need the full schedule entry, just the game id.
+  const { data: currentlyPlaying } = usePolledQuery(
+    obsApi.currentlyPlaying,
+    CURRENT_GAME_POLL_MS,
+  );
+  const currentGameIdRef = useRef<number | null>(null);
+  currentGameIdRef.current =
+    currentlyPlaying?.schedule_entry_detail?.game?.id ?? null;
 
   const { data: event } = usePolledQuery(obsApi.activeEvent, 15_000);
   const { data: donations } = usePolledQuery(
@@ -197,13 +270,15 @@ function ChestAnnouncerScene() {
       return;
     }
     const fresh = donations
-      // `is_muted` is a TTS/message moderation flag — it suppresses
-      // the omnibar/TTS announcement when a donor leaves something
-      // unprintable in the message. This overlay never renders the
-      // message body (only donor name + amount), so muting doesn't
-      // apply here; show every donation that lands. If donor-name
-      // moderation is needed it'll need its own flag.
-      .filter((d) => !seenIdsRef.current.has(d.id))
+      // Skip muted donations entirely. `is_muted` is the operator's
+      // signal that this donation has already been handled on stream
+      // (read aloud, name shouted out, etc.) and shouldn't replay —
+      // the omnibar/TTS already respect it, and pulling a redundant
+      // card here would feel out of sync with the rest of the scene.
+      // Note we don't add muted donations to seenIds, so unmuting one
+      // later in /control/donations flows it through normally on the
+      // next poll cycle.
+      .filter((d) => !seenIdsRef.current.has(d.id) && !d.is_muted)
       .sort(
         (a, b) =>
           new Date(a.donated_at).getTime() - new Date(b.donated_at).getTime(),
@@ -213,6 +288,32 @@ function ChestAnnouncerScene() {
     queueRef.current.push(...fresh);
     setQueueLen(queueRef.current.length);
   }, [donations]);
+
+  // Operator-triggered replay. Polls /api/chest-announcer/replay/
+  // and re-enqueues the linked donation whenever `requested_at`
+  // advances past the value we last saw. Cold-boot snapshots the
+  // current timestamp so a stale request from before the overlay
+  // mounted doesn't fire on first paint. Bypasses the seen-id guard
+  // so the same donation can be re-fired any number of times.
+  const { data: replay } = usePolledQuery(obsApi.chestReplay, 2000);
+  const lastReplayAtRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!replay) return;
+    if (lastReplayAtRef.current === null) {
+      lastReplayAtRef.current = replay.requested_at;
+      return;
+    }
+    if (replay.requested_at === lastReplayAtRef.current) return;
+    lastReplayAtRef.current = replay.requested_at;
+    if (replay.donation_id == null || !donations) return;
+    const d = donations.find((x) => x.id === replay.donation_id);
+    if (!d) return;
+    // Replay jumps the FRONT of the queue so the operator's click
+    // takes effect on the next phase boundary rather than waiting
+    // behind any naturally-arrived donations.
+    queueRef.current.unshift(d);
+    setQueueLen(queueRef.current.length);
+  }, [replay, donations]);
 
   // ── State machine ───────────────────────────────────────────────────
   const [phase, setPhase] = useState<Phase>('offscreen');
@@ -224,6 +325,22 @@ function ChestAnnouncerScene() {
   const [chestState, setChestState] = useState<
     'closed' | 'opening' | 'open' | 'closing'
   >('closed');
+  // "+N more" pip count. Captured once per reveal cycle (entry to
+  // chest_opening or between_cards) from queueRef.length - 1 — i.e.
+  // donations queued *behind* the imminent reveal. Deriving from
+  // queueLen on every render gave a one-frame pulse: between
+  // pulling_item commit and popNext's setQueueLen, queueLen still
+  // held the pre-pop value so the formula briefly jumped up by one.
+  // Tying the display value to a discrete cycle moment avoids that
+  // race entirely.
+  const [revealQueueDepth, setRevealQueueDepth] = useState(0);
+
+  // In-flight audio (fanfare or trigger sound). Captured at the moment
+  // the card-pop fires; the showing_card phase waits on its `ended`
+  // Promise before transitioning to confetti so the card stays on
+  // screen until the audio is fully done. Replaced/cancelled when a
+  // fresh donation starts playing its own sound.
+  const currentPlaybackRef = useRef<PlaybackHandle | null>(null);
 
   // Pending timers — cleared on every phase change so cancelling
   // walk-out (or any phase) doesn't leak a setTimeout that pulls us
@@ -249,6 +366,11 @@ function ChestAnnouncerScene() {
   // timers first to keep cancellation safe.
   useEffect(() => {
     clearTimers();
+    // Per-phase cancellation flag. Promise-based advancements
+    // (e.g. waiting on PlaybackHandle.ended) check this before calling
+    // setPhase so a phase change tearing down the effect doesn't fire
+    // a stale advancement against the new phase.
+    let cancelled = false;
 
     if (phase === 'walking_in') {
       setHeroDir(1);
@@ -260,6 +382,10 @@ function ChestAnnouncerScene() {
       scheduleTimer(() => setPhase('chest_opening'), AT_CHEST_SETTLE_MS);
     } else if (phase === 'chest_opening') {
       setChestState('opening');
+      // Lock in the pip count for this reveal cycle. queueRef is the
+      // source of truth here (state may lag); subtract one for the
+      // imminent reveal so the pip reads "queued behind this one".
+      setRevealQueueDepth(Math.max(0, queueRef.current.length - 1));
       scheduleTimer(() => {
         setChestState('open');
         setPhase('pulling_item');
@@ -273,36 +399,111 @@ function ChestAnnouncerScene() {
       }
       const next: ActiveCard = {
         uid: `card-${donation.id}`,
+        donationId: donation.id,
         donor: cleanForDisplay(donation.donor_name || 'Anonymous'),
         amount: Number(donation.amount).toFixed(2),
         currency: currencySymbol(donation.currency, event?.currency_symbol ?? '£'),
       };
       scheduleTimer(() => {
-        setCard(next);
-        setCardPhase('enter');
-        setPhase('showing_card');
-        // Fanfare lines up with the card-pop animation. Fires once per
-        // donation since this branch only runs on pulling_item entry.
-        // Gated on the `?audio=on` URL flag — default is silent so the
-        // omnibar's TTS isn't competing with the fanfare.
-        if (audioEnabledRef.current) playFanfare();
+        // Start audio *before* transitioning to showing_card so the
+        // PlaybackHandle is captured in the ref before the phase
+        // effect reads it. Previously we kicked off the playback
+        // Promise *after* setPhase, which meant the `.then()` callback
+        // assigning the ref raced the synchronous effect — by the
+        // time showing_card read `currentPlaybackRef.current` it was
+        // still null, `soundEnded` initialised as true, and the card
+        // advanced to confetti as soon as the min-hold elapsed,
+        // chopping the audio off mid-play.
+        //
+        // Resolution order for the audio:
+        //   1. Configured sound trigger matches (keyword / amount /
+        //      game) → play the trigger's `sound_url` at its volume.
+        //   2. No trigger match → procedural fanfare fallback.
+        //
+        // Cancel any previous in-flight sound from a prior donation
+        // before starting the new one so they don't overlap.
+        currentPlaybackRef.current?.cancel();
+        currentPlaybackRef.current = null;
+        const startReveal = (handle: PlaybackHandle | null) => {
+          currentPlaybackRef.current = handle;
+          setCard(next);
+          setCardPhase('enter');
+          setPhase('showing_card');
+        };
+        if (audioEnabledRef.current) {
+          const match = pickTrigger(
+            donation,
+            triggersRef.current ?? [],
+            currentGameIdRef.current,
+          );
+          const playback = match
+            ? playSound(match.sound_url, match.volume)
+            : playFanfare();
+          // Await playback start — typically 10–200 ms — then reveal
+          // the card. The hero is still in `reach` pose during this
+          // gap, which reads as the character pulling the donation
+          // out, so the latency is invisible.
+          void playback.then((handle) => startReveal(handle ?? null));
+        } else {
+          startReveal(null);
+        }
       }, PULL_MS);
     } else if (phase === 'showing_card') {
       // Card mounted with phase=enter; promote to hold once the pop
       // animation finishes (~260ms) so the float bob kicks in.
       scheduleTimer(() => setCardPhase('hold'), 260);
-      scheduleTimer(() => setPhase('confetti'), CARD_HOLD_MS);
+
+      // Advance to confetti only after BOTH:
+      //   1. CARD_HOLD_MS minimum elapsed — the card always gets a
+      //      readable beat on screen, even for ultra-short sounds.
+      //   2. The currently-playing sound's `ended` Promise resolves —
+      //      so a long sting plays out fully before the next donation.
+      // Capped at MAX_CARD_HOLD_MS so a runaway upload can't freeze
+      // the queue.
+      let minHoldElapsed = false;
+      let soundEnded = currentPlaybackRef.current === null;
+      const tryAdvance = () => {
+        if (cancelled) return;
+        if (minHoldElapsed && soundEnded) setPhase('confetti');
+      };
+      scheduleTimer(() => {
+        minHoldElapsed = true;
+        tryAdvance();
+      }, cardMinHoldMsRef.current);
+      const playback = currentPlaybackRef.current;
+      if (playback) {
+        void playback.ended.then(() => {
+          soundEnded = true;
+          tryAdvance();
+        });
+      }
+      // Safety cap regardless of audio state.
+      scheduleTimer(() => {
+        if (!cancelled) setPhase('confetti');
+      }, cardMaxHoldMsRef.current);
     } else if (phase === 'confetti') {
       setCardPhase('burst');
       scheduleTimer(() => {
         setCard(null);
         setCardPhase(null);
         if (queueRef.current.length > 0) {
-          setPhase('pulling_item');
+          // Brief idle pause before the next reveal so consecutive
+          // donations don't smash into each other visually. Hero stays
+          // by the open chest, no animation interrupt.
+          setPhase('between_cards');
         } else {
           setPhase('walking_out');
         }
       }, CONFETTI_MS);
+    } else if (phase === 'between_cards') {
+      // Refresh the pip count for the next reveal cycle. queueRef has
+      // already been popped for the previous donation, so its length
+      // minus one is "donations behind the next imminent reveal".
+      setRevealQueueDepth(Math.max(0, queueRef.current.length - 1));
+      // Idle gap between consecutive donations. Length is the
+      // operator's `between_cards_ms` setting; 0 effectively skips the
+      // pause and goes straight back to pulling_item.
+      scheduleTimer(() => setPhase('pulling_item'), betweenCardsMsRef.current);
     } else if (phase === 'walking_out') {
       setChestState('closing');
       setHeroDir(-1);
@@ -319,7 +520,10 @@ function ChestAnnouncerScene() {
       setCardPhase(null);
     }
 
-    return clearTimers;
+    return () => {
+      cancelled = true;
+      clearTimers();
+    };
   }, [phase, clearTimers, scheduleTimer, popNext, event?.currency_symbol]);
 
   // ── Kickoff / walk-out cancel ───────────────────────────────────────
@@ -353,10 +557,38 @@ function ChestAnnouncerScene() {
           if (Number.isFinite(pct)) setHeroX(pct);
         }
       }
-      setChestState('open');
+      // Don't touch chestState here — let the closing animation finish
+      // naturally while the hero walks back. The chest_opening phase
+      // that fires when they arrive (~3 s later, well after the 500 ms
+      // closing animation completes) will re-open it properly. Forcing
+      // 'open' here caused a visible "chest pops open with nobody
+      // there" pulse, then a second open from chest_opening once the
+      // hero arrived.
       setPhase('walking_in');
     }
   }, [queueLen, phase]);
+
+  // ── Live-mute abort ─────────────────────────────────────────────────
+  // If the operator mutes the donation currently on screen (or about
+  // to come on, mid pulling_item), cut everything immediately: stop
+  // the audio, drop the card, and skip straight to the next reveal
+  // (or walk-out if the queue is empty). Confetti is skipped — there's
+  // nothing to celebrate when the donation has been recalled.
+  useEffect(() => {
+    if (!card || !donations) return;
+    if (phase !== 'showing_card' && phase !== 'confetti') return;
+    const live = donations.find((d) => d.id === card.donationId);
+    if (!live || !live.is_muted) return;
+    currentPlaybackRef.current?.cancel();
+    currentPlaybackRef.current = null;
+    setCard(null);
+    setCardPhase(null);
+    if (queueRef.current.length > 0) {
+      setPhase('between_cards');
+    } else {
+      setPhase('walking_out');
+    }
+  }, [donations, card, phase]);
 
   // ── ResizeObserver fallback ─────────────────────────────────────────
   // Some engines don't honour `100cqh` on a fixed/inset element. Mirror
@@ -385,6 +617,16 @@ function ChestAnnouncerScene() {
   const heroVisible = phase !== 'offscreen';
   const chestVisible = phase !== 'offscreen';
   const glowVisible = chestState === 'open';
+  // Queue depth indicator. The displayed count is `revealQueueDepth`,
+  // which is captured into state at the entry to each reveal cycle
+  // (chest_opening / between_cards branches above) so the pip reads a
+  // single stable number across the whole cycle — no popNext-induced
+  // pulse mid-pulling_item.
+  const blipVisible =
+    revealQueueDepth > 0 &&
+    (phase === 'chest_opening' ||
+      phase === 'pulling_item' ||
+      phase === 'between_cards');
 
   return (
     <div
@@ -412,6 +654,17 @@ function ChestAnnouncerScene() {
           <div className="ca-chest ca-sprite" data-state={chestState} />
           <div className="ca-chest-glow" data-visible={glowVisible} />
         </>
+      )}
+
+      {blipVisible && (
+        // key on the count so React unmounts/remounts the node when N
+        // changes, replaying the ca-pip-in pop-in keyframe — gives the
+        // operator a visible bounce every time the queue ticks (only
+        // ever at the start of a new reveal cycle now, since the
+        // value is captured once per cycle).
+        <div className="ca-queue-pip" key={revealQueueDepth} aria-hidden>
+          +{revealQueueDepth} more
+        </div>
       )}
 
       {heroVisible && (

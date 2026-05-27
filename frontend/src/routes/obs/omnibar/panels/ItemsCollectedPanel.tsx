@@ -31,12 +31,12 @@ function Panel({ data }: PanelProps<Data>) {
   return (
     <PanelRow tag="ITEMS">
       {item.image_url && (
-        <img
-          src={item.image_url}
-          alt=""
-          aria-hidden
-          style={{ height: '1.6rem', width: 'auto', verticalAlign: 'middle' }}
-        />
+        // Wrap the image in a sized container — the generic
+        // .omnibar--v2 img rule in omnibar.css will then shrink-to-fit
+        // this box no matter how big the source asset is.
+        <span className="ob-item-icon" aria-hidden>
+          <img src={item.image_url} alt="" />
+        </span>
       )}
       <span className="ob-text-strong">{item.name}</span>
       <span className="ob-text-muted">

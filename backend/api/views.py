@@ -422,6 +422,21 @@ def tts_replay(request: Request) -> Response:
     return Response(serializers.TtsReplaySerializer(obj).data)
 
 
+@api_view(['GET'])
+def donation_mute_reasons(_request: Request) -> Response:
+    """Enum of MuteReason choices exposed as `[{value, label}, ...]`.
+
+    /control/donations renders this as the mute-reason dropdown; pulling
+    it from the server (vs hardcoding the labels in the React app) means
+    adding or renaming a reason in models.MuteReason is a one-file
+    change instead of touching both repos.
+    """
+    return Response([
+        {'value': value, 'label': label}
+        for value, label in models.MuteReason.choices
+    ])
+
+
 @api_view(['GET', 'POST'])
 def tts_now_reading(request: Request) -> Response:
     """Singleton mirror of what /obs/tts is currently announcing.
@@ -446,6 +461,28 @@ def tts_now_reading(request: Request) -> Response:
     return Response(serializers.TtsNowReadingSerializer(obj).data)
 
 
+@api_view(['GET', 'POST'])
+def chest_replay(request: Request) -> Response:
+    """Singleton "re-fire this donation through /obs/chest-announcer".
+
+    GET — used by the chest-announcer overlay polling loop.
+    POST `{donation_id}` — used by /control/donations chest replay
+    button. Bumps `requested_at` even on a same-donation retrigger,
+    so the overlay's high-water-mark comparison fires every time.
+    """
+    obj = models.ChestReplay.get()
+    if request.method == 'GET':
+        return Response(serializers.ChestReplaySerializer(obj).data)
+    donation_id = request.data.get('donation_id')
+    donation = models.Donation.objects.filter(pk=donation_id).first() if donation_id else None
+    if donation_id and not donation:
+        return Response({'detail': 'Donation not found'}, status=404)
+    obj.donation = donation
+    obj.requested_at = timezone.now()
+    obj.save()
+    return Response(serializers.ChestReplaySerializer(obj).data)
+
+
 @api_view(['GET', 'PATCH'])
 def theme_settings(request: Request) -> Response:
     """Returns / updates the **currently active** theme.
@@ -462,6 +499,37 @@ def theme_settings(request: Request) -> Response:
     ser.is_valid(raise_exception=True)
     ser.save()
     return Response(ser.data)
+
+
+class ChestAnnouncerSoundTriggerViewSet(viewsets.ModelViewSet):
+    """CRUD for the sound triggers consumed by /obs/chest-announcer.
+
+    Listed in priority order (lowest number first) so the overlay can
+    just iterate and pick the first match without a second sort.
+    """
+
+    queryset = models.ChestAnnouncerSoundTrigger.objects.all().select_related('game')
+    serializer_class = serializers.ChestAnnouncerSoundTriggerSerializer
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request: Request, pk=None) -> Response:
+        """Clone an existing trigger so the operator can tweak a copy
+        without rebuilding all the fields. Name gets a ``(copy)``
+        suffix; priority is bumped by 1 so the clone sorts just below
+        the original. The copy starts inactive so the operator can vet
+        it before it can fire on a real donation."""
+        src = self.get_object()
+        clone = models.ChestAnnouncerSoundTrigger.objects.create(
+            name=f'{src.name} (copy)',
+            kind=src.kind,
+            match=src.match,
+            game=src.game,
+            sound_url=src.sound_url,
+            volume=src.volume,
+            priority=src.priority + 1,
+            is_active=False,
+        )
+        return Response(self.get_serializer(clone).data)
 
 
 @api_view(['GET', 'PATCH'])
@@ -715,3 +783,19 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             obj.reached_at = timezone.now()
             obj.save(update_fields=['reached_at'])
         return Response(self.get_serializer(obj).data)
+
+
+class CharitySlideViewSet(viewsets.ModelViewSet):
+    """CRUD on omnibar charity-cluster slides.
+
+    Filterable via ``?active=true``. No event scope — slides are
+    global so the same rotation runs across every event.
+    """
+    queryset = models.CharitySlide.objects.all()
+    serializer_class = serializers.CharitySlideSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.query_params.get('active') == 'true':
+            qs = qs.filter(is_active=True)
+        return qs

@@ -4,6 +4,7 @@
  * callers use this.
  */
 import { api } from '@/lib/api';
+import { notifyCharitySlidesChanged } from '@/lib/charityBus';
 import { notifyThemeChanged } from '@/lib/themeBus';
 
 /** Pass-through `.then()` callback that fires a theme-changed broadcast
@@ -11,6 +12,15 @@ import { notifyThemeChanged } from '@/lib/themeBus';
  *  affect what /api/theme/ returns so other tabs re-fetch instantly. */
 function withThemeBroadcast<T>(value: T): T {
   notifyThemeChanged();
+  return value;
+}
+
+/** Same pattern as `withThemeBroadcast` but for the charity slide
+ *  list. Wraps any successful charity mutation so other tabs in this
+ *  browser (notably an open /obs/omnibar) re-fetch immediately
+ *  instead of waiting on the poll cycle. */
+function withCharityBroadcast<T>(value: T): T {
+  notifyCharitySlidesChanged();
   return value;
 }
 
@@ -137,6 +147,25 @@ export interface ScheduleEntry {
   collected_item_ids: number[];
 }
 
+/** Why a donation has been suppressed from /obs/tts + /obs/omnibar.
+ *  Empty string = not muted; everything else is a reason tag the
+ *  operator picked from the dropdown in /control/donations. Source
+ *  of truth lives in `models.MuteReason`; the live list of labels
+ *  comes from `/api/donation-mute-reasons/` so a new reason is a
+ *  backend-only change. */
+export type MuteReason =
+  | ''
+  | 'naughty_name'
+  | 'naughty_message'
+  | 'naughty_image'
+  | 'already_announced'
+  | 'other';
+
+export interface MuteReasonChoice {
+  value: MuteReason;
+  label: string;
+}
+
 export interface Donation {
   id: number;
   event: number;
@@ -149,10 +178,13 @@ export interface Donation {
   external_id: string;
   gift_aid_amount: string | null;
   image_url: string;
-  /** When true the /obs/tts and /obs/omnibar live-donation overlays
-   *  skip this donation entirely — no card, no speech. Toggled via
-   *  the 🔇 button in /control/donations. Donation still counts
-   *  toward totals; only the announcement is suppressed. */
+  /** Operator-set reason this donation is muted. Empty string = not
+   *  muted. /obs/tts and /obs/omnibar still read the read-only
+   *  `is_muted` boolean (derived server-side from `mute_reason !== ''`)
+   *  so existing skip-logic doesn't have to know about the reason tag. */
+  mute_reason: MuteReason;
+  /** Read-only convenience flag — backend property derived from
+   *  `mute_reason !== ''`. Don't PATCH this; PATCH `mute_reason`. */
   is_muted: boolean;
 }
 
@@ -191,6 +223,44 @@ export interface ChestAnnouncerSettings {
   /** When true, /obs/chest-announcer plays its fanfare on each card reveal.
    *  Default false so the omnibar's TTS isn't competing with the fanfare. */
   audio_enabled: boolean;
+  /** Pause in milliseconds between donation cards when multiple
+   *  donations are queued. Hero stays idle at the chest for this long
+   *  before reaching in for the next reveal. Default 1500. */
+  between_cards_ms: number;
+  /** Minimum time (ms) a donation card stays on screen, even if its
+   *  audio finishes earlier. Keeps the visual rhythm consistent for
+   *  short stings. Default 2800. */
+  card_min_hold_ms: number;
+  /** Hard ceiling (ms) on how long a card waits for its audio to
+   *  finish. A runaway long sting gets cut off after this so the
+   *  queue keeps moving. Default 20000. */
+  card_max_hold_ms: number;
+  updated_at: string;
+}
+
+export type ChestAnnouncerSoundTriggerKind = 'game' | 'amount' | 'keyword';
+
+export interface ChestAnnouncerSoundTrigger {
+  id: number;
+  /** Operator-facing label. */
+  name: string;
+  kind: ChestAnnouncerSoundTriggerKind;
+  /** amount: decimal string ("6.70"). keyword: comma-separated case-
+   *  insensitive substrings. Unused for game — see `game` FK. */
+  match: string;
+  /** FK to Game (only meaningful when kind=game). */
+  game: number | null;
+  /** Denormalised Game.title for display in the control page. */
+  game_title: string;
+  /** Absolute URL or site-relative path to an audio file the browser
+   *  can play (mp3, wav, ogg). Streamer supplies — nothing bundled. */
+  sound_url: string;
+  /** Playback gain (0.0–1.0). */
+  volume: number;
+  /** Lower = higher priority. */
+  priority: number;
+  is_active: boolean;
+  created_at: string;
   updated_at: string;
 }
 
@@ -229,6 +299,15 @@ export interface TtsReplay {
 export interface TtsNowReading {
   donation_id: number | null;
   started_at: string;
+}
+
+/** Singleton "re-fire this donation through /obs/chest-announcer".
+ *  Same shape as TtsReplay — the chest overlay polls it and re-
+ *  enqueues the donation when `requested_at` advances past the
+ *  value it last saw. */
+export interface ChestReplay {
+  donation_id: number | null;
+  requested_at: string;
 }
 
 export interface CurrentlyPlaying {
@@ -333,6 +412,25 @@ export interface Milestone {
   created_at: string;
 }
 
+export type CharitySlideKind = 'logo' | 'blurb';
+
+export interface CharitySlide {
+  id: number;
+  kind: CharitySlideKind;
+  /** Used when kind='blurb' — gold uppercase header line. */
+  title: string;
+  /** Used when kind='blurb' — body text. */
+  body: string;
+  /** Used when kind='logo' — image URL (absolute or site-relative). */
+  image_url: string;
+  /** Used when kind='logo' — alt text + identity label. */
+  alt_text: string;
+  order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export const obsApi = {
   // Reads
   games: () => api<Game[]>('/api/games/'),
@@ -364,6 +462,20 @@ export const obsApi = {
       method: 'POST',
       body: { donation_id: donationId },
     }),
+  // Chest-announcer replay — POST `{donation_id}` to ask
+  // /obs/chest-announcer to re-fire the cardlaunch + fanfare for a
+  // donation. Same high-water-mark contract as ttsReplay.
+  chestReplay: () => api<ChestReplay>('/api/chest-announcer/replay/'),
+  requestChestReplay: (donationId: number) =>
+    api<ChestReplay>('/api/chest-announcer/replay/', {
+      method: 'POST',
+      body: { donation_id: donationId },
+    }),
+  // Mute-reason dropdown options — fetched from the server so adding /
+  // renaming a reason in `models.MuteReason` doesn't need a frontend
+  // edit. Cached infrequently (the enum rarely changes).
+  donationMuteReasons: () =>
+    api<MuteReasonChoice[]>('/api/donation-mute-reasons/'),
   themeSettings: () => api<ThemeSettings>('/api/theme/'),
   // Theme mutations broadcast via themeBus on success so other tabs in
   // the same browser re-fetch immediately. Cross-browser / cross-device
@@ -385,6 +497,32 @@ export const obsApi = {
       body: patch,
       token,
     }),
+  chestAnnouncerSoundTriggers: () =>
+    api<ChestAnnouncerSoundTrigger[]>('/api/chest-announcer/sound-triggers/'),
+  createChestAnnouncerSoundTrigger: (
+    body: Partial<ChestAnnouncerSoundTrigger>,
+  ) =>
+    api<ChestAnnouncerSoundTrigger>('/api/chest-announcer/sound-triggers/', {
+      method: 'POST',
+      body,
+    }),
+  updateChestAnnouncerSoundTrigger: (
+    id: number,
+    body: Partial<ChestAnnouncerSoundTrigger>,
+  ) =>
+    api<ChestAnnouncerSoundTrigger>(
+      `/api/chest-announcer/sound-triggers/${id}/`,
+      { method: 'PATCH', body },
+    ),
+  deleteChestAnnouncerSoundTrigger: (id: number) =>
+    api<void>(`/api/chest-announcer/sound-triggers/${id}/`, {
+      method: 'DELETE',
+    }),
+  duplicateChestAnnouncerSoundTrigger: (id: number) =>
+    api<ChestAnnouncerSoundTrigger>(
+      `/api/chest-announcer/sound-triggers/${id}/duplicate/`,
+      { method: 'POST' },
+    ),
   themesList: () => api<ThemeSettings[]>('/api/themes/'),
   themeCreate: (body: Partial<ThemeSettings>) =>
     api<ThemeSettings>('/api/themes/', { method: 'POST', body }).then(withThemeBroadcast),
@@ -614,6 +752,38 @@ export const obsApi = {
     api<Milestone>(`/api/milestones/${id}/mark_reached/`, { method: 'POST' }),
   deleteMilestone: (id: number) =>
     api<void>(`/api/milestones/${id}/`, { method: 'DELETE' }),
+
+  // Charity-cluster slides — rotated in the right side of the omnibar.
+  // Single global list (no event scope) since the charity story
+  // doesn't change between events.
+  charitySlides: (params?: { activeOnly?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.activeOnly) qs.set('active', 'true');
+    const tail = qs.toString();
+    return api<CharitySlide[]>(tail ? `/api/charity-slides/?${tail}` : '/api/charity-slides/');
+  },
+  createCharitySlide: (body: {
+    kind: CharitySlideKind;
+    title?: string;
+    body?: string;
+    image_url?: string;
+    alt_text?: string;
+    order?: number;
+    is_active?: boolean;
+  }) =>
+    api<CharitySlide>('/api/charity-slides/', { method: 'POST', body })
+      .then(withCharityBroadcast),
+  updateCharitySlide: (
+    id: number,
+    patch: Partial<Omit<CharitySlide, 'id' | 'created_at' | 'updated_at'>>,
+  ) =>
+    api<CharitySlide>(`/api/charity-slides/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }).then(withCharityBroadcast),
+  deleteCharitySlide: (id: number) =>
+    api<void>(`/api/charity-slides/${id}/`, { method: 'DELETE' })
+      .then(withCharityBroadcast),
 };
 
 /** Hook that polls the API on an interval. Bare-bones — replace with TanStack

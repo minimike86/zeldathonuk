@@ -18,17 +18,29 @@ router.register('overrides', views.OmnibarOverrideViewSet)
 router.register('external-events', views.ExternalEventViewSet)
 router.register('incentives', views.IncentiveViewSet)
 router.register('milestones', views.MilestoneViewSet)
+router.register('charity-slides', views.CharitySlideViewSet)
+router.register(
+    'chest-announcer/sound-triggers',
+    views.ChestAnnouncerSoundTriggerViewSet,
+    basename='chest-announcer-sound-trigger',
+)
 
 urlpatterns = [
     path('healthz/', views.healthz, name='api-healthz'),
     path('currently-playing/', views.currently_playing, name='currently-playing'),
     path('tts/replay/', views.tts_replay, name='tts-replay'),
     path('tts/now-reading/', views.tts_now_reading, name='tts-now-reading'),
+    path('donation-mute-reasons/', views.donation_mute_reasons, name='donation-mute-reasons'),
     path('theme/', views.theme_settings, name='theme-settings'),
     path(
         'chest-announcer/settings/',
         views.chest_announcer_settings,
         name='chest-announcer-settings',
+    ),
+    path(
+        'chest-announcer/replay/',
+        views.chest_replay,
+        name='chest-replay',
     ),
     # Webhook intake — one path per platform plus a generic fallback.
     path('webhooks/justgiving/', webhooks.justgiving_webhook, name='wh-justgiving'),

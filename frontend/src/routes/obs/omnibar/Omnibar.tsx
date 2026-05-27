@@ -20,6 +20,7 @@ import { LiveDonationPanel } from './panels/LiveDonationPanel';
 import { UrgentBannerPanel } from './panels/UrgentBannerPanel';
 import { EventFlashPanel } from './panels/EventFlashPanel';
 import { TwitchGenericToast } from './panels/TwitchPanels';
+import { CharityCluster } from './panels/CharityCluster';
 import { getEventHandler } from './events/registry';
 import type {
   Donation,
@@ -108,42 +109,66 @@ function OmnibarInner() {
   const [activeTwitchEvent, setActiveTwitchEvent] = useState<ExternalEvent | null>(null);
 
   // Track donations we've already announced so reloading mid-stream
-  // doesn't replay history.
+  // doesn't replay history. `activeDonationRef` mirrors the state
+  // value so the donation-detection effect can decide queue-vs-show
+  // without recapturing a useCallback on every state change.
   const seenDonationIdsRef = useRef<Set<number>>(new Set());
   const donationsInitialisedRef = useRef(false);
+  const donationQueueRef = useRef<Donation[]>([]);
+  const activeDonationRef = useRef<Donation | null>(null);
+  activeDonationRef.current = activeDonation;
 
   useEffect(() => {
     const ds = feed.donations;
     if (!donationsInitialisedRef.current) {
+      // Seed seenIds with every donation present on first load so a
+      // browser source coming online mid-stream doesn't replay the
+      // entire donor history.
       ds.forEach((d) => seenDonationIdsRef.current.add(d.id));
       donationsInitialisedRef.current = true;
       return;
     }
-    // Skip muted donations entirely — no card. They're not added to
-    // seenDonationIds either, so unmuting one later (via the toggle in
-    // /control/donations) flows it through naturally on the next poll.
-    const fresh = ds.find(
-      (d) => !seenDonationIdsRef.current.has(d.id) && !d.is_muted,
-    );
-    if (!fresh) return;
-    seenDonationIdsRef.current.add(fresh.id);
-    // Queue: if a donation is already showing, hold the new one until
-    // the current finishes. Simple FIFO via a ref-backed queue.
-    pushDonationToQueue(fresh);
+    // Find EVERY un-seen, un-muted donation this tick and queue them
+    // chronologically (oldest-first so they play in donation order).
+    // Previously the code only picked the first un-seen per tick,
+    // which meant a burst of donations between polls would only
+    // surface one at a time across many ticks — and any slip in the
+    // useEffect chain dropped the rest entirely.
+    //
+    // Muted donations are deliberately NOT added to seenDonationIds so
+    // un-muting one later (via the donations control) flows it through
+    // on the next poll instead of being permanently suppressed.
+    const fresh = ds
+      .filter((d) => !seenDonationIdsRef.current.has(d.id) && !d.is_muted)
+      .slice()
+      .sort((a, b) =>
+        new Date(a.donated_at).getTime() - new Date(b.donated_at).getTime(),
+      );
+    if (fresh.length === 0) return;
+    for (const d of fresh) {
+      seenDonationIdsRef.current.add(d.id);
+      // Read activeDonation through the ref so the queue/active
+      // decision always sees the latest committed state — not the
+      // value captured when this effect was scheduled.
+      if (activeDonationRef.current || donationQueueRef.current.length > 0) {
+        donationQueueRef.current.push(d);
+      } else {
+        // First freshly-arrived donation in this tick goes straight on
+        // screen; any remaining queue up behind it. activeDonationRef
+        // updates on the next render but we capture the in-flight
+        // commitment locally by treating the queue as the source of
+        // truth for "already taken" for the rest of the loop.
+        activeDonationRef.current = d;
+        setActiveDonation(d);
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feed.donations]);
 
-  const donationQueueRef = useRef<Donation[]>([]);
-  const pushDonationToQueue = useCallback((d: Donation) => {
-    if (activeDonation) {
-      donationQueueRef.current.push(d);
-    } else {
-      setActiveDonation(d);
-    }
-  }, [activeDonation]);
   const onDonationComplete = useCallback(() => {
-    const next = donationQueueRef.current.shift();
-    setActiveDonation(next ?? null);
+    const next = donationQueueRef.current.shift() ?? null;
+    activeDonationRef.current = next;
+    setActiveDonation(next);
   }, []);
 
   // External (Twitch) events → bottom-lane takeover. Drop the event
@@ -372,6 +397,7 @@ function RightCluster({
           })}
         </span>
       </div>
+      <CharityCluster gameblastLogoUrl={feed.event?.gameblast_logo_url ?? null} />
     </div>
   );
 }

@@ -64,16 +64,46 @@ const ARPEGGIO: Note[] = [
   { freq: 1046.5, start: 0.28, dur: 0.42 }, // C6 (held)
 ];
 
+// Lookahead offset applied to every note (see comment in playFanfare).
+const FANFARE_LOOKAHEAD_S = 0.06;
+
+// Total audible duration in milliseconds: lookahead + last-note end.
+// The chest announcer uses this to wait for the fanfare to finish
+// before advancing to the next donation card.
+const FANFARE_END_MS = Math.round(
+  (FANFARE_LOOKAHEAD_S + ARPEGGIO[ARPEGGIO.length - 1].start
+    + ARPEGGIO[ARPEGGIO.length - 1].dur) * 1000,
+);
+
 /**
- * Fire-and-forget fanfare. Caller doesn't need to await — the function
- * resolves once the notes have been *scheduled*, not played. Returns a
- * promise mostly so we can `void playFanfare()` from a click handler
- * and let the async resume settle.
+ * Handle for an in-flight audio playback. Callers can wait on `ended`
+ * to know when the sound is fully done, or `cancel()` to stop it early.
+ * Re-used by `playSound` in chestSoundTriggers.ts so the chest
+ * announcer can handle fanfare and trigger sounds with one code path.
  */
-export async function playFanfare(options: FanfareOptions = {}): Promise<void> {
+export interface PlaybackHandle {
+  /** Resolves when playback finishes (naturally or via cancel). Never rejects. */
+  ended: Promise<void>;
+  /** Stop playback immediately. Idempotent. */
+  cancel: () => void;
+}
+
+/**
+ * Schedule the fanfare and return a handle the caller can wait on.
+ * `ended` resolves once the last note has decayed — the chest announcer
+ * uses this to hold the donation card until playback is fully done
+ * before transitioning to confetti.
+ *
+ * Returns `null` if audio can't start at all (no AudioContext, autoplay
+ * policy blocked the resume, or context stuck non-running) so the
+ * caller can fall back to a fixed-duration timer.
+ */
+export async function playFanfare(
+  options: FanfareOptions = {},
+): Promise<PlaybackHandle | null> {
   const { volume = 0.18, waveform = 'square' } = options;
   const ac = getCtx();
-  if (!ac) return;
+  if (!ac) return null;
 
   // Properly *await* resume. Previously this was fire-and-forget, which
   // meant `ac.currentTime` was read while the context was still
@@ -85,13 +115,13 @@ export async function playFanfare(options: FanfareOptions = {}): Promise<void> {
     } catch {
       // Autoplay policy blocked us — caller can't recover without a
       // user gesture. Silent fail.
-      return;
+      return null;
     }
   }
   // Belt-and-braces: if resume succeeded but the context still isn't
   // running (some engines leave it in 'interrupted' on background tabs),
   // bail rather than schedule into the void.
-  if (ac.state !== 'running') return;
+  if (ac.state !== 'running') return null;
 
   // Master gain → low-pass softens the square wave so it doesn't sound
   // brittle on streaming speakers.
@@ -108,7 +138,8 @@ export async function playFanfare(options: FanfareOptions = {}): Promise<void> {
   // engines where resume() returns slightly before the clock starts
   // ticking. Audible latency is fine — the card-pop animation runs for
   // 260 ms, plenty of room.
-  const now = ac.currentTime + 0.06;
+  const now = ac.currentTime + FANFARE_LOOKAHEAD_S;
+  const oscillators: OscillatorNode[] = [];
   for (const n of ARPEGGIO) {
     const osc = ac.createOscillator();
     osc.type = waveform;
@@ -128,7 +159,34 @@ export async function playFanfare(options: FanfareOptions = {}): Promise<void> {
 
     osc.start(noteStart);
     osc.stop(noteEnd + 0.05);
+    oscillators.push(osc);
   }
+
+  let endResolve: (() => void) | null = null;
+  const ended = new Promise<void>((resolve) => {
+    endResolve = resolve;
+  });
+  let cancelled = false;
+  const endTimer = window.setTimeout(() => {
+    if (endResolve) endResolve();
+  }, FANFARE_END_MS);
+
+  return {
+    ended,
+    cancel: () => {
+      if (cancelled) return;
+      cancelled = true;
+      window.clearTimeout(endTimer);
+      for (const osc of oscillators) {
+        try {
+          osc.stop();
+        } catch {
+          /* already stopped */
+        }
+      }
+      if (endResolve) endResolve();
+    },
+  };
 }
 
 /**

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   obsApi,
   usePolledQuery,
+  type CharitySlide,
+  type CharitySlideKind,
   type ExternalEvent,
   type Incentive,
   type Milestone,
@@ -35,6 +37,7 @@ export function OmnibarControl() {
     <div className="control-stack" style={{ display: 'grid', gap: '1.5rem' }}>
       <SandboxSection />
       <LayoutSection />
+      <CharitySlidesSection />
       <OverridesSection />
       <ObjectiveSection />
       <SetpieceSection />
@@ -43,6 +46,347 @@ export function OmnibarControl() {
       <MilestonesSection />
       <ExternalEventsSection />
     </div>
+  );
+}
+
+// ── Charity slides ──────────────────────────────────────────────────
+
+function CharitySlidesSection() {
+  const { data: slides } = usePolledQuery(obsApi.charitySlides, 5000);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState<{
+    kind: CharitySlideKind;
+    title: string;
+    body: string;
+    image_url: string;
+    alt_text: string;
+  }>({
+    kind: 'blurb',
+    title: '',
+    body: '',
+    image_url: '',
+    alt_text: '',
+  });
+
+  const create = async () => {
+    if (form.kind === 'logo' && !form.image_url.trim()) return;
+    if (form.kind === 'blurb' && !form.body.trim()) return;
+    setBusy(true);
+    try {
+      const maxOrder = (slides ?? []).reduce((m, s) => Math.max(m, s.order), -1);
+      await obsApi.createCharitySlide({
+        kind: form.kind,
+        title: form.title.trim(),
+        body: form.body.trim(),
+        image_url: form.image_url.trim(),
+        alt_text: form.alt_text.trim(),
+        order: maxOrder + 1,
+      });
+      setForm({ kind: form.kind, title: '', body: '', image_url: '', alt_text: '' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sorted = (slides ?? []).slice().sort((a, b) => a.order - b.order);
+
+  return (
+    <section className="control-card">
+      <h2>Charity cluster</h2>
+      <p className="text-white-50">
+        Rotates in the right-hand cluster of the omnibar next to the
+        running total. Mix logos (SpecialEffect, GameBlast, sponsors)
+        with short blurbs (who they help, how to donate). Order drives
+        the rotation sequence; only <strong>active</strong> slides
+        appear in the omnibar. With zero active slides the omnibar
+        falls back to a bundled default set so it never goes blank.
+      </p>
+
+      <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <label className="d-flex flex-column">
+          <small>Kind</small>
+          <select
+            value={form.kind}
+            onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as CharitySlideKind }))}
+          >
+            <option value="blurb">Blurb (text)</option>
+            <option value="logo">Logo (image)</option>
+          </select>
+        </label>
+        {form.kind === 'blurb' ? (
+          <>
+            <label className="d-flex flex-column">
+              <small>Title (optional)</small>
+              <input
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="100% goes through"
+                style={{ width: 200 }}
+              />
+            </label>
+            <label className="d-flex flex-column flex-grow-1" style={{ minWidth: 260 }}>
+              <small>Body</small>
+              <input
+                value={form.body}
+                onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                placeholder="Every pound raised goes directly to SpecialEffect."
+              />
+            </label>
+          </>
+        ) : (
+          <>
+            <label className="d-flex flex-column flex-grow-1" style={{ minWidth: 260 }}>
+              <small>Image URL</small>
+              <input
+                value={form.image_url}
+                onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
+                placeholder="/assets/img/specialeffect-logo.svg"
+              />
+            </label>
+            <label className="d-flex flex-column">
+              <small>Alt text</small>
+              <input
+                value={form.alt_text}
+                onChange={(e) => setForm((f) => ({ ...f, alt_text: e.target.value }))}
+                placeholder="SpecialEffect"
+                style={{ width: 200 }}
+              />
+            </label>
+          </>
+        )}
+        <button className="btn btn-bloodmoon" disabled={busy} onClick={create}>
+          Add slide
+        </button>
+      </div>
+
+      <table className="control-table mt-3">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Kind</th>
+            <th>Preview</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.length === 0 && (
+            <tr><td colSpan={5} className="text-white-50">
+              No slides — using bundled defaults.
+            </td></tr>
+          )}
+          {sorted.map((s, i) => (
+            <CharitySlideRow
+              key={s.id}
+              slide={s}
+              first={i === 0}
+              last={i === sorted.length - 1}
+              prev={sorted[i - 1]}
+              next={sorted[i + 1]}
+            />
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+interface CharitySlideDraft {
+  kind: CharitySlideKind;
+  title: string;
+  body: string;
+  image_url: string;
+  alt_text: string;
+}
+
+function draftFromSlide(s: CharitySlide): CharitySlideDraft {
+  return {
+    kind: s.kind,
+    title: s.title,
+    body: s.body,
+    image_url: s.image_url,
+    alt_text: s.alt_text,
+  };
+}
+
+function CharitySlideRow({
+  slide,
+  first,
+  last,
+  prev,
+  next,
+}: {
+  slide: CharitySlide;
+  first: boolean;
+  last: boolean;
+  prev: CharitySlide | undefined;
+  next: CharitySlide | undefined;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<CharitySlideDraft>(() => draftFromSlide(slide));
+  // Re-sync the draft when the slide's identity changes externally
+  // (poll refresh, another tab edited it, etc.) — but only when NOT
+  // editing, so the operator's in-progress edits aren't wiped by a
+  // background poll.
+  useEffect(() => {
+    if (editing) return;
+    setDraft(draftFromSlide(slide));
+  }, [
+    editing,
+    slide.kind, slide.title, slide.body,
+    slide.image_url, slide.alt_text,
+  ]);
+
+  const toggleActive = async () => {
+    setBusy(true);
+    try { await obsApi.updateCharitySlide(slide.id, { is_active: !slide.is_active }); }
+    finally { setBusy(false); }
+  };
+  const remove = async () => {
+    setBusy(true);
+    try { await obsApi.deleteCharitySlide(slide.id); } finally { setBusy(false); }
+  };
+  // Swap orders with the neighbour to nudge up/down — simpler than
+  // re-numbering the whole list. The poll picks up the new sort
+  // automatically.
+  const move = async (neighbour: CharitySlide | undefined) => {
+    if (!neighbour) return;
+    setBusy(true);
+    try {
+      await obsApi.updateCharitySlide(slide.id, { order: neighbour.order });
+      await obsApi.updateCharitySlide(neighbour.id, { order: slide.order });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      // Server-side ignores fields that aren't relevant to the kind,
+      // but trimming whitespace here keeps the live preview tidy.
+      await obsApi.updateCharitySlide(slide.id, {
+        kind: draft.kind,
+        title: draft.title.trim(),
+        body: draft.body.trim(),
+        image_url: draft.image_url.trim(),
+        alt_text: draft.alt_text.trim(),
+      });
+      setEditing(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cancel = () => {
+    setDraft(draftFromSlide(slide));
+    setEditing(false);
+  };
+
+  const update = <K extends keyof CharitySlideDraft>(key: K, value: CharitySlideDraft[K]) =>
+    setDraft((d) => ({ ...d, [key]: value }));
+
+  return (
+    <tr>
+      <td style={{ fontVariantNumeric: 'tabular-nums' }}>{slide.order}</td>
+      <td>
+        {editing ? (
+          <select
+            value={draft.kind}
+            onChange={(e) => update('kind', e.target.value as CharitySlideKind)}
+          >
+            <option value="blurb">blurb</option>
+            <option value="logo">logo</option>
+          </select>
+        ) : (
+          <code>{slide.kind}</code>
+        )}
+      </td>
+      <td>
+        {editing ? (
+          draft.kind === 'logo' ? (
+            <div className="d-flex flex-column gap-1" style={{ minWidth: 280 }}>
+              <input
+                value={draft.image_url}
+                onChange={(e) => update('image_url', e.target.value)}
+                placeholder="/assets/img/specialeffect-logo.svg"
+              />
+              <input
+                value={draft.alt_text}
+                onChange={(e) => update('alt_text', e.target.value)}
+                placeholder="Alt text (e.g. SpecialEffect)"
+              />
+            </div>
+          ) : (
+            <div className="d-flex flex-column gap-1" style={{ minWidth: 280 }}>
+              <input
+                value={draft.title}
+                onChange={(e) => update('title', e.target.value)}
+                placeholder="Title (optional)"
+              />
+              <input
+                value={draft.body}
+                onChange={(e) => update('body', e.target.value)}
+                placeholder="Body — up to ~3 short lines"
+              />
+            </div>
+          )
+        ) : slide.kind === 'logo' ? (
+          <div className="d-flex align-items-center gap-2">
+            {slide.image_url && (
+              <img
+                src={slide.image_url}
+                alt={slide.alt_text}
+                style={{ height: 28, width: 'auto', background: 'rgba(0,0,0,0.3)', borderRadius: 3 }}
+              />
+            )}
+            <small className="text-white-50">{slide.alt_text || slide.image_url}</small>
+          </div>
+        ) : (
+          <div>
+            {slide.title && <div><strong style={{ color: '#ffd23a' }}>{slide.title}</strong></div>}
+            <small className="text-white-50">{slide.body}</small>
+          </div>
+        )}
+      </td>
+      <td>
+        <button
+          className={`btn btn-sm ${slide.is_active ? 'btn-outline-success' : 'btn-outline-secondary'}`}
+          disabled={busy || editing}
+          onClick={toggleActive}
+        >
+          {slide.is_active ? 'Active' : 'Paused'}
+        </button>
+      </td>
+      <td className="control-btn-row">
+        {editing ? (
+          <>
+            <button className="btn btn-sm btn-bloodmoon" disabled={busy} onClick={save}>
+              Save
+            </button>
+            <button className="btn btn-sm btn-outline-light" disabled={busy} onClick={cancel}>
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="btn btn-sm btn-outline-light"
+              disabled={busy}
+              onClick={() => setEditing(true)}
+            >
+              Edit
+            </button>
+            <button className="btn btn-sm btn-outline-light" disabled={busy || first} onClick={() => move(prev)}>↑</button>
+            <button className="btn btn-sm btn-outline-light" disabled={busy || last} onClick={() => move(next)}>↓</button>
+            <button className="btn btn-sm btn-outline-danger" disabled={busy} onClick={remove}>
+              Delete
+            </button>
+          </>
+        )}
+      </td>
+    </tr>
   );
 }
 

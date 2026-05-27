@@ -82,11 +82,21 @@
     0 100%
   );
 }
-.omnibar--v2 .ob-brand img {
-  max-height: 64px;
+/* Generic shrink-to-fit for every image inside the omnibar. Each
+ * container constrains its OWN size; the image just fills whatever
+ * box it lives in. Individual panels can override if they need a
+ * specific cap. */
+.omnibar--v2 img {
   max-width: 100%;
+  max-height: 100%;
   width: auto;
   height: auto;
+  object-fit: contain;
+}
+
+.omnibar--v2 .ob-brand img {
+  /* No hardcoded max-height — let the brand pill's padding define
+   * the available room and the image scale to fit. */
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
 
@@ -270,6 +280,18 @@
   flex-shrink: 0;
 }
 
+/* Item-collected icon container — sized so the inline image (via the
+ * generic `.omnibar--v2 img` shrink-to-fit rule) is bounded to a
+ * fixed row-friendly size without ever stretching past the lane. */
+.omnibar--v2 .ob-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+}
+
 /* ── Incentive progress bar (inline) ─────────────────────────────── */
 
 .omnibar--v2 .ob-incentive-bar {
@@ -414,18 +436,23 @@
 .omnibar--v2 .ob-total {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0 1.25rem 0 1.25rem;
+  gap: 1rem;
+  padding: 0 1rem 0 1.25rem;
   background: var(--ob-bloodmoon);
-  min-width: 280px;
+  /* Wider to fit total + charity cluster side-by-side without
+   * either feeling cramped. */
+  min-width: 420px;
   position: relative;
   z-index: 3;
   transition: box-shadow 240ms ease;
 }
 
-.omnibar--v2 .ob-total.is-pending {
-  box-shadow: inset 0 0 0 1px rgba(255, 210, 58, 0.45);
-}
+/* `.is-pending` previously painted an inset gold halo as a "donation
+ * incoming" tell, but it clashed with the omnibar's own top accent
+ * border. The right-cluster is busy enough with the running total +
+ * charity rotation; pending donations are already visible in the
+ * bottom lane (live card or queued). No-op for now — left here as a
+ * sticky hook the FSM can target if we revisit the visual cue later. */
 
 .omnibar--v2 .ob-total-amount-wrap {
   display: flex;
@@ -448,6 +475,105 @@
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
+}
+
+/* ── Charity cluster (logo + rotating blurbs) ────────────────────── */
+
+.omnibar--v2 .ob-charity-cluster {
+  position: relative;
+  flex: 1;
+  min-width: 190px;
+  /* Taller than the original 64px so a blurb with a title can wrap
+   * to two lines of body text, or a title-less blurb to three. The
+   * .ob-total parent is full-omnibar-height (96px) so we still have
+   * generous breathing room around the cluster. */
+  height: 80px;
+  margin-left: 0.4rem;
+}
+
+.omnibar--v2 .ob-charity-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Horizontal inset shared by both logo and blurb variants so a
+   * logo isn't visually wider than a blurb's text block. Previously
+   * the blurb owned its own padding while the logo's <img> filled
+   * edge-to-edge, leaving logos 9.6px wider than blurbs. */
+  padding: 0 0.3rem;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 480ms ease,
+    transform 480ms ease;
+  pointer-events: none;
+}
+
+.omnibar--v2 .ob-charity-slide[data-visible='true'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.omnibar--v2 .ob-charity-logo {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.omnibar--v2 .ob-charity-blurb {
+  display: flex;
+  flex-direction: column;
+  /* Vertically centre the title + body block within the cluster so a
+   * short blurb sits nicely and a long one fills the cluster top to
+   * bottom. Horizontal inset lives on the parent .ob-charity-slide
+   * so logos and blurbs share the same padding. */
+  justify-content: center;
+  gap: 0.1rem;
+  text-align: left;
+  width: 100%;
+  height: 100%;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.omnibar--v2 .ob-charity-blurb-title {
+  font-family: var(--ob-font);
+  font-size: 0.8rem;
+  color: #ffd23a;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  /* Pulled to the top of the block so the body has more vertical
+   * room. flex-direction:column + justify-content:center already
+   * centres the pair; this just trims excess height. */
+  margin-bottom: 0.1rem;
+}
+
+/* Body text. Wraps over up to 3 lines via webkit-line-clamp — when
+ * a title is present we clamp to 2 lines, when it's absent we
+ * give the body the full 3-line height. Browsers without
+ * -webkit-line-clamp fall back to the overflow:hidden + max-height
+ * cap (same effective result, no ellipsis). */
+/* Body text — always clamps to 3 lines whether or not a title is
+ * present. The cluster is 80px tall, comfortably enough for the
+ * title (0.8rem × 1.1 ≈ 15px) plus its margin (≈1.5px) plus three
+ * body lines (0.85rem × 1.2 × 3 ≈ 49px). Browsers without
+ * -webkit-line-clamp fall back to the overflow:hidden + max-height
+ * cap (same effective result, no ellipsis). */
+.omnibar--v2 .ob-charity-blurb-body {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.2;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-height: calc(0.85rem * 1.2 * 3);
 }
 
 /* ── Mode overlays ───────────────────────────────────────────────── */

@@ -462,6 +462,23 @@ class DonationPage(models.Model):
             ).exclude(pk=self.pk).update(is_primary=False)
 
 
+class MuteReason(models.TextChoices):
+    """Why a donation is hidden from /obs/tts and /obs/omnibar live
+    cards. Empty string = not muted; everything else is a reason tag
+    the operator picked from a dropdown in /control/donations.
+
+    Adding a new reason: extend this enum, regenerate the donations
+    migration (auto-detected by Django), and the dropdown in
+    /control/donations picks it up via /api/donation-mute-reasons/."""
+
+    NONE = '', '— not muted —'
+    NAUGHTY_NAME = 'naughty_name', 'Inappropriate donor name'
+    NAUGHTY_MESSAGE = 'naughty_message', 'Inappropriate message text'
+    NAUGHTY_IMAGE = 'naughty_image', 'Inappropriate donor image'
+    ALREADY_ANNOUNCED = 'already_announced', 'Already announced on stream'
+    OTHER = 'other', 'Other / manual'
+
+
 class Donation(models.Model):
     """A single donation from any platform. Aggregations are computed in views."""
 
@@ -481,13 +498,19 @@ class Donation(models.Model):
         max_digits=10, decimal_places=2, null=True, blank=True
     )
     image_url = models.URLField(blank=True)
-    is_muted = models.BooleanField(
-        default=False,
-        help_text='When true the /obs/tts and /obs/omnibar live-donation '
-                  'overlays skip this donation entirely (no card, no '
-                  'speech). Lets the operator suppress profanity or '
-                  'already-announced repeats. Donation still counts '
-                  'toward totals — only the announcement is muted.',
+    mute_reason = models.CharField(
+        max_length=32,
+        choices=MuteReason.choices,
+        default=MuteReason.NONE,
+        blank=True,
+        db_index=True,
+        help_text='Why this donation is muted from /obs/tts and /obs/omnibar '
+                  'live-donation overlays. Empty string = not muted. '
+                  'Lets the operator record WHY a row was suppressed (naughty '
+                  'content in name/message/image, repeat announcement, etc.) '
+                  'rather than a yes/no flag with no audit trail. The '
+                  'donation still counts toward totals — only the announcement '
+                  'is suppressed.',
     )
 
     class Meta:
@@ -497,6 +520,14 @@ class Donation(models.Model):
 
     def __str__(self) -> str:
         return f'{self.platform}: {self.donor_name} {self.currency} {self.amount}'
+
+    @property
+    def is_muted(self) -> bool:
+        """Derived convenience flag. Existing TTS / omnibar consumers
+        ask `donation.is_muted`; keeping the same shape on the JSON
+        avoids touching them when the underlying field gained a reason
+        tag. New code wanting the reason itself reads `mute_reason`."""
+        return bool(self.mute_reason)
 
 
 class TtsNowReading(models.Model):
@@ -537,6 +568,50 @@ class TtsNowReading(models.Model):
 
     @classmethod
     def get(cls) -> 'TtsNowReading':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class ChestReplay(models.Model):
+    """Singleton "re-fire this donation through /obs/chest-announcer".
+
+    Mirrors `TtsReplay` exactly — the chest-announcer overlay polls
+    this row and re-enqueues the donation when ``requested_at``
+    advances past the value it last saw. Separate from `TtsReplay`
+    because the operator can want one without the other (replay TTS
+    without the chest fanfare, or re-show the chest card without
+    re-narrating). Singleton (pk=1) so a fresh POST always overwrites
+    the prior request.
+    """
+
+    donation = models.ForeignKey(
+        Donation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        help_text='The donation to re-announce. Cleared (without dropping '
+                  'the singleton row) when the donation is deleted.',
+    )
+    requested_at = models.DateTimeField(
+        default=timezone.now,
+        help_text='Bumped on every replay request. The chest-announcer '
+                  'uses this as a high-water mark — when it moves '
+                  'forward, enqueue the linked donation.',
+    )
+
+    class Meta:
+        verbose_name_plural = 'chest replays'
+
+    def __str__(self) -> str:
+        return f'Chest replay: {self.donation or "(cleared)"} @ {self.requested_at:%H:%M:%S}'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls) -> 'ChestReplay':
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
@@ -1154,6 +1229,159 @@ class Milestone(models.Model):
         return self.reached_at is not None
 
 
+class CharitySlide(models.Model):
+    """One slide in the omnibar's right-cluster charity rotation.
+
+    Two flavours:
+
+      kind='logo'  — image_url + alt_text. Renders the image centred.
+                     Use for SpecialEffect, GameBlast, sponsor logos.
+      kind='blurb' — title + body. Renders as a two-line text card.
+                     Use for "Helps disabled gamers play", "Donate at
+                     zeldathon.co.uk/charity", short call-outs, etc.
+
+    The omnibar cycles through every active slide on the
+    `cycle_seconds` interval set by the operator. When zero slides are
+    configured the frontend falls back to a hardcoded default set so
+    a fresh install still has something to show.
+    """
+
+    KIND_LOGO = 'logo'
+    KIND_BLURB = 'blurb'
+    KIND_CHOICES = [
+        (KIND_LOGO, 'Logo'),
+        (KIND_BLURB, 'Blurb'),
+    ]
+
+    kind = models.CharField(max_length=8, choices=KIND_CHOICES, default=KIND_BLURB)
+    title = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text='Blurb header (uppercase gold line). Ignored for logos.',
+    )
+    body = models.CharField(
+        max_length=240,
+        blank=True,
+        help_text='Blurb body text. Ignored for logos.',
+    )
+    image_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Logo image URL. Absolute or site-relative. '
+                  'Ignored for blurbs.',
+    )
+    alt_text = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text='Logo alt text (e.g. "SpecialEffect"). Ignored for blurbs.',
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text='Display order in the rotation (lower = earlier).',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self) -> str:
+        if self.kind == self.KIND_LOGO:
+            return f'[logo] {self.alt_text or self.image_url}'
+        return f'[blurb] {self.title or self.body[:40]}'
+
+
+class ChestAnnouncerSoundTrigger(models.Model):
+    """Rule that maps an incoming donation to a specific sound file.
+
+    /obs/chest-announcer evaluates active triggers in priority order
+    (lowest number wins) when each donation arrives. The first match
+    plays its `sound_url` instead of the default procedural fanfare;
+    no match → fanfare plays as the fallback. Three trigger kinds:
+
+        game     — match when the currently-playing schedule entry's
+                   game equals `game`. Use for game-themed stings.
+        amount   — match when the donation amount equals `match`
+                   (string, e.g. "6.70" matches £6.70 exactly,
+                   ±0.005 tolerance for rounding).
+        keyword  — match when the donation message contains any of
+                   the comma-separated terms in `match` (case-
+                   insensitive substring).
+
+    `sound_url` is a URL or site-relative path to an audio file the
+    browser can play (mp3, wav, ogg). The streamer is responsible for
+    ensuring they have the rights to any audio they reference here —
+    nothing is bundled with this codebase.
+    """
+
+    KIND_GAME = 'game'
+    KIND_AMOUNT = 'amount'
+    KIND_KEYWORD = 'keyword'
+    KIND_CHOICES = [
+        (KIND_GAME, 'Game'),
+        (KIND_AMOUNT, 'Amount'),
+        (KIND_KEYWORD, 'Keyword'),
+    ]
+
+    name = models.CharField(
+        max_length=120,
+        help_text='Operator-facing label (e.g. "£6.70 sting", "OoT theme").',
+    )
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    match = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text=(
+            'amount: JS regex tested against the bare amount string '
+            '(e.g. "69.00"). Currency glyphs in the pattern are '
+            'stripped automatically, so "^£69\\.00$" works the same as '
+            '"^69\\.00$". "69" matches anything containing the digits '
+            '"69"; "^69\\.00$" matches exactly 69.00; "\\.69$" matches '
+            'any amount ending in 69 pence. keyword: comma-separated '
+            'terms, case-insensitive substring of the donation message. '
+            'game: leave blank, the `game` FK below drives the match.'
+        ),
+    )
+    game = models.ForeignKey(
+        'Game',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='chest_sound_triggers',
+        help_text='Only used when kind=game. Fires while this game is the '
+                  'currently-playing schedule entry.',
+    )
+    sound_url = models.CharField(
+        max_length=500,
+        help_text='Absolute URL or site-relative path to an audio file '
+                  '(mp3/wav/ogg). Streamer is responsible for licensing.',
+    )
+    volume = models.FloatField(
+        default=0.6,
+        help_text='Playback gain (0.0–1.0). Defaults to 0.6 — louder than '
+                  'the fanfare since the streamer presumably wants the '
+                  'sting to land.',
+    )
+    priority = models.PositiveIntegerField(
+        default=10,
+        help_text='Lower number = higher priority. Multiple triggers can '
+                  'match the same donation; the lowest-priority active '
+                  'trigger wins.',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['priority', 'name']
+        verbose_name = 'Chest announcer sound trigger'
+        verbose_name_plural = 'Chest announcer sound triggers'
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.kind})'
+
+
 class ChestAnnouncerSettings(models.Model):
     """Singleton settings row for the /obs/chest-announcer overlay.
 
@@ -1174,6 +1402,35 @@ class ChestAnnouncerSettings(models.Model):
             'because the omnibar already announces donations via TTS '
             '— leave off when both overlays are in the scene to avoid '
             'overlapping audio.'
+        ),
+    )
+    between_cards_ms = models.PositiveIntegerField(
+        default=1500,
+        help_text=(
+            'Pause in milliseconds between donation cards when '
+            'multiple donations queue up. Hero stays at the chest in '
+            'idle pose for this long before reaching in for the next '
+            'donation, giving viewers a beat to register each donor '
+            'before the next reveal. Range 0–10000 enforced client-side.'
+        ),
+    )
+    card_min_hold_ms = models.PositiveIntegerField(
+        default=2800,
+        help_text=(
+            'Minimum time (ms) a donation card stays on screen, even '
+            'if the audio finishes earlier. Keeps the visual rhythm '
+            'consistent for short sounds. Range 500–60000 enforced '
+            'client-side.'
+        ),
+    )
+    card_max_hold_ms = models.PositiveIntegerField(
+        default=20000,
+        help_text=(
+            'Hard ceiling (ms) on how long a card can stay on screen '
+            'waiting for audio to finish. A long-running custom sting '
+            'gets cut off after this to keep the donation queue moving. '
+            'Should be >= card_min_hold_ms. Range up to 300000 (5 min) '
+            'enforced client-side.'
         ),
     )
     updated_at = models.DateTimeField(auto_now=True)

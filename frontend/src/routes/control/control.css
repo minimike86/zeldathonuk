@@ -123,7 +123,12 @@
 }
 
 .control-table-scroll > .control-table {
-  min-width: 1080px;
+  /* No fixed min-width — every column is drag-resizable now, so the
+   * table sizes to the sum of the operator's column widths. The
+   * scroll wrapper above still kicks in when the total exceeds the
+   * viewport, and the per-column `COLUMN_MIN_PX` floor in
+   * useResizableColumns prevents any single column from being
+   * dragged below the readable threshold. */
 }
 
 /* Keep the action-cell buttons on one line — flex-wrap inside a
@@ -203,6 +208,118 @@
   letter-spacing: 0.08em;
   vertical-align: middle;
   animation: donation-now-reading-pip-pulse 1.6s ease-in-out infinite;
+}
+
+/* Pip next to a muted donation's message text — surfaces *why* the
+ * operator suppressed the row (naughty name / message / image, already
+ * announced, etc.) so the next operator scrolling the list can see the
+ * audit trail without opening the dropdown. */
+.donation-mute-reason-pip {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.75rem;
+  font-style: normal;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  opacity: 1;
+}
+
+/* Mute-reason dropdown in the action column. Fixed width so the column
+ * doesn't shift size as rows toggle between muted/unmuted; yellow tint
+ * when a reason is set so the operator can scan the table and see at a
+ * glance which rows are suppressed. Slimmed alongside the data
+ * columns — the longest reason label still fits at 10rem. */
+.donation-mute-select {
+  width: 10rem;
+  min-width: 9rem;
+  cursor: pointer;
+}
+
+.donation-mute-select.is-muted {
+  background-color: rgba(255, 193, 7, 0.18);
+  border-color: rgba(255, 193, 7, 0.45);
+  color: #ffc107;
+  font-weight: 600;
+}
+
+/* Compact side-by-side action column. Replay + Delete are icon-only
+ * (tooltips carry the label) so the column shrinks to roughly the
+ * width of the Mute select + two icon chips — about 13rem total
+ * instead of the original 26rem. Real estate gained goes to the
+ * Message column. */
+.donation-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.donation-action-btn {
+  /* Icon-only buttons — match the select's height (btn-sm) and stay
+   * square-ish so they read as glyph affordances rather than empty
+   * pills. Tooltip on the button itself supplies the label. */
+  width: 2.25rem;
+  padding-left: 0;
+  padding-right: 0;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Message column wraps within whatever width the operator's dragged
+ * the column to. No max-width — the header's explicit width (driven
+ * by useResizableColumns) is the truth; the cell just wraps to fit. */
+.donation-message-cell {
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  vertical-align: top;
+}
+
+/* Drag-to-resize handle pinned to the right edge of each <th>.
+ * Invisible by default; faint accent on hover so the operator can
+ * find the hit zone without it cluttering the header chrome. Lives
+ * inside a `position: relative` th — see SortableTh / the plain
+ * Message/Actions th declarations. */
+.control-table-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  /* Above the th's text so the hover hit zone reliably wins clicks
+   * over the header's sort onClick (which is also stopped via
+   * stopPropagation in the handler). */
+  z-index: 1;
+  user-select: none;
+}
+
+.control-table-resize-handle:hover,
+.control-table-resize-handle:active {
+  background: rgba(255, 210, 58, 0.4);
+}
+
+/* Inline "Show more / Show less" toggle. `btn btn-link` from Bootstrap
+ * provides the underline + link-tone colour; we just shrink it and
+ * strip padding so it reads as inline prose rather than a button
+ * chip in the middle of the message. */
+.donation-message-toggle {
+  padding: 0;
+  font-size: 0.85em;
+  vertical-align: baseline;
+  text-decoration: underline;
+}
+
+.donation-message-toggle:hover {
+  text-decoration: underline;
+  filter: brightness(1.2);
 }
 
 @keyframes donation-now-reading-pip-pulse {

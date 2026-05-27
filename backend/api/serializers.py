@@ -287,6 +287,11 @@ class CollectedItemSerializer(serializers.ModelSerializer):
 
 
 class DonationSerializer(serializers.ModelSerializer):
+    # `is_muted` is a derived @property on the model — surface it as a
+    # read-only boolean so existing TTS / omnibar consumers keep
+    # working unchanged while writes go through `mute_reason`.
+    is_muted = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = models.Donation
         fields = [
@@ -301,6 +306,7 @@ class DonationSerializer(serializers.ModelSerializer):
             'external_id',
             'gift_aid_amount',
             'image_url',
+            'mute_reason',
             'is_muted',
         ]
         # `Donation.Meta.unique_together = [('platform', 'external_id')]`
@@ -362,6 +368,22 @@ class TtsNowReadingSerializer(serializers.ModelSerializer):
         model = models.TtsNowReading
         fields = ['donation_id', 'started_at']
         read_only_fields = ['started_at']
+
+
+class ChestReplaySerializer(serializers.ModelSerializer):
+    """Flat view of the chest-announcer-replay singleton. Same shape
+    as TtsReplaySerializer so the chest-announcer overlay can reuse
+    the same high-water-mark polling pattern."""
+
+    donation_id = serializers.PrimaryKeyRelatedField(
+        source='donation', queryset=models.Donation.objects.all(),
+        allow_null=True, required=False,
+    )
+
+    class Meta:
+        model = models.ChestReplay
+        fields = ['donation_id', 'requested_at']
+        read_only_fields = ['requested_at']
 
 
 class TtsReplaySerializer(serializers.ModelSerializer):
@@ -465,10 +487,51 @@ class MilestoneSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'reached_at', 'is_reached', 'created_at']
 
 
+class CharitySlideSerializer(serializers.ModelSerializer):
+    """Charity-cluster slide — kind='logo' uses image_url + alt_text,
+    kind='blurb' uses title + body."""
+
+    class Meta:
+        model = models.CharitySlide
+        fields = ['id', 'kind', 'title', 'body', 'image_url', 'alt_text',
+                  'order', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
 class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
     """Singleton settings for the /obs/chest-announcer overlay."""
 
     class Meta:
         model = models.ChestAnnouncerSettings
-        fields = ['audio_enabled', 'updated_at']
+        fields = [
+            'audio_enabled',
+            'between_cards_ms',
+            'card_min_hold_ms',
+            'card_max_hold_ms',
+            'updated_at',
+        ]
         read_only_fields = ['updated_at']
+
+
+class ChestAnnouncerSoundTriggerSerializer(serializers.ModelSerializer):
+    """Per-rule sound mapping for the chest announcer."""
+
+    game_title = serializers.CharField(source='game.title', read_only=True)
+
+    class Meta:
+        model = models.ChestAnnouncerSoundTrigger
+        fields = [
+            'id',
+            'name',
+            'kind',
+            'match',
+            'game',
+            'game_title',
+            'sound_url',
+            'volume',
+            'priority',
+            'is_active',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'game_title', 'created_at', 'updated_at']

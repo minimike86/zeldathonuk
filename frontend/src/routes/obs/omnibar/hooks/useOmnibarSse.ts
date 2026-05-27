@@ -5,11 +5,19 @@ import {
   seenOverrideIds,
   seenPlaythroughIds,
 } from './eventDedupe';
+import { env } from '@/lib/env';
 import type {
   ExternalEvent,
   OmnibarOverride,
   PlaythroughEvent,
 } from '@/lib/obsApi';
+
+// EventSource doesn't pass through the Vite dev proxy by default
+// (no /api/* proxy entry, and SSE streams trip http-proxy's default
+// buffering anyway). Resolve to the full backend URL like the rest
+// of the API client does. In prod the same VITE_API_URL points at the
+// reverse-proxied origin.
+const STREAM_URL = new URL('/api/stream/omnibar/', env.VITE_API_URL).toString();
 
 /**
  * Subscribe to /api/stream/omnibar/ (Server-Sent Events) and pump the
@@ -34,7 +42,7 @@ export function useOmnibarSse(): { connected: boolean } {
     let cancelled = false;
     const connect = () => {
       if (cancelled) return;
-      es = new EventSource('/api/stream/omnibar/');
+      es = new EventSource(STREAM_URL);
       es.addEventListener('hello', () => setConnected(true));
       es.addEventListener('override', (e) => {
         const data = parse<OmnibarOverride>(e);

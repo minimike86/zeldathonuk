@@ -391,6 +391,27 @@ class MilestoneAdmin(admin.ModelAdmin):
     readonly_fields = ['is_reached', 'created_at']
 
 
+@admin.register(models.CharitySlide)
+class CharitySlideAdmin(admin.ModelAdmin):
+    list_display = ['kind', 'order', 'preview', 'is_active']
+    list_filter = ['kind', 'is_active']
+    search_fields = ['title', 'body', 'alt_text']
+    ordering = ['order', 'id']
+    readonly_fields = ['created_at', 'updated_at']
+
+    @admin.display(description='Preview')
+    def preview(self, obj):
+        return obj.title or obj.alt_text or (obj.body[:40] + ('…' if len(obj.body) > 40 else ''))
+
+
+@admin.register(models.ChestAnnouncerSoundTrigger)
+class ChestAnnouncerSoundTriggerAdmin(admin.ModelAdmin):
+    list_display = ['name', 'kind', 'match', 'game', 'priority', 'is_active']
+    list_filter = ['kind', 'is_active']
+    search_fields = ['name', 'match', 'sound_url']
+    readonly_fields = ['created_at', 'updated_at']
+
+
 @admin.register(models.ChestAnnouncerSettings)
 class ChestAnnouncerSettingsAdmin(admin.ModelAdmin):
     """Singleton — one row (pk=1) created lazily via .get(). Hiding the

@@ -268,6 +268,41 @@
   to   { transform: translateX(-50%) scale(1.1); }
 }
 
+/* Queue depth indicator. Sits just above-right of the chest and shows
+ * "+N more" whenever there are donations queued behind the imminent
+ * reveal. Modelled on the /obs/tts overlay's `.tts-queue-pip` so the
+ * two surfaces feel consistent. Re-mounted via React `key={queuedAhead}`
+ * each time N changes, so the pop-in animation replays — gives the
+ * operator a visible bounce every time the queue ticks.
+ */
+.ca-queue-pip {
+  position: absolute;
+  /* Chest is centred on --ca-chest-x with width --ca-chest-px, so its
+   * right edge is at chest-x + half-px. Nudge a touch further right
+   * to clear the chest silhouette. */
+  left: calc(var(--ca-chest-x, 50%) + var(--ca-chest-px) * 0.55);
+  bottom: calc(var(--ca-ground-pct) + var(--ca-chest-px) * 0.95);
+
+  font-family: 'Bungee', sans-serif;
+  font-size: max(11px, calc(var(--ca-h) * 0.06));
+  letter-spacing: 0.06em;
+  color: var(--obs-accent-bright, #ffd166);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--obs-accent, #e71347);
+  padding: calc(var(--ca-h) * 0.008) calc(var(--ca-h) * 0.018);
+  border-radius: 999px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: ca-pip-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+}
+
+@keyframes ca-pip-in {
+  0%   { transform: scale(0.3) translateY(6px); opacity: 0; }
+  60%  { transform: scale(1.1) translateY(-1px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
 /* ── Donation card + confetti ─────────────────────────────────────────
  *
  * The card pops out of the chest, floats above the hero, then bursts
