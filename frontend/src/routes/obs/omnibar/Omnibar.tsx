@@ -111,6 +111,13 @@ function OmnibarInner() {
   const [activeDonation, setActiveDonation] = useState<Donation | null>(null);
   const [activeFlash, setActiveFlash] = useState<PlaythroughEvent | null>(null);
   const [activeTwitchEvent, setActiveTwitchEvent] = useState<ExternalEvent | null>(null);
+  // Bumps on each CELEBRATE dispatch. Used as the celebrate fullbar's
+  // `key` so the element is freshly remounted every time a new
+  // celebration starts — guaranteeing the entrance CSS animations
+  // restart, even back-to-back celebrations or in dev mode where HMR
+  // / StrictMode can interfere with animation lifecycle on long-lived
+  // pseudo-elements.
+  const [celebrateNonce, setCelebrateNonce] = useState(0);
 
   const emit = useBusEmit();
 
@@ -211,6 +218,7 @@ function OmnibarInner() {
       payload: { milestone: e.milestone },
     };
     dispatch({ type: 'CELEBRATE', reason });
+    setCelebrateNonce((n) => n + 1);
     // Optional fanfare audio per milestone — fire-and-forget; failure
     // (autoplay blocked, missing file) is silent, the visual
     // celebration still runs.
@@ -219,7 +227,7 @@ function OmnibarInner() {
       audio.volume = 0.85;
       audio.play().catch(() => {});
     }
-    window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 5000);
+    window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 6200);
   });
   useBusSubscription('incentive-unlocked', (e) => {
     const reason: CelebrationReason = {
@@ -227,7 +235,8 @@ function OmnibarInner() {
       payload: { incentive: e.incentive },
     };
     dispatch({ type: 'CELEBRATE', reason });
-    window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 5000);
+    setCelebrateNonce((n) => n + 1);
+    window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 6200);
   });
 
   // Override stream → urgent mode. The highest-priority active override
@@ -403,8 +412,25 @@ function OmnibarInner() {
           /* Milestone / incentive-unlocked celebration. Mirrors the
            * urgent-fullbar treatment so the achievement message takes
            * over the entire bar for the celebration window (~5s) and
-           * viewers see WHAT was achieved, not just the gold flash. */
-          <div className="ob-fullbar ob-fullbar--celebrate">
+           * viewers see WHAT was achieved, not just the gold flash.
+           *
+           * `key` is the celebrate nonce so back-to-back celebrations
+           * remount this subtree, guaranteeing entrance animations on
+           * the flash overlay and tag pill restart for each event
+           * instead of holding their post-fill state from the prior
+           * celebration. */
+          <div
+            key={`celebrate-${celebrateNonce}`}
+            className="ob-fullbar ob-fullbar--celebrate"
+          >
+            {/* Soft gold flash overlay — a real DOM element (rather
+              * than a ::before pseudo) so its entrance animation
+              * fires reliably on each fresh mount. Sits behind the
+              * banner content via source order (it precedes the
+              * CelebrationBanner row) so the tag + headline appear
+              * on top of the illumination rather than being tinted
+              * by it. */}
+            <div className="ob-celebrate-flash" aria-hidden />
             <CelebrationBanner
               reason={
                 omnibarState.kind === 'celebrating'

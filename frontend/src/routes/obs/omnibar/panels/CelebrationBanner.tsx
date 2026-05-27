@@ -48,10 +48,12 @@ export function CelebrationBanner({
         * with the headline on top and the subhead wrapping below. */}
       <span className="ob-celebrate-stack">
         <span className="ob-text-strong ob-celebrate-headline">
-          {/* startDelayMs matches the .ob-celebrate-stack wipe-in
-            * delay in omnibar.css so the characters rise into place
-            * as the left-to-right clip-path wipe exposes them. */}
-          <WaveText text={view.headline} staggerMs={32} startDelayMs={1150} />
+          {/* startDelayMs matches the subhead wipe-in delay in
+            * omnibar.css (.ob-celebrate-sub) so headline characters
+            * drop in WHILE the subhead wipes in from the left. Both
+            * fire AFTER the tag arrow has fully landed (tag lands at
+            * t=2400) so the reveal isn't competing with tag motion. */}
+          <WaveText text={view.headline} staggerMs={32} startDelayMs={2500} />
         </span>
         {view.subhead && (
           <span className="ob-text-muted ob-celebrate-sub">{view.subhead}</span>

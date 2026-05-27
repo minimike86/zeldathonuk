@@ -196,68 +196,192 @@
 /* Celebration variant — used when the omnibar enters the `celebrating`
  * mode for an unlocked incentive or reached milestone.
  *
- * The flash backwash itself (gold gradient) lives on the omnibar root
- * via `.mood--celebrate::after` (see motion/moods.css) — that's the
- * element that wipes DOWN at t=0 and wipes UP at t=4450ms. The
- * .ob-fullbar.ob-fullbar--celebrate wrapper here is just a layout
+ * Choreography (top-down glow + visible tag slide + paired reveals).
+ *
+ * Z-index trick: the brand pill (z:3) sits above .ob-lanes (z:1) at
+ * rest, which is what gives the chevron-join its "tag tucked under
+ * the logo arrow" look. But that masking also hides the tag during
+ * its slide-in (the tag's first half is occluded by the brand pill
+ * before its right edge emerges). To get a slide that's visible the
+ * whole way through AND still has the brand chevron in front at
+ * rest, we animate the lanes' z-index in steps: z:5 during the slide
+ * (tag visible across the bar), drop to z:1 once the slide lands
+ * (brand chevron in front at rest), step back to z:5 for the retreat
+ * so the exit is symmetric. See `ob-celebrate-lanes-z` below.
+ *
+ *   t=0      gold flash overlay drops in from above (top-anchored
+ *            linear gradient — densest at the top edge, fading to
+ *            transparent at the bottom). 800ms entrance.
+ *   t=1400   tag arrow slides in from off-screen LEFT (1000ms,
+ *            ease-out). 600ms gap after the glow lands so the tag
+ *            motion isn't competing for the eye. Lanes are at z:5
+ *            so the tag is visible across the whole bar (not masked
+ *            by the brand). Lands at t=2400.
+ *   t=2500   lanes z-index steps down to 1 — brand chevron now sits
+ *            IN FRONT of the tag's left chevron-notch, which is how
+ *            the chevron-join is meant to look at rest.
+ *   t=2500   headline + subhead reveal in parallel:
+ *              · headline → WaveText per-character drop (startDelay
+ *                in CelebrationBanner.tsx matches this timestamp).
+ *              · subhead → clip-path wipe + fade-in from LEFT (800ms).
+ *            Both finish by ~t=3530.
+ *   ── ~670ms dwell so the viewer can read the message ──
+ *   t=4200   incentive name + description wipe RIGHT-TO-LEFT (500ms)
+ *            — content disappears starting from the right side.
+ *   t=4750   lanes z-index steps back to 5 so the tag retreat is
+ *            visible across the whole bar (mirrors the entrance).
+ *   t=4750   tag arrow flies back out to the LEFT (800ms).
+ *   t=5600   flash backwash wipes UP and dissolves (550ms).
+ *   t=6200   React unmounts (CELEBRATION_DONE in Omnibar.tsx fires).
+ *
+ * The .ob-fullbar.ob-fullbar--celebrate wrapper here is just a layout
  * container with NO clip-path of its own; a parent clip-path here
  * was previously interfering with the tag pill's chevron-notch clip,
  * causing two yellow triangle gaps to bleed through at the brand /
- * tag join.
- *
- * Choreography (each step finishes before the next begins so it reads
- * as an orchestrated sequence rather than a bulk fade):
- *
- *   t=0      flash backwash wipes DOWN into place (600ms) — done by
- *            .mood--celebrate::after in motion/moods.css.
- *   t=650    tag arrow flies in from the LEFT (500ms).
- *   t=1150   incentive name + description wipe LEFT-TO-RIGHT (700ms)
- *            with a -24px translateX so the slide-in is unmistakable.
- *            WaveText fires per-character within the same window so
- *            the chars rise as the wipe-line exposes them.
- *   t=1850   everything settled — dwell starts.
- *   ── ~1.45s dwell for the viewer to read ──
- *   t=3300   incentive name + description wipe RIGHT-TO-LEFT (500ms)
- *            — content disappears starting from the right side.
- *   t=3850   tag arrow flies back out to the LEFT (550ms).
- *   t=4450   flash backwash wipes UP and dissolves (550ms) — done by
- *            .mood--celebrate::after.
- *   t=5000   React unmounts (CELEBRATION_DONE in Omnibar.tsx fires). */
+ * tag join. */
 
-/* Tag arrow — flies in from the LEFT after the flash has wiped down,
- * and flies back out the LEFT before the flash wipes up. */
+/* Soft gold flash overlay — a real DOM element rendered inside
+ * .ob-fullbar.ob-fullbar--celebrate (see Omnibar.tsx). Sits absolutely
+ * positioned, extending one chevron's worth PAST the natural left
+ * edge of .ob-lanes so the gold also tints the triangular gaps
+ * either side of the brand's chevron tip (where the lane background
+ * would otherwise show through as un-tinted steel grey). The brand
+ * pill (z:3) still occludes the flash where it covers; only the
+ * chevron-join triangles get the gold bleed. Source-order earlier
+ * than the .ob-row sibling so it paints behind the banner content. */
+.omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-flash {
+  position: absolute;
+  inset: 0 0 0 calc(-1 * var(--ob-chevron));
+  pointer-events: none;
+  /* Top-anchored linear gold — densest at the top edge, fading to
+   * transparent quickly so only the upper portion of the bar gets
+   * tinted. Stops are concentrated near the top (0-50%) and the
+   * bottom half stays clean, so the tag pill + headline don't sit
+   * in a flat gold wash. Alpha kept low; the box-shadow on
+   * .mood--celebrate adds a second, even lighter pass. */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 210, 58, 0.22) 0%,
+    rgba(255, 210, 58, 0.08) 30%,
+    rgba(255, 210, 58, 0) 55%
+  );
+  animation:
+    ob-celebrate-flash-down 800ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both,
+    ob-celebrate-flash-up   550ms cubic-bezier(0.22, 1, 0.36, 1) 5600ms both;
+}
+
+/* Banner row sits above the flash overlay. .ob-row defaults to no
+ * positioning; adding position:relative + z-index lifts it above the
+ * absolute-positioned flash sibling in stacking order. */
+.omnibar--v2 .ob-fullbar--celebrate .ob-row {
+  position: relative;
+  z-index: 1;
+}
+
+/* During celebration the lanes stay at z:1 (below the brand at z:3)
+ * for the entire window — the tag pill emerges from BEHIND the brand
+ * chevron as it slides in, rather than tracking visibly across the
+ * brand area. To keep the slide perceptible despite the brand mask,
+ * the tag's start position is just one chevron's-worth off-screen
+ * (calc(-100% - chevron)) — far enough left to start hidden, but
+ * close enough that the right edge crosses the brand's chevron tip
+ * within ~9% of the slide, leaving ~91% as visible left-to-right
+ * motion of the tag emerging into the lane. */
+
+/* Flash entrance — overlay translates down from above the bar into
+ * place. The .ob-fullbar's bounds + the omnibar root's overflow:hidden
+ * mask the off-screen portion so it reads as a wipe-down. */
+@keyframes ob-celebrate-flash-down {
+  from { opacity: 0; transform: translateY(-100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Flash exit — mirror of the entrance. Overlay slides up out of the
+ * bar, leaving the lanes area as it goes. */
+@keyframes ob-celebrate-flash-up {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-100%); }
+}
+
+/* Tag arrow — collapsed into ONE keyframe covering hold-offscreen →
+ * slide-in → hold-at-rest → slide-out. Originally this was two
+ * separate `animation` declarations (slide-in + slide-out, both with
+ * `both` fill), but when two animations on the same element both use
+ * `both`, the LATER one's from-state wins during the earlier one's
+ * pre-delay phase. That meant slide-out's `from { translateX: 0 }`
+ * was being held from t=0, parking the tag at its final position
+ * immediately and the slide-in motion never visibly played.
+ *
+ * Single animation with per-keyframe `animation-timing-function`
+ * sidesteps the issue: each phase eases on its own curve, no
+ * cross-animation fill-mode conflicts. opacity:1 throughout so the
+ * slide reads purely as translateX motion. The tag starts one
+ * brand-width + tag-width off-screen left, so the omnibar root's
+ * overflow:hidden masks it completely during the pre-slide hold. */
 .omnibar--v2 .ob-fullbar--celebrate .ob-tag {
-  animation:
-    ob-tag-slide-in  500ms cubic-bezier(0.22, 1, 0.36, 1) 650ms both,
-    ob-tag-slide-out 550ms cubic-bezier(0.22, 1, 0.36, 1) 3850ms both;
+  animation: ob-celebrate-tag 6200ms linear both;
 }
 
-/* Body content (incentive name + description) — LEFT-TO-RIGHT wipe in,
- * RIGHT-TO-LEFT wipe out. Wipe-in fires after the tag arrow has fully
- * arrived; wipe-out fires first on exit so the message has visibly
- * concluded before the tag retreats and the flash dissolves. The
- * translateX paired with the clip-path makes the entrance/exit read
- * as a clear slide-and-wipe rather than a quiet fade. Overrides the
- * default `.ob-row-body > *` translateY reveal for this variant. */
+@keyframes ob-celebrate-tag {
+  /* 0-22.5% (0-1400ms) — hold off-screen left. */
+  0% {
+    transform: translateX(calc(-100% - 220px - var(--ob-chevron)));
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  /* 22.5-38.7% (1400-2400ms) — slide in with ease-out. */
+  22.5% {
+    transform: translateX(calc(-100% - 220px - var(--ob-chevron)));
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* 38.7-76.6% (2400-4750ms) — held at rest while text reveals + dwell. */
+  38.7% {
+    transform: translateX(0);
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  /* 76.6-89.5% (4750-5550ms) — slide back out with ease-in. */
+  76.6% {
+    transform: translateX(0);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.78, 0);
+  }
+  /* 89.5-100% (5550-6200ms) — hold off-screen left while flash exits. */
+  89.5%, 100% {
+    transform: translateX(calc(-100% - 220px - var(--ob-chevron)));
+    opacity: 1;
+  }
+}
+
+/* Stack exit only — the entrance is split per-child now (headline =
+ * WaveText, subhead = ob-celebrate-sub-wipe). At the end of the dwell
+ * the whole stack slides leftward out of view as one block, mirroring
+ * the v1 feel. `both` keeps the from-state during the delay so the
+ * stack is visible while WaveText + subhead reveal independently. */
 .omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-stack {
-  animation:
-    ob-celebrate-body-wipe-in  700ms cubic-bezier(0.22, 1, 0.36, 1) 1150ms both,
-    ob-celebrate-body-wipe-out 500ms cubic-bezier(0.22, 1, 0.36, 1) 3300ms both;
+  animation: ob-celebrate-body-wipe-out 500ms cubic-bezier(0.22, 1, 0.36, 1) 4200ms both;
 }
 
-/* Wipe-in: the stack slides in from the left, riding the .ob-row-body's
- * overflow: hidden as a horizontal mask. translateX(-120px → 0) gives
- * a long, clearly visible left-to-right entrance; the .ob-row-body
- * crops the off-screen portion so the effect reads as a wipe rather
- * than a free-floating slide. Pure transform + opacity (no clip-path)
- * keeps the animation reliable across rendering paths. */
-@keyframes ob-celebrate-body-wipe-in {
+/* Subhead wipe-fade-in — fires concurrently with WaveText so the
+ * description reveals from the LEFT as the headline characters drop
+ * in from above. clip-path inset opens left→right; the small -12px
+ * translateX nudge layers a horizontal slide under the wipe so the
+ * motion reads even when clip-path is unaccelerated. Delay matches
+ * the WaveText startDelayMs in CelebrationBanner.tsx. */
+.omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-sub {
+  animation: ob-celebrate-sub-wipe 800ms cubic-bezier(0.22, 1, 0.36, 1) 2500ms both;
+}
+
+@keyframes ob-celebrate-sub-wipe {
   from {
     opacity: 0;
-    transform: translateX(-120px);
+    clip-path: inset(0 100% 0 0);
+    transform: translateX(-12px);
   }
   to {
     opacity: 1;
+    clip-path: inset(0 0 0 0);
     transform: translateX(0);
   }
 }
@@ -265,7 +389,7 @@
 /* Wipe-out: stack slides leftward out of view — content appears to be
  * erased starting from its right side first (it's the last part of the
  * text to leave the .ob-row-body's right edge as the whole block moves
- * left). Mirrors the entrance distance for a symmetric exit. */
+ * left). */
 @keyframes ob-celebrate-body-wipe-out {
   from {
     opacity: 1;
