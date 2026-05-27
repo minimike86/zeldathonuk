@@ -41,6 +41,11 @@ export function DonationsControl() {
         : Promise.resolve({ by_platform: [], grand_total: '0', donation_count: 0 }),
     3000,
   );
+  // What /obs/tts is announcing right now. Poll fast — the operator's
+  // primary reason for watching the highlight is to catch and mute a
+  // bad donation mid-utterance, so latency matters.
+  const { data: nowReading } = usePolledQuery(obsApi.ttsNowReading, 1500);
+  const liveTtsId = nowReading?.donation_id ?? null;
 
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState('');
@@ -160,7 +165,14 @@ export function DonationsControl() {
           />
         )}
 
-        <table className="control-table mt-3">
+        {/* Horizontal scroll wrapper — the donation row now carries five
+         *  data columns + an action column with three labelled buttons
+         *  (Replay TTS / Mute / Delete), which together don't fit under
+         *  ~1100px without ellipsising the message or stacking buttons.
+         *  Scrolling preserves the dense data layout and avoids a mobile
+         *  redesign of a control-panel-only page. */}
+        <div className="control-table-scroll mt-3">
+        <table className="control-table">
           <thead>
             <tr>
               <SortableTh
@@ -198,11 +210,26 @@ export function DonationsControl() {
           </thead>
           <tbody>
             {visibleDonations.map((d) => (
-              <tr key={d.id}>
+              <tr
+                key={d.id}
+                className={d.id === liveTtsId ? 'donation-row-live' : undefined}
+                title={
+                  d.id === liveTtsId
+                    ? 'Currently being announced on /obs/tts — mute to cancel mid-utterance'
+                    : undefined
+                }
+              >
                 <td className="small text-white-50">
                   {new Date(d.donated_at).toLocaleString('en-GB')}
                 </td>
-                <td>{d.donor_name}</td>
+                <td>
+                  {d.donor_name}
+                  {d.id === liveTtsId && (
+                    <span className="donation-now-reading-pip" aria-live="polite">
+                      🔊 NOW READING
+                    </span>
+                  )}
+                </td>
                 <td>
                   <PlatformChip value={d.platform} />
                 </td>
@@ -211,17 +238,64 @@ export function DonationsControl() {
                     {d.currency} {Number(d.amount).toFixed(2)}
                   </strong>
                 </td>
-                <td className="text-white-50">{d.message}</td>
+                <td
+                  className="text-white-50"
+                  style={d.is_muted ? { opacity: 0.45, textDecoration: 'line-through' } : undefined}
+                  title={d.is_muted ? 'Muted — this message is suppressed in TTS and the omnibar' : undefined}
+                >
+                  {d.message}
+                </td>
                 <td>
-                  <button
-                    className="btn btn-sm btn-outline-danger"
-                    onClick={async () => {
-                      if (!confirm('Delete this donation?')) return;
-                      await api(`/api/donations/${d.id}/`, { method: 'DELETE' });
-                    }}
-                  >
-                    ✕
-                  </button>
+                  <div className="d-flex gap-1">
+                    <button
+                      className="btn btn-sm btn-outline-light"
+                      disabled={d.is_muted}
+                      title={
+                        d.is_muted
+                          ? 'Donation is muted — unmute first to replay'
+                          : 'Re-announce this donation in the /obs/tts overlay'
+                      }
+                      onClick={async () => {
+                        try {
+                          await obsApi.requestTtsReplay(d.id);
+                        } catch (e) {
+                          alert(`Replay failed: ${(e as Error).message}`);
+                        }
+                      }}
+                    >
+                      🔊 Replay TTS
+                    </button>
+                    <button
+                      className={`btn btn-sm ${d.is_muted ? 'btn-warning' : 'btn-outline-light'}`}
+                      title={
+                        d.is_muted
+                          ? 'Unmute — let TTS and omnibar announce this donation again'
+                          : 'Mute — skip this donation in TTS and the omnibar (profanity, repeats, etc.)'
+                      }
+                      onClick={async () => {
+                        try {
+                          await api(`/api/donations/${d.id}/`, {
+                            method: 'PATCH',
+                            body: { is_muted: !d.is_muted },
+                          });
+                        } catch (e) {
+                          alert(`Mute toggle failed: ${(e as Error).message}`);
+                        }
+                      }}
+                    >
+                      {d.is_muted ? '🔈 Unmute' : '🔇 Mute'}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      title="Delete this donation"
+                      onClick={async () => {
+                        if (!confirm('Delete this donation?')) return;
+                        await api(`/api/donations/${d.id}/`, { method: 'DELETE' });
+                      }}
+                    >
+                      ✕ Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -241,6 +315,7 @@ export function DonationsControl() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );

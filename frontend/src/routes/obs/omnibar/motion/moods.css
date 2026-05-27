@@ -1,0 +1,98 @@
+/* Mood styles — applied to the omnibar root or to any panel that
+ * opts into the className via registerMood. The keyframes use shared
+ * `--ob-flash-ms` / `--ob-enter-ms` timing tokens (see omnibar.css)
+ * so moods animate in beat with the rest of the bar. */
+
+/* ── Celebrate ─────────────────────────────────────────────────────
+ * Gold-tinged backwash with a sparkle border pulse. Used for
+ * milestone-reached + incentive-unlocked. */
+
+.omnibar--v2.mood--celebrate {
+  animation: ob-mood-celebrate-bg 2400ms ease-out both;
+}
+
+.omnibar--v2.mood--celebrate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 210, 58, 0.28) 0%,
+    rgba(255, 210, 58, 0) 65%
+  );
+  animation: ob-mood-celebrate-glow 2400ms ease-out both;
+  z-index: 4;
+}
+
+@keyframes ob-mood-celebrate-bg {
+  0% { box-shadow: inset 0 0 0 0 rgba(255, 210, 58, 0); }
+  25% { box-shadow: inset 0 0 80px 0 rgba(255, 210, 58, 0.45); }
+  100% { box-shadow: inset 0 0 0 0 rgba(255, 210, 58, 0); }
+}
+
+@keyframes ob-mood-celebrate-glow {
+  0%   { opacity: 0; transform: scale(0.95); }
+  35%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
+/* ── Urgent ────────────────────────────────────────────────────────
+ * Red pulse on the top border to read "alert" without overpowering
+ * the lane content. Loops slowly while the override is active. */
+
+.omnibar--v2.mood--urgent {
+  animation: ob-mood-urgent 2200ms ease-in-out infinite;
+}
+
+@keyframes ob-mood-urgent {
+  0%, 100% { border-top-color: var(--obs-accent, #e71347); }
+  50% { border-top-color: #ffd23a; }
+}
+
+/* ── Ominous ───────────────────────────────────────────────────────
+ * Slow dark wash — used during setpiece-imminent so the bar feels
+ * tense before the boss starts. Subtle; doesn't compete with the
+ * lane panels. */
+
+.omnibar--v2.mood--ominous::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+  animation: ob-mood-ominous-sweep 4000ms ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes ob-mood-ominous-sweep {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ── Cheer ─────────────────────────────────────────────────────────
+ * Quick light up for follower/sub moments. Lighter than celebrate. */
+
+.omnibar--v2.mood--cheer .ob-lanes::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(127, 240, 248, 0.18) 0%,
+    rgba(127, 240, 248, 0) 100%
+  );
+  animation: ob-mood-cheer 2000ms ease-out both;
+}
+
+@keyframes ob-mood-cheer {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}

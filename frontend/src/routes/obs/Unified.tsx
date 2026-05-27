@@ -8,7 +8,7 @@ import { ThreeDs } from './layouts/ThreeDs';
 import { DsTop } from './layouts/DsTop';
 import { DsBoth } from './layouts/DsBoth';
 import { FsaSplit } from './layouts/FsaSplit';
-import { Omnibar } from './Omnibar';
+import { Omnibar } from './omnibar/Omnibar';
 import './unified.css';
 
 /**
@@ -18,9 +18,9 @@ import './unified.css';
  *
  * Layout stack:
  *   ┌────────────────────────────────┐
- *   │ Auto-picked layout 1920×1024   │  (uses .obs-stage)
+ *   │ Auto-picked layout 1920×984    │  (uses .obs-stage)
  *   ├────────────────────────────────┤
- *   │ Omnibar 1920×56                │  (uses .omnibar)
+ *   │ Omnibar v2 1920×96             │  (uses .omnibar--v2)
  *   └────────────────────────────────┘
  *
  * Streamers can drop ONE source pointing at /obs/full and the scene

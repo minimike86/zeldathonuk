@@ -37,6 +37,7 @@ class GameSerializer(serializers.ModelSerializer):
             'twitch_game_id',
             'hltb_id',
             'release_year',
+            'omnibar_layout',
             'items',
         ]
 
@@ -269,6 +270,10 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'is_completed',
             'was_skipped',
             'current_objective',
+            'setpiece_kind',
+            'setpiece_name',
+            'setpiece_stage',
+            'setpiece_started_at',
             'notes',
             'timer',
             'collected_item_ids',
@@ -296,6 +301,7 @@ class DonationSerializer(serializers.ModelSerializer):
             'external_id',
             'gift_aid_amount',
             'image_url',
+            'is_muted',
         ]
         # `Donation.Meta.unique_together = [('platform', 'external_id')]`
         # makes DRF do TWO unhelpful things for the /control/donations
@@ -340,6 +346,38 @@ class BrbTimerSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.BrbTimer
         fields = ['id', 'target_time', 'message', 'is_active', 'created_at']
+
+
+class TtsNowReadingSerializer(serializers.ModelSerializer):
+    """Flat view of the TTS-now-reading singleton. Exposes `donation_id`
+    so the polling control panel doesn't have to navigate a nested
+    Donation object — it already has the donation in its main list."""
+
+    donation_id = serializers.PrimaryKeyRelatedField(
+        source='donation', queryset=models.Donation.objects.all(),
+        allow_null=True, required=False,
+    )
+
+    class Meta:
+        model = models.TtsNowReading
+        fields = ['donation_id', 'started_at']
+        read_only_fields = ['started_at']
+
+
+class TtsReplaySerializer(serializers.ModelSerializer):
+    """Serialises the TtsReplay singleton. Exposes `donation_id` (flat)
+    so the /obs/tts polling loop doesn't need to deal with a nested
+    Donation object — it already has the donation in its main poll."""
+
+    donation_id = serializers.PrimaryKeyRelatedField(
+        source='donation', queryset=models.Donation.objects.all(),
+        allow_null=True, required=False,
+    )
+
+    class Meta:
+        model = models.TtsReplay
+        fields = ['donation_id', 'requested_at']
+        read_only_fields = ['requested_at']
 
 
 class CurrentlyPlayingSerializer(serializers.ModelSerializer):
@@ -425,3 +463,12 @@ class MilestoneSerializer(serializers.ModelSerializer):
                   'celebration_message', 'reached_at', 'audio_url',
                   'order', 'is_reached', 'created_at']
         read_only_fields = ['id', 'reached_at', 'is_reached', 'created_at']
+
+
+class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
+    """Singleton settings for the /obs/chest-announcer overlay."""
+
+    class Meta:
+        model = models.ChestAnnouncerSettings
+        fields = ['audio_enabled', 'updated_at']
+        read_only_fields = ['updated_at']

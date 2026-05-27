@@ -108,6 +108,108 @@
   flex-wrap: wrap;
 }
 
+/* Horizontal-scroll wrapper used by the /control/donations table.
+ * The action column carries three labelled buttons (Replay TTS,
+ * Mute, Delete) which together push the row past the viewport on
+ * narrower laptops; scrolling preserves the dense layout. The min
+ * width is the rough total of all columns at their natural sizes,
+ * including the action cell — below this the table actually shrinks
+ * (no scroll), above it the wrapper scrolls and the row stays
+ * comfortable. */
+.control-table-scroll {
+  overflow-x: auto;
+  /* Smooth out the scroll on touchpads / phones. */
+  -webkit-overflow-scrolling: touch;
+}
+
+.control-table-scroll > .control-table {
+  min-width: 1080px;
+}
+
+/* Keep the action-cell buttons on one line — flex-wrap inside a
+ * scrolled table just stacks them awkwardly and undoes the point of
+ * the scroll. The 🔊 NOW READING pip beside the donor also benefits
+ * from staying inline. */
+.control-table-scroll .control-btn-row {
+  flex-wrap: nowrap;
+}
+
+/* Pin the action cells to the right edge so Replay/Mute/Delete stay
+ * visible no matter where the operator has scrolled horizontally —
+ * otherwise the very buttons they need are the first thing to slide
+ * off-screen on a narrow display. `position: sticky` works inside the
+ * scroll wrapper above; the cell needs an opaque background so the
+ * scrolled rows behind it don't bleed through. */
+.control-table-scroll thead th:last-child,
+.control-table-scroll tbody td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  /* Match the card surface so the pinned cells blend in with the
+   * card chrome rather than showing through to the scrolled row. */
+  background: #2b1b25;
+  /* Subtle left shadow makes it obvious the column is floating over
+   * the scrolled content, not part of the underlying row. */
+  box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.55);
+}
+
+.control-table-scroll thead th:last-child {
+  /* Header keeps its bloodmoon tint from `.control-table th`; layer
+   * it over the sticky-cell base so the colour stays consistent when
+   * the row scrolls under it. */
+  background: linear-gradient(rgba(185, 39, 83, 0.3), rgba(185, 39, 83, 0.3)), #2b1b25;
+}
+
+/* Preserve the live-row highlight on the sticky action cell. The base
+ * `.donation-row-live > td` pulse uses a 12%-alpha gold — fine on the
+ * non-sticky cells which sit on the card surface, but the sticky
+ * cell needs to stay opaque so scrolled rows don't bleed through it
+ * during the keyframe trough. Layer a constant gold tint over the
+ * card surface and drop the pulse animation here — the non-sticky
+ * cells still pulse to draw attention; the sticky cell holds a
+ * steady gold-tint backdrop so the action buttons stay readable. */
+.donation-row-live > td:last-child {
+  background:
+    linear-gradient(rgba(255, 210, 58, 0.18), rgba(255, 210, 58, 0.18)),
+    #2b1b25;
+  animation: none;
+}
+
+/* /control/donations — row highlight when /obs/tts is currently
+ * narrating this donation. Soft golden glow + left accent bar so the
+ * operator can spot the live row at a glance and decide whether to
+ * 🔇 mute it mid-utterance. Animates so a quick reader doesn't miss
+ * the state change. */
+.donation-row-live > td {
+  background: rgba(255, 210, 58, 0.12);
+  box-shadow: inset 4px 0 0 0 #ffd23a;
+  animation: donation-row-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes donation-row-live-pulse {
+  0%, 100% { background: rgba(255, 210, 58, 0.12); }
+  50% { background: rgba(255, 210, 58, 0.22); }
+}
+
+.donation-now-reading-pip {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 210, 58, 0.2);
+  color: #ffd23a;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+  animation: donation-now-reading-pip-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes donation-now-reading-pip-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; box-shadow: 0 0 8px rgba(255, 210, 58, 0.45); }
+}
+
 /* /control/theme — picker on the left, editor on the right. */
 .theme-shell {
   display: grid;

@@ -55,7 +55,7 @@
  * exactly — no surprises when the OBS scene preview is smaller than the
  * authoring viewport. */
 :root {
-  --obs-omnibar-height: 56px;
+  --obs-omnibar-height: 96px;
   --obs-stage-width: 1920px;
   --obs-stage-height: calc(1080px - var(--obs-omnibar-height));
   /* OBS layout chrome inherits the sitewide theme so a /control theme

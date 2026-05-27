@@ -9,6 +9,7 @@ import {
   HERO_HOLD_SRC,
   CHEST_SRC,
 } from './chest-placeholders';
+import { playFanfare, warmUpFanfare } from './fanfare';
 import './chest-announcer.css';
 
 /**
@@ -65,6 +66,10 @@ const SPRITE_SRC = {
 
 // ── Timing constants ──────────────────────────────────────────────────
 const POLL_MS = 3000;
+// Audio toggle lives on the backend — re-poll often enough that a flip
+// in /control/chest-announcer takes effect on the next reveal without
+// the streamer having to refresh the OBS browser source.
+const SETTINGS_POLL_MS = 5000;
 const WALK_MS = 3000;
 const AT_CHEST_SETTLE_MS = 200;
 const CHEST_OPEN_MS = 600;
@@ -110,7 +115,67 @@ interface ActiveCard {
   currency: string;
 }
 
+/**
+ * Outer gate: the chest-announcer content (polling, animation, audio)
+ * only mounts after the operator clicks once. This satisfies Chrome's
+ * autoplay policy ("AudioContext was not allowed to start — must be
+ * resumed after a user gesture") in *every* environment — OBS browser
+ * source, a plain browser preview tab, or an embedded iframe — without
+ * having to detect or special-case any of them.
+ *
+ * The click also warms up the shared AudioContext so the very first
+ * donation reveal can play its fanfare cleanly. Polling/state-machine
+ * logic doesn't begin until the inner scene mounts, so cold-boot
+ * suppression starts fresh from the moment the operator pressed Start.
+ *
+ * In OBS specifically the streamer right-clicks the browser source →
+ * **Interact**, clicks the start gate once, then closes the Interact
+ * window. After that the source runs unattended for the whole stream.
+ */
 export function ChestAnnouncer() {
+  const [started, setStarted] = useState(false);
+  if (!started) return <StartGate onStart={() => setStarted(true)} />;
+  return <ChestAnnouncerScene />;
+}
+
+function StartGate({ onStart }: { onStart: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    if (busy) return;
+    setBusy(true);
+    // Warm up the AudioContext while we still hold the user-gesture
+    // permission. Even if audio is disabled in /control settings, we
+    // do this so flipping it on later doesn't require another click.
+    await warmUpFanfare();
+    onStart();
+  };
+  return (
+    <div className="ca-root">
+      <button
+        type="button"
+        className="ca-start-gate"
+        onClick={() => void handleClick()}
+        disabled={busy}
+      >
+        <span className="ca-start-title">Chest Announcer</span>
+        <span className="ca-start-hint">Click to start</span>
+      </button>
+    </div>
+  );
+}
+
+function ChestAnnouncerScene() {
+  // Audio toggle is configured in /control/chest-announcer and stored
+  // on the backend singleton ChestAnnouncerSettings model. Polled here
+  // so the streamer can flip it mid-stream without refreshing the OBS
+  // browser source. Default false → silent, omnibar handles TTS.
+  const { data: settings } = usePolledQuery(
+    obsApi.chestAnnouncerSettings,
+    SETTINGS_POLL_MS,
+  );
+  const audioEnabledRef = useRef(false);
+  audioEnabledRef.current = settings?.audio_enabled === true;
+
   const { data: event } = usePolledQuery(obsApi.activeEvent, 15_000);
   const { data: donations } = usePolledQuery(
     () => (event ? obsApi.donations(event.id) : Promise.resolve([])),
@@ -132,6 +197,12 @@ export function ChestAnnouncer() {
       return;
     }
     const fresh = donations
+      // `is_muted` is a TTS/message moderation flag — it suppresses
+      // the omnibar/TTS announcement when a donor leaves something
+      // unprintable in the message. This overlay never renders the
+      // message body (only donor name + amount), so muting doesn't
+      // apply here; show every donation that lands. If donor-name
+      // moderation is needed it'll need its own flag.
       .filter((d) => !seenIdsRef.current.has(d.id))
       .sort(
         (a, b) =>
@@ -210,6 +281,11 @@ export function ChestAnnouncer() {
         setCard(next);
         setCardPhase('enter');
         setPhase('showing_card');
+        // Fanfare lines up with the card-pop animation. Fires once per
+        // donation since this branch only runs on pulling_item entry.
+        // Gated on the `?audio=on` URL flag — default is silent so the
+        // omnibar's TTS isn't competing with the fanfare.
+        if (audioEnabledRef.current) playFanfare();
       }, PULL_MS);
     } else if (phase === 'showing_card') {
       // Card mounted with phase=enter; promote to hold once the pop

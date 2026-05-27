@@ -45,12 +45,34 @@ export function derivePlaythroughPhase(
   if (timer) {
     if (timer.paused_at !== null) return { state: 'paused', entry: active };
     if (timer.started_at !== null && timer.ended_at === null) {
-      return { state: 'live', entry: active, sub: { kind: 'nominal' } };
+      const sub = deriveLiveSub(active);
+      return { state: 'live', entry: active, sub };
     }
   }
 
   // Pointed at by currently-playing but timer not yet started.
   return { state: 'preroll', entry: active };
+}
+
+function deriveLiveSub(entry: ScheduleEntry): import('../bus/types').LiveSubState {
+  // Setpiece sub-state is operator-driven via /api/schedule/{id}/setpiece/.
+  // setpiece_stage is the source of truth; the kind/name fields populate
+  // the omnibar's setpiece panel. `cleared` is signalled via a
+  // PlaythroughEvent (boss-defeated etc.) which fires the celebration
+  // separately — it doesn't show up here.
+  if (entry.setpiece_stage && entry.setpiece_kind) {
+    const setpiece = {
+      kind: entry.setpiece_kind,
+      name: entry.setpiece_name,
+    };
+    if (entry.setpiece_stage === 'imminent') {
+      return { kind: 'setpiece-imminent', setpiece };
+    }
+    if (entry.setpiece_stage === 'active') {
+      return { kind: 'setpiece-active', setpiece };
+    }
+  }
+  return { kind: 'nominal' };
 }
 
 /** Stable string identity for a phase — useful as a useEffect dep so

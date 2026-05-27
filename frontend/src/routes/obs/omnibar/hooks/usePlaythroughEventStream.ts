@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import { useBusEmit } from '../bus/EventBus';
+import { seenPlaythroughIds } from './eventDedupe';
 
 /**
  * Polls /api/playthrough-events/?schedule_entry=…&since=… and emits a
@@ -13,13 +14,13 @@ const POLL_MS = 1500;
 export function usePlaythroughEventStream(scheduleEntryId: number | null) {
   const emit = useBusEmit();
   const sinceRef = useRef<string>(new Date().toISOString());
-  const seenIdsRef = useRef<Set<number>>(new Set());
 
-  // Reset cursor + seen-set whenever the active entry changes so a new
-  // playthrough doesn't inherit dedup state from the previous one.
+  // Reset cursor whenever the active entry changes so a new playthrough
+  // doesn't inherit dedup cursor from the previous one. The shared
+  // seenPlaythroughIds set persists across entries so a row that
+  // arrived via SSE then re-appears in a poll doesn't double-fire.
   useEffect(() => {
     sinceRef.current = new Date().toISOString();
-    seenIdsRef.current = new Set();
   }, [scheduleEntryId]);
 
   const { data } = usePolledQuery(
@@ -38,13 +39,11 @@ export function usePlaythroughEventStream(scheduleEntryId: number | null) {
     if (!data || data.length === 0) return;
     let maxTs = sinceRef.current;
     for (const ev of data) {
-      if (seenIdsRef.current.has(ev.id)) continue;
-      seenIdsRef.current.add(ev.id);
+      if (seenPlaythroughIds.has(ev.id)) continue;
+      seenPlaythroughIds.add(ev.id);
       emit({ kind: 'playthrough-event', event: ev });
       if (ev.created_at > maxTs) maxTs = ev.created_at;
     }
-    // Advance the cursor past the newest row so subsequent polls
-    // return only newer events.
     sinceRef.current = maxTs;
   }, [data, emit]);
 }

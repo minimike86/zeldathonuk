@@ -62,3 +62,40 @@
 .tts-card {
   position: relative;
 }
+
+/* Click-to-enable overlay shown in regular browsers because
+ * speechSynthesis is gated behind a user gesture. OBS auto-starts
+ * via the OBS/ UA detection so this overlay never paints there. */
+.tts-start-gesture {
+  pointer-events: auto;
+  background: linear-gradient(135deg, rgba(76, 19, 36, 0.95), rgba(115, 28, 55, 0.95));
+  border: 2px solid #b92753;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  color: #fff;
+  font-family: 'Bungee', sans-serif;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 0 40px rgba(231, 19, 71, 0.5);
+}
+
+.tts-start-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.tts-start-label {
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+}
+
+.tts-start-hint {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 28rem;
+  text-align: center;
+}

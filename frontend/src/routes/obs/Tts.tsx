@@ -35,6 +35,7 @@ interface QueueItem {
 
 export function Tts() {
   const { data: donations } = usePolledQuery(obsApi.donations, 3000);
+  const { data: replay } = usePolledQuery(obsApi.ttsReplay, 2000);
 
   // seenIds is every donation id we've ever observed (whether we spoke
   // it or not). Cold-boot seeds this so the announcer doesn't replay
@@ -45,6 +46,56 @@ export function Tts() {
   const [now, setNow] = useState<QueueItem | null>(null);
   const speakingRef = useRef(false);
 
+  // Chrome's autoplay policy gates speechSynthesis.speak() behind a
+  // user gesture — without it, utterances are silently swallowed even
+  // though `onend` may still fire after a tick. OBS browser sources
+  // ship audio enabled by default and report a distinctive UA, so we
+  // auto-start there. Anywhere else (a tab opened by the operator for
+  // monitoring) shows a one-time click-to-enable overlay.
+  const [started, setStarted] = useState(false);
+  useEffect(() => {
+    if (/OBS\//i.test(navigator.userAgent)) setStarted(true);
+  }, []);
+  const handleStart = () => {
+    // Speaking a one-character utterance during the click event is the
+    // canonical "unlock" trick — it counts as the gesture-tied first
+    // speak so every subsequent speak() inherits the permission.
+    if ('speechSynthesis' in window) {
+      const unlock = new SpeechSynthesisUtterance(' ');
+      unlock.volume = 0;
+      window.speechSynthesis.speak(unlock);
+    }
+    setStarted(true);
+  };
+
+  // Replay watcher — when /api/tts/replay/ reports a `requested_at`
+  // newer than the value we last saw, enqueue the referenced donation
+  // regardless of the seen-id guard. Cold-boot snapshots the current
+  // timestamp so we don't replay the last-ever replay request every
+  // time the overlay reconnects.
+  const lastReplayAtRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!replay) return;
+    if (lastReplayAtRef.current === null) {
+      lastReplayAtRef.current = replay.requested_at;
+      return;
+    }
+    if (replay.requested_at === lastReplayAtRef.current) return;
+    lastReplayAtRef.current = replay.requested_at;
+    if (replay.donation_id == null || !donations) return;
+    const d = donations.find((x) => x.id === replay.donation_id);
+    if (!d) return;
+    // Mute beats Replay — if an operator clicks Replay on a muted row,
+    // honour the mute. The /control/donations UI already disables the
+    // Replay button on muted rows; this guard is defence-in-depth in
+    // case the click sneaks through (race between mute + replay).
+    if (d.is_muted) return;
+    // Replays jump the queue — push to the FRONT so the operator sees
+    // their replay request take effect within one tick rather than
+    // waiting behind any naturally-arriving donations.
+    setQueue((prev) => [toQueueItem(d), ...prev]);
+  }, [replay, donations]);
+
   // Enqueue fresh donations as the poll observes them.
   useEffect(() => {
     if (!donations) return;
@@ -54,7 +105,15 @@ export function Tts() {
       return;
     }
     const fresh = donations.filter(
-      (d) => !seenIdsRef.current.has(d.id) && d.message && d.message.trim().length > 0,
+      (d) =>
+        !seenIdsRef.current.has(d.id) &&
+        d.message &&
+        d.message.trim().length > 0 &&
+        // Skip muted donations entirely. They're not added to seenIds
+        // either (since they didn't pass the filter), so unmuting one
+        // later will flow it through normally without the operator
+        // having to also click Replay.
+        !d.is_muted,
     );
     if (fresh.length === 0) return;
     fresh.forEach((d) => seenIdsRef.current.add(d.id));
@@ -66,25 +125,74 @@ export function Tts() {
   }, [donations]);
 
   // Drain the queue one item at a time. When `now` is null and there's
-  // a queued item AND we're not mid-speech, pop the head and announce
-  // it. The utterance's onend / onerror (and a safety timeout) clears
-  // `now`, which retriggers this effect.
+  // a queued item AND we're not mid-speech AND we've cleared the audio
+  // gate, pop the head and announce it. The utterance's onend /
+  // onerror (and a safety timeout) clears `now`, which retriggers
+  // this effect.
   useEffect(() => {
-    if (now || speakingRef.current || queue.length === 0) return;
+    if (!started || now || speakingRef.current || queue.length === 0) return;
     const [head, ...rest] = queue;
     setQueue(rest);
     setNow(head);
+    // Mirror "now reading" to the backend so /control/donations can
+    // highlight the live row. Best-effort fire-and-forget.
+    void obsApi.setTtsNowReading(head.id).catch(() => {});
     speak(head, () => {
       speakingRef.current = false;
+      void obsApi.setTtsNowReading(null).catch(() => {});
       // Brief hold after the utterance ends so viewers can read the
       // card before it vanishes — only matters when the queue is empty;
       // otherwise the next iteration replaces it immediately.
       window.setTimeout(() => setNow((curr) => (curr?.id === head.id ? null : curr)), HOLD_AFTER_END_MS);
     });
-  }, [now, queue]);
+  }, [started, now, queue]);
+
+  // Mute mid-utterance — if the operator mutes the currently-speaking
+  // donation in /control/donations, the next poll will mark it muted.
+  // Cancel speech immediately, skip the hold, free `speakingRef` so the
+  // drain effect picks the next queued donation on the very next render.
+  useEffect(() => {
+    if (!now || !donations) return;
+    const current = donations.find((d) => d.id === now.id);
+    if (!current?.is_muted) return;
+    console.debug(`[tts] utterance #${now.id} cancelled — donation muted`);
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      /* ignored — see speak()'s rationale */
+    }
+    speakingRef.current = false;
+    void obsApi.setTtsNowReading(null).catch(() => {});
+    setNow(null);
+  }, [now, donations]);
+
+  // Clear the now-reading mirror on unmount so /control/donations
+  // doesn't show a stale highlight after the overlay closes.
+  useEffect(() => {
+    return () => {
+      void obsApi.setTtsNowReading(null).catch(() => {});
+    };
+  }, []);
 
   return (
     <div className="tts-stage">
+      {!started && (
+        /* Audio-unlock overlay shown in regular browsers (not OBS).
+         * speechSynthesis is gated behind a user gesture, so we need
+         * one click before the announcer can speak. OBS auto-starts. */
+        <button
+          type="button"
+          className="tts-start-gesture"
+          onClick={handleStart}
+        >
+          <span className="tts-start-icon">🔊</span>
+          <span className="tts-start-label">Click to enable TTS</span>
+          <span className="tts-start-hint">
+            Browsers require a user gesture before audio can play.
+            OBS browser sources auto-enable.
+          </span>
+        </button>
+      )}
       {now && (
         <div key={now.id} className="tts-card">
           <div className="tts-donor">{now.donor}</div>
@@ -112,22 +220,42 @@ export function Tts() {
       return;
     }
     speakingRef.current = true;
+
+    // Chromium has a long-standing bug where the speak queue can wedge
+    // after a `cancel()` mid-utterance or after a tab regains focus —
+    // subsequent speak() calls enqueue silently and never fire `onend`.
+    // Always cancel + resume first so the synth starts from a known
+    // state, then queue the new utterance.
+    try {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+    } catch {
+      /* some browsers throw on cancel() with no active utterance — ignore */
+    }
+
     const u = new SpeechSynthesisUtterance(
-      `${item.donor} donated £${item.amount}. ${item.message}`,
+      `${item.donor} donated £${item.amount}. ${item.message}`.trim(),
     );
+    u.rate = 1;
+    u.pitch = 1;
+    u.volume = 1;
 
     let settled = false;
-    const finish = () => {
+    const finish = (why: string) => {
       if (settled) return;
       settled = true;
+      // Log so an operator opening DevTools can see whether TTS is
+      // actually firing or just timing out — silent failures are by
+      // far the most common TTS bug.
+      console.debug(`[tts] utterance #${item.id} ${why}`);
       onDone();
     };
-    u.onend = finish;
-    u.onerror = finish;
+    u.onend = () => finish('ended');
+    u.onerror = (e) => finish(`error: ${e.error ?? 'unknown'}`);
     // Some browsers (Chrome on Linux notably) drop `onend` after long
     // utterances or when the tab loses focus. Cap each utterance to a
     // sensible upper bound so a swallowed event doesn't freeze the queue.
-    window.setTimeout(finish, MAX_UTTERANCE_HOLD_MS);
+    window.setTimeout(() => finish('timeout'), MAX_UTTERANCE_HOLD_MS);
 
     window.speechSynthesis.speak(u);
   }

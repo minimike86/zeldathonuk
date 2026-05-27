@@ -53,6 +53,14 @@ class Game(models.Model):
         help_text='Twitch Helix game id — used to PATCH the channel category when this game starts.',
     )
     release_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    omnibar_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Per-game omnibar layout override. Same shape as '
+                  'Event.omnibar_layout. When this game is the active '
+                  'playthrough, its lane configs win over the event-level '
+                  'layout. Blank dict → fall back to the event layout.',
+    )
 
     class Meta:
         ordering = ['title']
@@ -217,6 +225,36 @@ class ScheduleEntry(models.Model):
                   'Ganondorf, second phase"). Surfaced in the omnibar '
                   'ObjectivePanel when set; hidden when blank.',
     )
+    SETPIECE_IMMINENT = 'imminent'
+    SETPIECE_ACTIVE = 'active'
+    SETPIECE_STAGE_CHOICES = [
+        ('', 'Inactive'),
+        (SETPIECE_IMMINENT, 'Imminent — build-up'),
+        (SETPIECE_ACTIVE, 'Active — in progress'),
+    ]
+    setpiece_kind = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text='Open string for the type of set-piece in progress: "boss", '
+                  '"shrine", "dungeon", "cutscene", anything the operator '
+                  'declares. Blank = no set-piece active.',
+    )
+    setpiece_name = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Display name for the set-piece (e.g. "Ganondorf"). '
+                  'Surfaced by the omnibar SetpiecePanel.',
+    )
+    setpiece_stage = models.CharField(
+        max_length=16,
+        blank=True,
+        default='',
+        choices=SETPIECE_STAGE_CHOICES,
+        help_text='Operator-controlled lifecycle of the current set-piece. '
+                  'Blank = none. Defeated is signalled via a PlaythroughEvent '
+                  '(boss-defeated etc.) which clears these fields too.',
+    )
+    setpiece_started_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
 
     class Meta:
@@ -443,6 +481,14 @@ class Donation(models.Model):
         max_digits=10, decimal_places=2, null=True, blank=True
     )
     image_url = models.URLField(blank=True)
+    is_muted = models.BooleanField(
+        default=False,
+        help_text='When true the /obs/tts and /obs/omnibar live-donation '
+                  'overlays skip this donation entirely (no card, no '
+                  'speech). Lets the operator suppress profanity or '
+                  'already-announced repeats. Donation still counts '
+                  'toward totals — only the announcement is muted.',
+    )
 
     class Meta:
         ordering = ['-donated_at']
@@ -451,6 +497,92 @@ class Donation(models.Model):
 
     def __str__(self) -> str:
         return f'{self.platform}: {self.donor_name} {self.currency} {self.amount}'
+
+
+class TtsNowReading(models.Model):
+    """Singleton mirror of what /obs/tts is currently announcing.
+
+    The TTS overlay POSTs `{donation_id}` when an utterance starts and
+    POSTs `{donation_id: null}` when it ends (or is cancelled).
+    /control/donations polls this so the operator can see which row
+    is being read in real time — useful for deciding whether to mute.
+    Singleton (pk=1) because only one card is on screen at a time.
+    """
+
+    donation = models.ForeignKey(
+        Donation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        help_text='Donation currently being narrated, or NULL when the '
+                  'TTS overlay is idle.',
+    )
+    started_at = models.DateTimeField(
+        default=timezone.now,
+        help_text='When the current utterance started. Updated on every '
+                  'transition so a stale row (e.g. a crashed overlay) can '
+                  'be detected by comparing against wall-clock.',
+    )
+
+    class Meta:
+        verbose_name_plural = 'tts now reading'
+
+    def __str__(self) -> str:
+        return f'TTS reading: {self.donation or "(idle)"} since {self.started_at:%H:%M:%S}'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls) -> 'TtsNowReading':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class TtsReplay(models.Model):
+    """Singleton signal that the /obs/tts overlay should re-announce a
+    donation, even if it's already been spoken.
+
+    The TTS overlay polls this row; when ``requested_at`` advances past
+    the value it last saw, the referenced donation is enqueued
+    regardless of the per-browser seen-id guard. Singleton (pk=1) so
+    a fresh POST always overwrites the prior request — there's only
+    ever one "play this next" slot, and the operator can't accidentally
+    queue ten of the same thing by spamming the button.
+    """
+
+    donation = models.ForeignKey(
+        Donation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        help_text='The donation to re-announce. Cleared (without dropping '
+                  'the singleton row) when the donation is deleted.',
+    )
+    requested_at = models.DateTimeField(
+        default=timezone.now,
+        help_text='Bumped on every replay request. The /obs/tts page uses '
+                  'this as a high-water mark — when it moves forward, '
+                  'enqueue the linked donation.',
+    )
+
+    class Meta:
+        verbose_name_plural = 'tts replays'
+
+    def __str__(self) -> str:
+        return f'TTS replay: {self.donation or "(cleared)"} @ {self.requested_at:%H:%M:%S}'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls) -> 'TtsReplay':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
 
 
 class BrbTimer(models.Model):
@@ -1020,3 +1152,40 @@ class Milestone(models.Model):
     @property
     def is_reached(self) -> bool:
         return self.reached_at is not None
+
+
+class ChestAnnouncerSettings(models.Model):
+    """Singleton settings row for the /obs/chest-announcer overlay.
+
+    Configures runtime behaviour (currently just whether the overlay
+    plays its own fanfare on each card reveal) without requiring the
+    streamer to manage URL query strings. The frontend polls
+    /api/chest-announcer/settings/ and re-reads any time the operator
+    flips the toggle at /control/chest-announcer.
+
+    Pinned to pk=1 — same singleton pattern as TwitchOAuthToken.
+    """
+
+    audio_enabled = models.BooleanField(
+        default=False,
+        help_text=(
+            'When true, the chest announcer plays a short procedural '
+            'fanfare on each donation card reveal. Default false '
+            'because the omnibar already announces donations via TTS '
+            '— leave off when both overlays are in the scene to avoid '
+            'overlapping audio.'
+        ),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Chest announcer settings'
+        verbose_name_plural = 'Chest announcer settings'
+
+    def __str__(self) -> str:
+        return 'Chest announcer settings'
+
+    @classmethod
+    def get(cls) -> 'ChestAnnouncerSettings':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

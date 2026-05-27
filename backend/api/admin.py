@@ -389,3 +389,19 @@ class MilestoneAdmin(admin.ModelAdmin):
     list_filter = ['event']
     search_fields = ['name']
     readonly_fields = ['is_reached', 'created_at']
+
+
+@admin.register(models.ChestAnnouncerSettings)
+class ChestAnnouncerSettingsAdmin(admin.ModelAdmin):
+    """Singleton — one row (pk=1) created lazily via .get(). Hiding the
+    "Add" button keeps the admin from offering to make a second row
+    that the get-or-create logic would ignore anyway."""
+
+    list_display = ['__str__', 'audio_enabled', 'updated_at']
+    readonly_fields = ['updated_at']
+
+    def has_add_permission(self, request) -> bool:  # noqa: ANN001
+        return not models.ChestAnnouncerSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None) -> bool:  # noqa: ANN001
+        return False

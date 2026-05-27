@@ -12,7 +12,7 @@
 .obs-unified-stage {
   position: relative;
   width: var(--obs-stage-width, 1920px);
-  height: var(--obs-stage-height, 1024px);
+  height: var(--obs-stage-height, 984px);
   animation: obs-unified-crossfade 0.6s ease-out;
 }
 
@@ -28,5 +28,5 @@
 .obs-unified-omnibar {
   position: relative;
   width: var(--obs-stage-width, 1920px);
-  height: var(--obs-omnibar-height, 56px);
+  height: var(--obs-omnibar-height, 96px);
 }

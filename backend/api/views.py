@@ -256,6 +256,72 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         models.CollectedItem.objects.create(schedule_entry=entry, item_id=item_id)
         return Response({'collected': True})
 
+    @action(detail=True, methods=['post'])
+    def setpiece(self, request: Request, pk=None) -> Response:
+        """Operator endpoint for managing the live setpiece sub-state.
+
+        Body shapes:
+
+          { "stage": "imminent" | "active",
+            "kind": "boss",       (required when stage != cleared, optional
+                                   to update mid-stream)
+            "name": "Ganondorf" } (optional display name)
+
+          { "stage": "cleared",
+            "result_kind": "boss-defeated" } — clears setpiece fields and
+          emits a PlaythroughEvent of result_kind so the omnibar fires
+          its celebration animation. `result_kind` defaults to
+          ``setpiece-cleared`` and the payload mirrors the cleared
+          setpiece for handlers that want richer rendering.
+        """
+        entry = self.get_object()
+        stage = request.data.get('stage')
+        if stage == 'cleared':
+            result_kind = (request.data.get('result_kind') or 'setpiece-cleared').strip()
+            cleared = {
+                'kind': entry.setpiece_kind,
+                'name': entry.setpiece_name,
+                'started_at': entry.setpiece_started_at.isoformat() if entry.setpiece_started_at else None,
+            }
+            entry.setpiece_kind = ''
+            entry.setpiece_name = ''
+            entry.setpiece_stage = ''
+            entry.setpiece_started_at = None
+            entry.save(update_fields=[
+                'setpiece_kind', 'setpiece_name', 'setpiece_stage', 'setpiece_started_at',
+            ])
+            models.PlaythroughEvent.objects.create(
+                schedule_entry=entry,
+                kind=result_kind,
+                payload=cleared,
+            )
+            return Response(serializers.ScheduleEntrySerializer(entry).data)
+        if stage not in (
+            models.ScheduleEntry.SETPIECE_IMMINENT,
+            models.ScheduleEntry.SETPIECE_ACTIVE,
+        ):
+            return Response(
+                {'detail': 'stage must be "imminent", "active", or "cleared".'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        kind = (request.data.get('kind') or entry.setpiece_kind or '').strip()
+        if not kind:
+            return Response(
+                {'detail': 'kind required when starting a setpiece.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        name = request.data.get('name')
+        entry.setpiece_kind = kind
+        if name is not None:
+            entry.setpiece_name = str(name)
+        entry.setpiece_stage = stage
+        if entry.setpiece_started_at is None:
+            entry.setpiece_started_at = timezone.now()
+        entry.save(update_fields=[
+            'setpiece_kind', 'setpiece_name', 'setpiece_stage', 'setpiece_started_at',
+        ])
+        return Response(serializers.ScheduleEntrySerializer(entry).data)
+
 
 class DonationViewSet(viewsets.ModelViewSet):
     queryset = models.Donation.objects.all()
@@ -333,6 +399,53 @@ def currently_playing(request: Request) -> Response:
     return Response(serializers.CurrentlyPlayingSerializer(cp).data)
 
 
+@api_view(['GET', 'POST'])
+def tts_replay(request: Request) -> Response:
+    """Singleton "play this donation next in TTS" pointer.
+
+    GET — used by /obs/tts polling. Returns `{donation_id, requested_at}`.
+    POST `{donation_id}` — used by /control/donations "Replay TTS"
+    button. Bumps `requested_at` even if the same donation is replayed
+    twice, so the TTS overlay's high-water-mark comparison fires every
+    time.
+    """
+    obj = models.TtsReplay.get()
+    if request.method == 'GET':
+        return Response(serializers.TtsReplaySerializer(obj).data)
+    donation_id = request.data.get('donation_id')
+    donation = models.Donation.objects.filter(pk=donation_id).first() if donation_id else None
+    if donation_id and not donation:
+        return Response({'detail': 'Donation not found'}, status=404)
+    obj.donation = donation
+    obj.requested_at = timezone.now()
+    obj.save()
+    return Response(serializers.TtsReplaySerializer(obj).data)
+
+
+@api_view(['GET', 'POST'])
+def tts_now_reading(request: Request) -> Response:
+    """Singleton mirror of what /obs/tts is currently announcing.
+
+    GET — polled by /control/donations to highlight the live row.
+    POST `{donation_id|null}` — called by /obs/tts on every transition.
+    Null clears the pointer (TTS overlay went idle).
+    """
+    obj = models.TtsNowReading.get()
+    if request.method == 'GET':
+        return Response(serializers.TtsNowReadingSerializer(obj).data)
+    donation_id = request.data.get('donation_id')
+    if donation_id is None:
+        obj.donation = None
+    else:
+        donation = models.Donation.objects.filter(pk=donation_id).first()
+        if not donation:
+            return Response({'detail': 'Donation not found'}, status=404)
+        obj.donation = donation
+    obj.started_at = timezone.now()
+    obj.save()
+    return Response(serializers.TtsNowReadingSerializer(obj).data)
+
+
 @api_view(['GET', 'PATCH'])
 def theme_settings(request: Request) -> Response:
     """Returns / updates the **currently active** theme.
@@ -346,6 +459,23 @@ def theme_settings(request: Request) -> Response:
     if request.method == 'GET':
         return Response(serializers.ThemeSettingsSerializer(theme).data)
     ser = serializers.ThemeSettingsSerializer(theme, data=request.data, partial=True)
+    ser.is_valid(raise_exception=True)
+    ser.save()
+    return Response(ser.data)
+
+
+@api_view(['GET', 'PATCH'])
+def chest_announcer_settings(request: Request) -> Response:
+    """Returns / updates the singleton chest-announcer settings row.
+
+    GET is polled by /obs/chest-announcer to decide whether to play
+    the fanfare on each card reveal. PATCH is hit by the control
+    page's toggle.
+    """
+    obj = models.ChestAnnouncerSettings.get()
+    if request.method == 'GET':
+        return Response(serializers.ChestAnnouncerSettingsSerializer(obj).data)
+    ser = serializers.ChestAnnouncerSettingsSerializer(obj, data=request.data, partial=True)
     ser.is_valid(raise_exception=True)
     ser.save()
     return Response(ser.data)
@@ -523,6 +653,26 @@ class IncentiveViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         obj = self.get_object()
         was_reached = obj.is_reached
+        # Bid-war path: when an `option` id is supplied AND payload has
+        # an `options` array, route the contribution to that option's
+        # `votes` total. Headline current_amount still tracks the sum
+        # so the row's progress bar still moves.
+        option_id = request.data.get('option')
+        if option_id and isinstance(obj.payload, dict):
+            options = obj.payload.get('options')
+            if isinstance(options, list):
+                hit = next(
+                    (o for o in options if isinstance(o, dict) and o.get('id') == option_id),
+                    None,
+                )
+                if hit is None:
+                    return Response(
+                        {'detail': f'Unknown option {option_id!r}.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                hit['votes'] = float(hit.get('votes', 0) or 0) + float(amount)
+                obj.payload['options'] = options
+                obj.save(update_fields=['payload'])
         obj.current_amount = obj.current_amount + amount
         newly_reached = False
         if not was_reached and obj.current_amount >= obj.goal_amount:

@@ -33,8 +33,61 @@
   --ca-hero-px: calc(var(--ca-h) * 0.35);
   --ca-chest-px: calc(var(--ca-h) * 0.29);
   --ca-ground-pct: 18%;
-  --ca-card-w: min(calc(var(--ca-h) * 0.95), 65cqw);
+  --ca-card-w: min(calc(var(--ca-h) * 1.3), 80cqw);
   --ca-card-h: calc(var(--ca-h) * 0.24);
+}
+
+/* One-time gesture gate. Renders fullscreen until the operator clicks
+ * once; that gesture both unlocks the AudioContext (Chrome's autoplay
+ * policy) and mounts the rest of the chest scene. Pointer-events:auto
+ * overrides the .ca-root rule so the button is actually clickable. */
+.ca-start-gate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--ca-h) * 0.02);
+  pointer-events: auto;
+  cursor: pointer;
+  background: linear-gradient(
+    180deg,
+    var(--obs-bg-from, #4c1324) 0%,
+    var(--obs-bg-to, #1a0a10) 100%
+  );
+  border: 2px dashed var(--obs-accent, #e71347);
+  color: var(--theme-text, #fff);
+  font-family: 'Bungee', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  transition: background 200ms ease, transform 120ms ease;
+}
+.ca-start-gate:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    var(--obs-accent-muted, rgba(231, 19, 71, 0.4)) 0%,
+    var(--obs-bg-to, #1a0a10) 100%
+  );
+}
+.ca-start-gate:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.ca-start-gate:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.ca-start-title {
+  font-size: max(18px, calc(var(--ca-h) * 0.1));
+  color: var(--obs-accent-bright, #ffd166);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.7),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+.ca-start-hint {
+  font-size: max(11px, calc(var(--ca-h) * 0.045));
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Ground line — same idiom as the camera-frame trim in obs.css: a muted
@@ -139,11 +192,31 @@
 
 .ca-chest[data-state='closed'] { background-position: 0 0; }
 .ca-chest[data-state='open']   { background-position: calc(var(--ca-chest-px) * -3) 0; }
+
+/* Opening = a short rattle (anticipation) immediately followed by the
+ * frame-stepped lid animation. Two CSS animations chained via
+ * animation-delay so the second only starts once the wobble finishes,
+ * all within the existing 600ms CHEST_OPEN_MS budget. */
 .ca-chest[data-state='opening'] {
-  animation: ca-chest-open 600ms steps(3) 1 forwards;
+  animation:
+    ca-chest-rattle 160ms ease-in-out 0s 1,
+    ca-chest-open 440ms steps(3) 160ms 1 forwards;
 }
 .ca-chest[data-state='closing'] {
-  animation: ca-chest-close 600ms steps(3) 1 forwards;
+  animation: ca-chest-close 500ms steps(3) 1 forwards;
+}
+
+/* Rattle preserves the base translateX(-50%) centring while jittering
+ * the chest left/right and lifting it slightly to imply weight straining
+ * against the lid. Lands back at the neutral position on the 100% stop
+ * so there's no jump into the frame-stepped open animation that follows. */
+@keyframes ca-chest-rattle {
+  0%,
+  100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
+  20%  { transform: translateX(calc(-50% - 1.5px)) translateY(-1px) rotate(-1.4deg); }
+  40%  { transform: translateX(calc(-50% + 1.5px)) translateY(-2px) rotate(1.4deg); }
+  60%  { transform: translateX(calc(-50% - 1px))   translateY(-3px) rotate(-1deg); }
+  80%  { transform: translateX(calc(-50% + 1px))   translateY(-1px) rotate(0.8deg); }
 }
 
 @keyframes ca-chest-open {
@@ -155,32 +228,44 @@
   to   { background-position: 0 0; }
 }
 
-/* Subtle glow that pulses when the chest is open — sells the "treasure
+/* Yellow glow that bursts out of the chest the instant it reaches the
+ * fully-open frame, then settles into a slow pulse. Sells the "treasure
  * inside" feeling without needing a separate sprite. */
 .ca-chest-glow {
   position: absolute;
   left: var(--ca-chest-x, 50%);
   bottom: calc(var(--ca-ground-pct) + var(--ca-chest-px) * 0.45);
-  width: calc(var(--ca-chest-px) * 1.4);
-  height: calc(var(--ca-chest-px) * 0.6);
-  transform: translateX(-50%);
+  width: calc(var(--ca-chest-px) * 1.6);
+  height: calc(var(--ca-chest-px) * 0.7);
+  transform: translateX(-50%) scale(0.3);
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 243, 160, 0.55) 0%,
-    rgba(255, 243, 160, 0.15) 45%,
-    transparent 75%
+    rgba(255, 255, 220, 0.85) 0%,
+    rgba(255, 243, 160, 0.55) 30%,
+    rgba(255, 200, 90, 0.2) 60%,
+    transparent 80%
   );
   opacity: 0;
   pointer-events: none;
-  transition: opacity 300ms ease-out;
+  mix-blend-mode: screen;
 }
 .ca-chest-glow[data-visible='true'] {
   opacity: 1;
-  animation: ca-glow-pulse 1.6s ease-in-out infinite alternate;
+  /* Burst first (overshoots then settles), then hand off to the pulse
+   * loop. The 380ms delay on the pulse matches the burst duration so
+   * there's no jolt at the handoff. */
+  animation:
+    ca-glow-burst 380ms cubic-bezier(0.22, 1, 0.36, 1) 0s 1 forwards,
+    ca-glow-pulse 1.6s ease-in-out 380ms infinite alternate;
+}
+@keyframes ca-glow-burst {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.3); }
+  55%  { opacity: 1; transform: translateX(-50%) scale(1.3); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 @keyframes ca-glow-pulse {
   from { transform: translateX(-50%) scale(0.95); }
-  to   { transform: translateX(-50%) scale(1.08); }
+  to   { transform: translateX(-50%) scale(1.1); }
 }
 
 /* ── Donation card + confetti ─────────────────────────────────────────
@@ -269,7 +354,7 @@
 
 .ca-card-donor {
   font-size: calc(var(--ca-h) * 0.07);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.015em;
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;

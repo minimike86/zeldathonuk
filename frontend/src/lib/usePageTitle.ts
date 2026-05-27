@@ -24,6 +24,8 @@ const TITLES: Record<string, string> = {
   '/control/donations': 'Control · Donations',
   '/control/audio': 'Control · Music',
   '/control/brb': 'Control · BRB',
+  '/control/omnibar': 'Control · Omnibar',
+  '/control/chest-announcer': 'Control · Chest announcer',
   '/control/theme': 'Control · Theme',
   '/obs': 'OBS',
   '/obs/full': 'OBS · Unified',

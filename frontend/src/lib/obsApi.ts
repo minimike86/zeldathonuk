@@ -25,6 +25,10 @@ export interface Game {
   box_art_url: string;
   hltb_id: string;
   release_year: number | null;
+  /** Per-game omnibar layout override. Same shape as
+   *  Event.omnibar_layout. Wins over the event-level layout while
+   *  this game is the active playthrough; empty falls back to event. */
+  omnibar_layout: Record<string, unknown>;
   items: GameItem[];
 }
 
@@ -84,6 +88,10 @@ export interface EventModel {
    *  Updated annually in /control/events. Blank → consumers fall back
    *  to the static GB22 asset shipped in /public/assets/img/. */
   gameblast_logo_url: string;
+  /** Omnibar lane composition JSON. Empty object → fall back to the
+   *  defaults in `omnibar/hooks/useLayoutConfig.ts`. Shape:
+   *  { lanes: [{ id, mode, intervalMs, panels: [...] }] }. */
+  omnibar_layout: Record<string, unknown>;
   donation_pages: DonationPage[];
 }
 
@@ -118,6 +126,12 @@ export interface ScheduleEntry {
   is_completed: boolean;
   was_skipped: boolean;
   current_objective: string;
+  setpiece_kind: string;
+  setpiece_name: string;
+  /** '' | 'imminent' | 'active'. 'cleared' is signalled via a
+   *  PlaythroughEvent, not stored here. */
+  setpiece_stage: '' | 'imminent' | 'active';
+  setpiece_started_at: string | null;
   notes: string;
   timer: TimerRun | null;
   collected_item_ids: number[];
@@ -135,6 +149,11 @@ export interface Donation {
   external_id: string;
   gift_aid_amount: string | null;
   image_url: string;
+  /** When true the /obs/tts and /obs/omnibar live-donation overlays
+   *  skip this donation entirely — no card, no speech. Toggled via
+   *  the 🔇 button in /control/donations. Donation still counts
+   *  toward totals; only the announcement is suppressed. */
+  is_muted: boolean;
 }
 
 export interface ThemeSettings {
@@ -168,6 +187,13 @@ export interface ThemeSettings {
   updated_at: string;
 }
 
+export interface ChestAnnouncerSettings {
+  /** When true, /obs/chest-announcer plays its fanfare on each card reveal.
+   *  Default false so the omnibar's TTS isn't competing with the fanfare. */
+  audio_enabled: boolean;
+  updated_at: string;
+}
+
 export interface DonationTotals {
   by_platform: Array<{
     platform: string;
@@ -186,6 +212,23 @@ export interface BrbTimer {
   message: string;
   is_active: boolean;
   created_at: string;
+}
+
+/** Singleton "play this donation in TTS" pointer. /obs/tts polls this
+ *  and re-enqueues the donation when `requested_at` advances past the
+ *  value it last saw. */
+export interface TtsReplay {
+  donation_id: number | null;
+  requested_at: string;
+}
+
+/** Singleton mirror of what /obs/tts is currently announcing. The
+ *  overlay POSTs `donation_id` when an utterance starts, posts null
+ *  when it ends. /control/donations polls this so the operator can see
+ *  which row is live (and which to mute if it goes sideways). */
+export interface TtsNowReading {
+  donation_id: number | null;
+  started_at: string;
 }
 
 export interface CurrentlyPlaying {
@@ -302,6 +345,25 @@ export const obsApi = {
     ),
   scheduleEntry: (id: number) => api<ScheduleEntry>(`/api/schedule/${id}/`),
   currentlyPlaying: () => api<CurrentlyPlaying>('/api/currently-playing/'),
+  // TTS replay — POST `{donation_id}` to ask /obs/tts to re-announce a
+  // donation. The endpoint stores the donation pointer + a fresh
+  // `requested_at` on a singleton row; the TTS overlay polls the
+  // GET shape and treats `requested_at` as a high-water mark.
+  ttsReplay: () => api<TtsReplay>('/api/tts/replay/'),
+  requestTtsReplay: (donationId: number) =>
+    api<TtsReplay>('/api/tts/replay/', {
+      method: 'POST',
+      body: { donation_id: donationId },
+    }),
+  // TTS now-reading mirror — /obs/tts POSTs `{donation_id}` when an
+  // utterance starts and `{donation_id: null}` when it ends.
+  // /control/donations polls the GET to highlight the live row.
+  ttsNowReading: () => api<TtsNowReading>('/api/tts/now-reading/'),
+  setTtsNowReading: (donationId: number | null) =>
+    api<TtsNowReading>('/api/tts/now-reading/', {
+      method: 'POST',
+      body: { donation_id: donationId },
+    }),
   themeSettings: () => api<ThemeSettings>('/api/theme/'),
   // Theme mutations broadcast via themeBus on success so other tabs in
   // the same browser re-fetch immediately. Cross-browser / cross-device
@@ -312,6 +374,17 @@ export const obsApi = {
     api<ThemeSettings>('/api/theme/', { method: 'PATCH', body: patch, token }).then(
       withThemeBroadcast,
     ),
+  chestAnnouncerSettings: () =>
+    api<ChestAnnouncerSettings>('/api/chest-announcer/settings/'),
+  updateChestAnnouncerSettings: (
+    patch: Partial<ChestAnnouncerSettings>,
+    token?: string | null,
+  ) =>
+    api<ChestAnnouncerSettings>('/api/chest-announcer/settings/', {
+      method: 'PATCH',
+      body: patch,
+      token,
+    }),
   themesList: () => api<ThemeSettings[]>('/api/themes/'),
   themeCreate: (body: Partial<ThemeSettings>) =>
     api<ThemeSettings>('/api/themes/', { method: 'POST', body }).then(withThemeBroadcast),
@@ -387,6 +460,47 @@ export const obsApi = {
     patch: Partial<Pick<ScheduleEntry, 'current_objective' | 'was_skipped' | 'notes' | 'is_completed'>>,
   ) =>
     api<ScheduleEntry>(`/api/schedule/${entryId}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  setSetpiece: (
+    entryId: number,
+    body:
+      | { stage: 'imminent' | 'active'; kind: string; name?: string }
+      | { stage: 'cleared'; result_kind?: string },
+  ) =>
+    api<ScheduleEntry>(`/api/schedule/${entryId}/setpiece/`, {
+      method: 'POST',
+      body,
+    }),
+  // Sandbox triggers — DEBUG-only on the backend (returns 404 in prod).
+  sandboxTwitchEvent: (body: {
+    kind: string;
+    user_name?: string;
+    extra?: Record<string, unknown>;
+  }) =>
+    api<{ id: number; kind: string; payload: Record<string, unknown> }>(
+      '/api/sandbox/twitch-event/',
+      { method: 'POST', body },
+    ),
+  sandboxDonation: (body: {
+    donor_name?: string;
+    amount?: string;
+    message?: string;
+    muted?: boolean;
+  }) =>
+    api<{ id: number; donor_name: string; amount: string; message: string }>(
+      '/api/sandbox/donation/',
+      { method: 'POST', body },
+    ),
+  updateEvent: (
+    eventId: number,
+    patch: Partial<Pick<EventModel,
+      'name' | 'start_time' | 'currency_symbol' | 'logo_url' | 'banner_url'
+      | 'gameblast_logo_url'
+    >> & { omnibar_layout?: Record<string, unknown> },
+  ) =>
+    api<EventModel>(`/api/events/${eventId}/`, {
       method: 'PATCH',
       body: patch,
     }),
@@ -469,11 +583,13 @@ export const obsApi = {
     is_active?: boolean;
     schedule_entry?: number | null;
     order?: number;
+    /** Reserved for bid wars (options array) and future extensions. */
+    payload?: Record<string, unknown>;
   }) => api<Incentive>('/api/incentives/', { method: 'POST', body }),
-  contributeToIncentive: (id: number, amount: string) =>
+  contributeToIncentive: (id: number, amount: string, optionId?: string) =>
     api<IncentiveContributeResult>(
       `/api/incentives/${id}/contribute/`,
-      { method: 'POST', body: { amount } },
+      { method: 'POST', body: optionId ? { amount, option: optionId } : { amount } },
     ),
   deleteIncentive: (id: number) =>
     api<void>(`/api/incentives/${id}/`, { method: 'DELETE' }),

@@ -40,6 +40,7 @@ import { EventsControl } from '@/routes/control/Events';
 import { ThemeControl } from '@/routes/control/Theme';
 import { AudioControl } from '@/routes/control/Audio';
 import { OmnibarControl } from '@/routes/control/Omnibar';
+import { ChestAnnouncerControl } from '@/routes/control/ChestAnnouncer';
 
 import { Timers } from '@/routes/api/Timers';
 import { CountUp } from '@/routes/api/CountUp';
@@ -95,6 +96,7 @@ export const router = createBrowserRouter([
       { path: 'events', element: <EventsControl /> },
       { path: 'theme', element: <ThemeControl /> },
       { path: 'omnibar', element: <OmnibarControl /> },
+      { path: 'chest-announcer', element: <ChestAnnouncerControl /> },
     ],
   },
   { path: '*', element: <NotFound /> },

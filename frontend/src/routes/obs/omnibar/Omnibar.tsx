@@ -12,12 +12,18 @@ import {
 import { useOmnibarFeed, type OmnibarFeed } from './hooks/useOmnibarFeed';
 import { useOverrideStream } from './hooks/useOverrideStream';
 import { usePlaythroughEventStream } from './hooks/usePlaythroughEventStream';
-import { Lane, type LaneConfig } from './lanes/Lane';
+import { useExternalEventStream } from './hooks/useExternalEventStream';
+import { useOmnibarSse } from './hooks/useOmnibarSse';
+import { useLayoutConfig } from './hooks/useLayoutConfig';
+import { Lane } from './lanes/Lane';
 import { LiveDonationPanel } from './panels/LiveDonationPanel';
 import { UrgentBannerPanel } from './panels/UrgentBannerPanel';
 import { EventFlashPanel } from './panels/EventFlashPanel';
+import { TwitchGenericToast } from './panels/TwitchPanels';
+import { getEventHandler } from './events/registry';
 import type {
   Donation,
+  ExternalEvent,
   OmnibarOverride,
   PlaythroughEvent,
 } from '@/lib/obsApi';
@@ -27,14 +33,18 @@ import type {
 import './panels/CurrentGamePanel';
 import './panels/PlaytimePanel';
 import './panels/ObjectivePanel';
+import './panels/SetpiecePanel';
 import './panels/TotalRaisedPanel';
 import './panels/SchedulePanel';
 import './panels/IncentivesPanel';
 import './panels/MilestonesPanel';
+import './panels/BidWarPanel';
 import './panels/DonationReelPanel';
 import './panels/CharityInfoPanel';
 import './panels/LocalTimePanel';
 import './panels/ItemsCollectedPanel';
+import './motion/moods';
+import './motion/moods.css';
 import './omnibar.css';
 
 /**
@@ -47,34 +57,11 @@ import './omnibar.css';
  * preempt the bottom lane with a TTS-narrated card.
  */
 
-// Top lane: status info — slow rotation (8s) between game info,
-// playtime, and the operator-set objective. Panels with null
-// selectData drop out automatically so a missing objective or
-// pre-stream timer doesn't park the lane on an empty card.
-const TOP_LANE: LaneConfig = {
-  id: 'top',
-  mode: 'rotating',
-  intervalMs: 8_000,
-  panels: ['current-game', 'playtime', 'objective', 'items-collected'],
-};
-
-// Bottom lane: rotating ticker — schedule, donations, incentives,
-// milestones, charity info, clock. Faster cadence (5s) keeps it
-// feeling alive.
-const BOTTOM_LANE: LaneConfig = {
-  id: 'bottom',
-  mode: 'rotating',
-  intervalMs: 5_000,
-  panels: [
-    'schedule-next',
-    'donation-reel',
-    'incentives',
-    'milestones',
-    'total-raised',
-    'charity-info',
-    'local-time',
-  ],
-};
+// Lane configs come from `useLayoutConfig(event)` — driven by
+// `Event.omnibar_layout` JSON if set, falling back to defaults
+// declared in hooks/useLayoutConfig.ts. The fallbacks match what
+// used to be hardcoded here, so behaviour is unchanged when the
+// event ships no layout.
 
 const EVENT_FLASH_MS = 3500;
 
@@ -93,20 +80,32 @@ function OmnibarInner() {
     return () => window.clearInterval(id);
   }, []);
   const feed = useOmnibarFeed(now);
+  // Game-level layout (when set) overrides the event-level layout for
+  // each lane individually — see useLayoutConfig for the merge rules.
+  const layout = useLayoutConfig(
+    feed.event,
+    feed.currentlyPlaying?.schedule_entry_detail?.game ?? null,
+  );
 
   const [omnibarState, dispatch] = useReducer(omnibarReducer, INITIAL);
 
-  // Pump streams into the bus.
+  // SSE-first: subscribe to /api/stream/omnibar/ for low-latency push
+  // of overrides + playthrough + external events. Polling stays on as
+  // a fallback — when SSE is connected the polls just confirm nothing's
+  // missed; when SSE drops, polling fills the gap within 1.5s. Both
+  // streams share per-id dedupe so duplicates never reach the bus.
+  useOmnibarSse();
   useOverrideStream();
   usePlaythroughEventStream(
     feed.currentlyPlaying?.schedule_entry_detail?.id ?? null,
   );
+  useExternalEventStream('twitch');
 
-  // Bottom-lane takeover state — donation card OR event flash. Donation
-  // wins over event flash; urgent override wins over both via the
-  // OmnibarFSM check below.
+  // Bottom-lane takeover state — donation card OR event flash OR
+  // Twitch event. Priority resolved in `bottomTakeover` below.
   const [activeDonation, setActiveDonation] = useState<Donation | null>(null);
   const [activeFlash, setActiveFlash] = useState<PlaythroughEvent | null>(null);
+  const [activeTwitchEvent, setActiveTwitchEvent] = useState<ExternalEvent | null>(null);
 
   // Track donations we've already announced so reloading mid-stream
   // doesn't replay history.
@@ -120,7 +119,12 @@ function OmnibarInner() {
       donationsInitialisedRef.current = true;
       return;
     }
-    const fresh = ds.find((d) => !seenDonationIdsRef.current.has(d.id));
+    // Skip muted donations entirely — no card. They're not added to
+    // seenDonationIds either, so unmuting one later (via the toggle in
+    // /control/donations) flows it through naturally on the next poll.
+    const fresh = ds.find(
+      (d) => !seenDonationIdsRef.current.has(d.id) && !d.is_muted,
+    );
     if (!fresh) return;
     seenDonationIdsRef.current.add(fresh.id);
     // Queue: if a donation is already showing, hold the new one until
@@ -142,6 +146,17 @@ function OmnibarInner() {
     setActiveDonation(next ?? null);
   }, []);
 
+  // External (Twitch) events → bottom-lane takeover. Drop the event
+  // if a higher-priority takeover is already on screen — donation,
+  // override, etc. Since these are non-essential broadcast moments,
+  // dropping a clash is preferable to queueing indefinitely.
+  useBusSubscription('external-event', (e) => {
+    if (omnibarState.kind === 'urgent') return;
+    if (activeDonation) return;
+    setActiveTwitchEvent(e.event);
+  });
+  const onTwitchEventComplete = useCallback(() => setActiveTwitchEvent(null), []);
+
   // Playthrough events → bottom-lane flash. Donations + overrides
   // outrank flashes; we skip the flash if either is active.
   useBusSubscription('playthrough-event', (e) => {
@@ -158,6 +173,14 @@ function OmnibarInner() {
       payload: { milestone: e.milestone },
     };
     dispatch({ type: 'CELEBRATE', reason });
+    // Optional fanfare audio per milestone — fire-and-forget; failure
+    // (autoplay blocked, missing file) is silent, the visual
+    // celebration still runs.
+    if (e.milestone.audio_url) {
+      const audio = new Audio(e.milestone.audio_url);
+      audio.volume = 0.85;
+      audio.play().catch(() => {});
+    }
     window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 5000);
   });
   useBusSubscription('incentive-unlocked', (e) => {
@@ -226,14 +249,35 @@ function OmnibarInner() {
   // bottom lane (top is reserved for status + urgent overrides).
   const urgentBottom =
     urgentOverride && urgentOverride.target_lane === 'bottom' ? urgentBanner : null;
+  // Priority: urgent override → donation card → Twitch takeover →
+  // playthrough event flash → nothing (lane runs its rotation).
+  // Twitch + playthrough events both look up the right component via
+  // the event-handler registry — unknown kinds fall back to a generic
+  // toast so a brand-new event source doesn't crash.
+  const twitchTakeover = activeTwitchEvent ? (() => {
+    const desc = getEventHandler(activeTwitchEvent.kind);
+    const Cmp = desc?.component ?? TwitchGenericToast;
+    return (
+      <Cmp
+        data={{ event: activeTwitchEvent }}
+        onComplete={onTwitchEventComplete}
+      />
+    );
+  })() : null;
+  const flashTakeover = activeFlash ? (() => {
+    const desc = getEventHandler(activeFlash.kind);
+    if (desc) {
+      const Cmp = desc.component;
+      return <Cmp data={{ event: activeFlash }} onComplete={onFlashComplete} />;
+    }
+    return <EventFlashPanel data={{ event: activeFlash }} onComplete={onFlashComplete} />;
+  })() : null;
   const bottomTakeover = urgentBottom ?? (activeDonation ? (
     <LiveDonationPanel
       data={{ donation: activeDonation, fallbackCurrency: feed.event?.currency_symbol ?? '£' }}
       onComplete={onDonationComplete}
     />
-  ) : activeFlash ? (
-    <EventFlashPanel data={{ event: activeFlash }} onComplete={onFlashComplete} />
-  ) : undefined);
+  ) : twitchTakeover ?? flashTakeover ?? undefined);
 
   // Single-lane dim when an URGENT override targets the OTHER lane —
   // top-targeted dims the bottom and vice versa. The "both" case
@@ -241,11 +285,29 @@ function OmnibarInner() {
   const topSuspended = isUrgent && urgentOverride?.target_lane === 'bottom';
   const bottomSuspended = isUrgent && urgentOverride?.target_lane === 'top';
 
+  // Mood class is derived from the highest-priority signal:
+  //   urgent override → 'urgent'
+  //   celebrating     → 'celebrate'
+  //   incoming twitch → 'cheer'
+  //   setpiece imminent → 'ominous'
+  //   otherwise        → no mood class
+  const setpieceImminent =
+    feed.phase.state === 'live' && feed.phase.sub.kind === 'setpiece-imminent';
+  const mood = isUrgent
+    ? 'mood--urgent'
+    : isCelebrating
+      ? 'mood--celebrate'
+      : activeTwitchEvent
+        ? 'mood--cheer'
+        : setpieceImminent
+          ? 'mood--ominous'
+          : '';
+
   return (
     <div
       className={`omnibar omnibar--v2 mode--${omnibarState.kind}${
         isCelebrating ? ' is-celebrating' : ''
-      }${isBothLane ? ' is-fullbar' : ''}`}
+      }${isBothLane ? ' is-fullbar' : ''}${mood ? ` ${mood}` : ''}`}
       aria-hidden
     >
       <Brand feed={feed} />
@@ -259,13 +321,13 @@ function OmnibarInner() {
         ) : (
           <>
             <Lane
-              config={TOP_LANE}
+              config={layout.top}
               feed={feed}
               suspended={topSuspended}
               takeoverChild={urgentTop ?? undefined}
             />
             <Lane
-              config={BOTTOM_LANE}
+              config={layout.bottom}
               feed={feed}
               suspended={bottomSuspended}
               takeoverChild={bottomTakeover}

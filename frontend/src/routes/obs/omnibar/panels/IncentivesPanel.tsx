@@ -37,11 +37,15 @@ registerPanel<Data>({
   component: Panel,
   selectData: (feed) => {
     // Prefer one bound to the active playthrough; fall back to the
-    // first active event-wide one. Returning null when nothing's set
-    // hides the panel from rotation entirely.
+    // first active event-wide one. Bid-war incentives (payload.options)
+    // are handled by BidWarPanel, so skip them here.
     const active = feed.currentlyPlaying?.schedule_entry_detail;
+    const isBidWar = (i: typeof feed.incentives[number]) => {
+      const opts = (i.payload as { options?: unknown }).options;
+      return Array.isArray(opts) && opts.length >= 2;
+    };
     const sorted = feed.incentives
-      .filter((i) => i.is_active && !i.is_reached)
+      .filter((i) => i.is_active && !i.is_reached && !isBidWar(i))
       .sort((a, b) => a.order - b.order);
     const scoped = active
       ? sorted.find((i) => i.schedule_entry === active.id)

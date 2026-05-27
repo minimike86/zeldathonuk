@@ -296,6 +296,70 @@
   transition: width 600ms ease;
 }
 
+/* ── Bid war bars ────────────────────────────────────────────────── */
+
+.omnibar--v2 .ob-bidwar-bars {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: stretch;
+  flex: 1;
+  min-width: 200px;
+  max-width: 540px;
+  height: 1.5rem;
+}
+
+.omnibar--v2 .ob-bidwar-bar {
+  position: relative;
+  flex: 1;
+  min-width: 60px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 0.4rem;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+}
+
+.omnibar--v2 .ob-bidwar-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--pct, 0%);
+  background: linear-gradient(
+    90deg,
+    var(--obs-accent, #e71347) 0%,
+    var(--obs-accent-bright, #da4471) 100%
+  );
+  opacity: 0.45;
+  transition: width 600ms ease;
+}
+
+.omnibar--v2 .ob-bidwar-bar.is-leading::before {
+  opacity: 0.9;
+}
+
+.omnibar--v2 .ob-bidwar-bar.is-leading {
+  border-color: #ffd23a;
+  box-shadow: 0 0 0 1px rgba(255, 210, 58, 0.4);
+}
+
+.omnibar--v2 .ob-bidwar-bar-label,
+.omnibar--v2 .ob-bidwar-bar-amount {
+  position: relative;
+  font-family: var(--ob-font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.omnibar--v2 .ob-bidwar-bar-amount {
+  margin-left: auto;
+  color: #ffd23a;
+}
+
 /* ── Live donation card (two-row layout inside the bottom lane) ──── */
 
 .omnibar--v2 .ob-live-donation {

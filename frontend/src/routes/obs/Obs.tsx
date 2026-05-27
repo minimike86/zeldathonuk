@@ -91,7 +91,7 @@ const sources: Source[] = [
     path: '/obs/chest-announcer',
     title: 'Chest announcer (donation pull)',
     description:
-      'Pixel hero walks in, opens a chest and holds each new donation card overhead before it confettis. Silent — pair with the omnibar / TTS source for narration. Scales to whatever rect you give it in OBS.',
+      'Pixel hero walks in, opens a chest and holds each new donation card overhead before it confettis. Audio (fanfare on each reveal) is toggled in /control/chest-announcer. Scales to whatever rect you give it in OBS.',
     category: 'event',
   },
 ];

@@ -13,7 +13,7 @@ import { Stage, GameFrame, RunnerTimerCard, GameDescCard, CameraFrame, AdPanel }
  * provides: an ad/sponsor block on the bottom-left, and a runner-timer +
  * game-description strip across the right column's lower 204px.
  *
- * Total 1920×1024 (stage = 1080 − omnibar 56).
+ * Total 1920×984 (stage = 1080 − omnibar 96).
  *
  *   ┌──────────┬───────────────────────────────┐
  *   │ Bottom   │ Top screen 1366×820           │
