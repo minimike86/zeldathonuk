@@ -7,34 +7,73 @@
  * Gold-tinged backwash with a sparkle border pulse. Used for
  * milestone-reached + incentive-unlocked. */
 
+/* The flash backwash on the omnibar root. Spans the full 5000ms
+ * celebration window (matches CELEBRATION_DONE in Omnibar.tsx) so
+ * the inner box-shadow glow doesn't fade out underneath a still-
+ * visible banner. */
 .omnibar--v2.mood--celebrate {
-  animation: ob-mood-celebrate-bg 2400ms ease-out both;
+  animation: ob-mood-celebrate-bg 5000ms ease-out both;
 }
 
-.omnibar--v2.mood--celebrate::after {
+/* Visible flash overlay. Wipes DOWN into place at t=0 (the user sees
+ * the gold light "drop in" from above) and wipes UP out at t=4450ms
+ * (mirroring the entrance — the light retreats upward). Clip-path
+ * inset gives a hard wipe-line rather than a soft fade. */
+/* Flash overlay lives INSIDE .ob-lanes (not on the omnibar root) so
+ * it's confined to the lanes area between the brand pill on the left
+ * and the total cluster on the right. Putting it on the omnibar root
+ * with inset: 0 made the gold flood the entire bar width including
+ * over the brand and total clusters — the user wants the flash
+ * "within the rails" only.
+ *
+ * ::before (not ::after) so it paints BEHIND the .ob-fullbar sibling
+ * in source order — the celebration banner content sits on top of
+ * the gold rather than being tinted by it. */
+.omnibar--v2.mood--celebrate .ob-lanes::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 210, 58, 0.28) 0%,
-    rgba(255, 210, 58, 0) 65%
+  /* Strong gold flash bar — solid enough across the lanes width that
+   * the wipe-down motion clearly reads as "the flash drops in from
+   * above." A vertical linear gradient gives a uniform horizontal
+   * fill so the wipe-line stays visible all the way across. */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 220, 90, 0.50) 0%,
+    rgba(255, 210, 58, 0.40) 50%,
+    rgba(255, 220, 90, 0.50) 100%
   );
-  animation: ob-mood-celebrate-glow 2400ms ease-out both;
-  z-index: 4;
+  /* Slide the entire overlay down from above the lanes into place;
+   * the omnibar root's `overflow: hidden` clips whatever's above the
+   * lanes' top edge so a translateY entrance reads as a wipe-down. */
+  animation:
+    ob-mood-celebrate-wipe-down 600ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both,
+    ob-mood-celebrate-wipe-up   550ms cubic-bezier(0.22, 1, 0.36, 1) 4450ms both;
 }
 
 @keyframes ob-mood-celebrate-bg {
   0% { box-shadow: inset 0 0 0 0 rgba(255, 210, 58, 0); }
-  25% { box-shadow: inset 0 0 80px 0 rgba(255, 210, 58, 0.45); }
+  12% { box-shadow: inset 0 0 80px 0 rgba(255, 210, 58, 0.45); }
+  88% { box-shadow: inset 0 0 80px 0 rgba(255, 210, 58, 0.45); }
   100% { box-shadow: inset 0 0 0 0 rgba(255, 210, 58, 0); }
 }
 
-@keyframes ob-mood-celebrate-glow {
-  0%   { opacity: 0; transform: scale(0.95); }
-  35%  { opacity: 1; transform: scale(1.02); }
-  100% { opacity: 0; transform: scale(1.1); }
+/* Wipe DOWN — overlay enters from above the bar (translateY -100%)
+ * and slides into place (translateY 0). The omnibar's overflow:hidden
+ * crops the off-screen portion so it reads as the flash dropping
+ * down from above. */
+@keyframes ob-mood-celebrate-wipe-down {
+  from { opacity: 0; transform: translateY(-100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Wipe UP — strict inverse. Overlay slides up out of the bar,
+ * cropped by the same overflow:hidden so the gold appears to
+ * retreat upward. */
+@keyframes ob-mood-celebrate-wipe-up {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-100%); }
 }
 
 /* ── Urgent ────────────────────────────────────────────────────────

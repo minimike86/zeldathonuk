@@ -782,6 +782,12 @@ export const obsApi = {
   }) => api<Milestone>('/api/milestones/', { method: 'POST', body }),
   markMilestoneReached: (id: number) =>
     api<Milestone>(`/api/milestones/${id}/mark_reached/`, { method: 'POST' }),
+  // Reset a milestone back to pending (clears reached_at). Combined
+  // with the omnibar's self-cleaning reachedIdsRef, this means the
+  // celebration banner fires again next time the total crosses the
+  // threshold.
+  resetMilestone: (id: number) =>
+    api<Milestone>(`/api/milestones/${id}/reset/`, { method: 'POST' }),
   deleteMilestone: (id: number) =>
     api<void>(`/api/milestones/${id}/`, { method: 'DELETE' }),
 

@@ -44,16 +44,28 @@ registerPanel<Data>({
   component: Panel,
   selectData: (feed) => {
     const timer = feed.currentlyPlaying?.schedule_entry_detail?.timer ?? null;
-    const gameElapsedS = timer ? timer.total_seconds : null;
+    const rawGameS = timer ? timer.total_seconds : null;
     const eventStart = feed.event?.start_time
       ? new Date(feed.event.start_time).getTime()
       : null;
-    const eventElapsedS =
+    const rawEventS =
       eventStart != null
         ? Math.floor((feed.now.getTime() - eventStart) / 1000)
         : null;
-    // Always renders even if both are null — the dashes still convey
-    // "we're tracking time" pre-stream. Returning null would hide it.
+    // Treat each timer as "live" only when it's actually running and
+    // positive. Pre-stream (start_time in the future) the event clock
+    // computes negative; clamping to null hides the "0:00:00 event"
+    // dead text instead of displaying it as a meaningless zero.
+    const gameElapsedS = rawGameS != null && rawGameS > 0 ? rawGameS : null;
+    const eventElapsedS = rawEventS != null && rawEventS > 0 ? rawEventS : null;
+    // If NEITHER timer is running, hide the panel — otherwise it
+    // sticks the top lane on "PLAYTIME · 00:00:00 game · 00:00:00
+    // event" because it's the only panel whose selectData still
+    // returns data, and `Lane.tsx` only ticks the rotation timer
+    // when `live.length > 1`. With both timers stopped the lane
+    // gracefully shows whichever other panel has data (or sits
+    // empty pre-stream — correct, since nothing's happening yet).
+    if (gameElapsedS == null && eventElapsedS == null) return null;
     return { gameElapsedS, eventElapsedS };
   },
   minDurationMs: 6000,

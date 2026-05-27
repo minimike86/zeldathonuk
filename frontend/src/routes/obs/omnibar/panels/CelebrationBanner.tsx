@@ -48,7 +48,10 @@ export function CelebrationBanner({
         * with the headline on top and the subhead wrapping below. */}
       <span className="ob-celebrate-stack">
         <span className="ob-text-strong ob-celebrate-headline">
-          <WaveText text={view.headline} staggerMs={32} startDelayMs={520} />
+          {/* startDelayMs matches the .ob-celebrate-stack wipe-in
+            * delay in omnibar.css so the characters rise into place
+            * as the left-to-right clip-path wipe exposes them. */}
+          <WaveText text={view.headline} staggerMs={32} startDelayMs={1150} />
         </span>
         {view.subhead && (
           <span className="ob-text-muted ob-celebrate-sub">{view.subhead}</span>

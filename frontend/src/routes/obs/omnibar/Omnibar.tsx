@@ -36,6 +36,7 @@ import type {
 // registry is fully populated before <Lane> resolves panel ids.
 import './panels/CurrentGamePanel';
 import './panels/PlaytimePanel';
+import './panels/PreStreamPanel';
 import './panels/ObjectivePanel';
 import './panels/SetpiecePanel';
 import './panels/TotalRaisedPanel';

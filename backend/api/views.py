@@ -858,6 +858,21 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             obj.save(update_fields=['reached_at'])
         return Response(self.get_serializer(obj).data)
 
+    @action(detail=True, methods=['post'])
+    def reset(self, request: Request, pk=None) -> Response:
+        """Clear `reached_at` so the milestone is pending again.
+
+        Mirrors `IncentiveViewSet.reset` — combined with the omnibar's
+        self-cleaning `reachedIdsRef` set, this means the milestone's
+        celebration banner will fire again the next time the running
+        donation total crosses the threshold.
+        """
+        obj = self.get_object()
+        if obj.reached_at is not None:
+            obj.reached_at = None
+            obj.save(update_fields=['reached_at'])
+        return Response(self.get_serializer(obj).data)
+
 
 class CharitySlideViewSet(viewsets.ModelViewSet):
     """CRUD on omnibar charity-cluster slides.

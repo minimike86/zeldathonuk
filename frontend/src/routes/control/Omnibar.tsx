@@ -1859,6 +1859,26 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
     setBusy(true);
     try { await obsApi.markMilestoneReached(milestone.id); } finally { setBusy(false); }
   };
+  const reset = async () => {
+    if (
+      !confirm(
+        `Reset "${milestone.name}" back to pending?\n\n` +
+          'Clears the reached timestamp so the celebration banner will ' +
+          'fire again the next time the running donation total crosses ' +
+          `£${milestone.threshold_amount}.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await obsApi.resetMilestone(milestone.id);
+    } catch (e) {
+      alert(`Reset failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
   const remove = async () => {
     setBusy(true);
     try { await obsApi.deleteMilestone(milestone.id); } finally { setBusy(false); }
@@ -1880,6 +1900,19 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
           onClick={mark}
         >
           Mark reached
+        </button>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-warning"
+          disabled={busy || !milestone.is_reached}
+          onClick={reset}
+          title={
+            milestone.is_reached
+              ? 'Reset to pending so the celebration can fire again'
+              : 'Milestone is already pending — nothing to reset'
+          }
+        >
+          ⟲ Reset
         </button>
         <button className="btn btn-sm btn-outline-danger" disabled={busy} onClick={remove}>
           Delete

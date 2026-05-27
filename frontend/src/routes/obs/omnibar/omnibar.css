@@ -22,17 +22,45 @@
   --ob-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ob-flash-ms: 900ms;
   --ob-body-reveal-ms: 260ms;
-  --ob-bloodmoon: linear-gradient(
-    45deg,
-    var(--obs-accent, #e71347) 20%,
-    var(--obs-accent-bright, #da4471) 45%,
-    var(--obs-accent, #e7364b) 70%,
-    var(--obs-accent-bright, #da4471)
-  );
+  /* Pill fill — three stacked layers instead of the old 45° four-stop
+   * stripe. The repeating colour stops in the diagonal made every pill
+   * read like a barber pole sweeping across the bar; this mesh gives
+   * each pill its own depth (top-left sheen, bottom-right shoulder,
+   * vertical base wash) so it looks like a solid lit object instead of
+   * an animated stripe. `color-mix` keeps the highlights wired to the
+   * active theme accent so a theme swap still propagates correctly. */
+  --ob-bloodmoon:
+    radial-gradient(
+      ellipse 90% 140% at 15% -25%,
+      color-mix(in srgb, var(--obs-accent-bright, #da4471) 70%, #fff 35%) 0%,
+      color-mix(in srgb, var(--obs-accent-bright, #da4471) 70%, #fff 0%) 45%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 120% 180% at 100% 110%,
+      color-mix(in srgb, var(--obs-accent, #e71347) 88%, #000 15%) 0%,
+      transparent 65%
+    ),
+    linear-gradient(
+      180deg,
+      var(--obs-accent-bright, #da4471) 0%,
+      var(--obs-accent, #e71347) 100%
+    );
   --ob-font: var(--theme-font-heading, 'Bungee', sans-serif);
   width: var(--obs-stage-width, 1920px);
   height: var(--ob-height);
-  background: linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #41454b 100%);
+  /* Two-layer background: a soft horizontal accent vignette on top
+   * of the neutral steel base, so the centre of the bar lifts toward
+   * the active theme accent without competing with panel content.
+   * The accent tint is colour-mixed from --obs-accent so a theme
+   * swap re-shades the bar without separate maintenance. */
+  background:
+    radial-gradient(
+      ellipse 90% 200% at 50% 50%,
+      color-mix(in srgb, var(--obs-accent, #e71347) 18%, transparent) 0%,
+      transparent 70%
+    ),
+    linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #41454b 100%);
   border-top: 1px solid var(--obs-accent, #e71347);
   display: flex;
   align-items: stretch;
@@ -72,8 +100,15 @@
 }
 
 /* Fullbar takeover collapses both lanes into one — restore the single
- * centred chevron so it aligns with the takeover's tag pill at 50%. */
-.omnibar--v2.is-fullbar .ob-brand {
+ * centred chevron so it aligns with the takeover's tag pill at 50%.
+ * Also matches when the omnibar is in celebrating mode (which sets
+ * .is-celebrating but where .is-fullbar may not yet be applied during
+ * the very first paint of the celebration transition) — without this
+ * second selector the brand can still render with twin chevrons,
+ * leaving two yellow triangles bleeding through at the brand/tag
+ * join where the single-chevron tag notch can only fit one. */
+.omnibar--v2.is-fullbar .ob-brand,
+.omnibar--v2.is-celebrating .ob-brand {
   clip-path: polygon(
     0 0,
     calc(100% - var(--ob-chevron)) 0,
@@ -159,95 +194,87 @@
 }
 
 /* Celebration variant — used when the omnibar enters the `celebrating`
- * mode for an unlocked incentive or reached milestone. Same fullbar
- * geometry as the urgent takeover, but with a gold-tinted entrance
- * pulse and a brighter accent so it reads as a positive achievement
- * rather than a warning.
+ * mode for an unlocked incentive or reached milestone.
  *
- * Two animations run in sequence on the same banner:
- *   - `ob-celebrate-enter` at 0ms (600ms duration) — settle-in pulse.
- *   - `ob-celebrate-exit`  at 4300ms (700ms duration) — burst-out
- *     fade just before the 5000ms celebration window closes in
- *     Omnibar.tsx, so the banner doesn't just vanish abruptly. The
- *     fill-mode: both keeps each at its end state outside its time
- *     window, so the enter animation's "settled" state holds during
- *     the dwell and the exit's faded state holds through unmount. */
-.omnibar--v2 .ob-fullbar.ob-fullbar--celebrate {
-  animation:
-    ob-celebrate-enter 600ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both,
-    ob-celebrate-exit  700ms cubic-bezier(0.22, 1, 0.36, 1) 4300ms both;
-}
-
-@keyframes ob-celebrate-enter {
-  0% { opacity: 0; transform: scale(0.96); filter: brightness(1.4); }
-  60% { opacity: 1; transform: scale(1.02); filter: brightness(1.15); }
-  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
-}
-
-@keyframes ob-celebrate-exit {
-  /* Strict inverse of `ob-celebrate-enter` — the entrance was a
-   * scale-up pop (0.96 → 1.02 → 1, brightness 1.4 → 1.15 → 1, opacity
-   * 0 → 1). The exit replays that backward: a small 1.02 overshoot
-   * pop on the way out, then shrink + brighten + fade back to the
-   * pre-entrance state. Symmetric in/out keeps the celebration
-   * reading as a panel popping into the lane and popping back out
-   * along the same axis, rather than mysteriously drifting downward. */
-  0% {
-    opacity: 1;
-    transform: scale(1);
-    filter: brightness(1);
-  }
-  40% {
-    opacity: 1;
-    transform: scale(1.02);
-    filter: brightness(1.15);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.96);
-    filter: brightness(1.4);
-  }
-}
-
-/* Tag pill + body content timing for the celebration banner —
- * staggered so the sequence reads as a clearly orchestrated arrival
- * and departure rather than a bulk fade in/out:
+ * The flash backwash itself (gold gradient) lives on the omnibar root
+ * via `.mood--celebrate::after` (see motion/moods.css) — that's the
+ * element that wipes DOWN at t=0 and wipes UP at t=4450ms. The
+ * .ob-fullbar.ob-fullbar--celebrate wrapper here is just a layout
+ * container with NO clip-path of its own; a parent clip-path here
+ * was previously interfering with the tag pill's chevron-notch clip,
+ * causing two yellow triangle gaps to bleed through at the brand /
+ * tag join.
  *
- *   t=0       parent fades in (600ms scale + opacity)
- *   t=350     tag slides in from the LEFT (520ms) — delayed past the
- *             parent's opacity build so the slide is visible against
- *             a painted banner instead of invisible behind opacity 0
- *   t=520     body content (headline + sub) reveals (260ms)
- *   t=780     everything settled
- *   ── dwell ──
- *   t=3500    body content fades out (500ms) — leaves first
- *   t=4000    body fully gone, brief pause
- *   t=4300    tag slides out to the LEFT (700ms) — last to leave
- *   t=5000    tag finished, parent exit completes, React unmounts
+ * Choreography (each step finishes before the next begins so it reads
+ * as an orchestrated sequence rather than a bulk fade):
  *
- * fill-mode: both holds each element at its in-position between
- * animations so the dwell phase is steady. */
+ *   t=0      flash backwash wipes DOWN into place (600ms) — done by
+ *            .mood--celebrate::after in motion/moods.css.
+ *   t=650    tag arrow flies in from the LEFT (500ms).
+ *   t=1150   incentive name + description wipe LEFT-TO-RIGHT (700ms)
+ *            with a -24px translateX so the slide-in is unmistakable.
+ *            WaveText fires per-character within the same window so
+ *            the chars rise as the wipe-line exposes them.
+ *   t=1850   everything settled — dwell starts.
+ *   ── ~1.45s dwell for the viewer to read ──
+ *   t=3300   incentive name + description wipe RIGHT-TO-LEFT (500ms)
+ *            — content disappears starting from the right side.
+ *   t=3850   tag arrow flies back out to the LEFT (550ms).
+ *   t=4450   flash backwash wipes UP and dissolves (550ms) — done by
+ *            .mood--celebrate::after.
+ *   t=5000   React unmounts (CELEBRATION_DONE in Omnibar.tsx fires). */
+
+/* Tag arrow — flies in from the LEFT after the flash has wiped down,
+ * and flies back out the LEFT before the flash wipes up. */
 .omnibar--v2 .ob-fullbar--celebrate .ob-tag {
   animation:
-    ob-tag-slide-in  var(--ob-enter-ms) var(--ob-enter-ease) 350ms both,
-    ob-tag-slide-out 700ms cubic-bezier(0.22, 1, 0.36, 1) 4300ms both;
+    ob-tag-slide-in  500ms cubic-bezier(0.22, 1, 0.36, 1) 650ms both,
+    ob-tag-slide-out 550ms cubic-bezier(0.22, 1, 0.36, 1) 3850ms both;
 }
 
-/* Body content (headline + description) exit. The standard
- * `.ob-row-body > *` rule already fades the stack IN on mount via
- * `ob-body-reveal` — we override here to ALSO fade it OUT before the
- * tag pill leaves, so the message has clearly concluded by the time
- * the tag retreats. */
+/* Body content (incentive name + description) — LEFT-TO-RIGHT wipe in,
+ * RIGHT-TO-LEFT wipe out. Wipe-in fires after the tag arrow has fully
+ * arrived; wipe-out fires first on exit so the message has visibly
+ * concluded before the tag retreats and the flash dissolves. The
+ * translateX paired with the clip-path makes the entrance/exit read
+ * as a clear slide-and-wipe rather than a quiet fade. Overrides the
+ * default `.ob-row-body > *` translateY reveal for this variant. */
 .omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-stack {
   animation:
-    ob-body-reveal var(--ob-body-reveal-ms) var(--ob-enter-ease)
-      var(--ob-enter-ms) both,
-    ob-celebrate-stack-exit 500ms cubic-bezier(0.22, 1, 0.36, 1) 3500ms both;
+    ob-celebrate-body-wipe-in  700ms cubic-bezier(0.22, 1, 0.36, 1) 1150ms both,
+    ob-celebrate-body-wipe-out 500ms cubic-bezier(0.22, 1, 0.36, 1) 3300ms both;
 }
 
-@keyframes ob-celebrate-stack-exit {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-6px); }
+/* Wipe-in: the stack slides in from the left, riding the .ob-row-body's
+ * overflow: hidden as a horizontal mask. translateX(-120px → 0) gives
+ * a long, clearly visible left-to-right entrance; the .ob-row-body
+ * crops the off-screen portion so the effect reads as a wipe rather
+ * than a free-floating slide. Pure transform + opacity (no clip-path)
+ * keeps the animation reliable across rendering paths. */
+@keyframes ob-celebrate-body-wipe-in {
+  from {
+    opacity: 0;
+    transform: translateX(-120px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Wipe-out: stack slides leftward out of view — content appears to be
+ * erased starting from its right side first (it's the last part of the
+ * text to leave the .ob-row-body's right edge as the whole block moves
+ * left). Mirrors the entrance distance for a symmetric exit. */
+@keyframes ob-celebrate-body-wipe-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-120px);
+  }
 }
 
 .omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-headline {
@@ -337,6 +364,12 @@
 .omnibar--v2 .ob-tag {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  /* Uniform pill width so every panel's tag ends at the same x and,
+   * for arrow variants, all arrow tips line up. Sized to fit the
+   * widest current label ("NEXT MILESTONE" / "RAID INCOMING") in
+   * Bungee at 0.95rem with 0.1em tracking plus the chevron padding. */
+  min-width: 13rem;
   height: 100%;
   margin-left: calc(-1 * var(--ob-chevron));
   padding: 0 1rem 0 calc(var(--ob-chevron) + 0.5rem);
@@ -352,6 +385,12 @@
 }
 
 .omnibar--v2 .ob-tag--arrow {
+  /* Arrow variants extend by one chevron's width on the right so the
+   * arrow's BASE (not its tip) sits at the same x as a flat tag's
+   * right edge — flat tags and arrow tags then share a vertical seam
+   * where the body content begins, instead of arrow bodies starting
+   * a chevron's width further in. */
+  min-width: calc(13rem + var(--ob-chevron));
   padding-right: calc(var(--ob-chevron) + 0.6rem);
   clip-path: polygon(
     0 0,
@@ -451,12 +490,22 @@
   position: absolute;
   inset: 0;
   width: var(--pct, 0%);
-  background: linear-gradient(
-    90deg,
-    var(--obs-accent, #e71347),
-    var(--obs-accent-bright, #ffd23a)
-  );
+  /* Same "liquid in glass" treatment as the bid-war bars — top sheen,
+   * accent body, deeper shoulder at the bottom edge — so the
+   * progress fill has volume rather than reading as a flat horizontal
+   * sweep. Going vertical for the gradient axis also avoids
+   * compounding the bar's own horizontal growth axis with a
+   * left-to-right colour change. */
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--obs-accent-bright, #ffd23a) 75%, #fff 40%) 0%,
+      var(--obs-accent-bright, #ffd23a) 30%,
+      var(--obs-accent, #e71347) 100%
+    );
   border-radius: 4px;
+  /* Subtle leading-edge glow so the bar reads as "currently growing". */
+  box-shadow: inset -2px 0 0 0 color-mix(in srgb, var(--obs-accent-bright, #ffd23a) 100%, #fff 60%);
   transition: width 600ms ease;
 }
 
@@ -504,17 +553,30 @@
   position: absolute;
   inset: 0;
   width: var(--pct, 0%);
-  background: linear-gradient(
-    90deg,
-    var(--obs-accent, #e71347) 0%,
-    var(--obs-accent-bright, #da4471) 100%
-  );
-  opacity: 0.45;
+  /* "Liquid in glass" fill: top sheen + vertical accent wash + a soft
+   * dark shoulder at the bottom edge so the fill reads as a 3D body
+   * rather than a flat coloured rectangle. The old 90° horizontal
+   * sweep ran across the bar in the same direction as the bar grew,
+   * which is the dominant "linear-swipe" feel the omnibar had too
+   * much of. Going vertical breaks that monoaxis read. */
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--obs-accent-bright, #da4471) 75%, #fff 40%) 0%,
+      var(--obs-accent-bright, #da4471) 22%,
+      var(--obs-accent, #e71347) 78%,
+      color-mix(in srgb, var(--obs-accent, #e71347) 80%, #000 25%) 100%
+    );
+  border-radius: 3px;
+  /* Inner glow at the leading right edge so the fill looks like it's
+   * currently rising. Subtle (8% alpha) to avoid being noisy. */
+  box-shadow: inset -2px 0 0 0 color-mix(in srgb, var(--obs-accent-bright, #da4471) 100%, #fff 60%);
+  opacity: 0.5;
   transition: width 600ms ease;
 }
 
 .omnibar--v2 .ob-bidwar-bar.is-leading::before {
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .omnibar--v2 .ob-bidwar-bar.is-leading {
@@ -919,7 +981,11 @@
   border-top-color: #ffd23a;
 }
 
-.omnibar--v2.is-celebrating {
-  /* Gold-tinged overlay for milestone / incentive moments. */
-  background: linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #5a4d2a 100%);
-}
+/* Note: the gold backwash for celebration moments now lives ENTIRELY
+ * on `.mood--celebrate::after` (see motion/moods.css) so it can wipe
+ * down on entrance and wipe up on exit. A previous rule here also
+ * set a gold radial background on the omnibar root, which snapped on
+ * instantly when `.is-celebrating` was added — that masked the wipe-
+ * down animation because the gold was already painted before the
+ * overlay started its reveal. `.is-celebrating` is now a marker
+ * class only; no background, no instant flash. */

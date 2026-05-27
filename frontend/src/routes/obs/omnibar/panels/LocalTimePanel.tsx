@@ -14,7 +14,7 @@ interface Data {
 
 function Panel({ data }: PanelProps<Data>) {
   return (
-    <PanelRow tag="CLOCK">
+    <PanelRow tag="LOCAL TIME">
       <span className="ob-text-strong" style={{ fontVariantNumeric: 'tabular-nums' }}>
         {data.localTime}
       </span>
@@ -35,6 +35,8 @@ registerPanel<Data>({
     const localTime = feed.now.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
     });
     let eventElapsedH: string | null = null;
     if (feed.event?.start_time) {

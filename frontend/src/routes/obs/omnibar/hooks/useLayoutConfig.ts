@@ -28,7 +28,15 @@ const DEFAULT_TOP: LaneConfig = {
   id: 'top',
   mode: 'rotating',
   intervalMs: 8000,
-  panels: ['current-game', 'playtime', 'objective', 'setpiece', 'items-collected'],
+  // `pre-stream` last in the list as the pre-show / between-games
+  // fallback. Its `selectData` returns null the moment a schedule
+  // entry is set as currently-playing, so it doesn't compete with
+  // current-game / playtime / objective during a live segment —
+  // it only activates when the lane would otherwise be empty
+  // (pre-event countdown, or the gap while the operator picks the
+  // next game). Without a fallback like this, the top lane sits
+  // blank pre-stream because every other panel returns null.
+  panels: ['current-game', 'playtime', 'objective', 'setpiece', 'items-collected', 'pre-stream'],
 };
 
 const DEFAULT_BOTTOM: LaneConfig = {
@@ -55,6 +63,7 @@ export const DEFAULT_LAYOUT: OmnibarLayoutConfig = {
 export const ALL_PANEL_IDS = [
   // Status / top-lane affinity
   'current-game', 'playtime', 'objective', 'setpiece', 'items-collected',
+  'pre-stream',
   // Ticker / bottom-lane affinity
   'schedule-next', 'donation-reel', 'incentives', 'bid-war', 'milestones',
   'total-raised', 'charity-info', 'local-time',
