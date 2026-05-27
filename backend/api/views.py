@@ -799,6 +799,33 @@ class IncentiveViewSet(viewsets.ModelViewSet):
             'newly_reached': newly_reached,
         })
 
+    @action(detail=True, methods=['post'])
+    def reset(self, request: Request, pk=None) -> Response:
+        """Zero an incentive's progress so it can be re-run.
+
+        Sets `current_amount = 0`, clears `reached_at` (so the next
+        time the goal is reached the omnibar fires the celebration
+        again), and — for bid-war payloads — zeros every option's
+        `votes`. `is_active` is left alone so the operator's
+        active/paused state isn't unexpectedly flipped.
+        """
+        obj = self.get_object()
+        update_fields = ['current_amount', 'reached_at']
+        obj.current_amount = Decimal('0')
+        obj.reached_at = None
+        # Bid-war reset — zero each option's votes so the bars in
+        # the omnibar BidWarPanel reset alongside the headline total.
+        if isinstance(obj.payload, dict):
+            options = obj.payload.get('options')
+            if isinstance(options, list):
+                for o in options:
+                    if isinstance(o, dict):
+                        o['votes'] = 0
+                obj.payload['options'] = options
+                update_fields.append('payload')
+        obj.save(update_fields=update_fields)
+        return Response(self.get_serializer(obj).data)
+
 
 class MilestoneViewSet(viewsets.ModelViewSet):
     """CRUD on event milestones.

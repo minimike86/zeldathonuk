@@ -185,19 +185,69 @@
 }
 
 @keyframes ob-celebrate-exit {
-  /* Calm dismissal — the banner drifts down a few pixels while fading
-   * out and easing back toward its rest scale. Reads as the moment
-   * gracefully concluding rather than exploding, which fits the
-   * "achievement reached, returning to coverage" beat better than the
-   * earlier burst-out exit. */
+  /* Strict inverse of `ob-celebrate-enter` — the entrance was a
+   * scale-up pop (0.96 → 1.02 → 1, brightness 1.4 → 1.15 → 1, opacity
+   * 0 → 1). The exit replays that backward: a small 1.02 overshoot
+   * pop on the way out, then shrink + brighten + fade back to the
+   * pre-entrance state. Symmetric in/out keeps the celebration
+   * reading as a panel popping into the lane and popping back out
+   * along the same axis, rather than mysteriously drifting downward. */
   0% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.02);
+    filter: brightness(1.15);
   }
   100% {
     opacity: 0;
-    transform: translateY(8px) scale(0.985);
+    transform: scale(0.96);
+    filter: brightness(1.4);
   }
+}
+
+/* Tag pill + body content timing for the celebration banner —
+ * staggered so the sequence reads as a clearly orchestrated arrival
+ * and departure rather than a bulk fade in/out:
+ *
+ *   t=0       parent fades in (600ms scale + opacity)
+ *   t=350     tag slides in from the LEFT (520ms) — delayed past the
+ *             parent's opacity build so the slide is visible against
+ *             a painted banner instead of invisible behind opacity 0
+ *   t=520     body content (headline + sub) reveals (260ms)
+ *   t=780     everything settled
+ *   ── dwell ──
+ *   t=3500    body content fades out (500ms) — leaves first
+ *   t=4000    body fully gone, brief pause
+ *   t=4300    tag slides out to the LEFT (700ms) — last to leave
+ *   t=5000    tag finished, parent exit completes, React unmounts
+ *
+ * fill-mode: both holds each element at its in-position between
+ * animations so the dwell phase is steady. */
+.omnibar--v2 .ob-fullbar--celebrate .ob-tag {
+  animation:
+    ob-tag-slide-in  var(--ob-enter-ms) var(--ob-enter-ease) 350ms both,
+    ob-tag-slide-out 700ms cubic-bezier(0.22, 1, 0.36, 1) 4300ms both;
+}
+
+/* Body content (headline + description) exit. The standard
+ * `.ob-row-body > *` rule already fades the stack IN on mount via
+ * `ob-body-reveal` — we override here to ALSO fade it OUT before the
+ * tag pill leaves, so the message has clearly concluded by the time
+ * the tag retreats. */
+.omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-stack {
+  animation:
+    ob-body-reveal var(--ob-body-reveal-ms) var(--ob-enter-ease)
+      var(--ob-enter-ms) both,
+    ob-celebrate-stack-exit 500ms cubic-bezier(0.22, 1, 0.36, 1) 3500ms both;
+}
+
+@keyframes ob-celebrate-stack-exit {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-6px); }
 }
 
 .omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-headline {
@@ -322,6 +372,16 @@
 @keyframes ob-tag-slide-in {
   from { transform: translateX(calc(-100% - var(--ob-chevron))); opacity: 0; }
   to   { transform: translateX(0); opacity: 1; }
+}
+
+/* Strict inverse of ob-tag-slide-in — used by celebration banners to
+ * retreat the tag pill back out the LEFT edge along the same axis
+ * it arrived on. Without this, the parent scale-down exit causes the
+ * tag pill to drift right toward the banner centre during shrink,
+ * which reads as a wrong-direction exit. */
+@keyframes ob-tag-slide-out {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(calc(-100% - var(--ob-chevron))); opacity: 0; }
 }
 
 @keyframes ob-tag-flash {

@@ -756,6 +756,11 @@ export const obsApi = {
       `/api/incentives/${id}/contribute/`,
       { method: 'POST', body: optionId ? { amount, option: optionId } : { amount } },
     ),
+  // Reset an incentive back to £0 (also clears `reached_at` so the
+  // celebration fires again next time, and zeros every bid-war
+  // option's vote count). `is_active` is preserved.
+  resetIncentive: (id: number) =>
+    api<Incentive>(`/api/incentives/${id}/reset/`, { method: 'POST' }),
   deleteIncentive: (id: number) =>
     api<void>(`/api/incentives/${id}/`, { method: 'DELETE' }),
 

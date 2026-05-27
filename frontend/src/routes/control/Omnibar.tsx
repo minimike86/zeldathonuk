@@ -1647,6 +1647,27 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
     try { await obsApi.deleteIncentive(incentive.id); } finally { setBusy(false); }
   };
 
+  const reset = async () => {
+    if (
+      !confirm(
+        `Reset "${incentive.name}" back to £0?\n\n` +
+          'Clears the current amount, the "reached" flag (so the ' +
+          'celebration can fire again), and any bid-war option votes. ' +
+          'The active/paused state is preserved.',
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await obsApi.resetIncentive(incentive.id);
+    } catch (e) {
+      alert(`Reset failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <tr style={flash ? { background: 'rgba(255, 210, 58, 0.18)' } : undefined}>
       <td>
@@ -1708,9 +1729,25 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
         </div>
       </td>
       <td>
-        <button className="btn btn-sm btn-outline-danger" disabled={busy} onClick={remove}>
-          Delete
-        </button>
+        <div className="d-flex gap-1">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-warning"
+            disabled={busy}
+            onClick={reset}
+            title="Reset progress to £0 (clears reached, zeros bid-war votes)"
+          >
+            ⟲ Reset
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger"
+            disabled={busy}
+            onClick={remove}
+          >
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   );

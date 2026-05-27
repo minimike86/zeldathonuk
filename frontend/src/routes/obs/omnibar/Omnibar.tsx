@@ -238,29 +238,49 @@ function OmnibarInner() {
     dispatch({ type: 'OVERRIDE_EXPIRED' });
   });
 
-  // Watch for incentives crossing into reached state — fire the event.
-  // (The /contribute/ endpoint also reports `newly_reached` in its
-  // response; this hook covers the path where the row is updated via
-  // admin/direct DB without a contribute call.)
+  // Watch for incentives + milestones crossing into reached state and
+  // fire the celebration event. Tracks already-celebrated ids in
+  // `reachedIdsRef` so a single goal-crossing only fanfares once,
+  // even though `feed.incentives` updates every poll.
+  //
+  // Reset support: when an entry transitions BACK to not-reached
+  // (operator clicked ⟲ Reset in /control/omnibar, clearing
+  // `reached_at` on the backend), drop its id from the set so a
+  // future re-reach can fanfare again. Without this the same
+  // incentive can only be celebrated once per browser-source lifetime.
+  //
+  // Milestones use negative keys in the same set so their ids can't
+  // collide with incentive ids.
   const reachedIdsRef = useRef<Set<number>>(new Set());
   useEffect(() => {
     for (const i of feed.incentives) {
-      if (i.is_reached && !reachedIdsRef.current.has(i.id)) {
-        reachedIdsRef.current.add(i.id);
-        // Skip the first pass — we don't want to fanfare incentives
-        // that were already reached before the omnibar mounted.
-        if (donationsInitialisedRef.current) {
-          emit({ kind: 'incentive-unlocked', incentive: i });
+      if (i.is_reached) {
+        if (!reachedIdsRef.current.has(i.id)) {
+          reachedIdsRef.current.add(i.id);
+          // Skip the first pass — we don't want to fanfare incentives
+          // that were already reached before the omnibar mounted.
+          if (donationsInitialisedRef.current) {
+            emit({ kind: 'incentive-unlocked', incentive: i });
+          }
         }
+      } else {
+        // Not reached (possibly post-reset) — clear any prior mark so
+        // the next reach fires the celebration.
+        reachedIdsRef.current.delete(i.id);
       }
     }
-    // Same for milestones.
+    // Same for milestones (negative keys so they can't collide with
+    // incentive ids in the shared set).
     for (const m of feed.milestones) {
-      if (m.is_reached && !reachedIdsRef.current.has(-m.id)) {
-        reachedIdsRef.current.add(-m.id);
-        if (donationsInitialisedRef.current) {
-          emit({ kind: 'milestone-reached', milestone: m });
+      if (m.is_reached) {
+        if (!reachedIdsRef.current.has(-m.id)) {
+          reachedIdsRef.current.add(-m.id);
+          if (donationsInitialisedRef.current) {
+            emit({ kind: 'milestone-reached', milestone: m });
+          }
         }
+      } else {
+        reachedIdsRef.current.delete(-m.id);
       }
     }
   }, [feed.incentives, feed.milestones, emit]);
