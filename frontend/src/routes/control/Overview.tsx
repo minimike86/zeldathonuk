@@ -14,6 +14,12 @@ export function ControlOverview() {
   const { data: brb } = usePolledQuery(obsApi.currentBrb, 2000);
 
   const entry = cp?.schedule_entry_detail ?? null;
+  const currentTitle = entry?.game?.title ?? entry?.display_title ?? entry?.title ?? '—';
+  const currentSub = entry
+    ? entry.game
+      ? `${entry.game.platform} · ${entry.runners.map((r) => r.name).join(', ') || '—'}`
+      : `${entry.slot_type} slot`
+    : 'nothing selected';
 
   return (
     <>
@@ -23,12 +29,8 @@ export function ControlOverview() {
           <Tile label="Active event" value={event?.name ?? '—'} sub={event ? new Date(event.start_time).toLocaleString('en-GB') : 'no active event'} />
           <Tile
             label="Currently playing"
-            value={entry?.game.title ?? '—'}
-            sub={
-              entry
-                ? `${entry.game.platform} · ${entry.runners.map((r) => r.name).join(', ') || '—'}`
-                : 'nothing selected'
-            }
+            value={currentTitle}
+            sub={currentSub}
           />
           <Tile
             label="BRB"
