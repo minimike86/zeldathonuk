@@ -39,7 +39,11 @@ export function WaveText({
           key={`${version}-${i}`}
           style={{ animationDelay: `${startDelayMs + i * staggerMs}ms` }}
         >
-          {ch === ' ' ? ' ' : ch}
+          {/* Use a non-breaking space — a literal space inside an
+              inline-block span often collapses to zero width when the
+              parent allows white-space normalisation, which made the
+              omnibar render "Cadence of Hyrule" as "CADENCEOFHYRULE". */}
+          {ch === ' ' ? ' ' : ch}
         </span>
       ))}
     </span>

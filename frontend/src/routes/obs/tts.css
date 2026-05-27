@@ -41,3 +41,24 @@
   margin-top: 0.5rem;
   color: rgba(255, 255, 255, 0.9);
 }
+
+/* "+N more" pill in the bottom-right of the card showing how many
+ * donations are queued behind the current one. Lets the operator see
+ * at a glance that the announcer is making progress rather than
+ * wondering if a long utterance has hung the queue. */
+.tts-queue-pip {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.75rem;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 210, 58, 0.9);
+  letter-spacing: 0.06em;
+}
+
+.tts-card {
+  position: relative;
+}

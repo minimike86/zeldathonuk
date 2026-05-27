@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   obsApi,
   usePolledQuery,
   type ExternalEvent,
   type Incentive,
   type Milestone,
+  type OmnibarLane,
   type OmnibarOverride,
   type PlaythroughEvent,
 } from '@/lib/obsApi';
@@ -27,6 +28,7 @@ export function OmnibarControl() {
   return (
     <div className="control-stack" style={{ display: 'grid', gap: '1.5rem' }}>
       <OverridesSection />
+      <ObjectiveSection />
       <PlaythroughEventsSection />
       <IncentivesSection />
       <MilestonesSection />
@@ -35,14 +37,107 @@ export function OmnibarControl() {
   );
 }
 
+// ── Objective editor ─────────────────────────────────────────────────────
+
+function ObjectiveSection() {
+  const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 3000);
+  const entry = cp?.schedule_entry_detail ?? null;
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const lastSeenIdRef = useRef<number | null>(null);
+
+  // Sync local draft when the active entry changes (don't blow away
+  // unsaved edits if the same entry comes back from a poll).
+  useEffect(() => {
+    if (entry && entry.id !== lastSeenIdRef.current) {
+      lastSeenIdRef.current = entry.id;
+      setDraft(entry.current_objective || '');
+    }
+  }, [entry]);
+
+  const save = async () => {
+    if (!entry) return;
+    setBusy(true);
+    try {
+      await obsApi.updateScheduleEntry(entry.id, {
+        current_objective: draft.trim(),
+      });
+      setSavedAt(new Date());
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clear = async () => {
+    if (!entry) return;
+    setBusy(true);
+    try {
+      await obsApi.updateScheduleEntry(entry.id, { current_objective: '' });
+      setDraft('');
+      setSavedAt(new Date());
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="control-card">
+      <h2>Current objective</h2>
+      {!entry ? (
+        <p className="text-warning">
+          No "Currently Playing" entry. Pick one in /control/schedule first.
+        </p>
+      ) : (
+        <>
+          <p className="text-white-50">
+            Free-text snippet shown on the omnibar's <code>objective</code> panel
+            (e.g. "Find the Master Sword", "Beat Ganondorf, second phase").
+            Blank = hide the panel from rotation.
+          </p>
+          <div className="control-btn-row" style={{ flexWrap: 'wrap' }}>
+            <label className="d-flex flex-column flex-grow-1" style={{ minWidth: 320 }}>
+              <small>Objective for {entry.display_title}</small>
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="What's the runner trying to do RIGHT NOW?"
+                maxLength={240}
+              />
+            </label>
+            <button className="btn btn-bloodmoon" disabled={busy} onClick={save}>
+              Save
+            </button>
+            <button className="btn btn-outline-light" disabled={busy} onClick={clear}>
+              Clear
+            </button>
+            {savedAt && (
+              <small className="text-white-50 align-self-end">
+                saved {fmtTime(savedAt.toISOString())}
+              </small>
+            )}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 // ── 1. Overrides ─────────────────────────────────────────────────────────
 
 function OverridesSection() {
   const { data: overrides } = usePolledQuery(obsApi.overrides, 3000);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    kind: string;
+    message: string;
+    target_lane: OmnibarLane;
+    duration_s: number;
+    priority: number;
+  }>({
     kind: 'urgent',
     message: 'Big moment incoming!',
+    target_lane: 'bottom',
     duration_s: 30,
     priority: 5,
   });
@@ -54,6 +149,7 @@ function OverridesSection() {
       await obsApi.createOverride({
         kind: form.kind,
         payload: { message: form.message },
+        target_lane: form.target_lane,
         expires_at: expiresAt,
         priority: form.priority,
         is_active: true,
@@ -93,6 +189,19 @@ function OverridesSection() {
           />
         </label>
         <label className="d-flex flex-column">
+          <small>Target lane</small>
+          <select
+            value={form.target_lane}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, target_lane: e.target.value as OmnibarLane }))
+            }
+          >
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+            <option value="both">Both</option>
+          </select>
+        </label>
+        <label className="d-flex flex-column">
           <small>Duration (s)</small>
           <input
             type="number"
@@ -120,6 +229,7 @@ function OverridesSection() {
         <thead>
           <tr>
             <th>Kind</th>
+            <th>Lane</th>
             <th>Message</th>
             <th>Priority</th>
             <th>Window</th>
@@ -129,7 +239,7 @@ function OverridesSection() {
         </thead>
         <tbody>
           {(overrides ?? []).length === 0 && (
-            <tr><td colSpan={6} className="text-white-50">No overrides yet.</td></tr>
+            <tr><td colSpan={7} className="text-white-50">No overrides yet.</td></tr>
           )}
           {(overrides ?? []).map((o) => (
             <OverrideRow key={o.id} o={o} />
@@ -158,6 +268,7 @@ function OverrideRow({ o }: { o: OmnibarOverride }) {
   return (
     <tr>
       <td><code>{o.kind}</code></td>
+      <td><code>{o.target_lane}</code></td>
       <td>{String(o.payload?.message ?? '')}</td>
       <td>{o.priority}</td>
       <td className="text-white-50" style={{ fontSize: '0.85em' }}>
@@ -283,6 +394,8 @@ function PlaythroughEventsSection() {
             </button>
           </div>
 
+          <PayloadHelp onPickExample={setCustomPayload} />
+
           <table className="control-table mt-3">
             <thead>
               <tr>
@@ -305,6 +418,87 @@ function PlaythroughEventsSection() {
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Inline documentation for the Payload (JSON) input. The omnibar's
+ * EventFlashPanel currently reads exactly one optional key —
+ * `name` — and falls back to a humanised version of the `kind` when
+ * it's missing. That's it. Everything else in the JSON is stored on
+ * the event row but never surfaced (yet), so don't promise more than
+ * what actually paints. Each example is clickable: copies the JSON
+ * into the input so the operator doesn't have to retype it.
+ */
+function PayloadHelp({ onPickExample }: { onPickExample: (json: string) => void }) {
+  const examples: { kind: string; json: string; note: string }[] = [
+    { kind: 'boss-defeated', json: '{"name":"Demise"}', note: 'Tag → "BOSS DEFEATED", body → "Demise"' },
+    { kind: 'shrine-cleared', json: '{"name":"Toh Yahsa Shrine"}', note: 'Tag → "SHRINE CLEARED", body → shrine name' },
+    { kind: 'dungeon-complete', json: '{"name":"Forest Temple"}', note: 'Tag → "DUNGEON CLEARED", body → dungeon name' },
+    { kind: 'item-collected', json: '{"name":"Master Sword"}', note: 'Tag → "ITEM GET", body → item name' },
+    { kind: 'player-death', json: '{"name":"To a Bokoblin"}', note: 'Tag → "KO", body → cause (optional)' },
+    { kind: 'segment-complete', json: '{"name":"Death Mountain"}', note: 'Tag → "SPLIT", body → segment name' },
+    { kind: 'runner-swap', json: '{"name":"MSec → Jasper"}', note: 'Tag → "RUNNER SWAP", body → handoff label' },
+  ];
+
+  return (
+    <details className="mt-2 text-white-50" style={{ fontSize: '0.85em' }}>
+      <summary style={{ cursor: 'pointer' }}>
+        What goes in <code>Payload (JSON)</code>?
+      </summary>
+      <div className="mt-2" style={{ paddingLeft: '0.5rem' }}>
+        <p className="mb-2">
+          The omnibar currently reads exactly one optional key —{' '}
+          <code>name</code> (string) — which overrides the auto-generated
+          body text. When omitted, the body falls back to a humanised
+          version of <code>kind</code>. Other JSON keys are stored on
+          the event row but never rendered; safe to add, but don't
+          expect them to show up yet.
+        </p>
+        <p className="mb-2">
+          The <code>kind</code> string drives the tag label (the gold
+          pill on the left) via a switch in{' '}
+          <code>EventFlashPanel.tsx</code>. Unknown kinds get a
+          humanised fallback (<code>cutscene-start</code> →{' '}
+          <code>CUTSCENE START</code>).
+        </p>
+        <table className="control-table" style={{ fontSize: '0.9em' }}>
+          <thead>
+            <tr>
+              <th>Kind</th>
+              <th>Example payload</th>
+              <th>What renders</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {examples.map((ex) => (
+              <tr key={ex.kind}>
+                <td><code>{ex.kind}</code></td>
+                <td><code>{ex.json}</code></td>
+                <td>{ex.note}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light"
+                    onClick={() => onPickExample(ex.json)}
+                    title="Copy this JSON into the payload input"
+                  >
+                    Use
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 mb-0">
+          To make a new key actually render in the omnibar, add a
+          handler in <code>EventFlashPanel.tsx</code> (or, longer term,
+          register a per-kind handler — see the comment block above{' '}
+          <code>PlaythroughEvent</code> in <code>models.py</code>).
+        </p>
+      </div>
+    </details>
   );
 }
 

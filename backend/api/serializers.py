@@ -1,4 +1,6 @@
 """DRF serializers for the API."""
+import uuid
+
 from django.db.models import Max
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
@@ -295,6 +297,43 @@ class DonationSerializer(serializers.ModelSerializer):
             'gift_aid_amount',
             'image_url',
         ]
+        # `Donation.Meta.unique_together = [('platform', 'external_id')]`
+        # makes DRF do TWO unhelpful things for the /control/donations
+        # "Add donation" form:
+        #   1. Auto-inject a UniqueTogetherValidator (stripped in
+        #      `__init__` below).
+        #   2. Force every field in the constraint to `required=True`
+        #      on the generated serializer field — overriding the
+        #      model's `blank=True`. Override it back here so blank
+        #      input is accepted; `create()` then synthesises a unique
+        #      placeholder so manual rows don't collide at the DB
+        #      level either.
+        extra_kwargs = {
+            'external_id': {
+                'required': False,
+                'allow_blank': True,
+                'default': '',
+            },
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Strip the UniqueTogetherValidator (see note in Meta above).
+        # The DB unique constraint still protects against duplicate
+        # platform IDs from the polling jobs.
+        self.validators = [
+            v for v in self.validators if not isinstance(v, UniqueTogetherValidator)
+        ]
+
+    def create(self, validated_data):
+        # Blank `external_id` would collide with any other blank-id
+        # donation on the same platform (DB unique_together). Synthesise
+        # a unique placeholder for manually-entered donations so the
+        # user never has to fill in an ID that's only meaningful when
+        # polling an external platform.
+        if not validated_data.get('external_id'):
+            validated_data['external_id'] = f'manual-{uuid.uuid4().hex}'
+        return super().create(validated_data)
 
 
 class BrbTimerSerializer(serializers.ModelSerializer):
@@ -348,8 +387,9 @@ class OmnibarOverrideSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.OmnibarOverride
-        fields = ['id', 'kind', 'payload', 'starts_at', 'expires_at',
-                  'priority', 'is_active', 'is_live', 'created_at']
+        fields = ['id', 'kind', 'payload', 'target_lane', 'starts_at',
+                  'expires_at', 'priority', 'is_active', 'is_live',
+                  'created_at']
         read_only_fields = ['id', 'created_at', 'is_live']
 
 

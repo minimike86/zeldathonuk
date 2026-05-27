@@ -21,7 +21,11 @@ import { UnifiedLayout } from '@/routes/obs/Unified';
 import { AudioCountdown } from '@/routes/obs/AudioCountdown';
 import { Brb } from '@/routes/obs/Brb';
 import { Tts } from '@/routes/obs/Tts';
-import { Omnibar } from '@/routes/obs/Omnibar';
+// Omnibar v2 lives in routes/obs/omnibar/. The v1 component
+// (routes/obs/Omnibar.tsx) is still imported transitively by
+// UnifiedLayout for /obs/full; only the standalone /obs/omnibar
+// route is on v2 today.
+import { Omnibar } from '@/routes/obs/omnibar/Omnibar';
 import { ChestAnnouncer } from '@/routes/obs/ChestAnnouncer';
 
 import { ControlLayout } from '@/routes/control/Dashboard';

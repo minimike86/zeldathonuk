@@ -116,6 +116,8 @@ export interface ScheduleEntry {
   started_at: string | null;
   finished_at: string | null;
   is_completed: boolean;
+  was_skipped: boolean;
+  current_objective: string;
   notes: string;
   timer: TimerRun | null;
   collected_item_ids: number[];
@@ -228,10 +230,13 @@ export interface PlaythroughEvent {
   expires_at: string | null;
 }
 
+export type OmnibarLane = 'top' | 'bottom' | 'both';
+
 export interface OmnibarOverride {
   id: number;
   kind: string;
   payload: Record<string, unknown>;
+  target_lane: OmnibarLane;
   starts_at: string;
   expires_at: string;
   priority: number;
@@ -377,6 +382,14 @@ export const obsApi = {
       `/api/schedule/${entryId}/toggle_collected/`,
       { method: 'POST', body: { item_id: itemId } },
     ),
+  updateScheduleEntry: (
+    entryId: number,
+    patch: Partial<Pick<ScheduleEntry, 'current_objective' | 'was_skipped' | 'notes' | 'is_completed'>>,
+  ) =>
+    api<ScheduleEntry>(`/api/schedule/${entryId}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
   setBrb: (payload: { target_time: string; message?: string; is_active?: boolean }) =>
     api<BrbTimer>('/api/brb/', { method: 'POST', body: payload }),
   updateBrb: (id: number, payload: Partial<BrbTimer>) =>
@@ -412,6 +425,7 @@ export const obsApi = {
   createOverride: (body: {
     kind: string;
     payload?: Record<string, unknown>;
+    target_lane?: OmnibarLane;
     starts_at?: string;
     expires_at: string;
     priority?: number;

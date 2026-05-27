@@ -1,0 +1,399 @@
+/* Omnibar v2 — 1920×96 two-lane broadcast layer.
+ *
+ * Layout:
+ *   [BRAND 220px] [LANES flex:1] [TOTAL 280px]
+ *   Inside LANES: top lane stacked over bottom lane, equal height.
+ *
+ * The brand and total clusters span both lanes vertically and sit at
+ * z-index 3 so the tag pill's slide-in is masked behind them.
+ *
+ * Reads theme via --obs-accent / --theme-* like v1; mode classes on
+ * the root drive urgent / celebrating / breaking visuals. */
+
+:root {
+  --obs-omnibar-height: 96px;
+}
+
+.omnibar.omnibar--v2 {
+  --ob-height: var(--obs-omnibar-height, 96px);
+  --ob-lane-h: calc(var(--ob-height) / 2);
+  --ob-chevron: 22px;
+  --ob-enter-ms: 520ms;
+  --ob-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ob-flash-ms: 900ms;
+  --ob-body-reveal-ms: 260ms;
+  --ob-bloodmoon: linear-gradient(
+    45deg,
+    var(--obs-accent, #e71347) 20%,
+    var(--obs-accent-bright, #da4471) 45%,
+    var(--obs-accent, #e7364b) 70%,
+    var(--obs-accent-bright, #da4471)
+  );
+  --ob-font: var(--theme-font-heading, 'Bungee', sans-serif);
+  width: var(--obs-stage-width, 1920px);
+  height: var(--ob-height);
+  background: linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #41454b 100%);
+  border-top: 1px solid var(--obs-accent, #e71347);
+  display: flex;
+  align-items: stretch;
+  color: var(--theme-text, #fff);
+  overflow: hidden;
+  font-family: var(--ob-font);
+  font-feature-settings: 'tnum';
+  position: relative;
+}
+
+/* ── Brand ────────────────────────────────────────────────────────── */
+
+.omnibar--v2 .ob-brand {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--ob-bloodmoon);
+  /* Two-lane mode: twin chevrons on the right edge, each centred on
+   * one lane (25% = top lane centre, 75% = bottom lane centre) so the
+   * tag pill notches in each lane dovetail with their own chevron.
+   * Fullbar mode collapses these into a single 50% chevron — see
+   * .is-fullbar override below. */
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ob-chevron)) 0,
+    100% 25%,
+    calc(100% - var(--ob-chevron)) 50%,
+    100% 75%,
+    calc(100% - var(--ob-chevron)) 100%,
+    0 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem calc(var(--ob-chevron) + 0.4rem) 0.4rem 1rem;
+  position: relative;
+  z-index: 3;
+}
+
+/* Fullbar takeover collapses both lanes into one — restore the single
+ * centred chevron so it aligns with the takeover's tag pill at 50%. */
+.omnibar--v2.is-fullbar .ob-brand {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ob-chevron)) 0,
+    100% 50%,
+    calc(100% - var(--ob-chevron)) 100%,
+    0 100%
+  );
+}
+.omnibar--v2 .ob-brand img {
+  max-height: 64px;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+/* ── Lanes container + individual lanes ──────────────────────────── */
+
+.omnibar--v2 .ob-lanes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.omnibar--v2 .ob-lane {
+  position: relative;
+  height: var(--ob-lane-h);
+  display: flex;
+  align-items: stretch;
+  transition: opacity 240ms ease;
+}
+
+.omnibar--v2 .ob-lane.is-suspended {
+  opacity: 0.45;
+  filter: saturate(0.5);
+}
+
+.omnibar--v2 .ob-lane--top {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Full-bar takeover — used when an urgent override targets `both`.
+ * Replaces the two-lane DOM with a single row that fills the entire
+ * omnibar height. Inner content is bumped up (bigger tag pill, bigger
+ * strong text) so it reads as one big moment rather than a two-row
+ * banner. */
+.omnibar--v2 .ob-fullbar {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+}
+
+.omnibar--v2.is-fullbar .ob-lane--top {
+  /* No internal divider when collapsing to one bar. */
+  border-bottom: none;
+}
+
+.omnibar--v2 .ob-fullbar .ob-tag {
+  font-size: 1.3rem;
+}
+
+.omnibar--v2 .ob-fullbar .ob-text-strong {
+  font-size: 1.7rem;
+}
+
+.omnibar--v2 .ob-fullbar .ob-row-body {
+  gap: 1.2rem;
+  padding-left: 1.75rem;
+}
+
+.omnibar--v2 .ob-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* ── Row + tag pill (shared shape between panels) ────────────────── */
+
+.omnibar--v2 .ob-row {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+}
+
+.omnibar--v2 .ob-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0 1rem 0 1.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.omnibar--v2 .ob-row-body--center {
+  justify-content: center;
+  padding-left: 1rem;
+}
+
+.omnibar--v2 .ob-row-body > * {
+  opacity: 0;
+  animation: ob-body-reveal var(--ob-body-reveal-ms) var(--ob-enter-ease)
+    var(--ob-enter-ms) both;
+}
+
+@keyframes ob-body-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.omnibar--v2 .ob-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin-left: calc(-1 * var(--ob-chevron));
+  padding: 0 1rem 0 calc(var(--ob-chevron) + 0.5rem);
+  background: var(--ob-bloodmoon);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--ob-chevron) 50%);
+  color: #fff;
+  font-family: var(--ob-font);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
+  animation: ob-tag-slide-in var(--ob-enter-ms) var(--ob-enter-ease) both;
+}
+
+.omnibar--v2 .ob-tag--arrow {
+  padding-right: calc(var(--ob-chevron) + 0.6rem);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ob-chevron)) 0,
+    100% 50%,
+    calc(100% - var(--ob-chevron)) 100%,
+    0 100%,
+    var(--ob-chevron) 50%
+  );
+}
+
+.omnibar--v2 .ob-tag--flash {
+  animation:
+    ob-tag-slide-in var(--ob-enter-ms) var(--ob-enter-ease) both,
+    ob-tag-flash var(--ob-flash-ms) ease-out var(--ob-enter-ms) 2;
+}
+
+@keyframes ob-tag-slide-in {
+  from { transform: translateX(calc(-100% - var(--ob-chevron))); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes ob-tag-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 58, 0); }
+  35% { box-shadow: 0 0 0 6px rgba(255, 210, 58, 0.55); }
+  70% { box-shadow: 0 0 0 14px rgba(255, 210, 58, 0); }
+}
+
+/* ── Text variants ──────────────────────────────────────────────── */
+
+.omnibar--v2 .ob-text-strong {
+  font-family: var(--ob-font);
+  color: #fff;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.omnibar--v2 .ob-text-muted {
+  font-family: var(--ob-font);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+
+.omnibar--v2 .ob-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.16rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--ob-font);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Incentive progress bar (inline) ─────────────────────────────── */
+
+.omnibar--v2 .ob-incentive-bar {
+  display: inline-block;
+  width: 180px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.omnibar--v2 .ob-incentive-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--pct, 0%);
+  background: linear-gradient(
+    90deg,
+    var(--obs-accent, #e71347),
+    var(--obs-accent-bright, #ffd23a)
+  );
+  border-radius: 4px;
+  transition: width 600ms ease;
+}
+
+/* ── Live donation card (two-row layout inside the bottom lane) ──── */
+
+.omnibar--v2 .ob-live-donation {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  row-gap: 0.05rem;
+  padding: 0.2rem 0;
+}
+
+.omnibar--v2 .ob-live-headline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  line-height: 1.05;
+}
+
+.omnibar--v2 .ob-live-headline .wave-text {
+  font-family: var(--ob-font);
+  font-size: 1.15rem;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.omnibar--v2 .ob-live-amount {
+  font-family: var(--ob-font);
+  font-size: 1.2rem;
+  color: #ffd23a;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  font-variant-numeric: tabular-nums;
+  animation: ob-amount-pop var(--ob-flash-ms) ease-out var(--ob-enter-ms) both;
+}
+
+@keyframes ob-amount-pop {
+  0% { transform: scale(0.92); filter: brightness(1.4) drop-shadow(0 0 6px rgba(255, 210, 58, 0.7)); }
+  60% { transform: scale(1.08); filter: brightness(1.15); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.omnibar--v2 .ob-live-message {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.88rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.01em;
+}
+
+/* ── Right lane: live total ──────────────────────────────────────── */
+
+.omnibar--v2 .ob-total {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0 1.25rem 0 1.25rem;
+  background: var(--ob-bloodmoon);
+  min-width: 280px;
+  position: relative;
+  z-index: 3;
+  transition: box-shadow 240ms ease;
+}
+
+.omnibar--v2 .ob-total.is-pending {
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 58, 0.45);
+}
+
+.omnibar--v2 .ob-total-amount-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.omnibar--v2 .ob-total-currency {
+  font-family: var(--ob-font);
+  font-size: 1.2rem;
+  color: #fff;
+  line-height: 1;
+}
+
+.omnibar--v2 .ob-total-amount {
+  font-family: var(--ob-font);
+  font-size: 2.1rem;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* ── Mode overlays ───────────────────────────────────────────────── */
+
+.omnibar--v2.mode--urgent {
+  /* Subtle border highlight reading "something important is happening". */
+  border-top-color: #ffd23a;
+}
+
+.omnibar--v2.is-celebrating {
+  /* Gold-tinged overlay for milestone / incentive moments. */
+  background: linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #5a4d2a 100%);
+}

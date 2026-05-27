@@ -83,13 +83,29 @@ class Event(models.Model):
     start_time = models.DateTimeField()
     currency_symbol = models.CharField(max_length=4, default='£')
     is_active = models.BooleanField(default=False, help_text='Only one event can be active at a time.')
-    logo_url = models.URLField(blank=True, help_text='Square-ish event logo (used in headers, overlays).')
-    banner_url = models.URLField(blank=True, help_text='Wide event poster/banner (used on landing, social cards).')
-    gameblast_logo_url = models.URLField(
+    # CharField (not URLField) on every operator-set media URL so the
+    # /control/events form accepts site-relative paths
+    # (/assets/img/foo.svg) alongside absolute URLs. URLField's
+    # validator rejects anything without an http(s):// scheme.
+    logo_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Square-ish event logo (used in headers, overlays). '
+                  'Absolute URL or site-relative path.',
+    )
+    banner_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Wide event poster/banner (used on landing, social cards). '
+                  'Absolute URL or site-relative path.',
+    )
+    gameblast_logo_url = models.CharField(
+        max_length=500,
         blank=True,
         help_text="SpecialEffect's current GameBlast campaign logo (e.g. GB22, "
                   'GB23…). Surfaced in the OBS omnibar and ad-panel carousel. '
-                  'Refresh this each year when the campaign rebrands.',
+                  'Refresh this each year when the campaign rebrands. '
+                  'Absolute URL or site-relative path.',
     )
     omnibar_layout = models.JSONField(
         default=dict,
@@ -631,28 +647,43 @@ class ThemeSettings(models.Model):
     )
 
     # ── Branding ─────────────────────────────────────────────────────────
-    logo_url = models.URLField(
+    # All five media fields are CharField (not URLField) so they accept
+    # site-relative paths like "/assets/img/Zeldathon-2026-White.svg"
+    # alongside absolute "https://…" URLs. URLField's validator demands
+    # a scheme and rejects relative paths, which broke the theme form
+    # whenever an operator pasted a path from /public/assets.
+    logo_url = models.CharField(
+        max_length=500,
         blank=True,
-        help_text='Hero / navbar wordmark. Falls back to bundled SVG when blank.',
+        help_text='Hero / navbar wordmark. Falls back to bundled SVG when blank. '
+                  'Absolute URL or site-relative path (e.g. /assets/img/foo.svg).',
     )
-    logo_small_url = models.URLField(
+    logo_small_url = models.CharField(
+        max_length=500,
         blank=True,
-        help_text='Compact mark used in tight spaces (omnibar pill).',
+        help_text='Compact mark used in tight spaces (omnibar pill). '
+                  'Absolute URL or site-relative path.',
     )
-    favicon_url = models.URLField(
+    favicon_url = models.CharField(
+        max_length=500,
         blank=True,
-        help_text='Browser tab icon. Blank = use the default favicon.',
+        help_text='Browser tab icon. Blank = use the default favicon. '
+                  'Absolute URL or site-relative path.',
     )
 
     # ── Background media ────────────────────────────────────────────────
-    background_video_url = models.URLField(
+    background_video_url = models.CharField(
+        max_length=500,
         blank=True,
         help_text='Optional looping background video for the page shell. '
-                  'When blank the gradient alone is shown.',
+                  'When blank the gradient alone is shown. Absolute URL or '
+                  'site-relative path.',
     )
-    background_image_url = models.URLField(
+    background_image_url = models.CharField(
+        max_length=500,
         blank=True,
-        help_text='Optional static background image used when no video is set.',
+        help_text='Optional static background image used when no video is set. '
+                  'Absolute URL or site-relative path.',
     )
 
     # ── Buttons + lines ─────────────────────────────────────────────────
@@ -822,6 +853,19 @@ class OmnibarOverride(models.Model):
                   'announcement, sponsor-shout, raid-alert, raffle.',
     )
     payload = models.JSONField(default=dict, blank=True)
+    target_lane = models.CharField(
+        max_length=8,
+        choices=[
+            ('top', 'Top lane'),
+            ('bottom', 'Bottom lane'),
+            ('both', 'Both lanes'),
+        ],
+        default='bottom',
+        help_text='Which omnibar lane takes the override banner. Top is '
+                  'the status zone (current game / playtime); bottom is '
+                  'the rotating ticker zone. Both mirrors the banner '
+                  'across both lanes for a full-bar takeover.',
+    )
     starts_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()
     priority = models.SmallIntegerField(
@@ -830,6 +874,10 @@ class OmnibarOverride(models.Model):
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    LANE_TOP = 'top'
+    LANE_BOTTOM = 'bottom'
+    LANE_BOTH = 'both'
 
     class Meta:
         ordering = ['-priority', '-starts_at']
@@ -888,7 +936,12 @@ class Incentive(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='incentives')
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    image_url = models.URLField(blank=True)
+    image_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Reward / incentive artwork. Absolute URL or '
+                  'site-relative path (e.g. /assets/img/foo.svg).',
+    )
     goal_amount = models.DecimalField(max_digits=10, decimal_places=2)
     current_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
     is_active = models.BooleanField(default=True)
@@ -948,10 +1001,12 @@ class Milestone(models.Model):
                   'Markdown not supported — plain text only.',
     )
     reached_at = models.DateTimeField(null=True, blank=True)
-    audio_url = models.URLField(
+    audio_url = models.CharField(
+        max_length=500,
         blank=True,
         help_text='Optional fanfare audio. The OBS browser source plays '
-                  'this once when the milestone is crossed.',
+                  'this once when the milestone is crossed. Absolute URL '
+                  'or site-relative path.',
     )
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -21,13 +21,20 @@
 
   /* All derived sizes hang off --ca-h. cqh covers modern browsers; a
    * ResizeObserver in the component writes a px fallback for engines
-   * where container queries on the root element misbehave. */
+   * where container queries on the root element misbehave.
+   *
+   * The whole scene is intentionally compact relative to the container:
+   * hero ~35% of the height, chest ~29%, card ~18%, with the ground
+   * line lifted from the bottom. That leaves ~30% of vertical headroom
+   * above the card so the confetti burst stays inside the OBS capture
+   * rect — confetti that flies off the top of the source rect just
+   * looks like a glitch to viewers. */
   --ca-h: 100cqh;
-  --ca-hero-px: calc(var(--ca-h) * 0.5);
-  --ca-chest-px: calc(var(--ca-h) * 0.42);
-  --ca-ground-pct: 12%;
-  --ca-card-w: max(120px, calc(var(--ca-h) * 1.6));
-  --ca-card-h: calc(var(--ca-h) * 0.6);
+  --ca-hero-px: calc(var(--ca-h) * 0.35);
+  --ca-chest-px: calc(var(--ca-h) * 0.29);
+  --ca-ground-pct: 18%;
+  --ca-card-w: min(calc(var(--ca-h) * 0.95), 65cqw);
+  --ca-card-h: calc(var(--ca-h) * 0.24);
 }
 
 /* Ground line — same idiom as the camera-frame trim in obs.css: a muted
@@ -184,8 +191,17 @@
  */
 .ca-card-wrap {
   position: absolute;
-  left: var(--ca-card-x, 50%);
-  bottom: calc(var(--ca-ground-pct) + var(--ca-hero-px) + var(--ca-h) * 0.04);
+  /* Centre the card on the hero, but clamp the centre so the card's
+   * edges always stay inside the container — without this, the card
+   * gets cut off on the left/right when the hero is near an edge. */
+  left: clamp(
+    calc(var(--ca-card-w) / 2),
+    var(--ca-card-x, 50%),
+    calc(100% - var(--ca-card-w) / 2)
+  );
+  /* Sit at the top of the hero's head — small overlap with the hero
+   * sprite reads as the character holding the card overhead. */
+  bottom: calc(var(--ca-ground-pct) + var(--ca-hero-px) * 0.88);
   transform: translateX(-50%);
   width: var(--ca-card-w);
   height: var(--ca-card-h);
@@ -201,7 +217,12 @@
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 4% 6%;
+  /* Padding sized off --ca-h (container height) — NOT percentages.
+   * Percentage padding in CSS references the containing block's WIDTH,
+   * so `padding: 4% 6%` here resolved to `4% × card_width` of vertical
+   * padding (huge when card_w > card_h, which is the normal case), and
+   * the donor line was getting pushed clean off the top of the card. */
+  padding: calc(var(--ca-h) * 0.015) calc(var(--ca-h) * 0.03);
   color: var(--theme-text, #fff);
   background: linear-gradient(
     180deg,
@@ -247,18 +268,24 @@
 }
 
 .ca-card-donor {
-  font-size: calc(var(--ca-h) * 0.12);
+  font-size: calc(var(--ca-h) * 0.07);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  /* `width: 100%` (not max-width) is what gives text-overflow: ellipsis
+   * something to clip against — under `align-items: center` a flex
+   * child sizes to its content by default, which leaves the donor line
+   * to expand past the card edge instead of truncating. */
+  width: 100%;
   line-height: 1.1;
-  margin-bottom: 4%;
+  /* Height-referenced gap, not `%` — see the note on .ca-card padding. */
+  margin-bottom: calc(var(--ca-h) * 0.012);
+  color: var(--theme-text, #fff);
 }
 .ca-card-amount {
-  font-size: calc(var(--ca-h) * 0.2);
+  font-size: calc(var(--ca-h) * 0.105);
   color: var(--obs-accent-bright, #ffd166);
   line-height: 1;
   letter-spacing: 0.02em;
@@ -276,8 +303,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--ca-h) * 0.06);
-  height: calc(var(--ca-h) * 0.06);
+  width: calc(var(--ca-h) * 0.035);
+  height: calc(var(--ca-h) * 0.035);
   background: var(--c, var(--obs-accent, #e71347));
   border-radius: 1px;
   transform: translate(-50%, -50%);
@@ -291,8 +318,14 @@
     opacity: 1;
   }
   100% {
+    /* Travel distance kept tight so particles stay inside the OBS
+     * capture rect — confetti is a celebration cue, not a screen-
+     * filling burst, and overflowing past the source's edges just
+     * looks like a glitch. Card centre sits at ~42% from the top after
+     * the scene was scaled down, so 0.3×h gives ~12% headroom even on
+     * the tightest upward trajectory. */
     transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg))
-      translateX(calc(var(--ca-h) * 1.2)) rotate(540deg);
+      translateX(calc(var(--ca-h) * 0.3)) rotate(540deg);
     opacity: 0;
   }
 }

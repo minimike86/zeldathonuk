@@ -359,9 +359,9 @@ class PlaythroughEventAdmin(admin.ModelAdmin):
 
 @admin.register(models.OmnibarOverride)
 class OmnibarOverrideAdmin(admin.ModelAdmin):
-    list_display = ['kind', 'is_active', 'is_live', 'priority',
-                    'starts_at', 'expires_at']
-    list_filter = ['kind', 'is_active']
+    list_display = ['kind', 'target_lane', 'is_active', 'is_live',
+                    'priority', 'starts_at', 'expires_at']
+    list_filter = ['kind', 'target_lane', 'is_active']
     search_fields = ['kind']
     readonly_fields = ['is_live', 'created_at']
 

@@ -73,10 +73,16 @@ const CARD_HOLD_MS = 2800;
 const CONFETTI_MS = 900;
 
 // ── Walk path anchors (percentage of container width) ─────────────────
+//
+// The hero stops at the horizontal centre of the container, with the
+// chest to their right. This keeps the donation card — which floats
+// directly above the hero — perfectly centred in whatever OBS capture
+// rect the streamer assigns, even though the hero's stance is to the
+// left of the chest visually.
 const X_OFFSCREEN_LEFT = -20;
 const X_OFFSCREEN_RIGHT = 120;
-const X_AT_CHEST = 38;    // hero stands slightly left of the chest
-const X_CHEST = 50;
+const X_AT_CHEST = 50;    // hero stops dead centre
+const X_CHEST = 62;       // chest sits slightly right of centre
 
 // Confetti palette — accents + rupee gold for a touch of variety.
 const PARTICLE_COLOURS = [
