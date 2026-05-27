@@ -363,6 +363,53 @@ class DonationViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @action(detail=False, methods=['post'])
+    def delete_all(self, request: Request) -> Response:
+        """Bulk delete every donation for the given event.
+
+        Destructive — caller must supply `event_id` explicitly (no
+        fallback to "all events" by design). Returns the number of
+        rows deleted so the UI can confirm with the operator.
+        """
+        event_id = request.data.get('event_id')
+        if not event_id:
+            return Response(
+                {'detail': 'event_id is required (delete_all is event-scoped).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        qs = models.Donation.objects.filter(event_id=event_id)
+        deleted, _ = qs.delete()
+        return Response({'deleted': deleted})
+
+    @action(detail=False, methods=['post'])
+    def mute_all(self, request: Request) -> Response:
+        """Bulk-set `mute_reason` on every donation for the given event.
+
+        Default reason is `already_announced` — the most common
+        operator intent for a "mute everything" sweep (e.g. clearing
+        the list at the end of a stream so a re-import doesn't re-
+        announce the entire history). Accepts any
+        `models.MuteReason` value; empty string acts as an unmute-all
+        sweep. Returns the number of rows touched.
+        """
+        event_id = request.data.get('event_id')
+        if not event_id:
+            return Response(
+                {'detail': 'event_id is required (mute_all is event-scoped).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        reason = request.data.get('mute_reason', models.MuteReason.ALREADY_ANNOUNCED)
+        valid = {value for value, _ in models.MuteReason.choices}
+        if reason not in valid:
+            return Response(
+                {'detail': f'Invalid mute_reason: {reason!r}. Valid: {sorted(valid)}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        updated = models.Donation.objects.filter(event_id=event_id).update(
+            mute_reason=reason,
+        )
+        return Response({'updated': updated, 'mute_reason': reason})
+
 
 class DonationPageViewSet(viewsets.ModelViewSet):
     queryset = models.DonationPage.objects.all()

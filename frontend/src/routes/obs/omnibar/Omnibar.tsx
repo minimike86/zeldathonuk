@@ -21,6 +21,9 @@ import { UrgentBannerPanel } from './panels/UrgentBannerPanel';
 import { EventFlashPanel } from './panels/EventFlashPanel';
 import { TwitchGenericToast } from './panels/TwitchPanels';
 import { CharityCluster } from './panels/CharityCluster';
+import { DonationSplash, type SplashColorMode } from './panels/DonationSplash';
+import { SlotReel } from './panels/SlotReel';
+import { CelebrationBanner } from './panels/CelebrationBanner';
 import { getEventHandler } from './events/registry';
 import type {
   Donation,
@@ -108,6 +111,8 @@ function OmnibarInner() {
   const [activeFlash, setActiveFlash] = useState<PlaythroughEvent | null>(null);
   const [activeTwitchEvent, setActiveTwitchEvent] = useState<ExternalEvent | null>(null);
 
+  const emit = useBusEmit();
+
   // Track donations we've already announced so reloading mid-stream
   // doesn't replay history. `activeDonationRef` mirrors the state
   // value so the donation-detection effect can decide queue-vs-show
@@ -147,6 +152,13 @@ function OmnibarInner() {
     if (fresh.length === 0) return;
     for (const d of fresh) {
       seenDonationIdsRef.current.add(d.id);
+      // Emit on the bus so the DonationSplash overlay can paint a
+      // "+£N" badge over the right-cluster total. Fired for every
+      // fresh donation, including muted ones we *would* skip — but
+      // muted ones are filtered out above, so they don't trigger the
+      // splash either (intentional: a muted donation shouldn't draw
+      // attention).
+      emit({ kind: 'donation-arrived', donation: d });
       // Read activeDonation through the ref so the queue/active
       // decision always sees the latest committed state — not the
       // value captured when this effect was scheduled.
@@ -231,7 +243,6 @@ function OmnibarInner() {
   // response; this hook covers the path where the row is updated via
   // admin/direct DB without a contribute call.)
   const reachedIdsRef = useRef<Set<number>>(new Set());
-  const emit = useBusEmit();
   useEffect(() => {
     for (const i of feed.incentives) {
       if (i.is_reached && !reachedIdsRef.current.has(i.id)) {
@@ -279,11 +290,17 @@ function OmnibarInner() {
   // Twitch + playthrough events both look up the right component via
   // the event-handler registry — unknown kinds fall back to a generic
   // toast so a brand-new event source doesn't crash.
+  // `key` ensures each new takeover event remounts its panel — every
+  // takeover panel (LiveDonation, Twitch, EventFlash) runs its
+  // dismissal timer in a mount-time effect, so without a key the
+  // second event would inherit the first's already-fired timer and
+  // either dismiss too early or never dismiss at all.
   const twitchTakeover = activeTwitchEvent ? (() => {
     const desc = getEventHandler(activeTwitchEvent.kind);
     const Cmp = desc?.component ?? TwitchGenericToast;
     return (
       <Cmp
+        key={activeTwitchEvent.id}
         data={{ event: activeTwitchEvent }}
         onComplete={onTwitchEventComplete}
       />
@@ -293,12 +310,30 @@ function OmnibarInner() {
     const desc = getEventHandler(activeFlash.kind);
     if (desc) {
       const Cmp = desc.component;
-      return <Cmp data={{ event: activeFlash }} onComplete={onFlashComplete} />;
+      return (
+        <Cmp
+          key={activeFlash.id}
+          data={{ event: activeFlash }}
+          onComplete={onFlashComplete}
+        />
+      );
     }
-    return <EventFlashPanel data={{ event: activeFlash }} onComplete={onFlashComplete} />;
+    return (
+      <EventFlashPanel
+        key={activeFlash.id}
+        data={{ event: activeFlash }}
+        onComplete={onFlashComplete}
+      />
+    );
   })() : null;
   const bottomTakeover = urgentBottom ?? (activeDonation ? (
+    // `key` forces a fresh LiveDonationPanel instance per donation —
+    // its TTS / marquee / advancedRef lifecycle all live in mount-
+    // time effects. Without this, every donation after the first
+    // would inherit the first's already-resolved advancedRef and
+    // the lane would silently get stuck.
     <LiveDonationPanel
+      key={activeDonation.id}
       data={{ donation: activeDonation, fallbackCurrency: feed.event?.currency_symbol ?? '£' }}
       onComplete={onDonationComplete}
     />
@@ -332,7 +367,7 @@ function OmnibarInner() {
     <div
       className={`omnibar omnibar--v2 mode--${omnibarState.kind}${
         isCelebrating ? ' is-celebrating' : ''
-      }${isBothLane ? ' is-fullbar' : ''}${mood ? ` ${mood}` : ''}`}
+      }${(isBothLane || isCelebrating) ? ' is-fullbar' : ''}${mood ? ` ${mood}` : ''}`}
       aria-hidden
     >
       <Brand feed={feed} />
@@ -343,6 +378,21 @@ function OmnibarInner() {
            * 96px and reads as one big moment instead of a duplicated
            * banner stacked on itself. */
           <div className="ob-fullbar">{urgentBanner}</div>
+        ) : isCelebrating ? (
+          /* Milestone / incentive-unlocked celebration. Mirrors the
+           * urgent-fullbar treatment so the achievement message takes
+           * over the entire bar for the celebration window (~5s) and
+           * viewers see WHAT was achieved, not just the gold flash. */
+          <div className="ob-fullbar ob-fullbar--celebrate">
+            <CelebrationBanner
+              reason={
+                omnibarState.kind === 'celebrating'
+                  ? omnibarState.reason
+                  : { kind: 'achievement', payload: {} }
+              }
+              currencySymbol={feed.event?.currency_symbol ?? '£'}
+            />
+          </div>
         ) : (
           <>
             <Lane
@@ -386,18 +436,100 @@ function RightCluster({
 }) {
   const total = Number(feed.totals?.grand_total ?? 0);
   const symbol = feed.event?.currency_symbol ?? '£';
+  // Smooth tween between the previous total and the new one. The
+  // tween's real-number output drives each digit reel's vertical
+  // position, so a £10 donation visibly rolls the digits forward
+  // over ~900ms rather than snapping to the new value.
+  const tweened = useTweenedNumber(total, TOTAL_TWEEN_MS);
+  const splashColorMode = readSplashColorMode(feed.event?.omnibar_layout);
   return (
     <div className={`ob-total${hasPending ? ' is-pending' : ''}`}>
       <div className="ob-total-amount-wrap">
+        {/* Splash overlay sits over JUST the amount block (currency +
+          * reels) so the "+£N" badges can't drift across the charity
+          * cluster. Subscribes to donation-arrived bus events; props
+          * just configure the colour mode. */}
+        <DonationSplash colorMode={splashColorMode} />
         <span className="ob-total-currency">{symbol}</span>
         <span className="ob-total-amount">
-          {total.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
+          <SlotReel value={tweened} />
         </span>
       </div>
       <CharityCluster gameblastLogoUrl={feed.event?.gameblast_logo_url ?? null} />
     </div>
   );
+}
+
+/** Pull `splash.color_mode` out of the per-event omnibar_layout JSON.
+ *  Falls back to 'theme' when the field is unset or malformed. */
+function readSplashColorMode(layout: unknown): SplashColorMode {
+  if (!layout || typeof layout !== 'object') return 'theme';
+  const splash = (layout as { splash?: unknown }).splash;
+  if (!splash || typeof splash !== 'object') return 'theme';
+  const mode = (splash as { color_mode?: unknown }).color_mode;
+  if (mode === 'gold' || mode === 'rainbow' || mode === 'theme') return mode;
+  return 'theme';
+}
+
+// Upper bound on tween duration. The hook scales the actual run-
+// time with the size of the delta (see useTweenedNumber below) so a
+// £5 donation gets a punchy ~1.2s roll while a £1000 donation gets
+// the full slow-windup-fast-middle-slow-finish over close to this
+// ceiling. Cap keeps an enormous incoming sum from dragging
+// indefinitely.
+const TOTAL_TWEEN_MS = 3200;
+
+/**
+ * easeOutCubic tween toward `target`. New targets restart the tween
+ * from whatever value is on screen now (so donations arriving
+ * mid-tween smoothly redirect instead of snapping). Cold-boot is
+ * special-cased: jumping FROM zero snaps to the current total so a
+ * page reload doesn't roll up the whole campaign from £0.
+ */
+function useTweenedNumber(target: number, maxDurationMs: number) {
+  const [value, setValue] = useState(target);
+  const currentRef = useRef(target);
+  currentRef.current = value;
+  useEffect(() => {
+    const from = currentRef.current;
+    if (from === target) return;
+    if (from === 0) {
+      setValue(target);
+      return;
+    }
+    // Scale duration logarithmically with the delta size: a small
+    // donation (£5) gets a snappy ~1.2s roll, a medium one (£50)
+    // ~1.8s, and only a large delta (£500+) approaches the cap. The
+    // base 800ms keeps even £1 from feeling rushed.
+    //
+    //   £1   → ~980ms
+    //   £5   → ~1267ms
+    //   £10  → ~1425ms
+    //   £50  → ~1823ms
+    //   £100 → ~2003ms
+    //   £500 → ~2412ms
+    //   £1k+ → capped at maxDurationMs
+    const delta = Math.abs(target - from);
+    const durationMs = Math.min(
+      maxDurationMs,
+      800 + 600 * Math.log10(1 + delta),
+    );
+    const start = performance.now();
+    let raf = 0;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / durationMs);
+      // easeInOutCubic — slow start, fast middle, slow finish. This
+      // is the slot-machine feel the omnibar wants: the reels accel-
+      // erate up, blur through the middle of the range, then decel-
+      // erate into their final digits.
+      const eased = p < 0.5
+        ? 4 * p * p * p
+        : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      setValue(from + (target - from) * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, maxDurationMs]);
+  return value;
 }

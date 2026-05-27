@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import {
   obsApi,
   usePolledQuery,
@@ -11,6 +11,7 @@ import {
   type ScheduleEntry,
   type ThemeSettings,
 } from '@/lib/obsApi';
+import { onEventChanged } from '@/lib/eventBus';
 import { derivePlaythroughPhase } from '../fsm/playthroughMachine';
 import type { PlaythroughPhase } from '../bus/types';
 
@@ -34,14 +35,26 @@ export interface OmnibarFeed {
 }
 
 const POLL_CURRENT_MS = 3000;
-const POLL_EVENT_MS = 15_000;
+// Active-event poll. Short cadence because lane layout / splash mode
+// / GameBlast logo all live on this row and operators expect changes
+// to land in seconds. Same-browser updates are instant via
+// eventBus broadcast (see lib/eventBus.ts); this is the floor for
+// cross-device updates.
+const POLL_EVENT_MS = 5_000;
 const POLL_SCHEDULE_MS = 8000;
 const POLL_DONATIONS_MS = 3000;
 const POLL_INCENTIVES_MS = 5000;
 const POLL_THEME_MS = 60_000;
 
 export function useOmnibarFeed(now: Date): OmnibarFeed {
-  const { data: event } = usePolledQuery(obsApi.activeEvent, POLL_EVENT_MS);
+  // Cross-tab event-row push: when another tab (notably /control/omnibar)
+  // PATCHes the active event, eventBus broadcasts and bumps this
+  // counter. Adding it to the polled query's deps cancels the in-flight
+  // tick and re-fetches immediately, so layout edits land in roughly
+  // one render frame instead of waiting up to POLL_EVENT_MS.
+  const [eventBump, dispatchBump] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => onEventChanged(dispatchBump), []);
+  const { data: event } = usePolledQuery(obsApi.activeEvent, POLL_EVENT_MS, [eventBump]);
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, POLL_CURRENT_MS);
   const { data: schedule } = usePolledQuery(
     () => (event ? obsApi.schedule(event.id) : Promise.resolve([])),

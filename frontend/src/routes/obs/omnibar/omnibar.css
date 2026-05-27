@@ -158,6 +158,88 @@
   padding-left: 1.75rem;
 }
 
+/* Celebration variant — used when the omnibar enters the `celebrating`
+ * mode for an unlocked incentive or reached milestone. Same fullbar
+ * geometry as the urgent takeover, but with a gold-tinted entrance
+ * pulse and a brighter accent so it reads as a positive achievement
+ * rather than a warning.
+ *
+ * Two animations run in sequence on the same banner:
+ *   - `ob-celebrate-enter` at 0ms (600ms duration) — settle-in pulse.
+ *   - `ob-celebrate-exit`  at 4300ms (700ms duration) — burst-out
+ *     fade just before the 5000ms celebration window closes in
+ *     Omnibar.tsx, so the banner doesn't just vanish abruptly. The
+ *     fill-mode: both keeps each at its end state outside its time
+ *     window, so the enter animation's "settled" state holds during
+ *     the dwell and the exit's faded state holds through unmount. */
+.omnibar--v2 .ob-fullbar.ob-fullbar--celebrate {
+  animation:
+    ob-celebrate-enter 600ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both,
+    ob-celebrate-exit  700ms cubic-bezier(0.22, 1, 0.36, 1) 4300ms both;
+}
+
+@keyframes ob-celebrate-enter {
+  0% { opacity: 0; transform: scale(0.96); filter: brightness(1.4); }
+  60% { opacity: 1; transform: scale(1.02); filter: brightness(1.15); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes ob-celebrate-exit {
+  /* Calm dismissal — the banner drifts down a few pixels while fading
+   * out and easing back toward its rest scale. Reads as the moment
+   * gracefully concluding rather than exploding, which fits the
+   * "achievement reached, returning to coverage" beat better than the
+   * earlier burst-out exit. */
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+.omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-headline {
+  /* Slightly bigger than the urgent banner's strong text and
+   * colour-shifted toward warm gold so the achievement reads
+   * differently from an "urgent" alert. */
+  font-size: 1.65rem;
+  color: #ffe69b;
+  line-height: 1.1;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(255, 210, 58, 0.55);
+}
+
+.omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-sub {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.2;
+  /* Allow the description to wrap if it's long — the row body's
+   * default white-space: nowrap is overridden here so an incentive's
+   * full description can use a second line instead of being clipped
+   * past the right edge. */
+  white-space: normal;
+}
+
+/* Two-line layout for the celebration headline + description. The
+ * stack sits inside the row body so the tag pill stays on the left
+ * and the gold flash mood reads as one cohesive banner. */
+.omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+  /* Cap subhead width so it wraps onto a second line inside the
+   * bar rather than pushing the right cluster off-screen. */
+  overflow: hidden;
+}
+
 .omnibar--v2 .ob-slot {
   position: absolute;
   inset: 0;
@@ -326,8 +408,13 @@
   align-items: stretch;
   flex: 1;
   min-width: 200px;
-  max-width: 540px;
-  height: 1.5rem;
+  /* No max-width — with 3+ options the old 540px cap meant each bar
+   * dropped to ~170px and the amount text got chopped off. The lane's
+   * own width is the natural ceiling; bars fill whatever's left after
+   * the tag pill + incentive name + muted label. */
+  /* Two-line layout per bar (label above amount), so each bar grows
+   * to ~2.4rem tall. Comfortably fits inside the 96px omnibar lane. */
+  height: 2.4rem;
 }
 
 .omnibar--v2 .ob-bidwar-bar {
@@ -338,11 +425,18 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.18);
   overflow: hidden;
+  /* Stack label above amount so each gets the full bar width — with
+   * the old horizontal flex layout a long option name like
+   * "Twilight Princess" + a £-amount couldn't both fit in a
+   * three-way-split bar and one got ellipsised. */
   display: flex;
-  align-items: center;
-  padding: 0 0.4rem;
-  gap: 0.3rem;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding: 0.15rem 0.45rem;
+  gap: 0;
   font-size: 0.75rem;
+  line-height: 1.05;
 }
 
 .omnibar--v2 .ob-bidwar-bar::before {
@@ -375,11 +469,18 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Stacked layout — each line owns the full bar width, so the
+   * old `margin-left: auto` on the amount is now unnecessary. */
+  width: 100%;
+}
+
+.omnibar--v2 .ob-bidwar-bar-label {
+  font-size: 0.78rem;
 }
 
 .omnibar--v2 .ob-bidwar-bar-amount {
-  margin-left: auto;
   color: #ffd23a;
+  font-size: 0.72rem;
 }
 
 /* ── Live donation card (two-row layout inside the bottom lane) ──── */
@@ -454,11 +555,186 @@
  * bottom lane (live card or queued). No-op for now — left here as a
  * sticky hook the FSM can target if we revisit the visual cue later. */
 
+/* Splash layer — absolutely-positioned overlay above the total
+ * cluster. Donation arrivals spawn "+£N" badges with random
+ * positions, slight tilt, and a float-up + fade-out animation. */
+.omnibar--v2 .ob-splash-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Above .ob-total contents (z-index 3) but still inside the cluster
+   * box so the splash never escapes the pink chevron region. */
+  z-index: 4;
+  /* overflow:visible so splashes can float upward past the natural
+   * height of the amount wrap (which is only one line of text tall).
+   * Horizontally splashes still anchor to the wrapper's column via
+   * percentage `left`, so they can't reach the charity cluster on
+   * the right. The omnibar's own overflow:hidden clips anything that
+   * escapes the bar entirely. */
+  overflow: visible;
+}
+
+.omnibar--v2 .ob-splash {
+  position: absolute;
+  /* Centre the splash on the given (left, top) coordinates rather
+   * than top-left-aligning it. Random positioning then lays the badge
+   * around its centre point. */
+  transform: translate(-50%, -50%)
+    rotate(var(--ob-splash-rotate, 0deg))
+    scale(var(--ob-splash-scale, 1));
+  font-family: 'Press Start 2P', 'VT323', 'Bungee', monospace;
+  font-size: 1rem;
+  font-weight: normal;
+  /* Per-mode default; the .ob-splash-layer--* class on the parent
+   * overrides this. Per-splash inline --ob-splash-hue (rainbow mode)
+   * wins via the hsl() colour rule below. */
+  color: #ffd23a;
+  text-shadow:
+    /* Pixel-block shadow to fake a chunky drop-shadow on the
+     * pixelated glyph. Two offsets at integer pixels keeps the
+     * pixel rhythm. */
+    1px 0 0 rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(0, 0, 0, 0.65),
+    1px 1px 0 rgba(0, 0, 0, 0.65),
+    2px 2px 0 rgba(0, 0, 0, 0.55);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  animation: ob-splash-float 1600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  will-change: transform, opacity;
+}
+
+/* Colour modes — set on the layer, inherit down to the splash. */
+.omnibar--v2 .ob-splash-layer--theme .ob-splash {
+  color: var(--obs-accent-bright, #ffd23a);
+}
+.omnibar--v2 .ob-splash-layer--gold .ob-splash {
+  color: #ffd23a;
+}
+.omnibar--v2 .ob-splash-layer--rainbow .ob-splash {
+  /* Rainbow mode: each splash sets --ob-splash-hue inline so the same
+   * hsl() formula renders a different colour per splash. Saturation
+   * + lightness tuned to read clearly on the dark omnibar gradient. */
+  color: hsl(var(--ob-splash-hue, 50deg) 95% 62%);
+}
+
+@keyframes ob-splash-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%)
+      rotate(var(--ob-splash-rotate, 0deg))
+      scale(calc(var(--ob-splash-scale, 1) * 0.4));
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%)
+      rotate(var(--ob-splash-rotate, 0deg))
+      scale(calc(var(--ob-splash-scale, 1) * 1.15));
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -75%)
+      rotate(var(--ob-splash-rotate, 0deg))
+      scale(var(--ob-splash-scale, 1));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -200%)
+      rotate(var(--ob-splash-rotate, 0deg))
+      scale(calc(var(--ob-splash-scale, 1) * 0.95));
+  }
+}
+
+/* Subtle pulse on the total amount itself whenever the tween is in
+ * flight — drawn via a CSS variable so the JS hook flips it on for
+ * the duration of an animation. Currently always-on because the
+ * tween's brief: a donation has landed; the running figure is
+ * climbing. */
+.omnibar--v2 .ob-total-amount {
+  transition: text-shadow 300ms ease;
+}
+
+/* ── Slot reel digit display ─────────────────────────────────────── */
+
+/* Each digit lives in its own fixed-height "viewport" cell. A
+ * vertical strip of glyphs 0..9 sits inside; the strip's translateY
+ * is set per render based on the tweened value, so as the value
+ * rolls the digits visibly scroll into view. */
+.omnibar--v2 .ob-slot-reel {
+  display: inline-flex;
+  align-items: baseline;
+  line-height: 1;
+}
+
+.omnibar--v2 .ob-slot-cell {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.omnibar--v2 .ob-slot-digit {
+  display: inline-block;
+  /* Width of each reel viewport — sets the visual spacing between
+   * digits. Wider = more breathing room between numerals. Bungee
+   * is a chunky display face so we want a generous slot; tabular-
+   * nums on the glyphs (below) keeps each numeral horizontally
+   * centred inside this box regardless of its natural width. */
+  width: 0.78em;
+  height: 1em;
+  overflow: hidden;
+  vertical-align: top;
+  position: relative;
+}
+
+.omnibar--v2 .ob-slot-digit.is-hidden {
+  /* Keep the layout slot but render nothing — leading-zero digits in
+   * the integer part disappear without dancing the row width. */
+  visibility: hidden;
+}
+
+.omnibar--v2 .ob-slot-reel-strip {
+  display: block;
+  /* Each reel snaps to an integer slot per render (Math.floor in
+   * SlotReel.tsx). The visible "roll" is this CSS transition: when a
+   * digit changes during the value tween, the strip eases smoothly
+   * from the old integer position to the new one.
+   *
+   * The cubic-bezier mirrors the easeInOutCubic curve the JS value
+   * tween uses, so individual digit rolls share the same "wind up,
+   * snap through, settle" character as the overall figure. Duration
+   * is longer than before — at sustained spin the next integer
+   * crossing usually arrives before the previous transition lands,
+   * which is fine; transitions overlap and the reel keeps moving. */
+  transition: transform 520ms cubic-bezier(0.65, 0, 0.35, 1);
+  will-change: transform;
+}
+
+.omnibar--v2 .ob-slot-glyph {
+  display: block;
+  height: 1em;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.omnibar--v2 .ob-slot-sep {
+  display: inline-block;
+  /* Slightly wider than before so the comma + decimal point have
+   * matching visual gap on each side, in step with the wider digit
+   * slot above. */
+  width: 0.42em;
+  text-align: center;
+}
+
 .omnibar--v2 .ob-total-amount-wrap {
   display: flex;
   align-items: baseline;
   gap: 0.3rem;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.35);
+  /* Anchor the absolutely-positioned .ob-splash-layer to this box so
+   * splashes stay over the £-figure and don't drift across the
+   * charity cluster to the right. Without this the splash bubbles up
+   * to .ob-total (the nearest positioned ancestor) and fills the
+   * entire right cluster. */
+  position: relative;
 }
 
 .omnibar--v2 .ob-total-currency {

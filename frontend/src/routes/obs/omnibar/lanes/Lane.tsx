@@ -32,6 +32,14 @@ interface Props {
 }
 
 export function Lane({ config, feed, suspended, takeoverChild }: Props) {
+  // Content-based key for the panels array. The active-event poll
+  // returns a fresh JSON object every 15s, which cascades to a fresh
+  // `config.panels` array reference even when the operator hasn't
+  // changed anything. Hashing the panel ids into a string lets us
+  // depend on CONTENT, so the effects below don't re-fire (and
+  // dispatch state-resetting actions) on every poll.
+  const panelsKey = config.panels.join('|');
+
   // Resolve which panels are actually showable on this tick.
   const live = useMemo(() => {
     return config.panels
@@ -44,7 +52,8 @@ export function Lane({ config, feed, suspended, takeoverChild }: Props) {
         return { id, desc, data };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [config.panels, feed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelsKey, feed]);
 
   const initial: LaneState =
     config.mode === 'pinned'
@@ -58,11 +67,16 @@ export function Lane({ config, feed, suspended, takeoverChild }: Props) {
   );
   const dispatch = dispatchRaw;
 
-  // Apply external suspend/resume from the parent.
+  // Apply external suspend/resume from the parent. Deps are
+  // content-based so an event poll that produces a fresh-but-
+  // equivalent layout JSON doesn't dispatch RESUME and reset the
+  // rotation. (The reducer also no-ops RESUME when already rotating
+  // — belt-and-braces — see laneMachine.ts.)
   useEffect(() => {
     if (suspended) dispatch({ type: 'SUSPEND' });
     else dispatch({ type: 'RESUME', mode: config.mode, panelId: config.panels[0] });
-  }, [suspended, config.mode, config.panels]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suspended, config.mode, panelsKey]);
 
   // Rotation timer. Only ticks when rotating + not suspended + we have
   // more than one live panel to choose from.

@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 import type { Incentive } from '@/lib/obsApi';
 
 /**
  * Multi-option voting panel — distinct from IncentivesPanel which
- * shows a single-goal progress bar. Render as a slim horizontal stack
- * of option bars, leading option highlighted. Cycles through showing
- * each option's name briefly in the header tag.
+ * shows a single-goal progress bar. Renders the incentive name +
+ * current leader, with a horizontal stack of option bars (leading
+ * option highlighted) beneath.
  *
  * Incentive payload shape consumed:
  *   { "options": [{ "id": "a", "name": "Option A", "votes": 12.5,
@@ -29,22 +28,28 @@ interface Data {
 }
 
 function Panel({ data }: PanelProps<Data>) {
-  // Cycle the header tag through option names so each one gets a moment
-  // even when the rotation slot's `minDurationMs` is short.
-  const [idx, setIdx] = useState(data.leadingIdx);
-  useEffect(() => {
-    if (data.options.length <= 1) return;
-    const id = window.setInterval(
-      () => setIdx((i) => (i + 1) % data.options.length),
-      2200,
-    );
-    return () => window.clearInterval(id);
-  }, [data.options.length]);
-  const featured = data.options[idx] ?? data.options[0];
+  const leader = data.options[data.leadingIdx] ?? data.options[0];
+  // Label decision tree:
+  //   - top vote is £0 → nobody's bid yet; "Tied for 1st" reads as
+  //     misleading certainty about a non-contest. Show a neutral
+  //     "Awaiting first bid" instead so viewers know the panel is
+  //     live and waiting, not stuck.
+  //   - multiple options share the top non-zero vote → real tie.
+  //   - otherwise → straight "Leading: <name>".
+  // Comparison is on votes (not just leadingIdx) so a real tie
+  // surfaces honestly.
+  const topVotes = leader.votes;
+  const tieCount = data.options.filter((o) => o.votes === topVotes).length;
+  const leaderLabel =
+    topVotes <= 0
+      ? 'Awaiting first bid'
+      : tieCount > 1
+        ? 'Tied for 1st'
+        : `Leading: ${leader.name}`;
   return (
     <PanelRow tag="BID WAR" arrow flash>
       <span className="ob-text-strong">{data.incentive.name}</span>
-      <span className="ob-text-muted">{featured.name}</span>
+      <span className="ob-text-muted">{leaderLabel}</span>
       <div className="ob-bidwar-bars" aria-hidden>
         {data.options.map((o, i) => {
           const pct = data.total > 0 ? (o.votes / data.total) * 100 : 0;

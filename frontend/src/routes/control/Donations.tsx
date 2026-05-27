@@ -245,6 +245,10 @@ export function DonationsControl() {
               className="form-control form-control-sm"
               style={{ width: 280 }}
             />
+            {/* Bulk actions — event-scoped on the backend; UI
+             *  double-confirms before firing so a stray click can't
+             *  wipe or silence the operator's whole donation list. */}
+            <BulkActions event={event} donations={donations ?? []} />
             {!adding && (
               <button className="btn btn-bloodmoon btn-sm" onClick={() => setAdding(true)}>
                 + Add donation
@@ -508,6 +512,149 @@ export function DonationsControl() {
         </table>
         </div>
       </div>
+    </>
+  );
+}
+
+/** Bulk-action group in the donations header: Mute all + Delete all.
+ *  Both scoped to the active event on the backend; the UI here adds
+ *  a `confirm()` step (showing the donation count + event name) so a
+ *  stray click can't wipe or silence everything. The buttons are
+ *  greyed out + tooltipped when there's nothing to act on, so the
+ *  operator gets an explanation rather than an inert mystery button. */
+function BulkActions({
+  event,
+  donations,
+}: {
+  event: EventModel;
+  donations: Donation[];
+}) {
+  const [busy, setBusy] = useState(false);
+  const total = donations.length;
+  const unmutedCount = donations.filter((d) => !d.is_muted).length;
+  const mutedCount = total - unmutedCount;
+  const eventLabel = event.name || `event #${event.id}`;
+
+  const muteAll = async () => {
+    if (unmutedCount === 0) return;
+    if (
+      !confirm(
+        `Mute all ${unmutedCount} un-muted donation(s) for "${eventLabel}"?\n\n` +
+          'They will be tagged "Already announced on stream" and skipped ' +
+          'by /obs/tts and /obs/omnibar. Reversible per-row (or via this ' +
+          'button by changing the default reason in code).',
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await obsApi.muteAllDonations(event.id, 'already_announced');
+    } catch (e) {
+      alert(`Mute all failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Bulk-unmute uses the same endpoint with an empty reason — the
+  // backend's mute_all view treats `reason === ''` as the unmute case,
+  // clearing `mute_reason` on every donation for this event in one
+  // SQL UPDATE (cheaper + less race-prone than N PATCH round-trips).
+  const unmuteAll = async () => {
+    if (mutedCount === 0) return;
+    if (
+      !confirm(
+        `Unmute all ${mutedCount} muted donation(s) for "${eventLabel}"?\n\n` +
+          'They will start announcing in /obs/tts and showing in the ' +
+          'omnibar again on the next poll. /obs/chest-announcer will ' +
+          'pick them up too once unmuted.',
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await obsApi.muteAllDonations(event.id, '');
+    } catch (e) {
+      alert(`Unmute all failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteAll = async () => {
+    if (total === 0) return;
+    // Double confirm — first asks intent, second forces the operator
+    // to type the event name. Belt-and-braces because this is the
+    // most destructive button on the control panel.
+    if (
+      !confirm(
+        `Delete ALL ${total} donation(s) for "${eventLabel}"?\n\n` +
+          'This cannot be undone. Totals will drop to zero immediately.',
+      )
+    ) {
+      return;
+    }
+    const typed = prompt(
+      `Type the event name exactly to confirm permanent deletion:\n\n${eventLabel}`,
+    );
+    if (typed !== eventLabel) {
+      alert('Event name did not match — delete aborted.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await obsApi.deleteAllDonations(event.id);
+      alert(`Deleted ${res.deleted} donation row(s).`);
+    } catch (e) {
+      alert(`Delete all failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-warning"
+        disabled={busy || unmutedCount === 0}
+        title={
+          unmutedCount === 0
+            ? 'No un-muted donations to mute'
+            : `Mute all ${unmutedCount} un-muted donation(s) for this event`
+        }
+        onClick={muteAll}
+      >
+        🔇 Mute all
+      </button>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-light"
+        disabled={busy || mutedCount === 0}
+        title={
+          mutedCount === 0
+            ? 'No muted donations to unmute'
+            : `Unmute all ${mutedCount} muted donation(s) for this event`
+        }
+        onClick={unmuteAll}
+      >
+        🔈 Unmute all
+      </button>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-danger"
+        disabled={busy || total === 0}
+        title={
+          total === 0
+            ? 'No donations to delete'
+            : `Delete all ${total} donation(s) for this event`
+        }
+        onClick={deleteAll}
+      >
+        ✕ Delete all
+      </button>
     </>
   );
 }

@@ -322,6 +322,32 @@
   filter: brightness(1.2);
 }
 
+/* Sound-triggers table — paired with `table-layout: fixed` on the
+ * <table> itself (see ChestAnnouncer.tsx). Form controls have a
+ * built-in ~200px intrinsic min-width that prevents columns from
+ * shrinking past it; clearing min-width on inputs/selects/buttons
+ * inside cells lets the <th> drag-resize actually shrink the
+ * column. `overflow: hidden` on cells clips runaway content so a
+ * long URL or game title can't blow the cell back open. */
+.chest-trigger-table td,
+.chest-trigger-table th {
+  overflow: hidden;
+}
+
+.chest-trigger-table td input,
+.chest-trigger-table td select,
+.chest-trigger-table td button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Text-overflow inside the Match column when content is wider than
+ * the cell — applies to whichever element the operator is reading
+ * (the cell itself when collapsed, the input when expanded). */
+.chest-trigger-table td {
+  text-overflow: ellipsis;
+}
+
 @keyframes donation-now-reading-pip-pulse {
   0%, 100% { opacity: 0.85; }
   50% { opacity: 1; box-shadow: 0 0 8px rgba(255, 210, 58, 0.45); }

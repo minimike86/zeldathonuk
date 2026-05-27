@@ -269,15 +269,44 @@ function ChestAnnouncerScene() {
       initialisedRef.current = true;
       return;
     }
+
+    // Prune any donations currently sitting in queueRef that have been
+    // muted *since* they queued. Without this the character pulls the
+    // muted card and the live-mute abort kicks in mid-reveal, which
+    // plays the open-pull-skip sequence for every muted entry one by
+    // one. Removing them up-front lets the reveal cycle jump straight
+    // to the next non-muted donation, and the "+N more" pip recounts
+    // accordingly because `revealQueueDepth` is derived from
+    // queueRef.current.length when each cycle starts.
+    //
+    // seenIds is also cleared for the pruned ids so the donation can
+    // re-enter the queue if the operator changes their mind and
+    // unmutes it later (next poll picks it up as "fresh").
+    const mutedIds = new Set(
+      donations.filter((d) => d.is_muted).map((d) => d.id),
+    );
+    if (mutedIds.size > 0) {
+      const before = queueRef.current.length;
+      queueRef.current = queueRef.current.filter((d) => {
+        if (mutedIds.has(d.id)) {
+          seenIdsRef.current.delete(d.id);
+          return false;
+        }
+        return true;
+      });
+      if (queueRef.current.length !== before) {
+        setQueueLen(queueRef.current.length);
+      }
+    }
+
     const fresh = donations
-      // Skip muted donations entirely. `is_muted` is the operator's
-      // signal that this donation has already been handled on stream
-      // (read aloud, name shouted out, etc.) and shouldn't replay —
-      // the omnibar/TTS already respect it, and pulling a redundant
-      // card here would feel out of sync with the rest of the scene.
-      // Note we don't add muted donations to seenIds, so unmuting one
-      // later in /control/donations flows it through normally on the
-      // next poll cycle.
+      // Skip muted donations entirely on first-touch too. `is_muted` is
+      // the operator's signal that this donation has already been
+      // handled on stream (read aloud, name shouted out, etc.) and
+      // shouldn't replay — the omnibar/TTS already respect it. We
+      // don't add muted donations to seenIds, so unmuting one later
+      // in /control/donations flows it through normally on the next
+      // poll cycle.
       .filter((d) => !seenIdsRef.current.has(d.id) && !d.is_muted)
       .sort(
         (a, b) =>

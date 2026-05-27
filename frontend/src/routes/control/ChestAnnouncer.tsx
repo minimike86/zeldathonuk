@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import {
   obsApi,
@@ -49,13 +49,29 @@ function ResizableTh({
   width,
   onResizeStart,
   children,
+  sortKey,
+  activeSortKey,
+  sortDir,
+  onSort,
 }: {
   width: number;
   onResizeStart: (e: React.MouseEvent) => void;
   children: React.ReactNode;
+  /** Make the header clickable to toggle sort. Pass a key that
+   *  matches the table's `SortKey` union (here `TriggerSortKey`)
+   *  along with the current active key + direction; omit `sortKey`
+   *  to keep the column non-sortable. */
+  sortKey?: string;
+  activeSortKey?: string;
+  sortDir?: 'asc' | 'desc';
+  onSort?: (key: string) => void;
 }) {
+  const sortable = sortKey != null && onSort != null;
+  const active = sortable && sortKey === activeSortKey;
+  const indicator = active ? (sortDir === 'asc' ? '▲' : '▼') : sortable ? '↕' : '';
   return (
     <th
+      onClick={sortable ? () => onSort!(sortKey!) : undefined}
       style={{
         width,
         minWidth: width,
@@ -63,9 +79,19 @@ function ResizableTh({
         // to the th's right edge instead of the table itself.
         position: 'relative',
         whiteSpace: 'nowrap',
+        cursor: sortable ? 'pointer' : undefined,
+        userSelect: sortable ? 'none' : undefined,
       }}
+      aria-sort={
+        active ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined
+      }
     >
       {children}
+      {indicator && (
+        <span style={{ marginLeft: 6, opacity: active ? 1 : 0.35 }}>
+          {indicator}
+        </span>
+      )}
       <ResizeHandle onMouseDown={onResizeStart} />
     </th>
   );
@@ -371,6 +397,10 @@ export function ChestAnnouncerControl() {
 // moment a card pops in /obs/chest-announcer — no match → procedural
 // fanfare fallback.
 
+type TriggerSortKey = 'priority' | 'name' | 'kind' | 'match' | 'volume' | 'active';
+type TriggerKindFilter = 'all' | ChestAnnouncerSoundTriggerKind;
+type TriggerActiveFilter = 'all' | 'active' | 'inactive';
+
 function SoundTriggersSection() {
   const { data: triggers } = usePolledQuery(
     obsApi.chestAnnouncerSoundTriggers,
@@ -383,6 +413,84 @@ function SoundTriggersSection() {
     TRIGGER_COLUMN_STORAGE_KEY,
     TRIGGER_COLUMN_DEFAULTS,
   );
+
+  // Sort + filter state. Defaults preserve the previous behaviour
+  // (priority ASC) so anyone landing on the page sees the same
+  // evaluator-order layout they're used to.
+  const [sortKey, setSortKey] = useState<TriggerSortKey>('priority');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [filter, setFilter] = useState('');
+  const [kindFilter, setKindFilter] = useState<TriggerKindFilter>('all');
+  const [activeFilter, setActiveFilter] = useState<TriggerActiveFilter>('all');
+
+  const toggleSort = (key: string) => {
+    const k = key as TriggerSortKey;
+    if (sortKey === k) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(k);
+      // 'priority' / 'volume' default to ASC (small numbers first);
+      // text columns default to ASC alphabetically; 'active' defaults
+      // to DESC so true (1) bubbles to the top. Keeps the first click
+      // showing what the operator usually wants.
+      setSortDir(k === 'active' ? 'desc' : 'asc');
+    }
+  };
+
+  const visibleTriggers = useMemo(() => {
+    let list = triggers ?? [];
+    if (kindFilter !== 'all') list = list.filter((t) => t.kind === kindFilter);
+    if (activeFilter !== 'all') {
+      const wantActive = activeFilter === 'active';
+      list = list.filter((t) => t.is_active === wantActive);
+    }
+    const q = filter.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          t.match.toLowerCase().includes(q) ||
+          (t.game_title || '').toLowerCase().includes(q) ||
+          t.kind.toLowerCase().includes(q),
+      );
+    }
+    const sorted = [...list].sort((a, b) => {
+      let av: string | number = '';
+      let bv: string | number = '';
+      switch (sortKey) {
+        case 'priority': av = a.priority; bv = b.priority; break;
+        case 'name': av = a.name.toLowerCase(); bv = b.name.toLowerCase(); break;
+        case 'kind': av = a.kind; bv = b.kind; break;
+        case 'match': av = a.match.toLowerCase(); bv = b.match.toLowerCase(); break;
+        case 'volume': av = a.volume; bv = b.volume; break;
+        case 'active': av = a.is_active ? 1 : 0; bv = b.is_active ? 1 : 0; break;
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      // Tiebreakers — always priority → kind → game title, regardless
+      // of the active sort, so the list within a tier stays in the
+      // evaluator's order. Stable Array.prototype.sort means ties on
+      // every key keep the server-returned order.
+      if (sortKey !== 'priority' && a.priority !== b.priority) {
+        return a.priority - b.priority;
+      }
+      if (sortKey !== 'kind' && a.kind !== b.kind) {
+        return a.kind.localeCompare(b.kind);
+      }
+      return (a.game_title || '').localeCompare(b.game_title || '');
+    });
+    return sorted;
+  }, [triggers, filter, kindFilter, activeFilter, sortKey, sortDir]);
+
+  const totalCount = triggers?.length ?? 0;
+  const visibleCount = visibleTriggers.length;
+  const hasActiveFilter =
+    filter.trim().length > 0 || kindFilter !== 'all' || activeFilter !== 'all';
+  const clearFilters = () => {
+    setFilter('');
+    setKindFilter('all');
+    setActiveFilter('all');
+  };
 
   return (
     <section className="control-card">
@@ -398,16 +506,136 @@ function SoundTriggersSection() {
 
       <PatternExplainer />
 
-      <table className="control-table">
+      {/* Sort + filter controls. Sort is also driven by clicking any
+       *  header (see ResizableTh `sortKey` props below); the filter
+       *  row here is the only way to narrow the visible list. Counts
+       *  show "visible / total" so the operator can tell at a glance
+       *  whether they're looking at the full set. */}
+      <div className="control-btn-row mt-2 align-items-center" style={{ gap: '0.5rem' }}>
+        <input
+          type="search"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter by name, match, game, kind…"
+          className="form-control form-control-sm"
+          style={{ maxWidth: 280 }}
+        />
+        <select
+          className="form-select form-select-sm"
+          value={kindFilter}
+          onChange={(e) => setKindFilter(e.target.value as TriggerKindFilter)}
+          style={{ width: 'auto' }}
+          title="Filter by trigger kind"
+        >
+          <option value="all">All kinds</option>
+          <option value="amount">Amount</option>
+          <option value="game">Game</option>
+          <option value="keyword">Keyword</option>
+        </select>
+        <select
+          className="form-select form-select-sm"
+          value={activeFilter}
+          onChange={(e) => setActiveFilter(e.target.value as TriggerActiveFilter)}
+          style={{ width: 'auto' }}
+          title="Filter by active state"
+        >
+          <option value="all">Active + inactive</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+        </select>
+        {hasActiveFilter && (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light"
+            onClick={clearFilters}
+            title="Reset all filters"
+          >
+            Clear filters
+          </button>
+        )}
+        <span className="text-white-50 small ms-auto">
+          {hasActiveFilter
+            ? `${visibleCount} of ${totalCount} shown`
+            : `${totalCount} trigger${totalCount === 1 ? '' : 's'}`}
+        </span>
+      </div>
+
+      {/* `table-layout: fixed` is what makes drag-resize actually
+       *  shrink the Match column. With the default `auto` layout
+       *  the browser respects the <input>'s ~200px intrinsic
+       *  min-width and refuses to honour a narrower <th> width;
+       *  switching to fixed makes the <th> the single source of
+       *  truth. Paired with the `chest-trigger-table` CSS overrides
+       *  below that set `min-width: 0` on the inputs themselves. */}
+      <table className="control-table chest-trigger-table mt-2" style={{ tableLayout: 'fixed' }}>
         <thead>
           <tr>
-            <ResizableTh width={widths.pri} onResizeStart={(e) => startResize('pri', e)}>Pri</ResizableTh>
-            <ResizableTh width={widths.name} onResizeStart={(e) => startResize('name', e)}>Name</ResizableTh>
-            <ResizableTh width={widths.kind} onResizeStart={(e) => startResize('kind', e)}>Kind</ResizableTh>
-            <ResizableTh width={widths.match} onResizeStart={(e) => startResize('match', e)}>Match</ResizableTh>
-            <ResizableTh width={widths.sound_url} onResizeStart={(e) => startResize('sound_url', e)}>Sound URL</ResizableTh>
-            <ResizableTh width={widths.volume} onResizeStart={(e) => startResize('volume', e)}>Volume</ResizableTh>
-            <ResizableTh width={widths.active} onResizeStart={(e) => startResize('active', e)}>Active</ResizableTh>
+            <ResizableTh
+              width={widths.pri}
+              onResizeStart={(e) => startResize('pri', e)}
+              sortKey="priority"
+              activeSortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Pri
+            </ResizableTh>
+            <ResizableTh
+              width={widths.name}
+              onResizeStart={(e) => startResize('name', e)}
+              sortKey="name"
+              activeSortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Name
+            </ResizableTh>
+            <ResizableTh
+              width={widths.kind}
+              onResizeStart={(e) => startResize('kind', e)}
+              sortKey="kind"
+              activeSortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Kind
+            </ResizableTh>
+            <ResizableTh
+              width={widths.match}
+              onResizeStart={(e) => startResize('match', e)}
+              sortKey="match"
+              activeSortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Match
+            </ResizableTh>
+            <ResizableTh
+              width={widths.sound_url}
+              onResizeStart={(e) => startResize('sound_url', e)}
+            >
+              Sound URL
+            </ResizableTh>
+            <ResizableTh
+              width={widths.volume}
+              onResizeStart={(e) => startResize('volume', e)}
+              sortKey="volume"
+              activeSortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Volume
+            </ResizableTh>
+            <ResizableTh
+              width={widths.active}
+              onResizeStart={(e) => startResize('active', e)}
+              sortKey="active"
+              activeSortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Active
+            </ResizableTh>
             <ResizableTh width={widths.actions} onResizeStart={(e) => startResize('actions', e)}>{''}</ResizableTh>
           </tr>
         </thead>
@@ -425,7 +653,21 @@ function SoundTriggersSection() {
               </td>
             </tr>
           )}
-          {(triggers ?? []).map((t) => (
+          {triggers && triggers.length > 0 && visibleCount === 0 && (
+            <tr>
+              <td colSpan={8} className="text-white-50">
+                No triggers match the current filters.{' '}
+                <button
+                  type="button"
+                  className="btn btn-link btn-sm p-0"
+                  onClick={clearFilters}
+                >
+                  Clear filters
+                </button>
+              </td>
+            </tr>
+          )}
+          {visibleTriggers.map((t) => (
             <TriggerRow key={t.id} trigger={t} games={games ?? []} />
           ))}
           {creating && (
@@ -818,21 +1060,67 @@ function MatchCell({
   onChangeGame: (v: number | null) => void;
 }) {
   if (kind === 'game') {
+    // Show the selected game's box art next to the dropdown so the
+    // operator can see at a glance which title each game-kind trigger
+    // is bound to. `<select>` can't render images in its options
+    // (browser limitation), so the thumbnail lives outside the select
+    // and reflects whichever game is currently chosen. A dashed
+    // placeholder occupies the same footprint when no game is picked
+    // (or the picked game has no `box_art_url`) so the row layout
+    // doesn't shift when the operator changes selection.
+    const selected = game != null ? games.find((g) => g.id === game) : null;
     return (
-      <select
-        value={game ?? ''}
-        onChange={(e) =>
-          onChangeGame(e.target.value ? Number(e.target.value) : null)
-        }
-        style={{ width: '100%' }}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          width: '100%',
+          minWidth: 0,
+        }}
       >
-        <option value="">— pick a game —</option>
-        {games.map((g) => (
-          <option key={g.id} value={g.id}>
-            {g.title}
-          </option>
-        ))}
-      </select>
+        {selected?.box_art_url ? (
+          <img
+            src={selected.box_art_url}
+            alt=""
+            style={{
+              width: 24,
+              height: 32,
+              objectFit: 'cover',
+              borderRadius: 2,
+              flexShrink: 0,
+              background: 'rgba(0, 0, 0, 0.25)',
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 24,
+              height: 32,
+              borderRadius: 2,
+              border: '1px dashed rgba(255, 255, 255, 0.2)',
+              background: 'rgba(255, 255, 255, 0.04)',
+              flexShrink: 0,
+            }}
+            aria-hidden
+          />
+        )}
+        <select
+          value={game ?? ''}
+          onChange={(e) =>
+            onChangeGame(e.target.value ? Number(e.target.value) : null)
+          }
+          style={{ flex: 1, minWidth: 0 }}
+          title={selected?.title}
+        >
+          <option value="">— pick a game —</option>
+          {games.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.title}
+            </option>
+          ))}
+        </select>
+      </div>
     );
   }
   return (

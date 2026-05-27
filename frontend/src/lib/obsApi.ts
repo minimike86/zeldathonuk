@@ -5,6 +5,7 @@
  */
 import { api } from '@/lib/api';
 import { notifyCharitySlidesChanged } from '@/lib/charityBus';
+import { notifyEventChanged } from '@/lib/eventBus';
 import { notifyThemeChanged } from '@/lib/themeBus';
 
 /** Pass-through `.then()` callback that fires a theme-changed broadcast
@@ -21,6 +22,15 @@ function withThemeBroadcast<T>(value: T): T {
  *  instead of waiting on the poll cycle. */
 function withCharityBroadcast<T>(value: T): T {
   notifyCharitySlidesChanged();
+  return value;
+}
+
+/** Same pattern but for Event row mutations. Subscribers (the omnibar,
+ *  the ad-panel carousel) bump their event poll the moment this fires,
+ *  so /control/omnibar layout changes land on /obs/omnibar in one
+ *  render frame instead of waiting up to the active-event poll. */
+function withEventBroadcast<T>(value: T): T {
+  notifyEventChanged();
   return value;
 }
 
@@ -476,6 +486,23 @@ export const obsApi = {
   // edit. Cached infrequently (the enum rarely changes).
   donationMuteReasons: () =>
     api<MuteReasonChoice[]>('/api/donation-mute-reasons/'),
+  // Bulk donation actions — both scoped to a single event by design
+  // so an accidental click can never wipe / mute an entire history
+  // across events. The /control/donations buttons double-confirm
+  // before calling these.
+  deleteAllDonations: (eventId: number) =>
+    api<{ deleted: number }>('/api/donations/delete_all/', {
+      method: 'POST',
+      body: { event_id: eventId },
+    }),
+  muteAllDonations: (eventId: number, reason: MuteReason = 'already_announced') =>
+    api<{ updated: number; mute_reason: MuteReason }>(
+      '/api/donations/mute_all/',
+      {
+        method: 'POST',
+        body: { event_id: eventId, mute_reason: reason },
+      },
+    ),
   themeSettings: () => api<ThemeSettings>('/api/theme/'),
   // Theme mutations broadcast via themeBus on success so other tabs in
   // the same browser re-fetch immediately. Cross-browser / cross-device
@@ -641,7 +668,7 @@ export const obsApi = {
     api<EventModel>(`/api/events/${eventId}/`, {
       method: 'PATCH',
       body: patch,
-    }),
+    }).then(withEventBroadcast),
   setBrb: (payload: { target_time: string; message?: string; is_active?: boolean }) =>
     api<BrbTimer>('/api/brb/', { method: 'POST', body: payload }),
   updateBrb: (id: number, payload: Partial<BrbTimer>) =>

@@ -11,6 +11,7 @@ import {
   type OmnibarOverride,
   type PlaythroughEvent,
 } from '@/lib/obsApi';
+import { triggerTestSplash } from '@/lib/splashBus';
 import {
   ALL_PANEL_IDS,
   DEFAULT_LAYOUT,
@@ -37,6 +38,7 @@ export function OmnibarControl() {
     <div className="control-stack" style={{ display: 'grid', gap: '1.5rem' }}>
       <SandboxSection />
       <LayoutSection />
+      <SplashSection />
       <CharitySlidesSection />
       <OverridesSection />
       <ObjectiveSection />
@@ -47,6 +49,151 @@ export function OmnibarControl() {
       <ExternalEventsSection />
     </div>
   );
+}
+
+// ── Donation splash colour mode ─────────────────────────────────────
+
+type SplashColorMode = 'theme' | 'gold' | 'rainbow';
+
+function readSplashMode(layout: unknown): SplashColorMode {
+  if (!layout || typeof layout !== 'object') return 'theme';
+  const splash = (layout as { splash?: unknown }).splash;
+  if (!splash || typeof splash !== 'object') return 'theme';
+  const m = (splash as { color_mode?: unknown }).color_mode;
+  if (m === 'gold' || m === 'rainbow' || m === 'theme') return m;
+  return 'theme';
+}
+
+// Pool of amounts the test splash button picks from. Mirrors the
+// "+£5 / +£10 / +£20" feel the user asked for, with a few outliers
+// so a burst test exercises both short and long labels.
+const TEST_SPLASH_AMOUNTS = [1, 2, 5, 5, 10, 10, 10, 20, 20, 50, 100];
+// Matches the overlay's own STAGGER_MS so the splashes from a
+// "Fire N" button click drip at the same cadence as a real burst.
+const TEST_SPLASH_STAGGER_MS = 420;
+
+function SplashSection() {
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [testCount, setTestCount] = useState(5);
+  const current = readSplashMode(event?.omnibar_layout);
+
+  const fireTestSplashes = () => {
+    const n = Math.max(1, Math.min(50, Math.floor(testCount) || 1));
+    // Stagger from the control side too — sending N postMessages all
+    // at once works (the overlay's own queue would stagger them
+    // anyway) but spreading the sends gives the operator a nicer
+    // "click and watch them rain in" feel.
+    for (let i = 0; i < n; i++) {
+      const amount = TEST_SPLASH_AMOUNTS[
+        Math.floor(Math.random() * TEST_SPLASH_AMOUNTS.length)
+      ];
+      window.setTimeout(() => {
+        triggerTestSplash({
+          amount,
+          currency: event?.currency_symbol === '£' ? 'GBP' : 'GBP',
+        });
+      }, i * TEST_SPLASH_STAGGER_MS);
+    }
+  };
+
+  const change = async (mode: SplashColorMode) => {
+    if (!event) return;
+    setBusy(true);
+    try {
+      // Shallow-merge into the existing omnibar_layout JSON so we
+      // don't blow away the lanes config.
+      const existing =
+        event.omnibar_layout && typeof event.omnibar_layout === 'object'
+          ? event.omnibar_layout
+          : {};
+      const existingSplash =
+        (existing as { splash?: Record<string, unknown> }).splash &&
+        typeof (existing as { splash?: Record<string, unknown> }).splash === 'object'
+          ? ((existing as { splash?: Record<string, unknown> }).splash as Record<string, unknown>)
+          : {};
+      await obsApi.updateEvent(event.id, {
+        omnibar_layout: {
+          ...existing,
+          splash: { ...existingSplash, color_mode: mode },
+        },
+      });
+      setSavedAt(new Date());
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="control-card">
+      <h2>Donation splash</h2>
+      {!event ? (
+        <p className="text-warning">No active event.</p>
+      ) : (
+        <>
+          <p className="text-white-50">
+            Colour of the pixelated "+£N" badges that pop over the
+            donation total when fresh donations arrive. Stored on
+            <code> Event.omnibar_layout.splash.color_mode</code>.
+          </p>
+          <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+            {(['theme', 'gold', 'rainbow'] as SplashColorMode[]).map((mode) => (
+              <button
+                key={mode}
+                className={
+                  'btn btn-sm ' +
+                  (current === mode ? 'btn-bloodmoon' : 'btn-outline-light')
+                }
+                disabled={busy}
+                onClick={() => change(mode)}
+              >
+                {modeLabel(mode)}
+              </button>
+            ))}
+            {savedAt && (
+              <small className="text-white-50 ms-2">
+                saved {fmtTime(savedAt.toISOString())}
+              </small>
+            )}
+          </div>
+
+          <div
+            className="control-btn-row mt-3"
+            style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}
+          >
+            <label className="d-flex flex-column">
+              <small>Test splashes (count)</small>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={testCount}
+                onChange={(e) => setTestCount(Number(e.target.value))}
+                style={{ width: 90 }}
+              />
+            </label>
+            <button className="btn btn-outline-light" onClick={fireTestSplashes}>
+              Fire {Math.max(1, Math.min(50, Math.floor(testCount) || 1))} splash
+              {testCount === 1 ? '' : 'es'}
+            </button>
+            <small className="text-white-50 align-self-end">
+              Local-only: broadcasts to /obs/omnibar in this browser via
+              <code> BroadcastChannel</code>. No donation rows created.
+            </small>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function modeLabel(mode: SplashColorMode): string {
+  switch (mode) {
+    case 'theme':   return 'Theme — active accent colour';
+    case 'gold':    return 'Gold — classic money colour';
+    case 'rainbow': return 'Rainbow — random hue per splash';
+  }
 }
 
 // ── Charity slides ──────────────────────────────────────────────────
@@ -707,7 +854,16 @@ function LayoutSection() {
     if (!event || !draft) return;
     setBusy(true);
     try {
-      await obsApi.updateEvent(event.id, { omnibar_layout: draftToJson(draft) });
+      // Shallow-merge into the existing JSON so a layout save
+      // doesn't clobber sibling keys (e.g. `splash.color_mode` from
+      // the Donation splash section).
+      const existing =
+        event.omnibar_layout && typeof event.omnibar_layout === 'object'
+          ? event.omnibar_layout
+          : {};
+      await obsApi.updateEvent(event.id, {
+        omnibar_layout: { ...existing, ...draftToJson(draft) },
+      });
       setSavedAt(new Date());
     } finally {
       setBusy(false);

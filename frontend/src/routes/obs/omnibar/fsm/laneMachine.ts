@@ -33,9 +33,21 @@ export function laneReducer(
       if (ctx.rotationLength === 0) return s;
       return { kind: 'rotating', index: (s.index + 1) % ctx.rotationLength };
     case 'SUSPEND':
+      if (s.kind === 'suspended') return s;
       return { kind: 'suspended' };
     case 'RESUME':
-      if (a.mode === 'pinned' && a.panelId) return { kind: 'pinned', panelId: a.panelId };
+      // Pinned target: switch immediately (or no-op if already pinned
+      // to the same panel).
+      if (a.mode === 'pinned' && a.panelId) {
+        if (s.kind === 'pinned' && s.panelId === a.panelId) return s;
+        return { kind: 'pinned', panelId: a.panelId };
+      }
+      // Rotating target: preserve current index when we're ALREADY
+      // rotating. Previously this always reset to 0, which meant any
+      // upstream re-render that re-fired the RESUME effect (e.g. a
+      // poll producing a fresh config.panels reference) would yank
+      // the lane back to the first panel mid-cycle.
+      if (s.kind === 'rotating') return s;
       return { kind: 'rotating', index: 0 };
     case 'TAKEOVER':
       return { kind: 'takeover', panelId: a.panelId };
