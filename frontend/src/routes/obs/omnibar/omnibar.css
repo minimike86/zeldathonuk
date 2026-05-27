@@ -447,6 +447,47 @@
   display: flex;
   align-items: center;
   pointer-events: none;
+  /* Stacking: the entering (non-leaving) slot sits on top of the
+   * exiting one so the new tag pill / body always paints OVER the
+   * fading old content, regardless of which of the two `.ob-slot`
+   * positions (A or B) happens to be the active one in this cycle.
+   * Without this the two slots would stack by source order and the
+   * cross-fade would feel inconsistent depending on direction. */
+  z-index: 1;
+}
+
+/* Slot exit — applied to the outgoing slot during a rotation
+ * transition (see Lane.tsx's two-slot ping-pong). The panel slides
+ * OFF to the RIGHT (continuing the direction it travelled on its
+ * left-to-right entrance) so the rotation reads as a one-way
+ * conveyor: each panel arrives from the left, settles, then is
+ * carried off the right edge. Tag pill clears the omnibar's right
+ * edge entirely (translates by stage-width so it's guaranteed off-
+ * screen even when the lane is wide); body children translate
+ * right by a smaller distance and fade — the body's own
+ * `overflow: hidden` clips them at its right edge as they go. The
+ * wrapper stays in the DOM for SLOT_EXIT_MS (520ms in Lane.tsx) —
+ * long enough to cover the 480ms slide-out before unmounting. */
+.omnibar--v2 .ob-slot.is-leaving {
+  z-index: 0;
+}
+
+.omnibar--v2 .ob-slot.is-leaving .ob-tag {
+  animation: ob-tag-slide-out-right 480ms cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+
+.omnibar--v2 .ob-slot.is-leaving .ob-row-body > * {
+  animation: ob-body-exit-right 480ms cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+
+@keyframes ob-tag-slide-out-right {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(var(--obs-stage-width, 1920px)); opacity: 0; }
+}
+
+@keyframes ob-body-exit-right {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(200px); }
 }
 
 /* ── Row + tag pill (shared shape between panels) ────────────────── */
