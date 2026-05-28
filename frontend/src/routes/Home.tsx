@@ -181,12 +181,12 @@ export function Home() {
         )}
       </div>
 
-      <div className="d-block bg-bloodmoon p-3 mb-2">
-        <div className="row g-4 text-white" style={{ fontSize: '0.85em' }}>
+      <div className="d-block bg-bloodmoon p-2 mb-2">
+        <div className="row g-3 text-white" style={{ fontSize: '0.8em' }}>
           {/* Left column: Currently Playing on top, Up Next stacked beneath. */}
-          <div className="col-lg-5 d-flex flex-column gap-3">
+          <div className="col-lg-5 d-flex flex-column gap-2">
             <div className="ps-3">
-              <h6 className="text-bloodmoon">Currently Playing</h6>
+              <h6 className="text-bloodmoon mb-1">Currently Playing</h6>
               {currentEntry ? (
                 <ScheduleEntryCard
                   entry={currentEntry}
@@ -196,39 +196,67 @@ export function Home() {
                 />
               ) : isLive ? (
                 // Channel is live on Twitch but no schedule entry is set
-                // as currently-playing in /control. Show the stream's
-                // own metadata instead of the offline placeholder so the
-                // homepage matches reality.
-                <>
-                  <h5>
-                    <span className="badge bg-success me-2">LIVE</span>
-                    {twitchChannelDisplay} is streaming now
-                  </h5>
-                  {streamStatus?.title && (
-                    <div className="mt-1 text-light" style={{ fontStyle: 'italic' }}>
-                      {streamStatus.title}
-                    </div>
-                  )}
+                // as currently-playing in /control. Compact two-line
+                // layout: pill + channel + game + viewers + Watch on
+                // one row, optional stream title on a second muted
+                // line. Keeps the whole panel under ~3em so the page
+                // doesn't overflow at 100% zoom.
+                <div
+                  className="d-flex align-items-center flex-wrap"
+                  style={{ rowGap: '0.25rem', columnGap: '0.5rem' }}
+                >
+                  <span
+                    className="badge bg-success"
+                    style={{ fontSize: '0.7rem', letterSpacing: '0.05em' }}
+                  >
+                    LIVE
+                  </span>
+                  <a
+                    href={`https://www.twitch.tv/${twitchChannel}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-white text-decoration-none"
+                    style={{ fontWeight: 700 }}
+                    title="Watch on Twitch"
+                  >
+                    {twitchChannelDisplay}
+                  </a>
                   {streamStatus?.game_name && (
-                    <div className="mt-1 text-white-50">
-                      Playing <b>{streamStatus.game_name}</b>
-                      {typeof streamStatus.viewer_count === 'number' && streamStatus.viewer_count > 0 && (
-                        <> · {streamStatus.viewer_count.toLocaleString('en-GB')} watching</>
-                      )}
-                    </div>
+                    <span className="text-white-50">
+                      · <b className="text-light">{streamStatus.game_name}</b>
+                    </span>
                   )}
-                  <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
+                  {typeof streamStatus?.viewer_count === 'number' && streamStatus.viewer_count > 0 && (
+                    <span className="text-white-50">
+                      · {streamStatus.viewer_count.toLocaleString('en-GB')} watching
+                    </span>
+                  )}
+                  <span className="ms-auto">
                     <a
-                      className="btn btn-sm btn-bloodmoon p-2 px-5"
-                      title="Watch on Twitch"
+                      className="btn btn-sm btn-bloodmoon"
+                      style={{ padding: '0.15rem 0.7rem', fontSize: '0.75rem' }}
                       href={`https://www.twitch.tv/${twitchChannel}`}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Watch on Twitch
+                      Watch →
                     </a>
-                  </div>
-                </>
+                  </span>
+                  {streamStatus?.title && (
+                    <div
+                      className="text-white-50 w-100"
+                      style={{
+                        fontStyle: 'italic',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={streamStatus.title}
+                    >
+                      "{streamStatus.title}"
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
                   <h5>{twitchChannelDisplay} is Offline</h5>
