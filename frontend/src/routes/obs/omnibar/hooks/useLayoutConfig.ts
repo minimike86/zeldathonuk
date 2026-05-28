@@ -70,6 +70,73 @@ export type PanelId = (typeof ALL_PANEL_IDS)[number];
 
 const KNOWN_IDS = new Set<string>(ALL_PANEL_IDS);
 
+// ── Donation reel ──────────────────────────────────────────────────────
+//
+// Configuration for the DonationReelPanel — how it cycles between the
+// most-recent N donors and how the transition between them is animated.
+// Stored on `Event.omnibar_layout.donationReel`; an event without the
+// key falls back to `DEFAULT_DONATION_REEL`.
+
+export type DonationReelDirection = 'up' | 'down' | 'left' | 'right' | 'fade';
+
+export interface DonationReelConfig {
+  /** Direction the next donor enters from (the previous one exits to
+   *  the opposite side). */
+  direction: DonationReelDirection;
+  /** Duration of the switch animation, in ms. */
+  switchMs: number;
+  /** How often to advance to the next donor, in ms. */
+  cycleMs: number;
+  /** How many donors are kept in the reel. */
+  reelLength: number;
+}
+
+export const DEFAULT_DONATION_REEL: DonationReelConfig = {
+  direction: 'up',
+  switchMs: 320,
+  cycleMs: 2500,
+  reelLength: 5,
+};
+
+const REEL_DIRECTIONS: DonationReelDirection[] = ['up', 'down', 'left', 'right', 'fade'];
+
+// Bounds the control-panel editor also pins to.
+export const REEL_SWITCH_MIN_MS = 100;
+export const REEL_SWITCH_MAX_MS = 1500;
+export const REEL_CYCLE_MIN_MS = 500;
+export const REEL_CYCLE_MAX_MS = 10000;
+export const REEL_LENGTH_MIN = 1;
+export const REEL_LENGTH_MAX = 10;
+
+export function readDonationReelConfig(layout: unknown): DonationReelConfig {
+  if (!layout || typeof layout !== 'object') return DEFAULT_DONATION_REEL;
+  const raw = (layout as { donationReel?: unknown }).donationReel;
+  if (!raw || typeof raw !== 'object') return DEFAULT_DONATION_REEL;
+  const v = raw as Record<string, unknown>;
+  const direction =
+    typeof v.direction === 'string' &&
+    REEL_DIRECTIONS.includes(v.direction as DonationReelDirection)
+      ? (v.direction as DonationReelDirection)
+      : DEFAULT_DONATION_REEL.direction;
+  const switchMs =
+    typeof v.switchMs === 'number'
+      ? clamp(Math.round(v.switchMs), REEL_SWITCH_MIN_MS, REEL_SWITCH_MAX_MS)
+      : DEFAULT_DONATION_REEL.switchMs;
+  const cycleMs =
+    typeof v.cycleMs === 'number'
+      ? clamp(Math.round(v.cycleMs), REEL_CYCLE_MIN_MS, REEL_CYCLE_MAX_MS)
+      : DEFAULT_DONATION_REEL.cycleMs;
+  const reelLength =
+    typeof v.reelLength === 'number'
+      ? clamp(Math.round(v.reelLength), REEL_LENGTH_MIN, REEL_LENGTH_MAX)
+      : DEFAULT_DONATION_REEL.reelLength;
+  return { direction, switchMs, cycleMs, reelLength };
+}
+
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
+}
+
 interface RawLane {
   id?: string;
   mode?: string;

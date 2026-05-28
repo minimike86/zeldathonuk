@@ -111,6 +111,13 @@ def sandbox_donation(request: Request) -> Response:
         return Response(
             {'detail': 'Invalid amount.'}, status=status.HTTP_400_BAD_REQUEST,
         )
+    # `is_muted` is a derived @property on Donation (true when
+    # `mute_reason` is non-empty). Sandbox requests passing
+    # `muted: true` set the reason tag directly so the underlying
+    # field is populated correctly.
+    mute_reason = (
+        models.MuteReason.NAUGHTY_NAME if muted else models.MuteReason.NONE
+    )
     donation = models.Donation.objects.create(
         event=event,
         platform=models.DonationPlatform.DIRECT,
@@ -120,7 +127,7 @@ def sandbox_donation(request: Request) -> Response:
         message=message,
         donated_at=timezone.now(),
         external_id=f'sandbox-{secrets.token_urlsafe(8)}',
-        is_muted=muted,
+        mute_reason=mute_reason,
     )
     return Response(
         {'id': donation.id, 'donor_name': donation.donor_name,

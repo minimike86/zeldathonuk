@@ -1333,3 +1333,160 @@
  * down animation because the gold was already painted before the
  * overlay started its reveal. `.is-celebrating` is now a marker
  * class only; no background, no instant flash. */
+
+/* ── Donation reel panel ─────────────────────────────────────────── */
+
+/* The reel sits in the panel body and overlaps two `.ob-donor-row`
+ * elements during a switch (current + incoming, both absolutely
+ * positioned so they stack). `overflow: hidden` clips any directional
+ * slide motion at the panel's body bounds rather than letting names
+ * spill into the right cluster. */
+.omnibar--v2 .ob-donor-reel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.omnibar--v2 .ob-donor-row {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  /* Default static state so the first donor (no animation playing)
+   * paints at its rest position. */
+  opacity: 1;
+  transform: none;
+}
+
+.omnibar--v2 .ob-donor-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.4rem;
+  padding: 0 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--ob-font);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.omnibar--v2 .ob-donor-rank.is-top {
+  border-color: #ffd23a;
+  background: rgba(255, 210, 58, 0.18);
+  color: #ffe69b;
+}
+
+.omnibar--v2 .ob-donor-name {
+  font-family: var(--ob-font);
+  font-size: 1.05rem;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 14rem;
+}
+
+.omnibar--v2 .ob-donor-amount {
+  font-family: var(--ob-font);
+  font-size: 1.05rem;
+  color: #ffd23a;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
+}
+
+.omnibar--v2 .ob-donor-crown {
+  font-size: 0.95rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px rgba(255, 210, 58, 0.6));
+  flex-shrink: 0;
+}
+
+.omnibar--v2 .ob-donor-message {
+  font-family: 'Open Sans', sans-serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.78);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.omnibar--v2 .ob-donor-age {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  font-family: var(--ob-font);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Per-direction cycle keyframes. `--ob-cycle-ms` is set inline by
+ * DonationReelPanel so the switch duration is configurable from the
+ * control panel. The incoming row uses ease-out (lands softly); the
+ * outgoing row uses ease-in (accelerates away). */
+.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="up"] {
+  animation: ob-donor-in-up var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="down"] {
+  animation: ob-donor-in-down var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="left"] {
+  animation: ob-donor-in-left var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="right"] {
+  animation: ob-donor-in-right var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="fade"] {
+  animation: ob-donor-in-fade var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="up"] {
+  animation: ob-donor-out-up var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="down"] {
+  animation: ob-donor-out-down var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="left"] {
+  animation: ob-donor-out-left var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="right"] {
+  animation: ob-donor-out-right var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="fade"] {
+  animation: ob-donor-out-fade var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+
+@keyframes ob-donor-in-up    { from { opacity: 0; transform: translateY( 100%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ob-donor-in-down  { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ob-donor-in-left  { from { opacity: 0; transform: translateX( 100%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ob-donor-in-right { from { opacity: 0; transform: translateX(-100%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ob-donor-in-fade  { from { opacity: 0; }                                to { opacity: 1; }                          }
+
+@keyframes ob-donor-out-up    { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-100%); } }
+@keyframes ob-donor-out-down  { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY( 100%); } }
+@keyframes ob-donor-out-left  { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-100%); } }
+@keyframes ob-donor-out-right { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX( 100%); } }
+@keyframes ob-donor-out-fade  { from { opacity: 1; }                            to { opacity: 0; }                              }

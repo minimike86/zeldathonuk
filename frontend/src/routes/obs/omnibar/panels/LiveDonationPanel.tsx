@@ -8,8 +8,14 @@ import type { PanelProps } from './registry';
 import type { Donation } from '@/lib/obsApi';
 
 const BODY_REVEAL_DELAY_MS = 520;
-const NO_MESSAGE_HOLD_MS = 4500;
 const MAX_HOLD_MS = 25_000;
+// Played in place of the TTS "Thank you!" suffix when a donation has
+// no message — short Wind Waker Beedle "thank you" sting.
+const THANK_YOU_SFX_URL = '/assets/audio/ww_beedle_thankyou.mp3';
+// Safety cap on how long we'll wait for the SFX to report `ended`
+// before advancing the donation queue — covers the case where the
+// browser blocks autoplay and the audio never starts.
+const THANK_YOU_SFX_MAX_MS = 4000;
 
 interface Data {
   donation: Donation;
@@ -33,9 +39,12 @@ export function LiveDonationPanel({ data, onComplete }: PanelProps<Data>) {
   const hasMessage = Boolean(donation.message && donation.message.trim());
   const displayMessage = hasMessage ? cleanForDisplay(donation.message) : '';
   const spokenMessage = hasMessage ? cleanForTTS(donation.message) : '';
+  // The legacy "Thank you!" suffix is dropped from the no-message
+  // utterance — instead we play the Beedle "thank you" SFX after the
+  // donation announcement (see below).
   const utterance = hasMessage && spokenMessage
     ? `${displayName} just donated ${amountStr} and says: ${spokenMessage}`
-    : `${displayName} just donated ${amountStr}. Thank you!`;
+    : `${displayName} just donated ${amountStr}.`;
 
   const { speak } = useTTS();
   const ttsDoneRef = useRef(false);
@@ -52,12 +61,19 @@ export function LiveDonationPanel({ data, onComplete }: PanelProps<Data>) {
 
   useEffect(() => {
     let cancelled = false;
-    speak(utterance).then((res) => {
+    speak(utterance).then(async (res) => {
       if (cancelled) return;
       ttsDoneRef.current = true;
-      if (!res.spoken && !hasMessage) {
-        window.setTimeout(maybeAdvance, NO_MESSAGE_HOLD_MS);
-        return;
+      // For donations without a written message we used to TTS
+      // "Thank you!" — that's replaced by the Beedle SFX. The SFX's
+      // own duration (~2s) acts as the post-announcement hold, so
+      // we don't need the previous NO_MESSAGE_HOLD_MS branch.
+      if (!hasMessage) {
+        await playThankYouSfx();
+        if (cancelled) return;
+      } else if (!res.spoken) {
+        // Message present but TTS didn't actually speak (autoplay
+        // blocked etc.) — the marquee is the remaining gate.
       }
       maybeAdvance();
     });
@@ -111,4 +127,29 @@ function currencySymbol(code: string, fallback: string) {
     case 'EUR': return '€';
     default: return fallback;
   }
+}
+
+/** Play the Beedle "thank you" sting and resolve when it ends (or
+ *  when the safety timeout trips). Errors and autoplay blocks are
+ *  swallowed so a missing/blocked audio file can't lock the donation
+ *  queue — the safety timeout guarantees the promise resolves. */
+function playThankYouSfx(): Promise<void> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+    try {
+      const audio = new Audio(THANK_YOU_SFX_URL);
+      audio.volume = 0.85;
+      audio.addEventListener('ended', finish, { once: true });
+      audio.addEventListener('error', finish, { once: true });
+      audio.play().catch(finish);
+    } catch {
+      finish();
+    }
+    window.setTimeout(finish, THANK_YOU_SFX_MAX_MS);
+  });
 }

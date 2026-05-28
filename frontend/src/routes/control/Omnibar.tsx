@@ -15,8 +15,18 @@ import {
 import { triggerTestSplash } from '@/lib/splashBus';
 import {
   ALL_PANEL_IDS,
+  DEFAULT_DONATION_REEL,
   DEFAULT_LAYOUT,
   parseLayout,
+  readDonationReelConfig,
+  REEL_CYCLE_MAX_MS,
+  REEL_CYCLE_MIN_MS,
+  REEL_LENGTH_MAX,
+  REEL_LENGTH_MIN,
+  REEL_SWITCH_MAX_MS,
+  REEL_SWITCH_MIN_MS,
+  type DonationReelConfig,
+  type DonationReelDirection,
   type PanelId,
 } from '@/routes/obs/omnibar/hooks/useLayoutConfig';
 import {
@@ -52,6 +62,7 @@ export function OmnibarControl() {
       <SandboxSection />
       <LayoutSection />
       <TransitionsSection />
+      <DonationReelSection />
       <SplashSection />
       <CharitySlidesSection />
       <OverridesSection />
@@ -1279,6 +1290,164 @@ function TransitionRow({
       {clearCell}
     </tr>
   );
+}
+
+// ── Donation reel editor ───────────────────────────────────────────────
+
+const REEL_DIRECTION_OPTIONS: { value: DonationReelDirection; label: string }[] = [
+  { value: 'up',    label: 'Slide up (newer rises from below)' },
+  { value: 'down',  label: 'Slide down (newer drops from above)' },
+  { value: 'left',  label: 'Slide left (newer comes in from the right)' },
+  { value: 'right', label: 'Slide right (newer comes in from the left)' },
+  { value: 'fade',  label: 'Fade only' },
+];
+
+function DonationReelSection() {
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const [draft, setDraft] = useState<DonationReelConfig>(DEFAULT_DONATION_REEL);
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const lastEventIdRef = useRef<number | null>(null);
+
+  // Re-seed from the event only when the event identity changes, so
+  // a background poll doesn't clobber in-progress edits.
+  useEffect(() => {
+    if (!event) return;
+    if (event.id === lastEventIdRef.current) return;
+    lastEventIdRef.current = event.id;
+    setDraft(readDonationReelConfig(event.omnibar_layout));
+  }, [event]);
+
+  const update = <K extends keyof DonationReelConfig>(
+    key: K,
+    value: DonationReelConfig[K],
+  ) => setDraft((d) => ({ ...d, [key]: value }));
+
+  const save = async () => {
+    if (!event) return;
+    setBusy(true);
+    try {
+      // Shallow-merge into the existing omnibar_layout JSON so the
+      // splash / lanes config aren't blown away.
+      const existing =
+        event.omnibar_layout && typeof event.omnibar_layout === 'object'
+          ? event.omnibar_layout
+          : {};
+      await obsApi.updateEvent(event.id, {
+        omnibar_layout: { ...existing, donationReel: draft },
+      });
+      setSavedAt(new Date());
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = () => setDraft(DEFAULT_DONATION_REEL);
+
+  if (!event) {
+    return (
+      <section className="control-card">
+        <h2>Donation reel</h2>
+        <p className="text-warning">No active event.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="control-card">
+      <h2>Donation reel</h2>
+      <p className="text-white-50">
+        Controls the bottom-lane <code>donation-reel</code> panel — how
+        many recent donors it shows, how fast it cycles between them,
+        and which direction each donor enters from. Saves to{' '}
+        <code>Event.omnibar_layout.donationReel</code>.
+      </p>
+
+      <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <label className="d-flex flex-column">
+          <small>Switch direction</small>
+          <select
+            value={draft.direction}
+            onChange={(e) => update('direction', e.target.value as DonationReelDirection)}
+          >
+            {REEL_DIRECTION_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="d-flex flex-column">
+          <small title="Duration of the switch animation between donors">Switch ms</small>
+          <input
+            type="number"
+            min={REEL_SWITCH_MIN_MS}
+            max={REEL_SWITCH_MAX_MS}
+            step={20}
+            value={draft.switchMs}
+            onChange={(e) =>
+              update(
+                'switchMs',
+                clampN(Number(e.target.value), REEL_SWITCH_MIN_MS, REEL_SWITCH_MAX_MS),
+              )
+            }
+            style={{ width: 100 }}
+          />
+        </label>
+        <label className="d-flex flex-column">
+          <small title="How often the reel advances to the next donor">Cycle ms</small>
+          <input
+            type="number"
+            min={REEL_CYCLE_MIN_MS}
+            max={REEL_CYCLE_MAX_MS}
+            step={100}
+            value={draft.cycleMs}
+            onChange={(e) =>
+              update(
+                'cycleMs',
+                clampN(Number(e.target.value), REEL_CYCLE_MIN_MS, REEL_CYCLE_MAX_MS),
+              )
+            }
+            style={{ width: 110 }}
+          />
+        </label>
+        <label className="d-flex flex-column">
+          <small title="How many of the most-recent donors the reel rotates through">Reel length</small>
+          <input
+            type="number"
+            min={REEL_LENGTH_MIN}
+            max={REEL_LENGTH_MAX}
+            step={1}
+            value={draft.reelLength}
+            onChange={(e) =>
+              update(
+                'reelLength',
+                clampN(Number(e.target.value), REEL_LENGTH_MIN, REEL_LENGTH_MAX),
+              )
+            }
+            style={{ width: 90 }}
+          />
+        </label>
+      </div>
+
+      <div className="control-btn-row mt-3">
+        <button className="btn btn-bloodmoon" disabled={busy} onClick={save}>
+          Save reel settings
+        </button>
+        <button className="btn btn-outline-light" disabled={busy} onClick={reset}>
+          Reset to defaults
+        </button>
+        {savedAt && (
+          <small className="text-white-50 align-self-end">
+            saved {fmtTime(savedAt.toISOString())}
+          </small>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function clampN(n: number, lo: number, hi: number): number {
+  if (!Number.isFinite(n)) return lo;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
 }
 
 // ── Objective editor ─────────────────────────────────────────────────────
