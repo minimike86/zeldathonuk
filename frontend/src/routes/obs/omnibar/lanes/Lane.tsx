@@ -45,7 +45,6 @@ import type { OmnibarTransitions, PanelTransition } from '../hooks/useTransition
 export interface LaneConfig {
   id: 'top' | 'bottom';
   mode: 'rotating' | 'pinned';
-  intervalMs: number;
   panels: string[];
 }
 
@@ -126,16 +125,11 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suspended, config.mode, panelsKey]);
 
-  useEffect(() => {
-    if (suspended || takeoverChild) return;
-    if (state.kind !== 'rotating') return;
-    if (live.length <= 1) return;
-    const id = window.setInterval(
-      () => dispatch({ type: 'TICK' }),
-      config.intervalMs,
-    );
-    return () => window.clearInterval(id);
-  }, [suspended, takeoverChild, state.kind, live.length, config.intervalMs]);
+  // Rotation cadence is no longer fixed at the lane level — there's
+  // no `setInterval` here. Instead a `dwellTimer` effect further
+  // below schedules the next TICK based on the currently-active
+  // panel's own enter + dwell durations, so each panel controls how
+  // long it sits on-screen.
 
   // The lane's currently-targeted identity (computed fresh each render
   // from FSM state + props). The transition effect commits this to
@@ -175,6 +169,7 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
 
   const exitTimerRef = useRef<number | null>(null);
   const enterTimerRef = useRef<number | null>(null);
+  const dwellTimerRef = useRef<number | null>(null);
   const activeSlotRef = useRef(activeSlot);
   const activeIdentRef = useRef(activeIdent);
   const targetRef = useRef(target);
@@ -226,7 +221,12 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
     setActiveIdent({ kind: 'empty' });
 
     // 2) Unmount the leaving slot once its exit animation completes.
-    const exitWindow = exitCfg.exitMs + EXIT_UNMOUNT_BUFFER_MS;
+    //    Exit ordering: body retreats first (bodyExitMs), then
+    //    bodyExitDelayMs gap, then the tag retreats (tagExitMs).
+    //    Slot must stay mounted until the tag's exit lands.
+    const fullExitMs =
+      exitCfg.bodyExitMs + exitCfg.bodyExitDelayMs + exitCfg.tagExitMs;
+    const exitWindow = fullExitMs + EXIT_UNMOUNT_BUFFER_MS;
     const xT = window.setTimeout(() => {
       if (exitTimerRef.current !== xT) return;
       exitTimerRef.current = null;
@@ -234,8 +234,9 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
     }, exitWindow);
     exitTimerRef.current = xT;
 
-    // 3) Mount the new active after exit + the incoming panel's delay.
-    const enterAt = exitCfg.exitMs + enterCfg.delayMs;
+    // 3) Mount the new active after the FULL exit (tag + body) plus
+    //    the incoming panel's lead-in.
+    const enterAt = fullExitMs + enterCfg.leadInMs;
     const nT = window.setTimeout(() => {
       if (enterTimerRef.current !== nT) return;
       enterTimerRef.current = null;
@@ -243,6 +244,41 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
     }, enterAt);
     enterTimerRef.current = nT;
   }, [targetKey]);
+
+  // Dwell timer — schedules the next TICK once the active panel has
+  // fully entered and held for its configured `dwellMs`. Reacts to
+  // activeIdent changes (a new panel committed) and suspend / takeover
+  // / live-count toggles so the rotation pauses when something else
+  // is in charge of the lane.
+  useEffect(() => {
+    if (dwellTimerRef.current !== null) {
+      window.clearTimeout(dwellTimerRef.current);
+      dwellTimerRef.current = null;
+    }
+    if (suspended || takeoverChild) return;
+    if (activeIdent.kind !== 'rotating') return;
+    if (live.length <= 1) return;
+
+    const cfg = transitionFor(activeIdent, transitions);
+    const fullEnterMs =
+      cfg.tagEnterMs + cfg.bodyEnterDelayMs + cfg.bodyEnterMs;
+    const t = window.setTimeout(() => {
+      if (dwellTimerRef.current !== t) return;
+      dwellTimerRef.current = null;
+      dispatch({ type: 'TICK' });
+    }, fullEnterMs + cfg.dwellMs);
+    dwellTimerRef.current = t;
+    return () => {
+      if (dwellTimerRef.current === t) {
+        window.clearTimeout(t);
+        dwellTimerRef.current = null;
+      }
+    };
+    // `dispatch` from useReducer is stable; `transitions` is checked
+    // by content via the effect's deps below indirectly through
+    // activeIdent (which changes when transitions change panel id).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIdent, suspended, takeoverChild, live.length, transitions]);
 
   // Cleanup pending timers on unmount.
   useEffect(() => {
@@ -254,6 +290,10 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
       if (enterTimerRef.current !== null) {
         window.clearTimeout(enterTimerRef.current);
         enterTimerRef.current = null;
+      }
+      if (dwellTimerRef.current !== null) {
+        window.clearTimeout(dwellTimerRef.current);
+        dwellTimerRef.current = null;
       }
     };
   }, []);
@@ -286,18 +326,30 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
 
     // Pull the relevant transition config so the slot wrapper can
     // carry its direction + duration as DOM attributes / CSS vars.
-    let dataEnter: string | undefined;
-    let dataExit: string | undefined;
+    // Tag and body have independent directions, hence four data
+    // attributes instead of one each for enter/exit.
+    let dataTagEnter: string | undefined;
+    let dataBodyEnter: string | undefined;
+    let dataTagExit: string | undefined;
+    let dataBodyExit: string | undefined;
     const style: CSSProperties = {};
     if (isLive) {
       const cfg = transitionFor(activeIdent, transitions);
-      dataEnter = cfg.enter;
-      style['--ob-slot-enter-ms' as keyof CSSProperties] = `${cfg.enterMs}ms` as never;
+      dataTagEnter = cfg.tagEnter;
+      dataBodyEnter = cfg.bodyEnter;
+      style['--ob-tag-enter-ms' as keyof CSSProperties] = `${cfg.tagEnterMs}ms` as never;
+      style['--ob-body-enter-ms' as keyof CSSProperties] = `${cfg.bodyEnterMs}ms` as never;
+      style['--ob-body-enter-delay-ms' as keyof CSSProperties] =
+        `${cfg.bodyEnterDelayMs}ms` as never;
     }
     if (leavingHere) {
       const cfg = transitionFor(leavingHere.ident, transitions);
-      dataExit = cfg.exit;
-      style['--ob-slot-exit-ms' as keyof CSSProperties] = `${cfg.exitMs}ms` as never;
+      dataTagExit = cfg.tagExit;
+      dataBodyExit = cfg.bodyExit;
+      style['--ob-tag-exit-ms' as keyof CSSProperties] = `${cfg.tagExitMs}ms` as never;
+      style['--ob-body-exit-ms' as keyof CSSProperties] = `${cfg.bodyExitMs}ms` as never;
+      style['--ob-body-exit-delay-ms' as keyof CSSProperties] =
+        `${cfg.bodyExitDelayMs}ms` as never;
     }
 
     const cls =
@@ -305,7 +357,14 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
       (leavingHere ? ' is-leaving' : '') +
       (!node ? ' is-empty' : '');
     return (
-      <div className={cls} data-enter={dataEnter} data-exit={dataExit} style={style}>
+      <div
+        className={cls}
+        data-tag-enter={dataTagEnter}
+        data-body-enter={dataBodyEnter}
+        data-tag-exit={dataTagExit}
+        data-body-exit={dataBodyExit}
+        style={style}
+      >
         {node}
       </div>
     );

@@ -15,7 +15,11 @@ export function ItemsControl() {
       <div className="control-card">
         <h2>Items collected</h2>
         <p className="text-warning">
-          No game is currently set as "Currently Playing". Pick one in Schedule first.
+          No game is currently set as "Currently Playing". Pick one in{' '}
+          <a className="text-warning" href="/control/schedule">
+            Schedule
+          </a>{' '}
+          first.
         </p>
       </div>
     );

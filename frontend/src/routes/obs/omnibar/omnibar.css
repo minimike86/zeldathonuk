@@ -480,99 +480,107 @@
  * non-flash rule would override the default flash combo and silently
  * drop the pulse for tags inside slots. */
 
-/* Tag pill enter */
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="left"] .ob-tag {
-  animation: ob-tag-in-left var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
+/* Tag pill enter — keyed off the slot's `data-tag-enter` attribute
+ * so the tag's direction can differ from the body's. */
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="left"] .ob-tag {
+  animation: ob-tag-in-left var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="right"] .ob-tag {
-  animation: ob-tag-in-right var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="right"] .ob-tag {
+  animation: ob-tag-in-right var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="top"] .ob-tag {
-  animation: ob-tag-in-top var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="top"] .ob-tag {
+  animation: ob-tag-in-top var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="bottom"] .ob-tag {
-  animation: ob-tag-in-bottom var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="bottom"] .ob-tag {
+  animation: ob-tag-in-bottom var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="fade"] .ob-tag {
-  animation: ob-tag-in-fade var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
-}
-
-/* Body children enter */
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="left"] .ob-row-body > * {
-  animation: ob-body-in-left var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
-}
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="right"] .ob-row-body > * {
-  animation: ob-body-in-right var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
-}
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="top"] .ob-row-body > * {
-  animation: ob-body-in-top var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
-}
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="bottom"] .ob-row-body > * {
-  animation: ob-body-in-bottom var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
-}
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="fade"] .ob-row-body > * {
-  animation: ob-body-in-fade var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="fade"] .ob-tag {
+  animation: ob-tag-in-fade var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both;
 }
 
-/* Flash tag enter (slide-in + gold-glow pulse). */
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="left"] .ob-tag--flash {
-  animation:
-    ob-tag-in-left  var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both,
-    ob-tag-flash    var(--ob-flash-ms)             ease-out var(--ob-slot-enter-ms, 520ms) 2;
+/* Body children enter — keyed off `data-body-enter`, independent of
+ * the tag's direction. `animation-delay` is measured from the END of
+ * the tag's enter so the body reveals after the tag lands (plus any
+ * `bodyEnterDelayMs` extra gap). */
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-body-enter="left"] .ob-row-body > * {
+  animation: ob-body-in-left var(--ob-body-enter-ms, 520ms) var(--ob-enter-ease) calc(var(--ob-tag-enter-ms, 520ms) + var(--ob-body-enter-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="right"] .ob-tag--flash {
-  animation:
-    ob-tag-in-right var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both,
-    ob-tag-flash    var(--ob-flash-ms)             ease-out var(--ob-slot-enter-ms, 520ms) 2;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-body-enter="right"] .ob-row-body > * {
+  animation: ob-body-in-right var(--ob-body-enter-ms, 520ms) var(--ob-enter-ease) calc(var(--ob-tag-enter-ms, 520ms) + var(--ob-body-enter-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="top"] .ob-tag--flash {
-  animation:
-    ob-tag-in-top   var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both,
-    ob-tag-flash    var(--ob-flash-ms)             ease-out var(--ob-slot-enter-ms, 520ms) 2;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-body-enter="top"] .ob-row-body > * {
+  animation: ob-body-in-top var(--ob-body-enter-ms, 520ms) var(--ob-enter-ease) calc(var(--ob-tag-enter-ms, 520ms) + var(--ob-body-enter-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="bottom"] .ob-tag--flash {
-  animation:
-    ob-tag-in-bottom var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both,
-    ob-tag-flash     var(--ob-flash-ms)             ease-out var(--ob-slot-enter-ms, 520ms) 2;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-body-enter="bottom"] .ob-row-body > * {
+  animation: ob-body-in-bottom var(--ob-body-enter-ms, 520ms) var(--ob-enter-ease) calc(var(--ob-tag-enter-ms, 520ms) + var(--ob-body-enter-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot:not(.is-leaving)[data-enter="fade"] .ob-tag--flash {
-  animation:
-    ob-tag-in-fade   var(--ob-slot-enter-ms, 520ms) var(--ob-enter-ease) both,
-    ob-tag-flash     var(--ob-flash-ms)             ease-out var(--ob-slot-enter-ms, 520ms) 2;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-body-enter="fade"] .ob-row-body > * {
+  animation: ob-body-in-fade var(--ob-body-enter-ms, 520ms) var(--ob-enter-ease) calc(var(--ob-tag-enter-ms, 520ms) + var(--ob-body-enter-delay-ms, 0ms)) both;
 }
 
-/* Tag pill exit */
-.omnibar--v2 .ob-slot.is-leaving[data-exit="left"] .ob-tag {
-  animation: ob-tag-out-left var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+/* Flash tag enter (slide-in + gold-glow pulse). Tied to
+ * `data-tag-enter` since the flash is a tag effect. */
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="left"] .ob-tag--flash {
+  animation:
+    ob-tag-in-left  var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both,
+    ob-tag-flash    var(--ob-flash-ms)            ease-out var(--ob-tag-enter-ms, 520ms) 2;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="right"] .ob-tag {
-  animation: ob-tag-out-right var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="right"] .ob-tag--flash {
+  animation:
+    ob-tag-in-right var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both,
+    ob-tag-flash    var(--ob-flash-ms)            ease-out var(--ob-tag-enter-ms, 520ms) 2;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="top"] .ob-tag {
-  animation: ob-tag-out-top var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="top"] .ob-tag--flash {
+  animation:
+    ob-tag-in-top   var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both,
+    ob-tag-flash    var(--ob-flash-ms)            ease-out var(--ob-tag-enter-ms, 520ms) 2;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="bottom"] .ob-tag {
-  animation: ob-tag-out-bottom var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="bottom"] .ob-tag--flash {
+  animation:
+    ob-tag-in-bottom var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both,
+    ob-tag-flash     var(--ob-flash-ms)            ease-out var(--ob-tag-enter-ms, 520ms) 2;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="fade"] .ob-tag {
-  animation: ob-tag-out-fade var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot:not(.is-leaving)[data-tag-enter="fade"] .ob-tag--flash {
+  animation:
+    ob-tag-in-fade   var(--ob-tag-enter-ms, 520ms) var(--ob-enter-ease) both,
+    ob-tag-flash     var(--ob-flash-ms)            ease-out var(--ob-tag-enter-ms, 520ms) 2;
 }
 
-/* Body children exit */
-.omnibar--v2 .ob-slot.is-leaving[data-exit="left"] .ob-row-body > * {
-  animation: ob-body-out-left var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+/* Tag pill exit — keyed off `data-tag-exit`. Body retreats first;
+ * tag follows after (body duration + bodyExitDelayMs). */
+.omnibar--v2 .ob-slot.is-leaving[data-tag-exit="left"] .ob-tag {
+  animation: ob-tag-out-left var(--ob-tag-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) calc(var(--ob-body-exit-ms, 480ms) + var(--ob-body-exit-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="right"] .ob-row-body > * {
-  animation: ob-body-out-right var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot.is-leaving[data-tag-exit="right"] .ob-tag {
+  animation: ob-tag-out-right var(--ob-tag-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) calc(var(--ob-body-exit-ms, 480ms) + var(--ob-body-exit-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="top"] .ob-row-body > * {
-  animation: ob-body-out-top var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot.is-leaving[data-tag-exit="top"] .ob-tag {
+  animation: ob-tag-out-top var(--ob-tag-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) calc(var(--ob-body-exit-ms, 480ms) + var(--ob-body-exit-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="bottom"] .ob-row-body > * {
-  animation: ob-body-out-bottom var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot.is-leaving[data-tag-exit="bottom"] .ob-tag {
+  animation: ob-tag-out-bottom var(--ob-tag-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) calc(var(--ob-body-exit-ms, 480ms) + var(--ob-body-exit-delay-ms, 0ms)) both;
 }
-.omnibar--v2 .ob-slot.is-leaving[data-exit="fade"] .ob-row-body > * {
-  animation: ob-body-out-fade var(--ob-slot-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-slot.is-leaving[data-tag-exit="fade"] .ob-tag {
+  animation: ob-tag-out-fade var(--ob-tag-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) calc(var(--ob-body-exit-ms, 480ms) + var(--ob-body-exit-delay-ms, 0ms)) both;
+}
+
+/* Body children exit — keyed off `data-body-exit`, independent of
+ * the tag. Body goes FIRST (no animation-delay) so the row empties
+ * before the tag retreats. */
+.omnibar--v2 .ob-slot.is-leaving[data-body-exit="left"] .ob-row-body > * {
+  animation: ob-body-out-left var(--ob-body-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-slot.is-leaving[data-body-exit="right"] .ob-row-body > * {
+  animation: ob-body-out-right var(--ob-body-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-slot.is-leaving[data-body-exit="top"] .ob-row-body > * {
+  animation: ob-body-out-top var(--ob-body-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-slot.is-leaving[data-body-exit="bottom"] .ob-row-body > * {
+  animation: ob-body-out-bottom var(--ob-body-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+}
+.omnibar--v2 .ob-slot.is-leaving[data-body-exit="fade"] .ob-row-body > * {
+  animation: ob-body-out-fade var(--ob-body-exit-ms, 480ms) cubic-bezier(0.55, 0, 0.78, 0) both;
 }
 
 /* Directional keyframes. Each pair (in/out) mirrors the same axis so

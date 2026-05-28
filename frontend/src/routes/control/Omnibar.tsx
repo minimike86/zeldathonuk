@@ -25,6 +25,8 @@ import {
   DELAY_MIN_MS,
   DURATION_MAX_MS,
   DURATION_MIN_MS,
+  DWELL_MAX_MS,
+  DWELL_MIN_MS,
   parseTransitions,
   type AnimDirection,
   type PanelTransition,
@@ -790,7 +792,6 @@ function SetpieceSection() {
 // ── Layout editor ───────────────────────────────────────────────────────
 
 interface LaneDraft {
-  intervalMs: number;
   panels: Set<PanelId>;
   order: PanelId[];
 }
@@ -803,7 +804,6 @@ interface LayoutDraft {
 function makeDraft(layoutJson: unknown): LayoutDraft {
   const parsed = parseLayout(layoutJson);
   const toDraft = (config: typeof DEFAULT_LAYOUT.top): LaneDraft => ({
-    intervalMs: config.intervalMs,
     panels: new Set(config.panels as PanelId[]),
     order: config.panels as PanelId[],
   });
@@ -813,8 +813,8 @@ function makeDraft(layoutJson: unknown): LayoutDraft {
 function draftToJson(draft: LayoutDraft) {
   return {
     lanes: [
-      { id: 'top', mode: 'rotating', intervalMs: draft.top.intervalMs, panels: draft.top.order },
-      { id: 'bottom', mode: 'rotating', intervalMs: draft.bottom.intervalMs, panels: draft.bottom.order },
+      { id: 'top', mode: 'rotating', panels: draft.top.order },
+      { id: 'bottom', mode: 'rotating', panels: draft.bottom.order },
     ],
   };
 }
@@ -854,14 +854,6 @@ function LayoutSection() {
     });
   };
 
-  const setInterval = (lane: 'top' | 'bottom', value: number) => {
-    setDraft((d) =>
-      d
-        ? { ...d, [lane]: { ...d[lane], intervalMs: Math.max(1000, value) } }
-        : d,
-    );
-  };
-
   const save = async () => {
     if (!event || !draft) return;
     setBusy(true);
@@ -897,11 +889,12 @@ function LayoutSection() {
     <section className="control-card">
       <h2>Lane layout</h2>
       <p className="text-white-50">
-        Drives which panels appear in each lane and how fast they rotate.
-        Saves to <code>Event.omnibar_layout</code> on the active event;
-        unknown panel ids are silently dropped by the omnibar so a
-        future client upgrade won't break the layout. Reload <code>/obs/omnibar</code>
-        after saving to see the new rotation.
+        Drives which panels appear in each lane. Rotation speed is now
+        per-panel — set each panel's <code>Dwell ms</code> in the
+        <strong> Panel transitions</strong> section below. Saves to{' '}
+        <code>Event.omnibar_layout</code>; unknown panel ids are
+        silently dropped so a future client upgrade won't break the
+        layout. Reload <code>/obs/omnibar</code> after saving.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -910,14 +903,12 @@ function LayoutSection() {
           lane="top"
           draft={draft.top}
           onToggle={(id) => togglePanel('top', id)}
-          onIntervalChange={(v) => setInterval('top', v)}
         />
         <LanePanelEditor
           title="Bottom lane"
           lane="bottom"
           draft={draft.bottom}
           onToggle={(id) => togglePanel('bottom', id)}
-          onIntervalChange={(v) => setInterval('bottom', v)}
         />
       </div>
 
@@ -943,44 +934,24 @@ function LanePanelEditor({
   lane,
   draft,
   onToggle,
-  onIntervalChange,
 }: {
   title: string;
   lane: 'top' | 'bottom';
   draft: LaneDraft;
   onToggle: (id: PanelId) => void;
-  onIntervalChange: (v: number) => void;
 }) {
-  const seconds = (draft.intervalMs / 1000).toFixed(1);
-  // useMemo just to silence the lint about reading lane without using it
   const description = useMemo(
     () =>
       lane === 'top'
-        ? 'Status zone — slower rotation, persistent info.'
-        : 'Ticker zone — faster rotation, mixes schedule, donations, incentives, etc.',
+        ? 'Status zone — persistent info (current game, playtime, …).'
+        : 'Ticker zone — mixes schedule, donations, incentives, etc.',
     [lane],
   );
   return (
     <div style={{ background: 'rgba(255,255,255,0.04)', padding: '0.75rem', borderRadius: 6 }}>
       <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{title}</h3>
       <small className="text-white-50">{description}</small>
-      <div className="control-btn-row mt-2" style={{ alignItems: 'baseline' }}>
-        <label>
-          <small className="text-white-50">Rotate every</small>
-          <br />
-          <input
-            type="range"
-            min={2000}
-            max={20000}
-            step={500}
-            value={draft.intervalMs}
-            onChange={(e) => onIntervalChange(Number(e.target.value))}
-            style={{ width: 180 }}
-          />
-        </label>
-        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{seconds}s</span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 0.6rem', marginTop: '0.4rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 0.6rem', marginTop: '0.6rem' }}>
         {ALL_PANEL_IDS.map((id) => {
           const checked = draft.panels.has(id);
           return (
@@ -1095,20 +1066,34 @@ function TransitionsSection() {
         Saves to <code>Event.omnibar_transitions</code>.
       </p>
 
-      <table className="control-table mt-2" style={{ fontSize: '0.9em' }}>
+      <h3 style={{
+        fontFamily: 'Bungee, sans-serif',
+        fontSize: '0.95rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        color: '#ffd23a',
+        margin: '1rem 0 0.35rem',
+      }}>Enter</h3>
+      <table className="control-table" style={{ fontSize: '0.85em' }}>
         <thead>
           <tr>
             <th>Panel</th>
-            <th>Enter</th>
-            <th>Enter ms</th>
-            <th>Exit</th>
-            <th>Exit ms</th>
-            <th>Delay ms</th>
+            <th title="Pause between the previous panel's exit ending and this panel's enter starting (ms)">
+              Lead-in ms
+            </th>
+            <th title="Direction the tag pill enters from">Tag enter</th>
+            <th title="Duration of the tag's enter animation (ms)">Tag enter ms</th>
+            <th title="Direction the body row enters from">Body enter</th>
+            <th title="Duration of the body's enter animation (ms)">Body enter ms</th>
+            <th title="Gap after the tag lands before the body starts entering (ms)">
+              Body delay (in)
+            </th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <TransitionRow
+            half="enter"
             label={<strong style={{ color: '#ffd23a' }}>Default</strong>}
             transition={defaults}
             onChange={(patch) => setDefaults((d) => ({ ...d, ...patch }))}
@@ -1119,6 +1104,57 @@ function TransitionsSection() {
             return (
               <TransitionRow
                 key={id}
+                half="enter"
+                label={<code>{id}</code>}
+                transition={effective}
+                hasOverride={!!ov}
+                onChange={(patch) => setOverride(id, patch)}
+                onClear={() => clearOverride(id)}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+
+      <h3 style={{
+        fontFamily: 'Bungee, sans-serif',
+        fontSize: '0.95rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        color: '#ffd23a',
+        margin: '1.25rem 0 0.35rem',
+      }}>Dwell + Exit</h3>
+      <table className="control-table" style={{ fontSize: '0.85em' }}>
+        <thead>
+          <tr>
+            <th>Panel</th>
+            <th title="Time the panel sits fully on-screen between its enter ending and its exit starting (ms)">
+              Dwell ms
+            </th>
+            <th title="Direction the body row exits to">Body exit</th>
+            <th title="Duration of the body's exit animation (ms)">Body exit ms</th>
+            <th title="Gap after the body finishes exiting before the tag starts exiting (ms)">
+              Body delay (out)
+            </th>
+            <th title="Direction the tag pill exits to">Tag exit</th>
+            <th title="Duration of the tag's exit animation (ms)">Tag exit ms</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <TransitionRow
+            half="exit"
+            label={<strong style={{ color: '#ffd23a' }}>Default</strong>}
+            transition={defaults}
+            onChange={(patch) => setDefaults((d) => ({ ...d, ...patch }))}
+          />
+          {ALL_PANEL_IDS.map((id) => {
+            const ov = overrides[id];
+            const effective = ov ?? defaults;
+            return (
+              <TransitionRow
+                key={id}
+                half="exit"
                 label={<code>{id}</code>}
                 transition={effective}
                 hasOverride={!!ov}
@@ -1150,18 +1186,32 @@ function TransitionsSection() {
 function TransitionRow({
   label,
   transition,
+  half,
   hasOverride,
   onChange,
   onClear,
 }: {
   label: ReactNode;
   transition: PanelTransition;
+  /** Which half of the panel's lifecycle this row covers — drives
+   *  which columns are rendered. The same panel appears in both the
+   *  Enter table and the Dwell+Exit table; the Clear button only
+   *  renders on the exit half so it's not duplicated. */
+  half: 'enter' | 'exit';
   hasOverride?: boolean;
   onChange: (patch: Partial<PanelTransition>) => void;
   onClear?: () => void;
 }) {
   const numInput = (
-    field: 'enterMs' | 'exitMs' | 'delayMs',
+    field:
+      | 'tagEnterMs'
+      | 'tagExitMs'
+      | 'bodyEnterMs'
+      | 'bodyExitMs'
+      | 'leadInMs'
+      | 'dwellMs'
+      | 'bodyEnterDelayMs'
+      | 'bodyExitDelayMs',
     min: number,
     max: number,
   ) => (
@@ -1178,7 +1228,7 @@ function TransitionRow({
       style={{ width: 80 }}
     />
   );
-  const dirSelect = (field: 'enter' | 'exit') => (
+  const dirSelect = (field: 'tagEnter' | 'tagExit' | 'bodyEnter' | 'bodyExit') => (
     <select
       value={transition[field]}
       onChange={(e) => onChange({ [field]: e.target.value as AnimDirection })}
@@ -1188,26 +1238,45 @@ function TransitionRow({
       ))}
     </select>
   );
+  const rowStyle = hasOverride ? { background: 'rgba(255, 210, 58, 0.05)' } : undefined;
+  const clearCell = (
+    <td>
+      {onClear && (
+        <button
+          className="btn btn-sm btn-outline-light"
+          disabled={!hasOverride}
+          onClick={onClear}
+          title={hasOverride ? "Remove this panel's override" : 'No override set'}
+        >
+          Use default
+        </button>
+      )}
+    </td>
+  );
+  if (half === 'enter') {
+    return (
+      <tr style={rowStyle}>
+        <td>{label}</td>
+        <td>{numInput('leadInMs', DELAY_MIN_MS, DELAY_MAX_MS)}</td>
+        <td>{dirSelect('tagEnter')}</td>
+        <td>{numInput('tagEnterMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
+        <td>{dirSelect('bodyEnter')}</td>
+        <td>{numInput('bodyEnterMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
+        <td>{numInput('bodyEnterDelayMs', DELAY_MIN_MS, DELAY_MAX_MS)}</td>
+        {clearCell}
+      </tr>
+    );
+  }
   return (
-    <tr style={hasOverride ? { background: 'rgba(255, 210, 58, 0.05)' } : undefined}>
+    <tr style={rowStyle}>
       <td>{label}</td>
-      <td>{dirSelect('enter')}</td>
-      <td>{numInput('enterMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
-      <td>{dirSelect('exit')}</td>
-      <td>{numInput('exitMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
-      <td>{numInput('delayMs', DELAY_MIN_MS, DELAY_MAX_MS)}</td>
-      <td>
-        {onClear && (
-          <button
-            className="btn btn-sm btn-outline-light"
-            disabled={!hasOverride}
-            onClick={onClear}
-            title={hasOverride ? 'Remove this panel\'s override' : 'No override set'}
-          >
-            Use default
-          </button>
-        )}
-      </td>
+      <td>{numInput('dwellMs', DWELL_MIN_MS, DWELL_MAX_MS)}</td>
+      <td>{dirSelect('bodyExit')}</td>
+      <td>{numInput('bodyExitMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
+      <td>{numInput('bodyExitDelayMs', DELAY_MIN_MS, DELAY_MAX_MS)}</td>
+      <td>{dirSelect('tagExit')}</td>
+      <td>{numInput('tagExitMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
+      {clearCell}
     </tr>
   );
 }

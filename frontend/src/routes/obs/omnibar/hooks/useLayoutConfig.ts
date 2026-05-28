@@ -27,7 +27,6 @@ export interface OmnibarLayoutConfig {
 const DEFAULT_TOP: LaneConfig = {
   id: 'top',
   mode: 'rotating',
-  intervalMs: 8000,
   // `pre-stream` last in the list as the pre-show / between-games
   // fallback. Its `selectData` returns null the moment a schedule
   // entry is set as currently-playing, so it doesn't compete with
@@ -42,7 +41,6 @@ const DEFAULT_TOP: LaneConfig = {
 const DEFAULT_BOTTOM: LaneConfig = {
   id: 'bottom',
   mode: 'rotating',
-  intervalMs: 5000,
   panels: [
     'schedule-next',
     'donation-reel',
@@ -75,6 +73,11 @@ const KNOWN_IDS = new Set<string>(ALL_PANEL_IDS);
 interface RawLane {
   id?: string;
   mode?: string;
+  // `intervalMs` was the lane-level "rotate every" speed; it's now
+  // vestigial (per-panel dwell drives rotation cadence) but legacy
+  // saved layouts may still carry the key. Accept it in the raw
+  // type so destructure-style reads don't fight TypeScript even
+  // though we no longer act on it.
   intervalMs?: number;
   panels?: unknown[];
 }
@@ -128,10 +131,6 @@ function pickLane(lanes: RawLane[], id: 'top' | 'bottom'): LaneConfig | null {
   const lane = lanes.find((l) => l && l.id === id);
   if (!lane) return null;
   const mode = lane.mode === 'pinned' ? 'pinned' : 'rotating';
-  const intervalMs =
-    typeof lane.intervalMs === 'number' && lane.intervalMs >= 1000
-      ? lane.intervalMs
-      : id === 'top' ? 8000 : 5000;
   // Filter out unknown panel ids so a stale layout doesn't crash —
   // panels we don't have a registered handler for are silently dropped.
   const panels = Array.isArray(lane.panels)
@@ -140,5 +139,7 @@ function pickLane(lanes: RawLane[], id: 'top' | 'bottom'): LaneConfig | null {
       )
     : [];
   if (panels.length === 0) return null;
-  return { id, mode, intervalMs, panels };
+  // `lane.intervalMs` is intentionally ignored — rotation cadence
+  // is now driven by per-panel transitions config (dwell + delays).
+  return { id, mode, panels };
 }

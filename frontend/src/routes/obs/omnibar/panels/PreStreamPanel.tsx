@@ -36,7 +36,7 @@ interface Data {
 
 function Panel({ data }: PanelProps<Data>) {
   return (
-    <PanelRow tag="UP NEXT" arrow>
+    <PanelRow tag="THE BIG EVENT" arrow>
       <span className="ob-text-strong">{data.eventName}</span>
       {data.secondsUntilStart != null ? (
         <span className="ob-text-muted">
