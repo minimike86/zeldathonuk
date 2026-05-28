@@ -144,6 +144,7 @@ class EventSerializer(serializers.ModelSerializer):
             'banner_url',
             'gameblast_logo_url',
             'omnibar_layout',
+            'omnibar_transitions',
             'donation_pages',
         ]
 

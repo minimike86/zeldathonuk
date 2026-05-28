@@ -1,37 +1,46 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { CSSProperties, ReactElement, ReactNode } from 'react';
 import { laneReducer, type LaneAction, type LaneState } from '../fsm/laneMachine';
 import { getPanel } from '../panels/registry';
 import type { OmnibarFeed } from '../hooks/useOmnibarFeed';
+import type { OmnibarTransitions, PanelTransition } from '../hooks/useTransitionsConfig';
 
 /**
  * A single lane in the omnibar. Holds its own LaneFSM + rotation timer.
  *
  * Rotation strategy: filter the configured panel ids down to those
- * whose `selectData` returns non-null (i.e. they have something to
- * show right now) + whose `enabledWhen` gate, if present, passes.
- * Tick on the lane's interval; index wraps modulo the live list size
- * so an incentive expiring mid-rotation gracefully shortens the
- * cycle instead of stalling on a blank.
+ * whose `selectData` returns non-null + whose `enabledWhen` gate
+ * passes. Tick on the lane's interval; index wraps modulo the live
+ * list size so an incentive expiring mid-rotation gracefully
+ * shortens the cycle instead of stalling on a blank.
  *
  * The takeover slot (rendered by `takeoverChild`) overrides the
  * rotation entirely — used for urgent overrides and event flashes.
  *
  * Transitions: rather than remount the panel synchronously when the
  * tick advances, the lane keeps TWO `.ob-slot` DOM positions side-by-
- * side. At any moment one slot is "active" (renders the currently-
- * targeted panel, resolving fresh data from `live` / `takeoverChild`
- * on every render so per-second updates like LocalTimePanel keep
- * flowing) and the other is either empty or holds the just-departed
- * panel with `.is-leaving` for `SLOT_EXIT_MS` while CSS plays the
- * exit animation (tag slide-out + body fade-up).
+ * side. A transition runs in three phases:
  *
- * Storing only the panel *identity* in state (not a captured JSX
- * element) preserves data freshness for the leaving slot too — the
- * lookup goes through current `live` on every render. For takeovers
- * the JSX element IS captured in the ident, because once a takeover
- * dismisses its `takeoverChild` prop is gone and there's nothing to
- * resolve against.
+ *   1. EXIT — the just-departed panel sits in its old slot with
+ *      `.is-leaving` + `data-exit="<dir>"` while the directional
+ *      exit CSS plays for the panel's configured `exitMs`. The
+ *      other slot is empty.
+ *   2. DELAY — the leaving slot has been unmounted; both slots are
+ *      empty for the new panel's configured `delayMs`.
+ *   3. ENTER — the new panel mounts in the other slot with its
+ *      configured `data-enter="<dir>"` and runs the enter CSS for
+ *      `enterMs`.
+ *
+ * Per-panel direction + durations + delay come from `transitions`
+ * (see useTransitionsConfig). The slot wrapper carries:
+ *   data-enter / data-exit — directional keyframe selector
+ *   --ob-slot-enter-ms / --ob-slot-exit-ms — duration CSS vars
+ *
+ * Force-finish on rapid re-tick: if a new transition fires mid-EXIT
+ * or mid-DELAY, the in-flight timers are cancelled and the new
+ * transition starts from whatever's currently on screen (the
+ * outgoing panel cuts short rather than ghosting through a second
+ * transition).
  */
 export interface LaneConfig {
   id: 'top' | 'bottom';
@@ -43,14 +52,15 @@ export interface LaneConfig {
 interface Props {
   config: LaneConfig;
   feed: OmnibarFeed;
+  transitions: OmnibarTransitions;
   suspended?: boolean;
   takeoverChild?: ReactNode;
 }
 
-// Outgoing-slot hold time. Slightly longer than the longest exit
-// animation (tag/body slide-out-right @ 480ms in omnibar.css) so
-// the slot isn't unmounted mid-transition.
-const SLOT_EXIT_MS = 520;
+// Small grace period past the configured exit duration before
+// unmounting the leaving slot — keeps the very last frame of the
+// CSS animation on screen rather than clipping it mid-decay.
+const EXIT_UNMOUNT_BUFFER_MS = 40;
 
 type ActiveIdent =
   | { kind: 'rotating'; panelId: string; rotKey: string }
@@ -71,16 +81,20 @@ function identKey(i: ActiveIdent): string {
   }
 }
 
-export function Lane({ config, feed, suspended, takeoverChild }: Props) {
-  // Content-based key for the panels array. The active-event poll
-  // returns a fresh JSON object every 15s, which cascades to a fresh
-  // `config.panels` array reference even when the operator hasn't
-  // changed anything. Hashing the panel ids into a string lets us
-  // depend on CONTENT, so the effects below don't re-fire (and
-  // dispatch state-resetting actions) on every poll.
+function transitionFor(
+  ident: ActiveIdent,
+  t: OmnibarTransitions,
+): PanelTransition {
+  if (ident.kind === 'rotating' || ident.kind === 'pinned') {
+    return t.forPanel(ident.panelId);
+  }
+  // Takeovers + empty fall back to the lane's default transition.
+  return t.default;
+}
+
+export function Lane({ config, feed, transitions, suspended, takeoverChild }: Props) {
   const panelsKey = config.panels.join('|');
 
-  // Resolve which panels are actually showable on this tick.
   const live = useMemo(() => {
     return config.panels
       .map((id) => {
@@ -100,26 +114,18 @@ export function Lane({ config, feed, suspended, takeoverChild }: Props) {
       ? { kind: 'pinned', panelId: config.panels[0] ?? '' }
       : { kind: 'rotating', index: 0 };
 
-  // Reducer wrapper that captures the current rotation length.
   const [state, dispatchRaw] = useReducer(
     (s: LaneState, a: LaneAction) => laneReducer(s, a, { rotationLength: live.length }),
     initial,
   );
   const dispatch = dispatchRaw;
 
-  // Apply external suspend/resume from the parent. Deps are
-  // content-based so an event poll that produces a fresh-but-
-  // equivalent layout JSON doesn't dispatch RESUME and reset the
-  // rotation. (The reducer also no-ops RESUME when already rotating
-  // — belt-and-braces — see laneMachine.ts.)
   useEffect(() => {
     if (suspended) dispatch({ type: 'SUSPEND' });
     else dispatch({ type: 'RESUME', mode: config.mode, panelId: config.panels[0] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suspended, config.mode, panelsKey]);
 
-  // Rotation timer. Only ticks when rotating + not suspended + we have
-  // more than one live panel to choose from.
   useEffect(() => {
     if (suspended || takeoverChild) return;
     if (state.kind !== 'rotating') return;
@@ -132,8 +138,8 @@ export function Lane({ config, feed, suspended, takeoverChild }: Props) {
   }, [suspended, takeoverChild, state.kind, live.length, config.intervalMs]);
 
   // The lane's currently-targeted identity (computed fresh each render
-  // from FSM state + props). The `useEffect` below commits this to
-  // `activeIdent` state when it differs, kicking off a transition.
+  // from FSM state + props). The transition effect commits this to
+  // `activeIdent` state.
   const target = useMemo<ActiveIdent>(() => {
     if (takeoverChild) {
       const tkey = (takeoverChild as ReactElement | null)?.key;
@@ -160,82 +166,94 @@ export function Lane({ config, feed, suspended, takeoverChild }: Props) {
     return { kind: 'empty' };
   }, [takeoverChild, state, live]);
 
-  // Committed state. `activeIdent` lags one effect behind `target`;
-  // when target changes the effect snapshots the previously-active
-  // ident as `leavingIdent` and flips `activeSlot` so the new panel
-  // mounts in the OTHER `.ob-slot` div (running its entrance
-  // animation) while the prior one stays in place with `.is-leaving`
-  // running the exit.
+  // Committed state.
   const [activeIdent, setActiveIdent] = useState<ActiveIdent>({ kind: 'empty' });
   const [activeSlot, setActiveSlot] = useState<'a' | 'b'>('a');
   const [leavingIdent, setLeavingIdent] = useState<
     { slot: 'a' | 'b'; ident: ActiveIdent } | null
   >(null);
 
-  const leavingTimerRef = useRef<number | null>(null);
+  const exitTimerRef = useRef<number | null>(null);
+  const enterTimerRef = useRef<number | null>(null);
   const activeSlotRef = useRef(activeSlot);
   const activeIdentRef = useRef(activeIdent);
+  const targetRef = useRef(target);
+  const transitionsRef = useRef(transitions);
   activeSlotRef.current = activeSlot;
   activeIdentRef.current = activeIdent;
+  targetRef.current = target;
+  transitionsRef.current = transitions;
 
   const targetKey = identKey(target);
 
-  // Transition detector. Fires when the *key* of the target ident
-  // changes. Comparing keys rather than ident references means a
-  // fresh React element passed via `takeoverChild` each render with
-  // the same key won't trigger a spurious transition.
+  // Transition detector. Fires when the target ident's key changes.
   useEffect(() => {
     const currentActive = activeIdentRef.current;
-    if (targetKey === identKey(currentActive)) return;
+    const targetCaptured = targetRef.current;
+    const t = transitionsRef.current;
 
-    // Force-finish any prior in-flight exit before starting a new
-    // transition. Without this, a rapid back-to-back transition
-    // (e.g. two donations within 400ms) would leave `.is-leaving`
-    // applied to a slot whose role is about to flip again.
-    if (leavingTimerRef.current !== null) {
-      window.clearTimeout(leavingTimerRef.current);
-      leavingTimerRef.current = null;
+    if (identKey(targetCaptured) === identKey(currentActive)) return;
+
+    // Force-finish any in-flight timers from a prior transition.
+    if (exitTimerRef.current !== null) {
+      window.clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+    if (enterTimerRef.current !== null) {
+      window.clearTimeout(enterTimerRef.current);
+      enterTimerRef.current = null;
     }
 
-    const departingIdent = currentActive;
+    const departing = currentActive;
     const departingSlot = activeSlotRef.current;
 
-    // Coming back from empty (or first mount) — no exit needed.
-    // Land the new content in the current active slot so its
-    // entrance animation plays in place.
-    if (departingIdent.kind === 'empty') {
+    // Case A: nothing currently active (cold mount, post-empty, or
+    // we're in the middle of a prior transition's delay phase where
+    // the active slot was emptied). Jump straight into the enter.
+    if (departing.kind === 'empty') {
       setLeavingIdent(null);
-      setActiveIdent(target);
+      setActiveIdent(targetCaptured);
       return;
     }
 
-    setLeavingIdent({ slot: departingSlot, ident: departingIdent });
-    setActiveSlot(departingSlot === 'a' ? 'b' : 'a');
-    setActiveIdent(target);
+    const exitCfg = transitionFor(departing, t);
+    const enterCfg = transitionFor(targetCaptured, t);
 
-    const t = window.setTimeout(() => {
-      // Only clear if we're still the active timer — a subsequent
-      // transition may have cleared us via the force-finish path
-      // above.
-      if (leavingTimerRef.current !== t) return;
-      leavingTimerRef.current = null;
+    // 1) Snapshot the departing into the leaving slot. The active
+    //    slot is emptied — the new content lands AFTER exit + delay.
+    setLeavingIdent({ slot: departingSlot, ident: departing });
+    setActiveSlot(departingSlot === 'a' ? 'b' : 'a');
+    setActiveIdent({ kind: 'empty' });
+
+    // 2) Unmount the leaving slot once its exit animation completes.
+    const exitWindow = exitCfg.exitMs + EXIT_UNMOUNT_BUFFER_MS;
+    const xT = window.setTimeout(() => {
+      if (exitTimerRef.current !== xT) return;
+      exitTimerRef.current = null;
       setLeavingIdent(null);
-    }, SLOT_EXIT_MS);
-    leavingTimerRef.current = t;
-    // `target` is read but only its identity key drives transitions;
-    // when the key is unchanged the closure'd target object's other
-    // fields (e.g. updated `live` lookup for a same-panel re-entry)
-    // are already covered by the per-render renderIdent resolve.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, exitWindow);
+    exitTimerRef.current = xT;
+
+    // 3) Mount the new active after exit + the incoming panel's delay.
+    const enterAt = exitCfg.exitMs + enterCfg.delayMs;
+    const nT = window.setTimeout(() => {
+      if (enterTimerRef.current !== nT) return;
+      enterTimerRef.current = null;
+      setActiveIdent(targetCaptured);
+    }, enterAt);
+    enterTimerRef.current = nT;
   }, [targetKey]);
 
-  // Cleanup any pending exit timer on unmount so we don't write to
-  // state after the component is gone.
+  // Cleanup pending timers on unmount.
   useEffect(() => {
     return () => {
-      if (leavingTimerRef.current !== null) {
-        window.clearTimeout(leavingTimerRef.current);
-        leavingTimerRef.current = null;
+      if (exitTimerRef.current !== null) {
+        window.clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = null;
+      }
+      if (enterTimerRef.current !== null) {
+        window.clearTimeout(enterTimerRef.current);
+        enterTimerRef.current = null;
       }
     };
   }, []);
@@ -244,9 +262,7 @@ export function Lane({ config, feed, suspended, takeoverChild }: Props) {
   // (rotating/pinned) this re-looks up `live` each render, so a
   // panel whose data updates per-second (LocalTimePanel) refreshes
   // smoothly even while it's the leaving slot. For takeover idents
-  // the element is carried by the ident itself, because once the
-  // takeover dismisses there's no `takeoverChild` prop left to
-  // resolve against.
+  // the element is carried by the ident itself.
   const renderIdent = (ident: ActiveIdent): ReactNode => {
     if (ident.kind === 'empty') return null;
     if (ident.kind === 'takeover') return ident.element;
@@ -256,21 +272,43 @@ export function Lane({ config, feed, suspended, takeoverChild }: Props) {
   };
 
   const renderSlot = (which: 'a' | 'b') => {
-    const isLive = activeSlot === which;
-    const leavingHere = !isLive && leavingIdent && leavingIdent.slot === which
-      ? leavingIdent
-      : null;
+    const isLive = activeSlot === which && activeIdent.kind !== 'empty';
+    const leavingHere =
+      !isLive && leavingIdent && leavingIdent.slot === which
+        ? leavingIdent
+        : null;
     const ident: ActiveIdent | null = isLive
       ? activeIdent
       : leavingHere
         ? leavingHere.ident
         : null;
     const node = ident ? renderIdent(ident) : null;
+
+    // Pull the relevant transition config so the slot wrapper can
+    // carry its direction + duration as DOM attributes / CSS vars.
+    let dataEnter: string | undefined;
+    let dataExit: string | undefined;
+    const style: CSSProperties = {};
+    if (isLive) {
+      const cfg = transitionFor(activeIdent, transitions);
+      dataEnter = cfg.enter;
+      style['--ob-slot-enter-ms' as keyof CSSProperties] = `${cfg.enterMs}ms` as never;
+    }
+    if (leavingHere) {
+      const cfg = transitionFor(leavingHere.ident, transitions);
+      dataExit = cfg.exit;
+      style['--ob-slot-exit-ms' as keyof CSSProperties] = `${cfg.exitMs}ms` as never;
+    }
+
     const cls =
       'ob-slot' +
       (leavingHere ? ' is-leaving' : '') +
       (!node ? ' is-empty' : '');
-    return <div className={cls}>{node}</div>;
+    return (
+      <div className={cls} data-enter={dataEnter} data-exit={dataExit} style={style}>
+        {node}
+      </div>
+    );
   };
 
   return (

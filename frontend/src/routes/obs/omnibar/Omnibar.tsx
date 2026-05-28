@@ -15,6 +15,7 @@ import { usePlaythroughEventStream } from './hooks/usePlaythroughEventStream';
 import { useExternalEventStream } from './hooks/useExternalEventStream';
 import { useOmnibarSse } from './hooks/useOmnibarSse';
 import { useLayoutConfig } from './hooks/useLayoutConfig';
+import { useTransitionsConfig } from './hooks/useTransitionsConfig';
 import { Lane } from './lanes/Lane';
 import { LiveDonationPanel } from './panels/LiveDonationPanel';
 import { UrgentBannerPanel } from './panels/UrgentBannerPanel';
@@ -91,6 +92,7 @@ function OmnibarInner() {
     feed.event,
     feed.currentlyPlaying?.schedule_entry_detail?.game ?? null,
   );
+  const transitions = useTransitionsConfig(feed.event);
 
   const [omnibarState, dispatch] = useReducer(omnibarReducer, INITIAL);
 
@@ -445,12 +447,14 @@ function OmnibarInner() {
             <Lane
               config={layout.top}
               feed={feed}
+              transitions={transitions}
               suspended={topSuspended}
               takeoverChild={urgentTop ?? undefined}
             />
             <Lane
               config={layout.bottom}
               feed={feed}
+              transitions={transitions}
               suspended={bottomSuspended}
               takeoverChild={bottomTakeover}
             />

@@ -112,6 +112,12 @@ export interface EventModel {
    *  defaults in `omnibar/hooks/useLayoutConfig.ts`. Shape:
    *  { lanes: [{ id, mode, intervalMs, panels: [...] }] }. */
   omnibar_layout: Record<string, unknown>;
+  /** Per-panel rotation transition config (enter/exit direction +
+   *  durations + delay-before-enter). Empty object → fall back to the
+   *  defaults in `omnibar/hooks/useTransitionsConfig.ts`. Shape:
+   *  { default: { enter, exit, enterMs, exitMs, delayMs },
+   *    panels: { "<panel-id>": { ...overrides } } }. */
+  omnibar_transitions: Record<string, unknown>;
   donation_pages: DonationPage[];
 }
 
@@ -663,7 +669,10 @@ export const obsApi = {
     patch: Partial<Pick<EventModel,
       'name' | 'start_time' | 'currency_symbol' | 'logo_url' | 'banner_url'
       | 'gameblast_logo_url'
-    >> & { omnibar_layout?: Record<string, unknown> },
+    >> & {
+      omnibar_layout?: Record<string, unknown>;
+      omnibar_transitions?: Record<string, unknown>;
+    },
   ) =>
     api<EventModel>(`/api/events/${eventId}/`, {
       method: 'PATCH',

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   obsApi,
   usePolledQuery,
@@ -18,6 +19,16 @@ import {
   parseLayout,
   type PanelId,
 } from '@/routes/obs/omnibar/hooks/useLayoutConfig';
+import {
+  DEFAULT_TRANSITION,
+  DELAY_MAX_MS,
+  DELAY_MIN_MS,
+  DURATION_MAX_MS,
+  DURATION_MIN_MS,
+  parseTransitions,
+  type AnimDirection,
+  type PanelTransition,
+} from '@/routes/obs/omnibar/hooks/useTransitionsConfig';
 
 /**
  * Operator test surface for the new omnibar pipeline.
@@ -38,6 +49,7 @@ export function OmnibarControl() {
     <div className="control-stack" style={{ display: 'grid', gap: '1.5rem' }}>
       <SandboxSection />
       <LayoutSection />
+      <TransitionsSection />
       <SplashSection />
       <CharitySlidesSection />
       <OverridesSection />
@@ -984,6 +996,219 @@ function LanePanelEditor({
         })}
       </div>
     </div>
+  );
+}
+
+// ── Panel transitions editor ─────────────────────────────────────────────
+
+const DIRECTION_OPTIONS: { value: AnimDirection; label: string }[] = [
+  { value: 'left',   label: 'Slide from/to left' },
+  { value: 'right',  label: 'Slide from/to right' },
+  { value: 'top',    label: 'Slide from/to top' },
+  { value: 'bottom', label: 'Slide from/to bottom' },
+  { value: 'fade',   label: 'Fade only' },
+];
+
+function TransitionsSection() {
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const [defaults, setDefaults] = useState<PanelTransition>(DEFAULT_TRANSITION);
+  const [overrides, setOverrides] = useState<Partial<Record<PanelId, PanelTransition>>>({});
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const lastEventIdRef = useRef<number | null>(null);
+
+  // Initialise the draft from the event's transitions. Don't blow
+  // away unsaved edits on every poll — only reset when the event
+  // identity changes.
+  useEffect(() => {
+    if (!event) return;
+    if (event.id === lastEventIdRef.current) return;
+    lastEventIdRef.current = event.id;
+    const parsed = parseTransitions(event.omnibar_transitions);
+    setDefaults(parsed.default);
+    // Promote partial overrides to full PanelTransitions for editing
+    // (each row shows all 5 fields). Saving emits them as-is, which
+    // the parser accepts.
+    const promoted: Partial<Record<PanelId, PanelTransition>> = {};
+    for (const [id, partial] of Object.entries(parsed.overrides)) {
+      promoted[id as PanelId] = { ...parsed.default, ...partial };
+    }
+    setOverrides(promoted);
+  }, [event]);
+
+  const setOverride = (panelId: PanelId, patch: Partial<PanelTransition>) =>
+    setOverrides((o) => ({
+      ...o,
+      [panelId]: { ...(o[panelId] ?? defaults), ...patch },
+    }));
+
+  const clearOverride = (panelId: PanelId) =>
+    setOverrides((o) => {
+      const next = { ...o };
+      delete next[panelId];
+      return next;
+    });
+
+  const save = async () => {
+    if (!event) return;
+    setBusy(true);
+    try {
+      // Shallow-merge into existing JSON to preserve sibling fields.
+      const existing =
+        event.omnibar_transitions && typeof event.omnibar_transitions === 'object'
+          ? event.omnibar_transitions
+          : {};
+      await obsApi.updateEvent(event.id, {
+        omnibar_transitions: {
+          ...existing,
+          default: defaults,
+          panels: overrides,
+        },
+      });
+      setSavedAt(new Date());
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = () => {
+    setDefaults(DEFAULT_TRANSITION);
+    setOverrides({});
+  };
+
+  if (!event) {
+    return (
+      <section className="control-card">
+        <h2>Panel transitions</h2>
+        <p className="text-warning">No active event.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="control-card">
+      <h2>Panel transitions</h2>
+      <p className="text-white-50">
+        Per-panel enter direction, exit direction, animation durations,
+        and the delay between the previous panel's exit and this panel's
+        enter. Panels without an override use the <strong>Default</strong> row.
+        Saves to <code>Event.omnibar_transitions</code>.
+      </p>
+
+      <table className="control-table mt-2" style={{ fontSize: '0.9em' }}>
+        <thead>
+          <tr>
+            <th>Panel</th>
+            <th>Enter</th>
+            <th>Enter ms</th>
+            <th>Exit</th>
+            <th>Exit ms</th>
+            <th>Delay ms</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <TransitionRow
+            label={<strong style={{ color: '#ffd23a' }}>Default</strong>}
+            transition={defaults}
+            onChange={(patch) => setDefaults((d) => ({ ...d, ...patch }))}
+          />
+          {ALL_PANEL_IDS.map((id) => {
+            const ov = overrides[id];
+            const effective = ov ?? defaults;
+            return (
+              <TransitionRow
+                key={id}
+                label={<code>{id}</code>}
+                transition={effective}
+                hasOverride={!!ov}
+                onChange={(patch) => setOverride(id, patch)}
+                onClear={() => clearOverride(id)}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div className="control-btn-row mt-3">
+        <button className="btn btn-bloodmoon" disabled={busy} onClick={save}>
+          Save transitions
+        </button>
+        <button className="btn btn-outline-light" disabled={busy} onClick={reset}>
+          Reset all to defaults
+        </button>
+        {savedAt && (
+          <small className="text-white-50 align-self-end">
+            saved {fmtTime(savedAt.toISOString())}
+          </small>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TransitionRow({
+  label,
+  transition,
+  hasOverride,
+  onChange,
+  onClear,
+}: {
+  label: ReactNode;
+  transition: PanelTransition;
+  hasOverride?: boolean;
+  onChange: (patch: Partial<PanelTransition>) => void;
+  onClear?: () => void;
+}) {
+  const numInput = (
+    field: 'enterMs' | 'exitMs' | 'delayMs',
+    min: number,
+    max: number,
+  ) => (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      step={20}
+      value={transition[field]}
+      onChange={(e) => {
+        const n = Math.max(min, Math.min(max, Number(e.target.value) || min));
+        onChange({ [field]: n });
+      }}
+      style={{ width: 80 }}
+    />
+  );
+  const dirSelect = (field: 'enter' | 'exit') => (
+    <select
+      value={transition[field]}
+      onChange={(e) => onChange({ [field]: e.target.value as AnimDirection })}
+    >
+      {DIRECTION_OPTIONS.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  );
+  return (
+    <tr style={hasOverride ? { background: 'rgba(255, 210, 58, 0.05)' } : undefined}>
+      <td>{label}</td>
+      <td>{dirSelect('enter')}</td>
+      <td>{numInput('enterMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
+      <td>{dirSelect('exit')}</td>
+      <td>{numInput('exitMs', DURATION_MIN_MS, DURATION_MAX_MS)}</td>
+      <td>{numInput('delayMs', DELAY_MIN_MS, DELAY_MAX_MS)}</td>
+      <td>
+        {onClear && (
+          <button
+            className="btn btn-sm btn-outline-light"
+            disabled={!hasOverride}
+            onClick={onClear}
+            title={hasOverride ? 'Remove this panel\'s override' : 'No override set'}
+          >
+            Use default
+          </button>
+        )}
+      </td>
+    </tr>
   );
 }
 
