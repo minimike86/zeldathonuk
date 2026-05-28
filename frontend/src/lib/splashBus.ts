@@ -58,9 +58,16 @@ if (useStorageFallback && typeof window !== 'undefined') {
 }
 
 export function triggerTestSplash(payload: TestSplashPayload): void {
+  // Fire local in-page listeners too. BroadcastChannel + the
+  // storage-event fallback both skip the sender by design, so without
+  // this an embedded DonationSplash in the same tab (e.g. the
+  // /control/omnibar splash preview card) never flashes when the
+  // operator hits "fire test". Listeners are deduped per-trigger by
+  // the consumers themselves; no double-fire risk.
+  listeners.forEach((l) => l(payload));
   if (channel) {
-    // Primary path. BroadcastChannel delivers to every OTHER same-
-    // origin context (not the sender), exactly once.
+    // BroadcastChannel delivers to every OTHER same-origin context
+    // (not the sender), exactly once.
     channel.postMessage(payload);
     return;
   }

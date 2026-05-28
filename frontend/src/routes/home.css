@@ -102,18 +102,51 @@
   text-transform: uppercase;
 }
 
+/* SpecialEffect brand button — designed as a sibling to
+ * `.btn-bloodmoon-secondary` (the donate CTA next to it on the home
+ * page Benefitting card). Same shape, same border treatment, same
+ * inset highlight/shadow depth — only the palette differs (blue
+ * gradient vs theme wine gradient). The border uses the same
+ * translucent-white token as the donate button so both render as a
+ * lighter-than-background rim and feel like a matched pair. */
 .btn-specialeffect {
   font-family: 'Bungee', 'Open Sans', cursive !important;
   color: #fff;
   background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
-  border: 2px solid rgba(254, 130, 32, 0.8);
+  /* Hardcoded brighter border than the global `--theme-button-border`
+   * token (default 0.4 alpha) — white at 0.4 reads fine over the wine
+   * `.btn-bloodmoon-secondary` gradient but vanishes against this
+   * blue, so the pair is bumped to ~0.75 in both places to stay both
+   * matched and visible. */
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  transition: filter 0.15s ease, border-color 0.15s ease;
 }
 
-.btn-specialeffect:hover {
+.btn-specialeffect:hover,
+.btn-specialeffect:focus-visible {
   color: #fff;
   background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
-  border: 2px solid rgba(254, 130, 32, 0.8);
-  filter: opacity(85%);
+  border-color: rgba(255, 255, 255, 0.95);
+  filter: brightness(1.1);
+  /* Restate the rest-state inset shadows so Bootstrap's default
+   * `.btn:focus-visible` box-shadow (a 0.25rem outer ring) doesn't
+   * paint a halo around the button after it has been clicked, which
+   * reads as the button "growing" on hover. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  outline: none;
+}
+
+.btn-specialeffect:active {
+  filter: brightness(0.95);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
 /* Bump up Currently Playing / Up Next / Benefitting text — Bootstrap's

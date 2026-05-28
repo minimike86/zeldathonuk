@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ThemeSettings } from '@/lib/obsApi';
 import { obsApi } from '@/lib/obsApi';
 import { applyTheme } from '@/components/ThemeProvider';
+import { LOGO_CATALOG } from '@/lib/logoCatalog';
 
 /**
  * /control/theme — library of themes. The list on the left lets the user
@@ -365,8 +366,8 @@ function ThemeEditor({
       <div className="control-card">
         <h2>Branding</h2>
         <div className="row g-3 mt-2">
-          <TextField label="Logo URL (wordmark)" value={draft.logo_url} onChange={(v) => set('logo_url', v)} placeholder="/assets/img/your-logo.svg" preview="image" />
-          <TextField label="Logo URL (small / compact)" value={draft.logo_small_url} onChange={(v) => set('logo_small_url', v)} placeholder="/assets/img/your-mark.svg" preview="image" />
+          <LogoPickerField label="Logo URL (wordmark)" value={draft.logo_url} onChange={(v) => set('logo_url', v)} placeholder="/assets/img/your-logo.svg" />
+          <LogoPickerField label="Logo URL (small / compact)" value={draft.logo_small_url} onChange={(v) => set('logo_small_url', v)} placeholder="/assets/img/your-mark.svg" />
           <TextField label="Favicon URL" value={draft.favicon_url} onChange={(v) => set('favicon_url', v)} placeholder="/assets/img/favicon.png" preview="image" />
         </div>
       </div>
@@ -469,6 +470,194 @@ function ColorField({
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Logo picker — clickable trigger button shows the current selection
+ * with a thumbnail; clicking opens a grid of all logos in the brand
+ * folder with visible previews. A "Custom URL…" tile reveals a text
+ * input for external images. Native `<select>` can't render images
+ * in its options, so the picker is a custom disclosure instead.
+ */
+function LogoPickerField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const known = LOGO_CATALOG.find((opt) => opt.url === value);
+  const isCustom = !!value && !known;
+  const triggerLabel = !value
+    ? '— Pick a logo —'
+    : known
+      ? known.label
+      : 'Custom URL';
+  const pick = (url: string) => {
+    onChange(url);
+    setOpen(false);
+  };
+  return (
+    <div className="col-md-4">
+      <label className="d-block small text-white-50">{label}</label>
+      <button
+        type="button"
+        className="form-control form-control-sm d-flex align-items-center"
+        style={{ gap: 8, textAlign: 'left', cursor: 'pointer' }}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        {value ? (
+          <img
+            src={value}
+            alt=""
+            style={{
+              height: 24,
+              maxWidth: 60,
+              objectFit: 'contain',
+              background: 'rgba(0,0,0,0.25)',
+              padding: 2,
+              borderRadius: 3,
+              flex: '0 0 auto',
+            }}
+          />
+        ) : null}
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {triggerLabel}
+        </span>
+        <span aria-hidden style={{ opacity: 0.6 }}>{open ? '▴' : '▾'}</span>
+      </button>
+
+      {open && (
+        <div
+          className="mt-2 p-2"
+          style={{
+            background: 'rgba(0,0,0,0.35)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            maxHeight: 320,
+            overflowY: 'auto',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+              gap: 8,
+            }}
+          >
+            <LogoTile
+              label="— None —"
+              selected={!value}
+              onClick={() => pick('')}
+            />
+            {LOGO_CATALOG.map((opt) => (
+              <LogoTile
+                key={opt.url}
+                label={opt.label}
+                imgSrc={opt.url}
+                selected={value === opt.url}
+                onClick={() => pick(opt.url)}
+              />
+            ))}
+            <LogoTile
+              label="Custom URL…"
+              selected={isCustom}
+              onClick={() => {
+                if (!isCustom) onChange('');
+                setOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {isCustom && (
+        <input
+          type="text"
+          className="form-control form-control-sm mt-2"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          spellCheck={false}
+        />
+      )}
+    </div>
+  );
+}
+
+function LogoTile({
+  label,
+  imgSrc,
+  selected,
+  onClick,
+}: {
+  label: string;
+  imgSrc?: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 4,
+        padding: 6,
+        background: selected ? 'rgba(231, 19, 71, 0.25)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${selected ? 'rgba(231,19,71,0.7)' : 'rgba(255,255,255,0.1)'}`,
+        borderRadius: 6,
+        cursor: 'pointer',
+        color: '#fff',
+        minHeight: 88,
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          height: 52,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0,0,0,0.35)',
+          borderRadius: 4,
+        }}
+      >
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt=""
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+          />
+        ) : (
+          <span aria-hidden style={{ opacity: 0.6, fontSize: '0.8em' }}>—</span>
+        )}
+      </div>
+      <span
+        style={{
+          fontSize: '0.7rem',
+          textAlign: 'center',
+          lineHeight: 1.2,
+          opacity: 0.9,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          width: '100%',
+        }}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
 

@@ -131,6 +131,12 @@ class DonationPageSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     donation_pages = DonationPageSerializer(many=True, read_only=True)
+    # Charities are read here via the through-table so consumers get the
+    # per-event ordering + is_primary flag, with the full Charity nested
+    # so the public /event landing can render branding without a second
+    # fetch. Writes go through the dedicated /api/event-charities/
+    # endpoint.
+    event_charities = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Event
@@ -146,7 +152,17 @@ class EventSerializer(serializers.ModelSerializer):
             'omnibar_layout',
             'omnibar_transitions',
             'donation_pages',
+            'event_charities',
         ]
+
+    def get_event_charities(self, obj):
+        # Forward-declared serializer — `EventCharitySerializer` is
+        # defined further down the module, so we resolve it at call
+        # time rather than at class-body parse time.
+        return EventCharitySerializer(
+            obj.event_charities.select_related('charity').all(),
+            many=True,
+        ).data
 
 
 class TimerSerializer(serializers.ModelSerializer):
@@ -167,6 +183,44 @@ class TimerSerializer(serializers.ModelSerializer):
         ]
 
 
+class SoundAssetSerializer(serializers.ModelSerializer):
+    """Reusable audio asset row. Read/write — the operator manages the
+    library from /control/omnibar Sound library section."""
+
+    class Meta:
+        model = models.SoundAsset
+        fields = ['id', 'name', 'url', 'volume', 'created_at']
+        read_only_fields = ['created_at']
+
+
+class ScheduleEntrySoundTriggerSerializer(serializers.ModelSerializer):
+    """One trigger row. Writes accept `sound` as a primary-key ref;
+    reads expose the full `sound_detail` so the omnibar feed has the
+    url + volume + name without an extra fetch."""
+
+    sound_detail = SoundAssetSerializer(source='sound', read_only=True)
+
+    class Meta:
+        model = models.ScheduleEntrySoundTrigger
+        fields = [
+            'id',
+            'schedule_entry',
+            'sound',
+            'sound_detail',
+            'anchor',
+            'offset_seconds',
+            'tag',
+            'message',
+            'subhead',
+            'priority',
+            'duration_seconds',
+            'show_banner',
+            'is_active',
+            'last_fired_at',
+        ]
+        read_only_fields = ['last_fired_at']
+
+
 class ScheduleEntrySerializer(serializers.ModelSerializer):
     game = GameSerializer(read_only=True)
     game_id = serializers.PrimaryKeyRelatedField(
@@ -177,6 +231,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
         allow_null=True,
     )
     runners = RunnerSerializer(many=True, read_only=True)
+    sound_triggers = ScheduleEntrySoundTriggerSerializer(many=True, read_only=True)
     runner_ids = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=models.Runner.objects.all(),
@@ -278,6 +333,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'notes',
             'timer',
             'collected_item_ids',
+            'sound_triggers',
         ]
 
 
@@ -536,3 +592,151 @@ class ChestAnnouncerSoundTriggerSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'game_title', 'created_at', 'updated_at']
+
+
+# ── Charities ────────────────────────────────────────────────────────────
+#
+# The charity surface is a parent (Charity) plus four child tables
+# (websites, videos, images, impact tiers). All four children are
+# embedded inside the Charity payload as read-only nested serializers
+# so a single GET /charities/<id>/ returns everything the public
+# /charity page needs. Writes flow through the dedicated child endpoints
+# so the operator UI can PATCH a single row without round-tripping the
+# whole nested tree (mirrors how DonationPage operates relative to
+# Event).
+
+
+class CharityWebsiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CharityWebsite
+        fields = ['id', 'charity', 'label', 'url', 'order']
+
+
+class CharitySocialLinkSerializer(serializers.ModelSerializer):
+    """One social-media profile row. `platform_label` exposes the
+    enum's display name so the frontend doesn't need to duplicate the
+    label catalogue."""
+
+    platform_label = serializers.CharField(
+        source='get_platform_display', read_only=True,
+    )
+
+    class Meta:
+        model = models.CharitySocialLink
+        fields = [
+            'id',
+            'charity',
+            'platform',
+            'platform_label',
+            'url',
+            'handle',
+            'order',
+        ]
+        read_only_fields = ['platform_label']
+
+
+class CharityVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CharityVideo
+        fields = ['id', 'charity', 'title', 'url', 'thumbnail_url',
+                  'description', 'order']
+
+
+class CharityImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CharityImage
+        fields = ['id', 'charity', 'image_url', 'alt_text', 'caption', 'order']
+
+
+class CharityImpactTierSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CharityImpactTier
+        fields = [
+            'id',
+            'charity',
+            'amount',
+            'currency',
+            'image_url',
+            'alt_text',
+            'description',
+            'description_html',
+            'order',
+        ]
+
+
+class CharitySerializer(serializers.ModelSerializer):
+    """Read-heavy charity payload — embeds the four child tables so the
+    public /charity page can render everything from a single fetch."""
+
+    websites = CharityWebsiteSerializer(many=True, read_only=True)
+    social_links = CharitySocialLinkSerializer(many=True, read_only=True)
+    videos = CharityVideoSerializer(many=True, read_only=True)
+    images = CharityImageSerializer(many=True, read_only=True)
+    impact_tiers = CharityImpactTierSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = models.Charity
+        fields = [
+            'id',
+            'slug',
+            'name',
+            'short_name',
+            'charity_number',
+            'mission_statement',
+            'logo_url',
+            'logo_thumbnail_url',
+            'banner_url',
+            'primary_website_url',
+            'help_cta_headline',
+            'help_cta_body',
+            'help_cta_url',
+            'donate_cta_headline',
+            'donate_cta_body',
+            'donate_cta_url',
+            'supported_platforms',
+            'is_active',
+            'order',
+            'created_at',
+            'updated_at',
+            'websites',
+            'social_links',
+            'videos',
+            'images',
+            'impact_tiers',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_supported_platforms(self, value):
+        # Keep `supported_platforms` honest — every key must be a known
+        # DonationPlatform choice. Stops typos at write time instead of
+        # silently breaking the picker UI later.
+        if not isinstance(value, list):
+            raise serializers.ValidationError('Must be a list of platform keys.')
+        valid = {choice for choice, _ in models.DonationPlatform.choices}
+        bad = [v for v in value if v not in valid]
+        if bad:
+            raise serializers.ValidationError(
+                f'Unknown DonationPlatform key(s): {bad}. Valid choices: {sorted(valid)}.'
+            )
+        return value
+
+
+class EventCharitySerializer(serializers.ModelSerializer):
+    """Through-table link. Reads include the nested charity payload so
+    a viewer landing on /events/<id>/ can render charity branding
+    without a second fetch; writes only need event + charity ids."""
+
+    charity_detail = CharitySerializer(source='charity', read_only=True)
+
+    class Meta:
+        model = models.EventCharity
+        fields = [
+            'id',
+            'event',
+            'charity',
+            'charity_detail',
+            'is_primary',
+            'order',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']

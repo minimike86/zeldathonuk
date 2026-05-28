@@ -119,6 +119,11 @@ export interface EventModel {
    *    panels: { "<panel-id>": { ...overrides } } }. */
   omnibar_transitions: Record<string, unknown>;
   donation_pages: DonationPage[];
+  /** Charities this event is fundraising for, ordered + with the
+   *  primary beneficiary flagged. Read-only on the EventModel —
+   *  mutations go through `obsApi.createEventCharity` /
+   *  `updateEventCharity` / `deleteEventCharity`. */
+  event_charities: EventCharityLink[];
 }
 
 export interface TimerRun {
@@ -132,7 +137,7 @@ export interface TimerRun {
   total_seconds: number;
 }
 
-export type SlotType = 'game' | 'start' | 'meal' | 'sleep' | 'break' | 'end';
+export type SlotType = 'game' | 'start' | 'meal' | 'sleep' | 'break' | 'end' | 'other';
 
 export interface ScheduleEntry {
   id: number;
@@ -161,6 +166,49 @@ export interface ScheduleEntry {
   notes: string;
   timer: TimerRun | null;
   collected_item_ids: number[];
+  /** Read-only nested. The omnibar feed doesn't act on these (the
+   *  backend SSE evaluator fires triggers server-side); the control
+   *  panel reads them to render the per-entry editor. */
+  sound_triggers: ScheduleEntrySoundTrigger[];
+}
+
+/** Reusable audio asset row, from `/api/sound-assets/`. Many trigger
+ *  rows can reference the same asset (e.g., a single bell sound wired
+ *  to multiple -30/-20/-10s offsets). */
+export interface SoundAsset {
+  id: number;
+  name: string;
+  url: string;
+  volume: number;
+  created_at: string;
+}
+
+export type TriggerAnchor = 'start' | 'end';
+
+/** One trigger row attached to a ScheduleEntry. `sound_detail` is
+ *  the nested SoundAsset embedded by the backend so consumers don't
+ *  need a second fetch. `last_fired_at` is server-managed; the SSE
+ *  evaluator stamps it when the trigger fires. */
+export interface ScheduleEntrySoundTrigger {
+  id: number;
+  schedule_entry: number;
+  sound: number;
+  sound_detail: SoundAsset;
+  anchor: TriggerAnchor;
+  /** Signed seconds — negative = before anchor, 0 = at, positive = after. */
+  offset_seconds: number;
+  /** Banner tag pill label. Blank → omnibar uses "NOW PLAYING". */
+  tag: string;
+  message: string;
+  /** Optional smaller text shown under the headline on the celebration
+   *  banner. Ignored when `show_banner` is false. */
+  subhead: string;
+  priority: number;
+  duration_seconds: number;
+  /** When false, the audio plays but no celebration banner is shown. */
+  show_banner: boolean;
+  is_active: boolean;
+  last_fired_at: string | null;
 }
 
 /** Why a donation has been suppressed from /obs/tts + /obs/omnibar.
@@ -425,6 +473,131 @@ export interface Milestone {
   audio_url: string;
   order: number;
   is_reached: boolean;
+  created_at: string;
+}
+
+// ── Charities ────────────────────────────────────────────────────────────
+//
+// A charity is the beneficiary of one or more events. The main row
+// (`Charity`) carries identity + branding + CTA copy; four child
+// types — websites, videos, images, impact tiers — are returned
+// nested on reads but mutated through their own endpoints so the
+// control panel can save a single row at a time.
+
+export interface CharityWebsite {
+  id: number;
+  charity: number;
+  label: string;
+  url: string;
+  order: number;
+}
+
+/** Closed enum mirroring backend `SocialPlatform.choices`. Keep in
+ *  sync with `SOCIAL_PLATFORM_LABELS` in CharitiesControl when adding
+ *  a new platform on the backend. */
+export type SocialPlatformKey =
+  | 'twitter'
+  | 'facebook'
+  | 'instagram'
+  | 'youtube'
+  | 'tiktok'
+  | 'linkedin'
+  | 'bluesky'
+  | 'threads'
+  | 'mastodon'
+  | 'twitch'
+  | 'discord'
+  | 'reddit'
+  | 'patreon'
+  | 'other';
+
+export interface CharitySocialLink {
+  id: number;
+  charity: number;
+  platform: SocialPlatformKey;
+  /** Server-side display label for the platform (e.g. "X / Twitter"). */
+  platform_label: string;
+  url: string;
+  /** Optional human handle (e.g. "@specialeffect"). */
+  handle: string;
+  order: number;
+}
+
+export interface CharityVideo {
+  id: number;
+  charity: number;
+  title: string;
+  url: string;
+  thumbnail_url: string;
+  description: string;
+  order: number;
+}
+
+export interface CharityImage {
+  id: number;
+  charity: number;
+  image_url: string;
+  alt_text: string;
+  caption: string;
+  order: number;
+}
+
+export interface CharityImpactTier {
+  id: number;
+  charity: number;
+  amount: string;
+  currency: string;
+  image_url: string;
+  alt_text: string;
+  /** Plain-text fallback — always populated. */
+  description: string;
+  /** Optional HTML override; rendered via dangerouslySetInnerHTML
+   *  when non-empty so a tier can embed inline links. */
+  description_html: string;
+  order: number;
+}
+
+export interface Charity {
+  id: number;
+  slug: string;
+  name: string;
+  short_name: string;
+  charity_number: string;
+  mission_statement: string;
+  logo_url: string;
+  /** Tight-crop variant of the square logo for compact UI. Consumers
+   *  should fall back to `logo_url` when this is empty. */
+  logo_thumbnail_url: string;
+  banner_url: string;
+  primary_website_url: string;
+  help_cta_headline: string;
+  help_cta_body: string;
+  help_cta_url: string;
+  donate_cta_headline: string;
+  donate_cta_body: string;
+  donate_cta_url: string;
+  /** Subset of DonationPlatformKey the charity can accept funds via. */
+  supported_platforms: DonationPlatformKey[];
+  is_active: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+  websites: CharityWebsite[];
+  social_links: CharitySocialLink[];
+  videos: CharityVideo[];
+  images: CharityImage[];
+  impact_tiers: CharityImpactTier[];
+}
+
+export interface EventCharityLink {
+  id: number;
+  event: number;
+  charity: number;
+  /** Full charity payload embedded so consumers can render branding
+   *  without a second fetch. */
+  charity_detail: Charity;
+  is_primary: boolean;
+  order: number;
   created_at: string;
 }
 
@@ -719,6 +892,18 @@ export const obsApi = {
     priority?: number;
     is_active?: boolean;
   }) => api<OmnibarOverride>('/api/overrides/', { method: 'POST', body }),
+  updateOverride: (
+    id: number,
+    patch: Partial<{
+      kind: string;
+      payload: Record<string, unknown>;
+      target_lane: OmnibarLane;
+      starts_at: string;
+      expires_at: string;
+      priority: number;
+      is_active: boolean;
+    }>,
+  ) => api<OmnibarOverride>(`/api/overrides/${id}/`, { method: 'PATCH', body: patch }),
   activateOverride: (id: number) =>
     api<OmnibarOverride>(`/api/overrides/${id}/activate/`, { method: 'POST' }),
   deactivateOverride: (id: number) =>
@@ -760,6 +945,17 @@ export const obsApi = {
     /** Reserved for bid wars (options array) and future extensions. */
     payload?: Record<string, unknown>;
   }) => api<Incentive>('/api/incentives/', { method: 'POST', body }),
+  updateIncentive: (
+    id: number,
+    patch: Partial<{
+      name: string;
+      goal_amount: string;
+      description: string;
+      image_url: string;
+      is_active: boolean;
+      order: number;
+    }>,
+  ) => api<Incentive>(`/api/incentives/${id}/`, { method: 'PATCH', body: patch }),
   contributeToIncentive: (id: number, amount: string, optionId?: string) =>
     api<IncentiveContributeResult>(
       `/api/incentives/${id}/contribute/`,
@@ -789,6 +985,17 @@ export const obsApi = {
     audio_url?: string;
     order?: number;
   }) => api<Milestone>('/api/milestones/', { method: 'POST', body }),
+  updateMilestone: (
+    id: number,
+    patch: Partial<{
+      name: string;
+      threshold_amount: string;
+      celebration_message: string;
+      audio_url: string;
+      order: number;
+    }>,
+  ) =>
+    api<Milestone>(`/api/milestones/${id}/`, { method: 'PATCH', body: patch }),
   markMilestoneReached: (id: number) =>
     api<Milestone>(`/api/milestones/${id}/mark_reached/`, { method: 'POST' }),
   // Reset a milestone back to pending (clears reached_at). Combined
@@ -831,6 +1038,191 @@ export const obsApi = {
   deleteCharitySlide: (id: number) =>
     api<void>(`/api/charity-slides/${id}/`, { method: 'DELETE' })
       .then(withCharityBroadcast),
+
+  // ── Charities ─────────────────────────────────────────────────────
+  // Catalogue + four child tables (websites / videos / images / impact
+  // tiers) + EventCharity through-table. Reads return the full nested
+  // payload (`charities()` / `charity()`); writes go through the
+  // dedicated child endpoints so a single row can be PATCHed without
+  // round-tripping the entire tree.
+  charities: (params?: { activeOnly?: boolean; eventId?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.activeOnly) qs.set('active', 'true');
+    if (params?.eventId != null) qs.set('event', String(params.eventId));
+    const tail = qs.toString();
+    return api<Charity[]>(tail ? `/api/charities/?${tail}` : '/api/charities/');
+  },
+  charity: (idOrSlug: number | string) =>
+    api<Charity>(`/api/charities/${idOrSlug}/`),
+  createCharity: (
+    body: Partial<Omit<Charity, 'id' | 'created_at' | 'updated_at' |
+      'websites' | 'social_links' | 'videos' | 'images' | 'impact_tiers'>> & {
+      slug: string;
+      name: string;
+    },
+  ) => api<Charity>('/api/charities/', { method: 'POST', body }),
+  updateCharity: (
+    id: number,
+    patch: Partial<Omit<Charity, 'id' | 'created_at' | 'updated_at' |
+      'websites' | 'social_links' | 'videos' | 'images' | 'impact_tiers'>>,
+  ) => api<Charity>(`/api/charities/${id}/`, { method: 'PATCH', body: patch }),
+  deleteCharity: (id: number) =>
+    api<void>(`/api/charities/${id}/`, { method: 'DELETE' }),
+
+  createCharityWebsite: (body: Omit<CharityWebsite, 'id'>) =>
+    api<CharityWebsite>('/api/charity-websites/', { method: 'POST', body }),
+  updateCharityWebsite: (id: number, patch: Partial<Omit<CharityWebsite, 'id'>>) =>
+    api<CharityWebsite>(`/api/charity-websites/${id}/`, { method: 'PATCH', body: patch }),
+  deleteCharityWebsite: (id: number) =>
+    api<void>(`/api/charity-websites/${id}/`, { method: 'DELETE' }),
+
+  createCharitySocialLink: (
+    body: Omit<CharitySocialLink, 'id' | 'platform_label'>,
+  ) =>
+    api<CharitySocialLink>('/api/charity-social-links/', {
+      method: 'POST',
+      body,
+    }),
+  updateCharitySocialLink: (
+    id: number,
+    patch: Partial<Omit<CharitySocialLink, 'id' | 'platform_label'>>,
+  ) =>
+    api<CharitySocialLink>(`/api/charity-social-links/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteCharitySocialLink: (id: number) =>
+    api<void>(`/api/charity-social-links/${id}/`, { method: 'DELETE' }),
+
+  createCharityVideo: (body: Omit<CharityVideo, 'id'>) =>
+    api<CharityVideo>('/api/charity-videos/', { method: 'POST', body }),
+  updateCharityVideo: (id: number, patch: Partial<Omit<CharityVideo, 'id'>>) =>
+    api<CharityVideo>(`/api/charity-videos/${id}/`, { method: 'PATCH', body: patch }),
+  deleteCharityVideo: (id: number) =>
+    api<void>(`/api/charity-videos/${id}/`, { method: 'DELETE' }),
+
+  createCharityImage: (body: Omit<CharityImage, 'id'>) =>
+    api<CharityImage>('/api/charity-images/', { method: 'POST', body }),
+  updateCharityImage: (id: number, patch: Partial<Omit<CharityImage, 'id'>>) =>
+    api<CharityImage>(`/api/charity-images/${id}/`, { method: 'PATCH', body: patch }),
+  deleteCharityImage: (id: number) =>
+    api<void>(`/api/charity-images/${id}/`, { method: 'DELETE' }),
+
+  createCharityImpactTier: (body: Omit<CharityImpactTier, 'id'>) =>
+    api<CharityImpactTier>('/api/charity-impact-tiers/', { method: 'POST', body }),
+  updateCharityImpactTier: (
+    id: number,
+    patch: Partial<Omit<CharityImpactTier, 'id'>>,
+  ) =>
+    api<CharityImpactTier>(`/api/charity-impact-tiers/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteCharityImpactTier: (id: number) =>
+    api<void>(`/api/charity-impact-tiers/${id}/`, { method: 'DELETE' }),
+
+  // EventCharity through-table — link charities to an event with
+  // is_primary + order. Setting is_primary=true demotes any other
+  // primary row for the same event (handled server-side).
+  eventCharities: (params?: { eventId?: number; charityId?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.eventId != null) qs.set('event', String(params.eventId));
+    if (params?.charityId != null) qs.set('charity', String(params.charityId));
+    const tail = qs.toString();
+    return api<EventCharityLink[]>(
+      tail ? `/api/event-charities/?${tail}` : '/api/event-charities/',
+    );
+  },
+  createEventCharity: (body: {
+    event: number;
+    charity: number;
+    is_primary?: boolean;
+    order?: number;
+  }) => api<EventCharityLink>('/api/event-charities/', { method: 'POST', body }),
+  updateEventCharity: (
+    id: number,
+    patch: Partial<{ is_primary: boolean; order: number }>,
+  ) =>
+    api<EventCharityLink>(`/api/event-charities/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteEventCharity: (id: number) =>
+    api<void>(`/api/event-charities/${id}/`, { method: 'DELETE' }),
+
+  // ── Sound assets + schedule-entry sound triggers ──────────────────
+  // Reusable audio library + per-entry trigger rows. The backend SSE
+  // evaluator fires due triggers automatically; the omnibar consumes
+  // the resulting `schedule-entry-sound` overrides via the existing
+  // override stream. The control panel uses these CRUD wrappers.
+  soundAssets: () => api<SoundAsset[]>('/api/sound-assets/'),
+  createSoundAsset: (body: {
+    name: string;
+    url: string;
+    volume?: number;
+  }) => api<SoundAsset>('/api/sound-assets/', { method: 'POST', body }),
+  updateSoundAsset: (
+    id: number,
+    patch: Partial<Omit<SoundAsset, 'id' | 'created_at'>>,
+  ) =>
+    api<SoundAsset>(`/api/sound-assets/${id}/`, { method: 'PATCH', body: patch }),
+  deleteSoundAsset: (id: number) =>
+    api<void>(`/api/sound-assets/${id}/`, { method: 'DELETE' }),
+
+  scheduleEntrySoundTriggers: (params?: { scheduleEntryId?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.scheduleEntryId != null) {
+      qs.set('schedule_entry', String(params.scheduleEntryId));
+    }
+    const tail = qs.toString();
+    return api<ScheduleEntrySoundTrigger[]>(
+      tail
+        ? `/api/schedule-entry-sound-triggers/?${tail}`
+        : '/api/schedule-entry-sound-triggers/',
+    );
+  },
+  createScheduleEntrySoundTrigger: (body: {
+    schedule_entry: number;
+    sound: number;
+    anchor?: TriggerAnchor;
+    offset_seconds?: number;
+    tag?: string;
+    message?: string;
+    subhead?: string;
+    priority?: number;
+    duration_seconds?: number;
+    show_banner?: boolean;
+    is_active?: boolean;
+  }) =>
+    api<ScheduleEntrySoundTrigger>('/api/schedule-entry-sound-triggers/', {
+      method: 'POST',
+      body,
+    }),
+  updateScheduleEntrySoundTrigger: (
+    id: number,
+    patch: Partial<Omit<
+      ScheduleEntrySoundTrigger,
+      'id' | 'sound_detail' | 'last_fired_at'
+    >>,
+  ) =>
+    api<ScheduleEntrySoundTrigger>(`/api/schedule-entry-sound-triggers/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteScheduleEntrySoundTrigger: (id: number) =>
+    api<void>(`/api/schedule-entry-sound-triggers/${id}/`, { method: 'DELETE' }),
+  /** Clears `last_fired_at` on every trigger of the active event so
+   *  the show can be re-run without manual per-row resets. */
+  resetScheduleEntrySoundTriggers: () =>
+    api<{ reset: number }>('/api/schedule-entry-sound-triggers/reset/', {
+      method: 'POST',
+    }),
+  /** Clears `last_fired_at` on a single trigger row. */
+  resetScheduleEntrySoundTriggerFire: (id: number) =>
+    api<ScheduleEntrySoundTrigger>(
+      `/api/schedule-entry-sound-triggers/${id}/reset_fire/`,
+      { method: 'POST' },
+    ),
 };
 
 /** Hook that polls the API on an interval. Bare-bones — replace with TanStack

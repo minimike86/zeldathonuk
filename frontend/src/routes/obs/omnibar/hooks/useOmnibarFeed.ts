@@ -12,6 +12,7 @@ import {
   type ThemeSettings,
 } from '@/lib/obsApi';
 import { onEventChanged } from '@/lib/eventBus';
+import { onThemeChanged } from '@/lib/themeBus';
 import { derivePlaythroughPhase } from '../fsm/playthroughMachine';
 import type { PlaythroughPhase } from '../bus/types';
 
@@ -28,7 +29,19 @@ export interface OmnibarFeed {
   donations: Donation[];
   totals: DonationTotals | null;
   incentives: Incentive[];
+  /** True once the incentives poll has returned its first response.
+   *  Consumers that fire side-effects on `is_reached` transitions
+   *  rely on this to distinguish "no data yet" (default `[]` before
+   *  any poll completes) from "API returned empty list", which look
+   *  identical otherwise. */
+  incentivesLoaded: boolean;
   milestones: Milestone[];
+  /** Same idea — has the milestones poll returned its first
+   *  response yet. Without this, a hard-reload could double-fire
+   *  the celebration for an already-reached milestone if the
+   *  milestones poll happens to resolve after some other gating
+   *  poll the consumer was waiting on. */
+  milestonesLoaded: boolean;
   theme: ThemeSettings | null;
   phase: PlaythroughPhase;
   now: Date;
@@ -44,7 +57,13 @@ const POLL_EVENT_MS = 5_000;
 const POLL_SCHEDULE_MS = 8000;
 const POLL_DONATIONS_MS = 3000;
 const POLL_INCENTIVES_MS = 5000;
-const POLL_THEME_MS = 60_000;
+// Theme poll. Floor for cross-browser refresh — OBS browser sources
+// don't share BroadcastChannel with /control/theme so the poll cadence
+// is the only thing that catches them up. 3s matches <ThemeProvider>,
+// keeping the omnibar's feed.theme (used for the wordmark logo) in
+// sync with the CSS-var apply path within a few seconds of activation.
+// Same-browser tabs additionally hop the queue via themeBus below.
+const POLL_THEME_MS = 3000;
 
 export function useOmnibarFeed(now: Date): OmnibarFeed {
   // Cross-tab event-row push: when another tab (notably /control/omnibar)
@@ -54,6 +73,12 @@ export function useOmnibarFeed(now: Date): OmnibarFeed {
   // one render frame instead of waiting up to POLL_EVENT_MS.
   const [eventBump, dispatchBump] = useReducer((n: number) => n + 1, 0);
   useEffect(() => onEventChanged(dispatchBump), []);
+  // Same pattern for theme: same-browser tabs (e.g. /control/theme)
+  // postMessage via themeBus when the active theme changes, which
+  // bumps this counter and cancels the in-flight 3s tick so the
+  // wordmark logo + currency symbol land in roughly one render frame.
+  const [themeBump, dispatchThemeBump] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => onThemeChanged(dispatchThemeBump), []);
   const { data: event } = usePolledQuery(obsApi.activeEvent, POLL_EVENT_MS, [eventBump]);
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, POLL_CURRENT_MS);
   const { data: schedule } = usePolledQuery(
@@ -94,7 +119,7 @@ export function useOmnibarFeed(now: Date): OmnibarFeed {
     POLL_INCENTIVES_MS,
     [event?.id],
   );
-  const { data: theme } = usePolledQuery(obsApi.themeSettings, POLL_THEME_MS);
+  const { data: theme } = usePolledQuery(obsApi.themeSettings, POLL_THEME_MS, [themeBump]);
 
   return useMemo<OmnibarFeed>(() => {
     const sched = schedule ?? [];
@@ -105,7 +130,14 @@ export function useOmnibarFeed(now: Date): OmnibarFeed {
       donations: donations ?? [],
       totals: totals ?? null,
       incentives: incentives ?? [],
+      // `usePolledQuery` returns `null` until the first response
+      // resolves, then the array. Surfacing that distinction lets
+      // the reach detector skip its initial-snapshot seed until the
+      // collection has ACTUALLY loaded (rather than racing some
+      // other poll).
+      incentivesLoaded: incentives !== null,
       milestones: milestones ?? [],
+      milestonesLoaded: milestones !== null,
       theme: theme ?? null,
       phase: derivePlaythroughPhase(cp ?? null, sched),
       now,

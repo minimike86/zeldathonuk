@@ -170,6 +170,16 @@ class RunnerAdmin(admin.ModelAdmin):
 class EventAdmin(admin.ModelAdmin):
     list_display = ['name', 'start_time', 'is_active', 'currency_symbol']
     list_filter = ['is_active']
+    # Required so other admins (CharityAdmin / EventCharityAdmin) can
+    # reference Event via autocomplete_fields.
+    search_fields = ['name']
+
+    def get_inlines(self, request, obj):  # noqa: ANN001
+        # Resolved at request time. `EventCharityInline` is defined
+        # further down this module; by the time the admin renders a
+        # page, every class body in the module has executed and the
+        # name is reachable via module globals.
+        return [EventCharityInline]
 
 
 @admin.register(models.ScheduleEntry)
@@ -426,3 +436,101 @@ class ChestAnnouncerSettingsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None) -> bool:  # noqa: ANN001
         return False
+
+
+# ── Charities ────────────────────────────────────────────────────────────
+
+
+class CharityWebsiteInline(admin.TabularInline):
+    model = models.CharityWebsite
+    extra = 1
+    fields = ['label', 'url', 'order']
+
+
+class CharitySocialLinkInline(admin.TabularInline):
+    model = models.CharitySocialLink
+    extra = 0
+    fields = ['platform', 'url', 'handle', 'order']
+
+
+class CharityVideoInline(admin.TabularInline):
+    model = models.CharityVideo
+    extra = 0
+    fields = ['title', 'url', 'thumbnail_url', 'order']
+
+
+class CharityImageInline(admin.TabularInline):
+    model = models.CharityImage
+    extra = 0
+    fields = ['image_url', 'alt_text', 'caption', 'order']
+
+
+class CharityImpactTierInline(admin.TabularInline):
+    model = models.CharityImpactTier
+    extra = 1
+    fields = ['amount', 'currency', 'image_url', 'alt_text',
+              'description', 'description_html', 'order']
+
+
+class EventCharityInline(admin.TabularInline):
+    """Surfaced both ways: on the Charity page (see EventCharityInline
+    in EventAdmin below) and on the Event page so curators can attach
+    beneficiaries from whichever side feels natural."""
+    model = models.EventCharity
+    extra = 0
+    autocomplete_fields = ['charity', 'event']
+    fields = ['event', 'charity', 'is_primary', 'order']
+
+
+@admin.register(models.Charity)
+class CharityAdmin(admin.ModelAdmin):
+    list_display = ['name', 'slug', 'short_name', 'is_active', 'order',
+                    'charity_number']
+    list_filter = ['is_active']
+    search_fields = ['name', 'short_name', 'slug', 'charity_number',
+                     'mission_statement']
+    prepopulated_fields = {'slug': ('name',)}
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['order', 'name']
+    inlines = [
+        CharityImpactTierInline,
+        CharityWebsiteInline,
+        CharitySocialLinkInline,
+        CharityVideoInline,
+        CharityImageInline,
+        EventCharityInline,
+    ]
+    fieldsets = (
+        ('Identity', {
+            'fields': ('name', 'slug', 'short_name', 'charity_number',
+                       'is_active', 'order'),
+        }),
+        ('About', {
+            'fields': ('mission_statement',),
+        }),
+        ('Branding', {
+            'fields': ('logo_url', 'logo_thumbnail_url', 'banner_url'),
+        }),
+        ('Web presence', {
+            'fields': ('primary_website_url', 'supported_platforms'),
+        }),
+        ('Call to action — "how can the charity help you?"', {
+            'fields': ('help_cta_headline', 'help_cta_body', 'help_cta_url'),
+        }),
+        ('Call to action — "make a donation"', {
+            'fields': ('donate_cta_headline', 'donate_cta_body',
+                       'donate_cta_url'),
+        }),
+        ('Meta', {
+            'fields': ('created_at', 'updated_at'),
+        }),
+    )
+
+
+@admin.register(models.EventCharity)
+class EventCharityAdmin(admin.ModelAdmin):
+    list_display = ['event', 'charity', 'is_primary', 'order', 'created_at']
+    list_filter = ['is_primary', 'event']
+    search_fields = ['event__name', 'charity__name', 'charity__slug']
+    autocomplete_fields = ['event', 'charity']
+    readonly_fields = ['created_at']

@@ -19,10 +19,23 @@ router.register('external-events', views.ExternalEventViewSet)
 router.register('incentives', views.IncentiveViewSet)
 router.register('milestones', views.MilestoneViewSet)
 router.register('charity-slides', views.CharitySlideViewSet)
+router.register('charities', views.CharityViewSet)
+router.register('charity-websites', views.CharityWebsiteViewSet)
+router.register('charity-social-links', views.CharitySocialLinkViewSet)
+router.register('charity-videos', views.CharityVideoViewSet)
+router.register('charity-images', views.CharityImageViewSet)
+router.register('charity-impact-tiers', views.CharityImpactTierViewSet)
+router.register('event-charities', views.EventCharityViewSet)
 router.register(
     'chest-announcer/sound-triggers',
     views.ChestAnnouncerSoundTriggerViewSet,
     basename='chest-announcer-sound-trigger',
+)
+router.register('sound-assets', views.SoundAssetViewSet)
+router.register(
+    'schedule-entry-sound-triggers',
+    views.ScheduleEntrySoundTriggerViewSet,
+    basename='schedule-entry-sound-trigger',
 )
 
 urlpatterns = [

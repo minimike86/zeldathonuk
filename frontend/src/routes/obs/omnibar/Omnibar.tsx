@@ -120,6 +120,12 @@ function OmnibarInner() {
   // / StrictMode can interfere with animation lifecycle on long-lived
   // pseudo-elements.
   const [celebrateNonce, setCelebrateNonce] = useState(0);
+  // Extra hold in ms applied to the celebration banner's exit timings
+  // (see omnibar.css `--ob-celebrate-hold-ms`). Used by schedule-
+  // entry-sound overrides that configure a longer Duration than the
+  // default 6.2s celebration choreography. Milestone / incentive
+  // celebrations leave this at 0.
+  const [celebrateHoldMs, setCelebrateHoldMs] = useState(0);
 
   const emit = useBusEmit();
 
@@ -219,6 +225,7 @@ function OmnibarInner() {
       kind: 'milestone-reached',
       payload: { milestone: e.milestone },
     };
+    setCelebrateHoldMs(0); // milestones use the default 6.2s choreography
     dispatch({ type: 'CELEBRATE', reason });
     setCelebrateNonce((n) => n + 1);
     // Optional fanfare audio per milestone — fire-and-forget; failure
@@ -236,15 +243,62 @@ function OmnibarInner() {
       kind: 'incentive-unlocked',
       payload: { incentive: e.incentive },
     };
+    setCelebrateHoldMs(0); // default choreography
     dispatch({ type: 'CELEBRATE', reason });
     setCelebrateNonce((n) => n + 1);
     window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 6200);
   });
 
-  // Override stream → urgent mode. The highest-priority active override
+  // Override stream → urgent mode (or celebration, for the special
+  // `schedule-entry-sound` kind). The highest-priority active override
   // drives the FSM; expiry returns it to normal.
   useBusSubscription('override-arrived', (e) => {
-    dispatch({ type: 'OVERRIDE_ARRIVED', override: e.override });
+    const ov = e.override;
+    if (ov.kind === 'schedule-entry-sound') {
+      // Schedule-entry sound triggers take their own branch: ALWAYS
+      // play the audio; conditionally surface the celebration banner.
+      // They do NOT enter `urgent` mode so the rotation lane keeps
+      // running underneath an audio-only cue.
+      const payload = (ov.payload ?? {}) as {
+        sound_url?: string;
+        volume?: number;
+        tag?: string;
+        message?: string;
+        show_banner?: boolean;
+        duration_seconds?: number;
+      };
+      if (payload.sound_url) {
+        const audio = new Audio(payload.sound_url);
+        audio.volume = typeof payload.volume === 'number' ? payload.volume : 0.85;
+        audio.play().catch(() => {});
+      }
+      if (payload.show_banner !== false) {
+        const reason: CelebrationReason = {
+          kind: 'schedule-entry-sound',
+          payload: payload as Record<string, unknown>,
+        };
+        // Configured trigger duration in ms. Prefer the payload value
+        // (server-authoritative); fall back to expires_at - now if the
+        // backend didn't include it. Floor at the default 6200ms
+        // celebration choreography length — anything longer is
+        // applied to the banner as an "extra hold" via the
+        // --ob-celebrate-hold-ms CSS var, which pushes the exit
+        // animations back in lockstep.
+        const desiredMs =
+          typeof payload.duration_seconds === 'number'
+            ? payload.duration_seconds * 1000
+            : new Date(ov.expires_at).getTime() - Date.now();
+        const CELEBRATION_BASE_MS = 6200;
+        const holdMs = Math.max(CELEBRATION_BASE_MS, Math.min(120_000, desiredMs));
+        const extraHoldMs = holdMs - CELEBRATION_BASE_MS;
+        setCelebrateHoldMs(extraHoldMs);
+        dispatch({ type: 'CELEBRATE', reason });
+        setCelebrateNonce((n) => n + 1);
+        window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), holdMs);
+      }
+      return;
+    }
+    dispatch({ type: 'OVERRIDE_ARRIVED', override: ov });
   });
   useBusSubscription('override-expired', () => {
     dispatch({ type: 'OVERRIDE_EXPIRED' });
@@ -261,41 +315,70 @@ function OmnibarInner() {
   // future re-reach can fanfare again. Without this the same
   // incentive can only be celebrated once per browser-source lifetime.
   //
+  // First-load suppression: on a hard reload an already-reached
+  // milestone / incentive should NOT re-celebrate. Each collection
+  // gets its own "have I seen the first poll's response yet" ref;
+  // until that flips, we seed `reachedIdsRef` from the snapshot
+  // without emitting. Per-collection (not a shared `donationsInitialised`
+  // flag) so the milestones poll resolving slightly later than donations
+  // can't sneak a stale-reached fanfare through.
+  //
   // Milestones use negative keys in the same set so their ids can't
   // collide with incentive ids.
   const reachedIdsRef = useRef<Set<number>>(new Set());
+  const incentivesInitialisedRef = useRef(false);
+  const milestonesInitialisedRef = useRef(false);
   useEffect(() => {
-    for (const i of feed.incentives) {
-      if (i.is_reached) {
-        if (!reachedIdsRef.current.has(i.id)) {
-          reachedIdsRef.current.add(i.id);
-          // Skip the first pass — we don't want to fanfare incentives
-          // that were already reached before the omnibar mounted.
-          if (donationsInitialisedRef.current) {
-            emit({ kind: 'incentive-unlocked', incentive: i });
+    if (feed.incentivesLoaded) {
+      if (!incentivesInitialisedRef.current) {
+        // Seed from the initial snapshot — anything reached at this
+        // moment was already reached before the omnibar mounted, so
+        // it shouldn't fanfare.
+        for (const i of feed.incentives) {
+          if (i.is_reached) reachedIdsRef.current.add(i.id);
+        }
+        incentivesInitialisedRef.current = true;
+      } else {
+        for (const i of feed.incentives) {
+          if (i.is_reached) {
+            if (!reachedIdsRef.current.has(i.id)) {
+              reachedIdsRef.current.add(i.id);
+              emit({ kind: 'incentive-unlocked', incentive: i });
+            }
+          } else {
+            // Not reached (possibly post-reset) — clear any prior mark
+            // so the next reach fires the celebration.
+            reachedIdsRef.current.delete(i.id);
           }
         }
-      } else {
-        // Not reached (possibly post-reset) — clear any prior mark so
-        // the next reach fires the celebration.
-        reachedIdsRef.current.delete(i.id);
       }
     }
-    // Same for milestones (negative keys so they can't collide with
-    // incentive ids in the shared set).
-    for (const m of feed.milestones) {
-      if (m.is_reached) {
-        if (!reachedIdsRef.current.has(-m.id)) {
-          reachedIdsRef.current.add(-m.id);
-          if (donationsInitialisedRef.current) {
-            emit({ kind: 'milestone-reached', milestone: m });
+    if (feed.milestonesLoaded) {
+      if (!milestonesInitialisedRef.current) {
+        for (const m of feed.milestones) {
+          if (m.is_reached) reachedIdsRef.current.add(-m.id);
+        }
+        milestonesInitialisedRef.current = true;
+      } else {
+        for (const m of feed.milestones) {
+          if (m.is_reached) {
+            if (!reachedIdsRef.current.has(-m.id)) {
+              reachedIdsRef.current.add(-m.id);
+              emit({ kind: 'milestone-reached', milestone: m });
+            }
+          } else {
+            reachedIdsRef.current.delete(-m.id);
           }
         }
-      } else {
-        reachedIdsRef.current.delete(-m.id);
       }
     }
-  }, [feed.incentives, feed.milestones, emit]);
+  }, [
+    feed.incentives,
+    feed.milestones,
+    feed.incentivesLoaded,
+    feed.milestonesLoaded,
+    emit,
+  ]);
 
   const isUrgent = omnibarState.kind === 'urgent';
   const isCelebrating = omnibarState.kind === 'celebrating';
@@ -424,6 +507,15 @@ function OmnibarInner() {
           <div
             key={`celebrate-${celebrateNonce}`}
             className="ob-fullbar ob-fullbar--celebrate"
+            style={{
+              // `--ob-celebrate-hold-ms` extends the celebration's
+              // exit-animation delays by this much (see omnibar.css).
+              // Schedule-entry-sound overrides set this from their
+              // configured Duration so the banner stays visible for
+              // longer than the default 6.2s choreography. 0 for
+              // milestone / incentive celebrations.
+              ['--ob-celebrate-hold-ms' as string]: `${celebrateHoldMs}ms`,
+            } as React.CSSProperties}
           >
             {/* Soft gold flash overlay — a real DOM element (rather
               * than a ::before pseudo) so its entrance animation

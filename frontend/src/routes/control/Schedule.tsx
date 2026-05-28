@@ -1,4 +1,13 @@
 import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faFloppyDisk,
+  faRotateLeft,
+  faPlay,
+  faClone,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons';
 import {
   DndContext,
   closestCenter,
@@ -21,12 +30,16 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { SoundLibrarySection } from './SoundLibrarySection';
 import type {
   Game,
   Runner,
   ScheduleEntry,
+  ScheduleEntrySoundTrigger,
   EventModel,
   SlotType,
+  SoundAsset,
+  TriggerAnchor,
 } from '@/lib/obsApi';
 import { api } from '@/lib/api';
 
@@ -42,6 +55,7 @@ const SLOT_META: Record<Exclude<SlotType, 'game'>, SlotMeta> = {
   sleep: { label: 'Sleep break', icon: '💤', defaultMinutes: 480 },
   break: { label: 'Break', icon: '☕', defaultMinutes: 15 },
   end: { label: 'Stream end', icon: '🏁', defaultMinutes: 15 },
+  other: { label: 'Other', icon: '⭐', defaultMinutes: 0 },
 };
 
 const slotTypeLabel = (t: SlotType): string =>
@@ -544,6 +558,14 @@ export function ScheduleControl() {
           </button>
         )}
       </div>
+
+      <div className="mt-4">
+        {/* Same shared component used by /control/omnibar — edits
+          * here propagate to the global library, so triggers wired
+          * from the entry editor above pick up renamed sounds on
+          * the next poll. */}
+        <SoundLibrarySection />
+      </div>
     </div>
   );
 }
@@ -1007,7 +1029,7 @@ function EntryForm({
     );
   };
 
-  const slotTypes: SlotType[] = ['game', 'start', 'meal', 'sleep', 'break', 'end'];
+  const slotTypes: SlotType[] = ['game', 'start', 'meal', 'sleep', 'break', 'end', 'other'];
   const breakDefault = !isGame ? SLOT_META[slotType].defaultMinutes : 0;
 
   return (
@@ -1205,7 +1227,7 @@ function EntryForm({
             </label>
             <input
               type="number"
-              min={1}
+              min={0}
               className="form-control"
               value={plannedMinutes}
               onChange={(e) => setPlannedMinutes(e.target.value)}
@@ -1290,7 +1312,479 @@ function EntryForm({
         </button>
       </div>
       {err && <div className="text-danger mt-2">{err}</div>}
+
+      {/* Sound triggers panel — edit-only. Lets the operator wire
+        * one-shot audio cues to this entry's start / end ETA without
+        * leaving the schedule editor. The same list is also visible
+        * from /control/omnibar grouped across all entries. */}
+      {isEdit && entry && <EntrySoundTriggers entry={entry} />}
     </form>
+  );
+}
+
+// ── Sound triggers for a single schedule entry ──────────────────────────
+//
+// Embedded at the bottom of the EntryForm when editing an existing
+// entry. Renders the entry's existing triggers, lets the operator add
+// new ones (picking a sound from the global library), and exposes the
+// same per-row controls as /control/omnibar's flat trigger list. The
+// shared editor live in two places by design — the schedule view is
+// the natural place to think "this break needs three warning bells",
+// while /control/omnibar is where you scan all triggers across the
+// event at once. Both write to the same `/api/schedule-entry-sound-
+// triggers/` endpoint so state stays in sync.
+
+const ANCHOR_OPTIONS: { value: TriggerAnchor; label: string }[] = [
+  { value: 'start', label: 'Entry start' },
+  { value: 'end',   label: 'Entry end' },
+];
+
+function EntrySoundTriggers({ entry }: { entry: ScheduleEntry }) {
+  const { data: triggers } = usePolledQuery(
+    () => obsApi.scheduleEntrySoundTriggers({ scheduleEntryId: entry.id }),
+    3000,
+    [entry.id],
+  );
+  const { data: assets } = usePolledQuery(obsApi.soundAssets, 10_000);
+  const [busy, setBusy] = useState(false);
+  const [draftSoundId, setDraftSoundId] = useState<number | ''>('');
+
+  const sounds = assets ?? [];
+  const list = (triggers ?? [])
+    .slice()
+    .sort((a, b) => {
+      if (a.anchor !== b.anchor) return a.anchor === 'start' ? -1 : 1;
+      return a.offset_seconds - b.offset_seconds;
+    });
+
+  const add = async () => {
+    if (!draftSoundId) return;
+    setBusy(true);
+    try {
+      await obsApi.createScheduleEntrySoundTrigger({
+        schedule_entry: entry.id,
+        sound: Number(draftSoundId),
+        anchor: 'start',
+        offset_seconds: 0,
+        message: '',
+        priority: 5,
+        duration_seconds: 6,
+        show_banner: true,
+        is_active: true,
+      });
+      setDraftSoundId('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+      <header className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+        <strong>Sound triggers</strong>
+        <small className="text-white-50">
+          Anchor + signed offset (s) relative to this entry's start / end ETA.
+          Manage the sound library in <a className="text-warning" href="/control/omnibar">/control/omnibar</a>.
+        </small>
+      </header>
+
+      {sounds.length === 0 ? (
+        <p className="text-warning small m-0">
+          No sound assets yet — add some in{' '}
+          <a className="text-warning" href="/control/omnibar">/control/omnibar</a>{' '}
+          first, then return here to wire them up.
+        </p>
+      ) : (
+        <>
+          <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <label className="d-flex flex-column">
+              <small className="text-white-50">Add trigger — sound</small>
+              <select
+                disabled={busy}
+                value={draftSoundId}
+                onChange={(e) => setDraftSoundId(e.target.value ? Number(e.target.value) : '')}
+                style={{ minWidth: 200 }}
+              >
+                <option value="">Pick a sound…</option>
+                {sounds.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn btn-sm btn-bloodmoon"
+              disabled={busy || !draftSoundId}
+              onClick={add}
+            >
+              Add trigger
+            </button>
+          </div>
+
+          {list.length === 0 ? (
+            <p className="text-white-50 small mt-2 mb-0">No triggers on this entry yet.</p>
+          ) : (
+            // Fitted table: with 12 columns + icon-only action cluster
+            // it fits the container width without horizontal scroll.
+            <div className="mt-2">
+              <table
+                className="control-table trigger-table"
+                style={{ fontSize: '0.8em', width: '100%', tableLayout: 'fixed' }}
+              >
+                <colgroup>
+                  <col style={{ width: 84 }} />
+                  <col style={{ width: 64 }} />
+                  <col style={{ width: 130 }} />
+                  <col style={{ width: 56 }} />
+                  <col style={{ width: 130 }} />
+                  <col />
+                  <col />
+                  <col style={{ width: 52 }} />
+                  <col style={{ width: 52 }} />
+                  <col style={{ width: 48 }} />
+                  <col style={{ width: 70 }} />
+                  <col style={{ width: 162 }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Anchor</th>
+                    <th title="Offset in seconds — signed">Off (s)</th>
+                    <th>Sound</th>
+                    <th title="Show banner">Bnr</th>
+                    <th>Tag</th>
+                    <th>Message</th>
+                    <th>Subhead</th>
+                    <th title="Priority">Pri</th>
+                    <th title="Duration in seconds">Dur</th>
+                    <th title="Active">On</th>
+                    <th>Fired</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((t) => (
+                    <EntryTriggerRow key={t.id} trigger={t} sounds={sounds} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// Editable subset of a trigger row — every field the operator can
+// stage locally before hitting Save. `last_fired_at` is read-only,
+// managed by the SSE evaluator on the backend.
+interface TriggerDraft {
+  anchor: TriggerAnchor;
+  sound: number;
+  offset_seconds: string;
+  show_banner: boolean;
+  tag: string;
+  message: string;
+  subhead: string;
+  priority: string;
+  duration_seconds: string;
+  is_active: boolean;
+}
+
+function draftFromTrigger(t: ScheduleEntrySoundTrigger): TriggerDraft {
+  return {
+    anchor: t.anchor,
+    sound: t.sound,
+    offset_seconds: String(t.offset_seconds),
+    show_banner: t.show_banner,
+    tag: t.tag,
+    message: t.message,
+    subhead: t.subhead,
+    priority: String(t.priority),
+    duration_seconds: String(t.duration_seconds),
+    is_active: t.is_active,
+  };
+}
+
+function EntryTriggerRow({
+  trigger,
+  sounds,
+}: {
+  trigger: ScheduleEntrySoundTrigger;
+  sounds: SoundAsset[];
+}) {
+  const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState<TriggerDraft>(() => draftFromTrigger(trigger));
+  const [dirty, setDirty] = useState(false);
+
+  // Re-seed from the canonical trigger on every poll — but only when
+  // the row is CLEAN. Pending edits aren't wiped by the 3s background
+  // refresh.
+  useEffect(() => {
+    if (dirty) return;
+    setDraft(draftFromTrigger(trigger));
+  }, [trigger, dirty]);
+
+  const patch = <K extends keyof TriggerDraft>(key: K, value: TriggerDraft[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+    setDirty(true);
+  };
+
+  const clampInt = (s: string, lo: number, hi: number, fallback: number) => {
+    const n = Number(s);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(lo, Math.min(hi, Math.round(n)));
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await obsApi.updateScheduleEntrySoundTrigger(trigger.id, {
+        anchor: draft.anchor,
+        sound: draft.sound,
+        offset_seconds: clampInt(draft.offset_seconds, -3600, 3600, trigger.offset_seconds),
+        show_banner: draft.show_banner,
+        tag: draft.tag,
+        message: draft.message,
+        subhead: draft.subhead,
+        priority: clampInt(draft.priority, 0, 100, trigger.priority),
+        duration_seconds: clampInt(draft.duration_seconds, 1, 120, trigger.duration_seconds),
+        is_active: draft.is_active,
+      });
+      setDirty(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = () => {
+    setDraft(draftFromTrigger(trigger));
+    setDirty(false);
+  };
+
+  const remove = async () => {
+    if (!confirm('Delete this trigger?')) return;
+    setBusy(true);
+    try {
+      await obsApi.deleteScheduleEntrySoundTrigger(trigger.id);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const duplicate = async () => {
+    setBusy(true);
+    try {
+      // Clone every config field from the canonical row (NOT the
+      // dirty draft — duplicating an unsaved row would be
+      // confusing). `last_fired_at` is intentionally not copied so
+      // the new row starts eligible to fire.
+      await obsApi.createScheduleEntrySoundTrigger({
+        schedule_entry: trigger.schedule_entry,
+        sound: trigger.sound,
+        anchor: trigger.anchor,
+        offset_seconds: trigger.offset_seconds,
+        tag: trigger.tag,
+        message: trigger.message,
+        priority: trigger.priority,
+        duration_seconds: trigger.duration_seconds,
+        show_banner: trigger.show_banner,
+        is_active: trigger.is_active,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const test = () => {
+    // Audition the currently-selected sound (use the draft so a
+    // pending sound swap is reflected before the operator saves).
+    const asset = sounds.find((s) => s.id === draft.sound);
+    if (!asset?.url) return;
+    try {
+      const audio = new Audio(asset.url);
+      audio.volume = Math.max(0, Math.min(1, asset.volume));
+      audio.play().catch(() => {});
+    } catch { /* ignore */ }
+  };
+
+  // Visual dim when show_banner is off (Message / Priority /
+  // Duration are still editable but no longer affect the live show).
+  const dimWhenSilent = !draft.show_banner ? { opacity: 0.55 as const } : undefined;
+  // Subtle gold tint on dirty rows so the operator can see at a
+  // glance which rows have unsaved edits.
+  const rowStyle = dirty ? { background: 'rgba(255, 210, 58, 0.06)' } : undefined;
+  const inputFill: CSSProperties = { width: '100%', boxSizing: 'border-box', minWidth: 0 };
+  return (
+    <tr style={rowStyle}>
+      <td>
+        <select
+          disabled={busy}
+          value={draft.anchor}
+          onChange={(e) => patch('anchor', e.target.value as TriggerAnchor)}
+          style={inputFill}
+        >
+          {ANCHOR_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <input
+          type="number"
+          disabled={busy}
+          min={-3600}
+          max={3600}
+          step={5}
+          value={draft.offset_seconds}
+          onChange={(e) => patch('offset_seconds', e.target.value)}
+          style={inputFill}
+        />
+      </td>
+      <td>
+        <select
+          disabled={busy}
+          value={draft.sound}
+          onChange={(e) => patch('sound', Number(e.target.value))}
+          style={inputFill}
+        >
+          {sounds.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </td>
+      <td style={{ textAlign: 'center' }}>
+        <input
+          type="checkbox"
+          disabled={busy}
+          checked={draft.show_banner}
+          onChange={(e) => patch('show_banner', e.target.checked)}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.tag}
+          onChange={(e) => patch('tag', e.target.value)}
+          placeholder="NOW PLAYING"
+          maxLength={64}
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.message}
+          onChange={(e) => patch('message', e.target.value)}
+          placeholder="Banner headline"
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.subhead}
+          onChange={(e) => patch('subhead', e.target.value)}
+          placeholder="Optional subline"
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="number"
+          disabled={busy}
+          min={0}
+          max={100}
+          step={1}
+          value={draft.priority}
+          onChange={(e) => patch('priority', e.target.value)}
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="number"
+          disabled={busy}
+          min={1}
+          max={120}
+          step={1}
+          value={draft.duration_seconds}
+          onChange={(e) => patch('duration_seconds', e.target.value)}
+          style={inputFill}
+        />
+      </td>
+      <td style={{ textAlign: 'center' }}>
+        <input
+          type="checkbox"
+          disabled={busy}
+          checked={draft.is_active}
+          onChange={(e) => patch('is_active', e.target.checked)}
+        />
+      </td>
+      <td className="text-white-50" style={{ fontSize: '0.85em' }}>
+        {trigger.last_fired_at
+          ? new Date(trigger.last_fired_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          : '—'}
+      </td>
+      <td style={{ whiteSpace: 'nowrap', padding: '0.25rem' }}>
+        {/* Icon-only cluster — all five buttons stay on one line and
+          * the cell fits inside the trigger-table's 162px action column
+          * without forcing a horizontal scroll. */}
+        <div style={{ display: 'inline-flex', gap: '0.2rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon trigger-icon-btn"
+            disabled={!dirty || busy}
+            onClick={save}
+            title={dirty ? 'Save pending edits' : 'No changes'}
+            aria-label="Save"
+          >
+            <FontAwesomeIcon icon={faFloppyDisk} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light trigger-icon-btn"
+            disabled={!dirty || busy}
+            onClick={reset}
+            title="Discard pending edits"
+            aria-label="Reset"
+          >
+            <FontAwesomeIcon icon={faRotateLeft} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light trigger-icon-btn"
+            disabled={busy}
+            onClick={test}
+            title="Play the currently-selected sound locally"
+            aria-label="Test sound"
+          >
+            <FontAwesomeIcon icon={faPlay} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light trigger-icon-btn"
+            disabled={busy}
+            onClick={duplicate}
+            title="Duplicate trigger on the same entry — handy for -30/-20/-10s bells"
+            aria-label="Duplicate"
+          >
+            <FontAwesomeIcon icon={faClone} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger trigger-icon-btn"
+            disabled={busy}
+            onClick={remove}
+            title="Delete trigger"
+            aria-label="Delete"
+          >
+            <FontAwesomeIcon icon={faTrash} />
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 

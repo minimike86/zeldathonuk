@@ -386,6 +386,7 @@ export function AudioCountdown() {
     sleep: { label: 'Sleep break', icon: '💤' },
     break: { label: 'Break', icon: '☕' },
     end: { label: 'Stream end', icon: '🏁' },
+    other: { label: 'Other', icon: '⭐' },
   };
 
   // Theme from the pinned track first (arrives via 1.5s poll) and fall back

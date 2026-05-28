@@ -89,26 +89,53 @@ export function Navbar() {
         }
         onClick={() => navigate('/')}
       >
-        <img
-          src="/assets/img/1gxaef91xpst0u.png"
-          className="position-absolute"
+        {/* Logo + flag are wrapped in their own stacking context
+          * (`isolation: isolate`) so the flag's `z-index: -1` only
+          * ducks behind the logo, not behind the navbar itself.
+          * Anchoring to this wrapper means the flag tracks the logo's
+          * actual rendered right edge — no more hardcoded `left: 115`
+          * that broke when the 2026 wordmark grew wider than the
+          * previous year's mark. */}
+        <span
           style={{
-            maxWidth: 32,
-            maxHeight: 32,
-            top: 8,
-            left: 115,
-            filter: 'opacity(0.75)',
-            transform: 'rotate(10deg)',
+            position: 'relative',
+            display: 'inline-block',
+            isolation: 'isolate',
+            lineHeight: 0,
           }}
-          title="GB Flag"
-          alt="GB Flag"
-        />
-        <img
-          src={logoSrc}
-          style={{ minWidth: 140, maxHeight: '2em', filter: 'opacity(0.95)' }}
-          title="ZeldathonUK"
-          alt="ZeldathonUK"
-        />
+        >
+          <img
+            src={logoSrc}
+            style={{
+              minWidth: 140,
+              maxHeight: '2em',
+              filter: 'opacity(0.95)',
+              position: 'relative',
+              zIndex: 1,
+            }}
+            title="ZeldathonUK"
+            alt="ZeldathonUK"
+          />
+          {/* `right: -10` pushes ~22px of the 32px flag behind the
+            * logo's right edge with 10px poking out, matching the
+            * original visual when the legacy logo was 140px wide. */}
+          <img
+            src="/assets/img/brand/1gxaef91xpst0u.png"
+            style={{
+              position: 'absolute',
+              top: -6,
+              right: -10,
+              width: 32,
+              height: 32,
+              filter: 'opacity(0.75)',
+              transform: 'rotate(10deg)',
+              zIndex: -1,
+              pointerEvents: 'none',
+            }}
+            title="GB Flag"
+            alt="GB Flag"
+          />
+        </span>
       </NavLink>
 
       <button

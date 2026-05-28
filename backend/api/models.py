@@ -135,6 +135,19 @@ class Event(models.Model):
                   'Empty dict falls back to the defaults in '
                   'frontend/src/routes/obs/omnibar/hooks/useTransitionsConfig.ts.',
     )
+    # M2M to Charity via the EventCharity through-table (defined
+    # further down). The through-table carries the per-event metadata
+    # (is_primary, order). Use `event.event_charities.all()` when you
+    # need the ordering / primary flag; this field is just the bare
+    # relationship for the M2M conveniences (`event.charities.all()`).
+    charities = models.ManyToManyField(
+        'Charity',
+        through='EventCharity',
+        related_name='events',
+        blank=True,
+        help_text='Charities benefitting from this event. Use the '
+                  'EventCharity rows directly to set is_primary / order.',
+    )
 
     class Meta:
         ordering = ['-start_time']
@@ -161,6 +174,7 @@ class ScheduleEntry(models.Model):
     SLOT_SLEEP = 'sleep'
     SLOT_BREAK = 'break'
     SLOT_END = 'end'
+    SLOT_OTHER = 'other'
     SLOT_TYPE_CHOICES = [
         (SLOT_GAME, 'Game'),
         (SLOT_START, 'Stream start'),
@@ -168,6 +182,7 @@ class ScheduleEntry(models.Model):
         (SLOT_SLEEP, 'Sleep break'),
         (SLOT_BREAK, 'Break'),
         (SLOT_END, 'Stream end'),
+        (SLOT_OTHER, 'Other'),
     ]
     # Default minutes per break type when the user doesn't override.
     BREAK_DEFAULT_MINUTES = {
@@ -176,6 +191,7 @@ class ScheduleEntry(models.Model):
         SLOT_SLEEP: 480,
         SLOT_BREAK: 15,
         SLOT_END: 15,
+        SLOT_OTHER: 0,
     }
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='schedule')
@@ -1457,3 +1473,584 @@ class ChestAnnouncerSettings(models.Model):
     def get(cls) -> 'ChestAnnouncerSettings':
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+# ── Schedule-entry sound triggers ───────────────────────────────────────
+#
+# A small library of reusable audio assets that can be wired to schedule
+# entries at configurable timing offsets. Each trigger fires once per
+# event run (cleared by an operator reset action) and creates an
+# OmnibarOverride which the omnibar picks up via the existing SSE stream.
+# The override either plays the sound silently or pairs it with a
+# celebration-banner takeover, depending on `show_banner`. See:
+#   - backend/api/sse.py for the evaluator that fires due triggers
+#   - frontend/src/routes/obs/omnibar/Omnibar.tsx for playback wiring
+
+
+class SoundAsset(models.Model):
+    """Reusable audio asset. Referenced by many trigger rows so the
+    same `MM_ClockTower_Bell.wav` can be wired to several entries
+    (or several offsets on the same entry) without duplicating the URL.
+    """
+
+    name = models.CharField(
+        max_length=120,
+        help_text='Operator-facing label (e.g. "MM Clock Tower Bell").',
+    )
+    url = models.CharField(
+        max_length=500,
+        help_text='Absolute URL or site-relative path to the audio file.',
+    )
+    volume = models.FloatField(
+        default=0.85,
+        help_text='Playback volume, 0.0–1.0. Applied to every trigger '
+                  'using this asset.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class TriggerAnchor(models.TextChoices):
+    START = 'start', 'Entry start'
+    END = 'end', 'Entry end'
+
+
+class ScheduleEntrySoundTrigger(models.Model):
+    """Schedules a SoundAsset to play at a specific moment relative to
+    a ScheduleEntry's start or end. The fire time is computed from the
+    entry's ETA (event start + cumulative planned minutes), so it
+    drifts with the schedule when prior games run long/short.
+
+    Multiple rows per entry are the norm — three -30/-20/-10s "warning"
+    bells plus one 0s "go!" sting on the same break would be four rows
+    all pointing at the same SoundAsset(s) with different
+    `offset_seconds`.
+    """
+
+    schedule_entry = models.ForeignKey(
+        ScheduleEntry,
+        related_name='sound_triggers',
+        on_delete=models.CASCADE,
+    )
+    sound = models.ForeignKey(
+        SoundAsset,
+        on_delete=models.PROTECT,
+        help_text='Which sound from the library to play.',
+    )
+    anchor = models.CharField(
+        max_length=8,
+        choices=TriggerAnchor.choices,
+        default=TriggerAnchor.START,
+        help_text='Whether `offset_seconds` counts from the entry\'s '
+                  'start or end ETA.',
+    )
+    offset_seconds = models.IntegerField(
+        default=0,
+        help_text='Signed seconds offset from the anchor. -30 fires 30s '
+                  'before the anchor, 0 fires at it, +120 fires two '
+                  'minutes after.',
+    )
+    tag = models.CharField(
+        max_length=64,
+        blank=True,
+        default='',
+        help_text='Banner tag pill label (the gold chip on the left). '
+                  'Blank falls back to "NOW PLAYING" on the omnibar. '
+                  'Used to label the cue — e.g. "BREAK STARTING", '
+                  '"BIG MOMENT", etc.',
+    )
+    message = models.CharField(
+        max_length=240,
+        blank=True,
+        help_text='Banner headline shown when `show_banner` is true. '
+                  'Ignored otherwise.',
+    )
+    subhead = models.CharField(
+        max_length=240,
+        blank=True,
+        help_text='Optional smaller text shown beneath the headline on '
+                  'the celebration banner. Ignored when `show_banner` '
+                  'is false. Use for context like "Charity break · 15 min" '
+                  'under a "BREAK STARTING" headline.',
+    )
+    priority = models.SmallIntegerField(
+        default=5,
+        help_text='Priority on the created OmnibarOverride.',
+    )
+    duration_seconds = models.PositiveIntegerField(
+        default=6,
+        help_text='How long the override stays live, in seconds.',
+    )
+    show_banner = models.BooleanField(
+        default=True,
+        help_text='When false the omnibar plays the sound but skips '
+                  'the celebration banner takeover — useful for '
+                  'ambient cues like warning bells. The override row '
+                  'is still created for the audit trail.',
+    )
+    is_active = models.BooleanField(default=True)
+    last_fired_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Stamped by the SSE evaluator when this trigger '
+                  'fires. Empty = eligible to fire. Cleared by the '
+                  '/api/schedule-entry-sound-triggers/reset/ action '
+                  'so a trigger can be re-armed for a re-run.',
+    )
+
+    class Meta:
+        ordering = ['schedule_entry__order', 'anchor', 'offset_seconds']
+        indexes = [
+            models.Index(fields=['is_active', 'last_fired_at']),
+        ]
+
+    def __str__(self) -> str:
+        sign = '+' if self.offset_seconds >= 0 else ''
+        return (
+            f'{self.schedule_entry.display_title or self.schedule_entry_id} '
+            f'· {self.anchor}{sign}{self.offset_seconds}s · {self.sound.name}'
+        )
+
+
+# ── Charities ───────────────────────────────────────────────────────────
+#
+# A Charity is the beneficiary of one or more Events. The main row carries
+# the identity and copy (name, mission, CTAs, charity number, primary logo
+# / banner / website). Repeating data — additional websites, fundraising
+# videos, image gallery, "what does £X do?" impact tiers — lives in
+# separate related tables so they can be reordered and edited row-by-row
+# from the admin and /control without rewriting a JSON blob.
+#
+# Events link to Charity via the EventCharity through-table, which holds
+# the per-event metadata (is_primary, order) that doesn't belong on the
+# Charity itself — an org like SpecialEffect is "primary" for one event
+# and a secondary beneficiary on another.
+
+
+class SocialPlatform(models.TextChoices):
+    """Catalogue of social platforms a Charity might link to.
+
+    Closed enum so the control panel can render a recognised label /
+    icon per row. Adding a new platform requires a migration (and a
+    matching frontend label), which is intentional — the icon list
+    needs to stay in sync. `OTHER` is the escape hatch for platforms
+    we haven't catalogued yet.
+    """
+
+    TWITTER = 'twitter', 'X / Twitter'
+    FACEBOOK = 'facebook', 'Facebook'
+    INSTAGRAM = 'instagram', 'Instagram'
+    YOUTUBE = 'youtube', 'YouTube'
+    TIKTOK = 'tiktok', 'TikTok'
+    LINKEDIN = 'linkedin', 'LinkedIn'
+    BLUESKY = 'bluesky', 'Bluesky'
+    THREADS = 'threads', 'Threads'
+    MASTODON = 'mastodon', 'Mastodon'
+    TWITCH = 'twitch', 'Twitch'
+    DISCORD = 'discord', 'Discord'
+    REDDIT = 'reddit', 'Reddit'
+    PATREON = 'patreon', 'Patreon'
+    OTHER = 'other', 'Other'
+
+
+class Charity(models.Model):
+    """A charity that one or more Events fundraise for."""
+
+    slug = models.SlugField(
+        max_length=80,
+        unique=True,
+        help_text='URL-safe key (e.g. "specialeffect"). Used in API paths '
+                  'and as a stable handle when seeding events.',
+    )
+    name = models.CharField(max_length=200, unique=True)
+    short_name = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text='Compact display label for tight UI (omnibar pills, '
+                  'mobile cards). Falls back to `name` when blank.',
+    )
+    charity_number = models.CharField(
+        max_length=40,
+        blank=True,
+        help_text='Registered charity number (e.g. UK Charity Commission '
+                  'number). Free-text — different jurisdictions use '
+                  'different formats.',
+    )
+    mission_statement = models.TextField(
+        blank=True,
+        help_text='Short paragraph summarising what the charity does. '
+                  'Surfaced on the public /charity page and on the '
+                  '/donations side panel.',
+    )
+
+    # ── Branding ────────────────────────────────────────────────────
+    # CharField (not URLField) on every operator-set media URL so the
+    # admin forms accept site-relative paths (/assets/img/foo.svg)
+    # alongside absolute URLs.
+    logo_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Official charity logo — whatever aspect ratio the '
+                  'charity ships (often a wide wordmark, e.g. '
+                  'specialeffect-logo.svg). Used in the /charity page '
+                  'header and on the /donations side panel where there '
+                  'is room for a full mark. Absolute URL or '
+                  'site-relative path.',
+    )
+    logo_thumbnail_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Square (or near-square) thumbnail for compact UI — '
+                  'omnibar charity-cluster pills, control-panel table '
+                  'rows, donation cards. Falls back to `logo_url` '
+                  'rendered with `object-fit: contain` when blank, '
+                  'which can look awkward for wide wordmarks, so '
+                  'setting this is recommended for any charity whose '
+                  'main logo is not roughly square. Absolute URL or '
+                  'site-relative path.',
+    )
+    banner_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Wide hero/banner image used on the /charity page and '
+                  'in promotional content. Absolute URL or site-relative '
+                  'path.',
+    )
+
+    # ── Primary contact / web presence ─────────────────────────────
+    primary_website_url = models.URLField(
+        blank=True,
+        help_text='Main charity website. Additional sites (campaign '
+                  'microsites, GameBlast page, etc.) go in '
+                  'CharityWebsite rows.',
+    )
+
+    # ── Calls to action ────────────────────────────────────────────
+    # Two distinct CTAs surfaced in the omnibar / public page:
+    #   `help_cta_*`   — "Here's how the charity can help YOU"
+    #                    (link out to assessments, resources, support).
+    #   `donate_cta_*` — "Make a donation now" (the per-event donation
+    #                    URL still lives on DonationPage; this is the
+    #                    evergreen direct-to-charity link).
+    help_cta_headline = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Headline for the "how can the charity help you?" CTA. '
+                  'e.g. "Need help adapting your gaming setup?".',
+    )
+    help_cta_body = models.TextField(
+        blank=True,
+        help_text='Body copy under the help CTA headline.',
+    )
+    help_cta_url = models.URLField(
+        blank=True,
+        help_text='Where the help CTA button links to (assessment form, '
+                  'support page).',
+    )
+    donate_cta_headline = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Headline for the "make a donation" CTA. e.g. '
+                  '"Every penny helps disabled gamers play".',
+    )
+    donate_cta_body = models.TextField(
+        blank=True,
+        help_text='Body copy under the donate CTA headline.',
+    )
+    donate_cta_url = models.URLField(
+        blank=True,
+        help_text='Evergreen donation page for the charity (used when '
+                  'no event-scoped DonationPage applies).',
+    )
+
+    # ── Platform support ────────────────────────────────────────────
+    # JSON list of DonationPlatform.choices keys (e.g.
+    # ["justgiving", "tiltify", "twitch"]). Lets the picker UI grey
+    # out platforms the charity can't actually receive funds via,
+    # without forcing every charity to have a DonationPage seeded for
+    # every platform. Validated by the serializer against the
+    # DonationPlatform enum.
+    supported_platforms = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of DonationPlatform keys the charity supports '
+                  '(e.g. ["justgiving", "tiltify", "twitch"]). Empty '
+                  'list = no platform constraint declared.',
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Soft-delete switch. Inactive charities are hidden '
+                  'from picker UIs but kept for historical audit / past '
+                  'events.',
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text='Display order in catalogue pickers (lower = earlier).',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name_plural = 'charities'
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class CharityWebsite(models.Model):
+    """Additional website link for a Charity beyond the primary URL."""
+
+    charity = models.ForeignKey(
+        Charity, on_delete=models.CASCADE, related_name='websites'
+    )
+    label = models.CharField(
+        max_length=120,
+        help_text='Display label (e.g. "GameBlast 24", "Workshop blog").',
+    )
+    url = models.URLField()
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['charity', 'order', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.charity.name} → {self.label}'
+
+
+class CharitySocialLink(models.Model):
+    """A social-media presence for a Charity.
+
+    Discriminated by ``platform`` so the frontend can render the
+    correct icon / brand colour without having to parse the URL.
+    Multiple rows per platform are allowed (e.g. a primary X account
+    plus a campaign-specific one) — the catalogue isn't unique-per-
+    platform, just enum-typed.
+    """
+
+    charity = models.ForeignKey(
+        Charity, on_delete=models.CASCADE, related_name='social_links'
+    )
+    platform = models.CharField(
+        max_length=20,
+        choices=SocialPlatform.choices,
+        help_text='Pick from the closed catalogue. Use `Other` for '
+                  'platforms we have not enumerated yet.',
+    )
+    url = models.URLField(
+        help_text='Full URL to the profile (the display layer renders '
+                  'the icon + handle / label).',
+    )
+    handle = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text='Optional human-readable handle (e.g. "@specialeffect"). '
+                  'When blank, the display layer derives a label from the '
+                  'URL or platform name.',
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['charity', 'order', 'id']
+
+    def __str__(self) -> str:
+        label = self.handle or self.get_platform_display()
+        return f'{self.charity.name} → {label}'
+
+
+class CharityVideo(models.Model):
+    """A fundraising / awareness video link for a Charity.
+
+    Stores the watch URL (YouTube/Vimeo/etc.) plus an optional
+    thumbnail. Embed mode is decided client-side by inspecting the URL
+    so we don't have to redeploy when a new host is added.
+    """
+
+    charity = models.ForeignKey(
+        Charity, on_delete=models.CASCADE, related_name='videos'
+    )
+    title = models.CharField(max_length=200)
+    url = models.URLField(
+        help_text='Watch URL on YouTube / Vimeo / direct mp4.',
+    )
+    thumbnail_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Optional poster image. Falls back to a host-derived '
+                  'thumbnail when blank.',
+    )
+    description = models.TextField(
+        blank=True,
+        help_text='Short caption shown below the video tile.',
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['charity', 'order', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.charity.name} → {self.title}'
+
+
+class CharityImage(models.Model):
+    """One image in a charity's fundraising gallery.
+
+    Used for the /charity page mosaic and for marketing assets the
+    omnibar / pre-stream scenes can rotate through. Distinct from
+    `Charity.logo_url` / `banner_url` which are the canonical brand
+    marks.
+    """
+
+    charity = models.ForeignKey(
+        Charity, on_delete=models.CASCADE, related_name='images'
+    )
+    image_url = models.CharField(
+        max_length=500,
+        help_text='Absolute URL or site-relative path.',
+    )
+    alt_text = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text='Screen-reader alt + image fallback. Strongly '
+                  'recommended.',
+    )
+    caption = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Optional visible caption shown under the image.',
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['charity', 'order', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.charity.name} → {self.alt_text or self.image_url}'
+
+
+class CharityImpactTier(models.Model):
+    """One row of the "What could your donation do?" table.
+
+    Mirrors the existing benefitRows in /donations (£5 → Flexible
+    Fixings, £10 → Joystick Extensions, …). Stored per-charity so
+    different beneficiaries can declare their own impact ladder.
+
+    Two body fields:
+      `description`      — plain-text, always populated; used as the
+                            fallback and for screen readers.
+      `description_html` — optional rich-text override, e.g. for the
+                            £75 row that embeds an `<a>` tag to the
+                            Xbox Adaptive Controller page. The
+                            frontend renders this via
+                            dangerouslySetInnerHTML when non-empty,
+                            otherwise it renders `description`.
+    """
+
+    charity = models.ForeignKey(
+        Charity, on_delete=models.CASCADE, related_name='impact_tiers'
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text='Donation amount this tier illustrates (e.g. 10.00).',
+    )
+    currency = models.CharField(
+        max_length=3,
+        default='GBP',
+        help_text='ISO 4217 currency code. Display picks the symbol '
+                  'from a small lookup table client-side.',
+    )
+    image_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Illustrative image for the benefit. Absolute URL or '
+                  'site-relative path.',
+    )
+    alt_text = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text='Image alt + screen-reader label for the tier.',
+    )
+    description = models.TextField(
+        help_text='Plain-text benefit description. Always required so '
+                  'screen readers have something useful even when the '
+                  'HTML variant is set.',
+    )
+    description_html = models.TextField(
+        blank=True,
+        help_text='Optional HTML override used by the frontend when set. '
+                  'Lets a tier embed inline links (e.g. an `<a>` to a '
+                  'product page) without losing the plain-text fallback. '
+                  'Operator is trusted; this is rendered via '
+                  'dangerouslySetInnerHTML.',
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text='Display order in the table (lower = earlier). '
+                  'Conventionally orders by ascending amount but the '
+                  'field is independent so curators can pin a hero tier '
+                  'to the top.',
+    )
+
+    class Meta:
+        ordering = ['charity', 'order', 'amount']
+        indexes = [models.Index(fields=['charity', 'order'])]
+
+    def __str__(self) -> str:
+        return f'{self.charity.name} → {self.currency} {self.amount}'
+
+
+class EventCharity(models.Model):
+    """Through-table linking Event ↔ Charity (many-to-many).
+
+    Carries the per-event metadata that doesn't belong on either side:
+    which charity is the primary beneficiary, and the display order
+    when the event lists multiple. The Event side adds the M2M field
+    `Event.charities` with `through='EventCharity'`.
+    """
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='event_charities'
+    )
+    charity = models.ForeignKey(
+        Charity, on_delete=models.CASCADE, related_name='event_charities'
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        help_text='Promotes this charity above others on landing CTAs '
+                  'and in the omnibar charity-cluster rotation. Only '
+                  'one EventCharity per Event can be primary at a '
+                  'time; saving a row as primary demotes the others.',
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text='Display order when an event lists multiple charities '
+                  '(lower = earlier).',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+        unique_together = [('event', 'charity')]
+        verbose_name_plural = 'event ↔ charity links'
+
+    def __str__(self) -> str:
+        flag = ' ★' if self.is_primary else ''
+        return f'{self.event.name} → {self.charity.name}{flag}'
+
+    def save(self, *args, **kwargs):
+        # Only one primary beneficiary per event at a time. When this
+        # row is saved as primary, demote any other primary rows for
+        # the same event in the same transaction. Mirrors the pattern
+        # used by DonationPage.save / ThemeSettings.save.
+        super().save(*args, **kwargs)
+        if self.is_primary:
+            EventCharity.objects.filter(
+                event_id=self.event_id, is_primary=True,
+            ).exclude(pk=self.pk).update(is_primary=False)

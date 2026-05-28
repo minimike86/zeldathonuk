@@ -267,7 +267,7 @@
   );
   animation:
     ob-celebrate-flash-down 800ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both,
-    ob-celebrate-flash-up   550ms cubic-bezier(0.22, 1, 0.36, 1) 5600ms both;
+    ob-celebrate-flash-up   550ms cubic-bezier(0.22, 1, 0.36, 1) calc(5600ms + var(--ob-celebrate-hold-ms, 0ms)) both;
 }
 
 /* Banner row sits above the flash overlay. .ob-row defaults to no
@@ -303,52 +303,53 @@
   to   { opacity: 0; transform: translateY(-100%); }
 }
 
-/* Tag arrow — collapsed into ONE keyframe covering hold-offscreen →
- * slide-in → hold-at-rest → slide-out. Originally this was two
- * separate `animation` declarations (slide-in + slide-out, both with
- * `both` fill), but when two animations on the same element both use
- * `both`, the LATER one's from-state wins during the earlier one's
- * pre-delay phase. That meant slide-out's `from { translateX: 0 }`
- * was being held from t=0, parking the tag at its final position
- * immediately and the slide-in motion never visibly played.
+/* Tag arrow — split into separate slide-in + slide-out so the
+ * dwell phase between them can be extended via the
+ * `--ob-celebrate-hold-ms` CSS var (set by schedule-entry-sound
+ * overrides that want a longer visible window).
  *
- * Single animation with per-keyframe `animation-timing-function`
- * sidesteps the issue: each phase eases on its own curve, no
- * cross-animation fill-mode conflicts. opacity:1 throughout so the
- * slide reads purely as translateX motion. The tag starts one
- * brand-width + tag-width off-screen left, so the omnibar root's
- * overflow:hidden masks it completely during the pre-slide hold. */
+ * Both animations use `forwards` fill, NOT `both`. The original
+ * bug (per the dropped single-keyframe comment) was that `backwards`
+ * fill on the exit animation parked the tag at its final off-screen
+ * position from t=0, so the entrance never visibly played. With
+ * `forwards`:
+ *   - slide-in plays t=0..2400ms, then forwards-holds at translateX(0).
+ *   - slide-out has no effect during its pre-delay (no backwards
+ *     fill), so the slide-in's forwards-held translateX(0) wins.
+ *   - At t=4750ms (+extra hold) the slide-out fires; after it ends
+ *     its forwards fill holds the tag off-screen.
+ */
 .omnibar--v2 .ob-fullbar--celebrate .ob-tag {
-  animation: ob-celebrate-tag 6200ms linear both;
+  animation:
+    ob-celebrate-tag-in  2400ms linear forwards,
+    ob-celebrate-tag-out 800ms cubic-bezier(0.55, 0, 0.78, 0) calc(4750ms + var(--ob-celebrate-hold-ms, 0ms)) forwards;
 }
 
-@keyframes ob-celebrate-tag {
-  /* 0-22.5% (0-1400ms) — hold off-screen left. */
+@keyframes ob-celebrate-tag-in {
+  /* 0-58.3% (0-1400ms) — hold off-screen left. */
   0% {
     transform: translateX(calc(-100% - 220px - var(--ob-chevron)));
     opacity: 1;
     animation-timing-function: linear;
   }
-  /* 22.5-38.7% (1400-2400ms) — slide in with ease-out. */
-  22.5% {
+  58.3% {
     transform: translateX(calc(-100% - 220px - var(--ob-chevron)));
     opacity: 1;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  /* 38.7-76.6% (2400-4750ms) — held at rest while text reveals + dwell. */
-  38.7% {
+  /* 58.3-100% (1400-2400ms) — slide in with ease-out, land at 0. */
+  100% {
     transform: translateX(0);
     opacity: 1;
-    animation-timing-function: linear;
   }
-  /* 76.6-89.5% (4750-5550ms) — slide back out with ease-in. */
-  76.6% {
+}
+
+@keyframes ob-celebrate-tag-out {
+  from {
     transform: translateX(0);
     opacity: 1;
-    animation-timing-function: cubic-bezier(0.55, 0, 0.78, 0);
   }
-  /* 89.5-100% (5550-6200ms) — hold off-screen left while flash exits. */
-  89.5%, 100% {
+  to {
     transform: translateX(calc(-100% - 220px - var(--ob-chevron)));
     opacity: 1;
   }
@@ -360,7 +361,8 @@
  * the v1 feel. `both` keeps the from-state during the delay so the
  * stack is visible while WaveText + subhead reveal independently. */
 .omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-stack {
-  animation: ob-celebrate-body-wipe-out 500ms cubic-bezier(0.22, 1, 0.36, 1) 4200ms both;
+  animation: ob-celebrate-body-wipe-out 500ms cubic-bezier(0.22, 1, 0.36, 1)
+    calc(4200ms + var(--ob-celebrate-hold-ms, 0ms)) both;
 }
 
 /* Subhead wipe-fade-in — fires concurrently with WaveText so the
@@ -1498,3 +1500,33 @@
 @keyframes ob-donor-out-left  { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-100%); } }
 @keyframes ob-donor-out-right { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX( 100%); } }
 @keyframes ob-donor-out-fade  { from { opacity: 1; }                            to { opacity: 0; }                              }
+
+/* ── Donate call-to-action (Milestones panel) ────────────────────── */
+
+/* "Make a donation at zeldathon.co.uk/donate" suffix on the next-
+ * milestone headline. Slightly de-emphasised lead-in so the URL
+ * (the action) is what the viewer's eye lands on. */
+.omnibar--v2 .ob-donate-cta {
+  /* Match the rest of the omnibar's broadcast-y type (Bungee) so the
+   * lead-in feels of a piece with the milestone name + amount chips,
+   * not like a plain Open-Sans paragraph fragment dropped into the
+   * row. Slightly muted weight + colour so the URL still wins
+   * attention. */
+  font-family: var(--ob-font);
+  font-weight: 400;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.omnibar--v2 .ob-donate-cta-url {
+  font-family: var(--ob-font);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--obs-accent-bright, #ffd23a);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  padding: 0 0.15rem;
+}

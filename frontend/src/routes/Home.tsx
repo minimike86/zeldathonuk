@@ -3,10 +3,8 @@ import { Link } from 'react-router';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { WaveText } from '@/components/WaveText';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { ScheduleEntry } from '@/lib/obsApi';
+import type { EventCharityLink, ScheduleEntry } from '@/lib/obsApi';
 import './home.css';
-
-const SPECIALEFFECT_URL = 'https://www.specialeffect.org.uk/what-we-do';
 
 // Pass every plausible parent so Twitch's iframe security check passes
 // whether you're on localhost, the docker network, or the real domain.
@@ -37,6 +35,13 @@ export function Home() {
   const innerWidth = useInnerWidth();
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
   const donationPages = event?.donation_pages ?? [];
+  // Beneficiaries ordered primary-first, then by curator-set `order`.
+  // Hidden entirely when the event has no linked charities yet so the
+  // home page doesn't show a stale SpecialEffect card during seeding.
+  const benefitting = [...(event?.event_charities ?? [])].sort((a, b) => {
+    if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+    return a.order - b.order;
+  });
   const { data: currentlyPlaying } = usePolledQuery(
     obsApi.currentlyPlaying,
     5000,
@@ -229,7 +234,8 @@ export function Home() {
             </div>
           </div>
 
-          {/* Right column: Benefitting / SpecialEffect with a prominent Donate CTA. */}
+          {/* Right column: Benefitting charities (read from the active
+            * event's EventCharity links) + a prominent Donate CTA. */}
           <div
             className="col-lg-7 ps-3"
             style={{
@@ -237,38 +243,28 @@ export function Home() {
                 'var(--theme-divider-thickness, 2px) solid var(--theme-primary, var(--bs-danger))',
             }}
           >
-            <h6 className="text-bloodmoon">Benefitting</h6>
-            <div className="benefitting-card">
-              <a
-                href={SPECIALEFFECT_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="benefitting-logo"
-                title="SpecialEffect — what we do"
-              >
-                <img
-                  src="/assets/img/specialeffect-logo.svg"
-                  alt="SpecialEffect logo"
-                />
-              </a>
-              <div className="benefitting-body">
-                <p className="text-specialeffect-blurb mb-3">
-                  <strong className="text-light">SpecialEffect</strong> is transforming
-                  the lives of people with physical challenges — optimising their
-                  inclusion, enjoyment, and quality of life through accessible
-                  technology that helps them play video games to the best of their
-                  abilities.
-                </p>
-                <button
-                  className="btn btn-specialeffect"
-                  onClick={() => openExternal(SPECIALEFFECT_URL)}
-                >
-                  CAN THEY HELP YOU?
-                </button>
-              </div>
-            </div>
+            {benefitting.length > 0 && (
+              <>
+                <h6 className="text-bloodmoon">
+                  Benefitting{benefitting.length > 1 ? ` (${benefitting.length})` : ''}
+                </h6>
+                <div className="d-flex flex-column gap-3">
+                  {benefitting.map((link) => (
+                    <BenefittingCard
+                      key={link.id}
+                      link={link}
+                      showPrimaryBadge={benefitting.length > 1}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
 
-            {donationPages.length > 0 && (
+            {/* Fallback when there's an event with donation pages but
+              * no linked charities — the operator hasn't set
+              * beneficiaries yet, so attach the CTA to the column
+              * directly so the home page still has a donate path. */}
+            {benefitting.length === 0 && donationPages.length > 0 && (
               <div className="mt-4">
                 <h6 className="text-bloodmoon" style={{ fontSize: '1.35em' }}>
                   Make a donation
@@ -289,6 +285,128 @@ export function Home() {
   );
 }
 
+function BenefittingCard({
+  link,
+  showPrimaryBadge,
+}: {
+  link: EventCharityLink;
+  /** Only true when the event has more than one beneficiary attached
+   *  — a single-charity event needs no "primary" pill. */
+  showPrimaryBadge: boolean;
+}) {
+  const charity = link.charity_detail;
+  // Help CTA — prefer the charity's own "how can they help you?" link;
+  // fall back to the primary website so a charity that hasn't filled
+  // the CTA in still has somewhere to send viewers.
+  const helpUrl =
+    charity.help_cta_url?.trim() || charity.primary_website_url?.trim() || '';
+  const helpLabel = (charity.help_cta_headline?.trim()
+    || 'Can they help you?').toUpperCase();
+  // Donate CTA — built straight from the charity's `donate_cta_*`
+  // fields so each beneficiary points at its own evergreen donation
+  // page rather than the event-wide DonationPicker. Empty URL hides
+  // the button (consistent with how the help CTA behaves). The body
+  // text is surfaced as the button tooltip so curators can write a
+  // longer pitch without taking up card space.
+  const donateUrl = charity.donate_cta_url?.trim() || '';
+  const donateLabel = (charity.donate_cta_headline?.trim()
+    || 'Donate now').toUpperCase();
+  const donateTooltip = charity.donate_cta_body?.trim() || undefined;
+  // Reuse SpecialEffect's bespoke blue/orange button for that one
+  // charity — preserves the existing brand look without forcing every
+  // beneficiary to ship custom colours. Other charities fall back to
+  // the site theme's primary button.
+  const ctaClass =
+    charity.slug === 'specialeffect' ? 'btn-specialeffect' : 'btn-bloodmoon';
+  const blurb =
+    charity.mission_statement?.trim() || 'No mission statement yet.';
+
+  return (
+    <div className="benefitting-card">
+      {charity.logo_url ? (
+        <a
+          href={helpUrl || undefined}
+          target={helpUrl ? '_blank' : undefined}
+          rel="noreferrer"
+          className="benefitting-logo"
+          title={charity.name}
+        >
+          <img src={charity.logo_url} alt={`${charity.name} logo`} />
+        </a>
+      ) : null}
+      <div className="benefitting-body">
+        {showPrimaryBadge && link.is_primary && benefittingPrimaryBadge()}
+        <p className="text-specialeffect-blurb mb-3">
+          <strong className="text-light">{charity.name}</strong>{' '}
+          {blurbBody(charity.name, blurb)}
+        </p>
+        {(helpUrl || donateUrl) && (
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            {helpUrl && (
+              <button
+                className={`btn ${ctaClass}`}
+                onClick={() => openExternal(helpUrl)}
+              >
+                {helpLabel}
+              </button>
+            )}
+            {donateUrl && (
+              // Theme secondary palette so the donate CTA reads as a
+              // distinct action from the primary help CTA next to it.
+              // Same shape + size as the help button so the row stays
+              // visually balanced (no `btn-lg`). Bungee font matches
+              // both the help CTA (`.btn-specialeffect`) and the
+              // navbar DonateButton so the donate-flavoured buttons
+              // share one visual lineage across the app.
+              <button
+                className="btn btn-bloodmoon-secondary"
+                style={{ fontFamily: "'Bungee', cursive" }}
+                title={donateTooltip}
+                onClick={() => openExternal(donateUrl)}
+              >
+                {donateLabel}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Strip a leading "{charity name} " prefix from the mission text when
+ *  present so the bolded name + body don't end up with a duplicate of
+ *  the name in the visible sentence. Pure cosmetic — the body still
+ *  reads correctly without it. */
+function blurbBody(name: string, mission: string): string {
+  const prefix = `${name} `;
+  if (mission.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return mission.slice(prefix.length);
+  }
+  return mission;
+}
+
+/** Small "PRIMARY" pill shown above multi-charity beneficiary cards so
+ *  viewers know which org is the headline campaign for this event.
+ *  Only rendered when more than one charity is attached and this card
+ *  is the primary — single-charity events don't need the noise. */
+function benefittingPrimaryBadge() {
+  return (
+    <span
+      className="badge mb-2"
+      style={{
+        background: 'var(--theme-primary, #e71347)',
+        color: '#fff',
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
+        fontSize: '0.7em',
+      }}
+    >
+      Primary beneficiary
+    </span>
+  );
+}
+
 interface SlotMeta {
   label: string;
   icon: string;
@@ -300,6 +418,7 @@ const BREAK_META: Record<string, SlotMeta> = {
   sleep: { label: 'Sleep break', icon: '💤' },
   break: { label: 'Break', icon: '☕' },
   end: { label: 'Stream end', icon: '🏁' },
+  other: { label: 'Other', icon: '⭐' },
 };
 
 function findActiveBreak(

@@ -1,8 +1,15 @@
 import { useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { DonationPage, DonationPlatformKey, EventModel } from '@/lib/obsApi';
+import type {
+  Charity,
+  DonationPage,
+  DonationPlatformKey,
+  EventCharityLink,
+  EventModel,
+} from '@/lib/obsApi';
 import { api } from '@/lib/api';
 import { notifyEventChanged } from '@/lib/eventBus';
+import { ImageDropzone } from '@/components/ImageDropzone';
 
 type SortKey = 'name' | 'start_time' | 'currency_symbol' | 'is_active' | 'donation_pages';
 type SortDir = 'asc' | 'desc';
@@ -145,6 +152,7 @@ export function EventsControl() {
                     onSaved={() => setEditingId(null)}
                   />
                   <DonationPagesEditor event={e} />
+                  <EventCharitiesEditor event={e} />
                 </td>
               </tr>
             ) : (
@@ -193,6 +201,10 @@ export function EventsControl() {
                     <span>
                       {e.donation_pages.length} donation{' '}
                       page{e.donation_pages.length === 1 ? '' : 's'}
+                    </span>
+                    <span>
+                      {e.event_charities.length} charit
+                      {e.event_charities.length === 1 ? 'y' : 'ies'}
                     </span>
                   </div>
                 </td>
@@ -402,6 +414,7 @@ function EventForm({
             value={logoUrl}
             onChange={setLogoUrl}
             previewStyle={{ width: 96, height: 96, borderRadius: 6 }}
+            folder="events"
           />
         </div>
         <div style={{ minWidth: 280, flex: 1 }}>
@@ -415,6 +428,7 @@ function EventForm({
             value={gameblastLogoUrl}
             onChange={setGameblastLogoUrl}
             previewStyle={{ width: 96, height: 96, borderRadius: 6 }}
+            folder="events"
           />
         </div>
         <div style={{ minWidth: 280, flex: 2 }}>
@@ -423,6 +437,7 @@ function EventForm({
             value={bannerUrl}
             onChange={setBannerUrl}
             previewStyle={{ maxWidth: '100%', maxHeight: 120, borderRadius: 4 }}
+            folder="events"
           />
         </div>
       </div>
@@ -932,125 +947,379 @@ function DonationPageForm({
   );
 }
 
-function ImageDropzone({
-  value,
-  onChange,
-  previewStyle,
-}: {
-  value: string;
-  onChange: (url: string) => void;
-  previewStyle: React.CSSProperties;
-}) {
-  const inputId = `dz-${Math.random().toString(36).slice(2, 8)}`;
-  const [dragging, setDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+// ── Event ↔ Charity links ────────────────────────────────────────────
+//
+// Mirrors the shape of DonationPagesEditor: lists the EventCharity
+// rows attached to the event, with a per-link form to set is_primary
+// and order, and an add-form that picks an existing Charity from the
+// catalogue. Writes go through the dedicated endpoints so the picker
+// stays snappy without re-fetching the whole event tree.
 
-  const uploadFile = async (file: File) => {
-    setErr(null);
-    setUploading(true);
+function EventCharitiesEditor({ event }: { event: EventModel }) {
+  // Poll the catalogue so newly-added charities show up in the picker
+  // without a page reload — operators frequently flow Charities →
+  // Events when seeding a new event.
+  const { data: catalogue } = usePolledQuery(
+    () => obsApi.charities({ activeOnly: true }),
+    10_000,
+  );
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const links = [...event.event_charities].sort((a, b) => a.order - b.order);
+  const attachedIds = new Set(links.map((l) => l.charity));
+  const candidates = (catalogue ?? []).filter((c) => !attachedIds.has(c.id));
+
+  const remove = async (id: number) => {
+    if (!confirm('Detach this charity from the event?')) return;
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL ?? ''}/api/uploads/image/?folder=events`,
-        { method: 'POST', body: fd },
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || `Upload failed (${res.status})`);
-      }
-      const data = (await res.json()) as { url: string };
-      onChange(data.url);
+      await obsApi.deleteEventCharity(id);
+      notifyEventChanged();
     } catch (e) {
       setErr((e as Error).message);
-    } finally {
-      setUploading(false);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  return (
+    <div
+      className="mt-3 p-3"
+      style={{
+        background: 'rgba(0,0,0,0.25)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 8,
+      }}
+    >
+      <header className="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+        <strong>Benefitting charities</strong>
+        {!adding && (
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            onClick={() => setAdding(true)}
+            disabled={candidates.length === 0}
+            title={
+              candidates.length === 0
+                ? 'Every active charity is already attached to this event.'
+                : undefined
+            }
+          >
+            + Attach charity
+          </button>
+        )}
+      </header>
+
+      {err && <div className="text-danger small mb-2">{err}</div>}
+
+      {adding && (
+        <EventCharityAddForm
+          eventId={event.id}
+          candidates={candidates}
+          onCancel={() => setAdding(false)}
+          onSaved={() => setAdding(false)}
+        />
+      )}
+
+      {links.length === 0 && !adding && (
+        <p className="text-white-50 small m-0">
+          No charities attached yet — link the beneficiary org(s) so the
+          event landing CTAs, donations side panel, and omnibar charity
+          cluster can pull copy + branding from the catalogue.
+        </p>
+      )}
+
+      {links.length > 0 && (
+        <ul className="list-unstyled m-0">
+          {links.map((l) =>
+            editingId === l.id ? (
+              <li key={l.id} className="mb-2">
+                <EventCharityEditForm
+                  link={l}
+                  onCancel={() => setEditingId(null)}
+                  onSaved={() => setEditingId(null)}
+                />
+              </li>
+            ) : (
+              <li
+                key={l.id}
+                className="d-flex align-items-center gap-2 flex-wrap py-2 px-2"
+                style={{
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: l.is_primary
+                    ? 'rgba(231, 19, 71, 0.12)'
+                    : undefined,
+                  borderLeft: l.is_primary
+                    ? '3px solid rgba(231, 19, 71, 0.7)'
+                    : '3px solid transparent',
+                  borderRadius: 4,
+                }}
+              >
+                {l.charity_detail.logo_thumbnail_url || l.charity_detail.logo_url ? (
+                  <img
+                    src={
+                      l.charity_detail.logo_thumbnail_url ||
+                      l.charity_detail.logo_url
+                    }
+                    alt=""
+                    width={40}
+                    height={40}
+                    style={{
+                      borderRadius: 4,
+                      // Cover-fit only when the operator gave us a
+                      // dedicated square thumbnail. The full logo
+                      // falls through to contain-fit so a wordmark
+                      // isn't clipped to an illegible centre slice.
+                      objectFit: l.charity_detail.logo_thumbnail_url
+                        ? 'cover'
+                        : 'contain',
+                      background: l.charity_detail.logo_thumbnail_url
+                        ? undefined
+                        : 'rgba(255,255,255,0.04)',
+                    }}
+                  />
+                ) : (
+                  <div
+                    aria-hidden
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.08)',
+                    }}
+                  />
+                )}
+                <strong>{l.charity_detail.name}</strong>
+                {l.is_primary && (
+                  <span className="badge bg-warning text-dark">primary</span>
+                )}
+                <code className="small text-white-50">
+                  {l.charity_detail.slug}
+                </code>
+                <span className="small text-white-50">order {l.order}</span>
+                <div className="ms-auto control-btn-row">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light"
+                    onClick={() => setEditingId(l.id)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => remove(l.id)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </li>
+            ),
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function EventCharityAddForm({
+  eventId,
+  candidates,
+  onCancel,
+  onSaved,
+}: {
+  eventId: number;
+  candidates: Charity[];
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [charityId, setCharityId] = useState<number | ''>(
+    candidates[0]?.id ?? '',
+  );
+  const [isPrimary, setIsPrimary] = useState(false);
+  const [order, setOrder] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) void uploadFile(file);
+    if (charityId === '') return;
+    setErr(null);
+    setBusy(true);
+    try {
+      await obsApi.createEventCharity({
+        event: eventId,
+        charity: Number(charityId),
+        is_primary: isPrimary,
+        order,
+      });
+      notifyEventChanged();
+      onSaved();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <div>
-      <label
-        htmlFor={inputId}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        style={{
-          display: 'block',
-          cursor: 'pointer',
-          padding: '14px 16px',
-          border: dragging
-            ? '2px dashed #e71347'
-            : '2px dashed rgba(255,255,255,0.2)',
-          background: dragging
-            ? 'rgba(231,19,71,0.12)'
-            : 'rgba(0,0,0,0.25)',
-          borderRadius: 8,
-          textAlign: 'center',
-          transition: 'border-color 0.12s, background 0.12s',
-        }}
-      >
-        {uploading ? (
-          <div className="small text-white-50">Uploading…</div>
-        ) : value ? (
-          <div className="d-flex align-items-center gap-3 justify-content-center flex-wrap">
-            <img src={value} alt="" style={{ ...previewStyle, objectFit: 'cover' }} />
-            <div className="small text-white-50">
-              <div>Drop a new file to replace, or</div>
-              <div>
-                <button
-                  type="button"
-                  className="btn btn-link btn-sm p-0 text-warning"
-                  onClick={(ev) => {
-                    ev.preventDefault();
-                    onChange('');
-                  }}
-                >
-                  remove image
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="small text-white-50">
-            Drag & drop an image here, or click to browse
-            <div style={{ opacity: 0.6 }}>PNG · JPG · GIF · WebP · SVG · max 10 MB</div>
-          </div>
-        )}
-      </label>
-      <input
-        id={inputId}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void uploadFile(f);
-          e.target.value = '';
-        }}
-      />
-      <div className="mt-2">
+    <form
+      onSubmit={submit}
+      className="d-flex gap-2 flex-wrap align-items-end mt-2"
+      style={{
+        padding: 10,
+        background: 'rgba(255,255,255,0.03)',
+        borderRadius: 6,
+      }}
+    >
+      <div style={{ minWidth: 240, flex: 2 }}>
+        <label className="d-block small text-white-50">Charity</label>
+        <select
+          required
+          className="form-select form-select-sm"
+          value={charityId}
+          onChange={(e) =>
+            setCharityId(e.target.value === '' ? '' : Number(e.target.value))
+          }
+        >
+          {candidates.length === 0 && (
+            <option value="">— No more charities to attach —</option>
+          )}
+          {candidates.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.slug})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div style={{ minWidth: 90 }}>
+        <label className="d-block small text-white-50">Order</label>
         <input
-          type="url"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          type="number"
+          value={order}
+          onChange={(e) => setOrder(Number(e.target.value))}
           className="form-control form-control-sm"
-          placeholder="…or paste a URL"
+          style={{ width: 90 }}
         />
       </div>
-      {err && <div className="text-danger small mt-1">{err}</div>}
-    </div>
+      <div className="form-check mb-1">
+        <input
+          id={`ec-primary-new-${eventId}`}
+          type="checkbox"
+          className="form-check-input"
+          checked={isPrimary}
+          onChange={(e) => setIsPrimary(e.target.checked)}
+        />
+        <label
+          htmlFor={`ec-primary-new-${eventId}`}
+          className="form-check-label small"
+        >
+          Primary
+        </label>
+      </div>
+      <button
+        type="submit"
+        className="btn btn-bloodmoon btn-sm"
+        disabled={busy || charityId === ''}
+      >
+        {busy ? 'Saving…' : 'Attach'}
+      </button>
+      <button
+        type="button"
+        className="btn btn-outline-light btn-sm"
+        onClick={onCancel}
+      >
+        Cancel
+      </button>
+      {err && <div className="text-danger w-100 small mt-2">{err}</div>}
+    </form>
+  );
+}
+
+function EventCharityEditForm({
+  link,
+  onCancel,
+  onSaved,
+}: {
+  link: EventCharityLink;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [isPrimary, setIsPrimary] = useState(link.is_primary);
+  const [order, setOrder] = useState(link.order);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    setBusy(true);
+    try {
+      await obsApi.updateEventCharity(link.id, {
+        is_primary: isPrimary,
+        order,
+      });
+      notifyEventChanged();
+      onSaved();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={submit}
+      className="d-flex gap-2 flex-wrap align-items-end mt-2"
+      style={{
+        padding: 10,
+        background: 'rgba(255,255,255,0.03)',
+        borderRadius: 6,
+      }}
+    >
+      <div style={{ flex: 2, minWidth: 240 }}>
+        <span className="small text-white-50 d-block">Charity</span>
+        <strong>{link.charity_detail.name}</strong>
+        <code className="small text-white-50 ms-2">
+          {link.charity_detail.slug}
+        </code>
+      </div>
+      <div style={{ minWidth: 90 }}>
+        <label className="d-block small text-white-50">Order</label>
+        <input
+          type="number"
+          value={order}
+          onChange={(e) => setOrder(Number(e.target.value))}
+          className="form-control form-control-sm"
+          style={{ width: 90 }}
+        />
+      </div>
+      <div className="form-check mb-1">
+        <input
+          id={`ec-primary-${link.id}`}
+          type="checkbox"
+          className="form-check-input"
+          checked={isPrimary}
+          onChange={(e) => setIsPrimary(e.target.checked)}
+        />
+        <label
+          htmlFor={`ec-primary-${link.id}`}
+          className="form-check-label small"
+        >
+          Primary
+        </label>
+      </div>
+      <button type="submit" className="btn btn-bloodmoon btn-sm" disabled={busy}>
+        {busy ? 'Saving…' : 'Update'}
+      </button>
+      <button
+        type="button"
+        className="btn btn-outline-light btn-sm"
+        onClick={onCancel}
+      >
+        Cancel
+      </button>
+      {err && <div className="text-danger w-100 small mt-2">{err}</div>}
+    </form>
   );
 }
 

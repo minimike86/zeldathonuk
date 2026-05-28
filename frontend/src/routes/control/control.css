@@ -122,6 +122,36 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Schedule-sound trigger table: 12 columns of inputs + selects + an
+ * action cluster. To fit inside the control card without horizontal
+ * scrolling we tighten cell padding, shrink inputs to their column,
+ * and use square icon buttons for the per-row actions. */
+.trigger-table th,
+.trigger-table td {
+  padding: 0.35rem 0.4rem;
+}
+.trigger-table input[type='text'],
+.trigger-table input[type='number'],
+.trigger-table select {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.35rem;
+}
+.trigger-table select {
+  /* Long sound names get clipped with ellipsis instead of pushing
+   * the column wider. */
+  text-overflow: ellipsis;
+}
+.trigger-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .control-table-scroll > .control-table {
   /* No fixed min-width — every column is drag-resizable now, so the
    * table sizes to the sum of the operator's column widths. The

@@ -40,3 +40,50 @@
     transform: translateX(var(--marquee-end));
   }
 }
+
+/* Auto-marquee — used by MarqueeOnOverflow. Same idea as the
+ * single-pass marquee above, but loops continuously and is only
+ * engaged when the children overflow the container. The component
+ * renders the children twice in a flex track; the animation translates
+ * the whole track by content-width + gap each cycle so the duplicate
+ * lands exactly where the original was, giving a seamless loop. */
+
+.ob-auto-marquee {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.ob-auto-marquee-track {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 100%;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.ob-auto-marquee-track.is-scrolling {
+  animation-name: ob-auto-marquee-loop;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.ob-auto-marquee-group {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@keyframes ob-auto-marquee-loop {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--auto-marquee-distance));
+  }
+}

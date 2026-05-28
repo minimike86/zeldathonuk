@@ -208,6 +208,56 @@ a.link-warning {
   cursor: not-allowed;
 }
 
+/* Secondary variant — same shape + interaction states as `.btn-bloodmoon`
+ * but built on the theme's `--theme-secondary` palette so paired CTAs
+ * (e.g. "Can they help you?" + "Donate now" on the home page Benefitting
+ * card) read as distinct actions without either button feeling like
+ * the muted/disabled choice. The dark bottom stop borrows from the
+ * primary button family so the two buttons share a visual lineage. */
+.btn-bloodmoon-secondary {
+  color: var(--theme-button-text, #fff);
+  background: linear-gradient(
+    180deg,
+    var(--theme-secondary, #731c37) 0%,
+    var(--theme-button-from, #4c1324) 100%
+  );
+  /* Hardcoded brighter than the global `--theme-button-border` token
+   * so this button (and its paired sibling `.btn-specialeffect`) both
+   * read clearly against their darker gradients. See the matching
+   * note in home.css. */
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  transition: filter 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-bloodmoon-secondary:hover,
+.btn-bloodmoon-secondary:focus-visible {
+  color: var(--theme-button-text, #fff);
+  filter: brightness(1.15);
+  border-color: rgba(255, 255, 255, 0.95);
+  /* Override Bootstrap's default `.btn:focus-visible` outer ring so
+   * the button doesn't appear to "grow" once clicked. Restate the
+   * rest-state inset shadows so depth survives the override. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  outline: none;
+}
+
+.btn-bloodmoon-secondary:active {
+  filter: brightness(0.95);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.btn-bloodmoon-secondary:disabled,
+.btn-bloodmoon-secondary.disabled {
+  filter: grayscale(0.4) brightness(0.7);
+  cursor: not-allowed;
+}
+
 /* Optional video background — rendered by <ThemeProvider> when the theme
  * defines `background_video_url`. Sits behind every other element. */
 .theme-bg-video {

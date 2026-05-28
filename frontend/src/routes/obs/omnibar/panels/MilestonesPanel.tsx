@@ -23,10 +23,35 @@ function Panel({ data }: PanelProps<Data>) {
         aria-hidden
         style={{ ['--pct' as string]: `${data.pct}%` } as React.CSSProperties}
       />
-      <span className="ob-text-muted" style={{ fontVariantNumeric: 'tabular-nums' }}>
+      <span
+        className="ob-text-muted"
+        // 8-bit pixel mono ("Press Start 2P") so the amount aligns
+        // with the rest of the omnibar's HUD numerals (countdown +
+        // local time). Dropped a touch in size and nudged down on
+        // the baseline to match the surrounding Bungee copy — see
+        // the same translate trick in PreStreamPanel / LocalTimePanel.
+        style={{
+          fontFamily: '"Press Start 2P", ui-monospace, monospace',
+          fontSize: '0.78rem',
+          letterSpacing: '0.04em',
+          lineHeight: 1,
+          display: 'inline-block',
+          transform: 'translateY(0.15em)',
+        }}
+      >
         {data.symbol}
-        {data.current.toFixed(2)} / {data.symbol}
+        {data.current.toFixed(2)}/{data.symbol}
         {data.milestone.threshold_amount}
+      </span>
+      {/* Donate call-to-action — sits at the tail of the row so the
+        * milestone name + progress are read first; the URL is the
+        * action the viewer should take once they've absorbed how
+        * close the goal is. Non-interactive (the omnibar is a
+        * broadcast layer); the viewer types the URL manually. */}
+      <span className="ob-text-muted">·</span>
+      <span className="ob-donate-cta">
+        Make a donation at{' '}
+        <span className="ob-donate-cta-url">zeldathon.co.uk/donate</span>
       </span>
     </PanelRow>
   );

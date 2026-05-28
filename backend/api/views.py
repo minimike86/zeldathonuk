@@ -705,6 +705,53 @@ class OmnibarOverrideViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(obj).data)
 
 
+class SoundAssetViewSet(viewsets.ModelViewSet):
+    """CRUD on reusable audio assets. Referenced by
+    ScheduleEntrySoundTrigger rows so the same file can wire to many
+    entries / offsets without duplicate URLs."""
+    queryset = models.SoundAsset.objects.all()
+    serializer_class = serializers.SoundAssetSerializer
+
+
+class ScheduleEntrySoundTriggerViewSet(viewsets.ModelViewSet):
+    """CRUD on per-entry sound triggers + a `reset` bulk action that
+    clears `last_fired_at` on every trigger of the active event so a
+    show can be re-run without manual per-row resets."""
+    queryset = models.ScheduleEntrySoundTrigger.objects.all().select_related(
+        'sound', 'schedule_entry',
+    )
+    serializer_class = serializers.ScheduleEntrySoundTriggerSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        entry = self.request.query_params.get('schedule_entry')
+        if entry:
+            qs = qs.filter(schedule_entry_id=entry)
+        return qs
+
+    @action(detail=False, methods=['post'])
+    def reset(self, request: Request) -> Response:
+        """Clear `last_fired_at` on every trigger attached to the
+        active event so they all become eligible to fire again."""
+        event = models.Event.objects.filter(is_active=True).first()
+        if not event:
+            return Response(
+                {'detail': 'No active event.'}, status=status.HTTP_400_BAD_REQUEST,
+            )
+        updated = models.ScheduleEntrySoundTrigger.objects.filter(
+            schedule_entry__event=event, last_fired_at__isnull=False,
+        ).update(last_fired_at=None)
+        return Response({'reset': updated})
+
+    @action(detail=True, methods=['post'])
+    def reset_fire(self, request: Request, pk=None) -> Response:
+        """Clear `last_fired_at` on a single trigger row."""
+        obj = self.get_object()
+        obj.last_fired_at = None
+        obj.save(update_fields=['last_fired_at'])
+        return Response(self.get_serializer(obj).data)
+
+
 class ExternalEventViewSet(viewsets.ModelViewSet):
     """CRUD on inbound webhook events (Twitch / Discord / …).
 
@@ -887,4 +934,133 @@ class CharitySlideViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if self.request.query_params.get('active') == 'true':
             qs = qs.filter(is_active=True)
+        return qs
+
+
+# ── Charities ──────────────────────────────────────────────────────────
+
+
+class CharityViewSet(viewsets.ModelViewSet):
+    """CRUD for the charity catalogue.
+
+    Listing supports ``?active=true`` to hide soft-deleted entries and
+    ``?event=<id>`` to scope to a specific event's beneficiaries
+    (uses the EventCharity through-table and preserves its `order`).
+    Lookup by `slug` is also supported so the public /charity/<slug>
+    page can fetch by handle without leaking the numeric id.
+    """
+    queryset = (
+        models.Charity.objects
+        .prefetch_related(
+            'websites', 'social_links', 'videos', 'images', 'impact_tiers',
+        )
+        .all()
+    )
+    serializer_class = serializers.CharitySerializer
+    lookup_value_regex = r'[^/]+'
+
+    def get_object(self):
+        # Accept either pk or slug at /charities/<value>/. DRF's
+        # default `get_object` is pk-only; we extend it so the public
+        # page can reference charities by their stable slug.
+        lookup = self.kwargs.get(self.lookup_field, '')
+        if lookup.isdigit():
+            return super().get_object()
+        queryset = self.filter_queryset(self.get_queryset())
+        obj = queryset.filter(slug=lookup).first()
+        if obj is None:
+            from django.http import Http404
+            raise Http404(f'No Charity matches slug={lookup!r}.')
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.query_params.get('active') == 'true':
+            qs = qs.filter(is_active=True)
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            # Preserve the EventCharity ordering when scoping to one
+            # event so the response matches what the operator picked.
+            qs = qs.filter(event_charities__event_id=event_id).order_by(
+                'event_charities__order', 'event_charities__id',
+            )
+        return qs
+
+
+class CharityWebsiteViewSet(viewsets.ModelViewSet):
+    queryset = models.CharityWebsite.objects.all()
+    serializer_class = serializers.CharityWebsiteSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        charity_id = self.request.query_params.get('charity')
+        if charity_id:
+            qs = qs.filter(charity_id=charity_id)
+        return qs
+
+
+class CharitySocialLinkViewSet(viewsets.ModelViewSet):
+    queryset = models.CharitySocialLink.objects.all()
+    serializer_class = serializers.CharitySocialLinkSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        charity_id = self.request.query_params.get('charity')
+        if charity_id:
+            qs = qs.filter(charity_id=charity_id)
+        return qs
+
+
+class CharityVideoViewSet(viewsets.ModelViewSet):
+    queryset = models.CharityVideo.objects.all()
+    serializer_class = serializers.CharityVideoSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        charity_id = self.request.query_params.get('charity')
+        if charity_id:
+            qs = qs.filter(charity_id=charity_id)
+        return qs
+
+
+class CharityImageViewSet(viewsets.ModelViewSet):
+    queryset = models.CharityImage.objects.all()
+    serializer_class = serializers.CharityImageSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        charity_id = self.request.query_params.get('charity')
+        if charity_id:
+            qs = qs.filter(charity_id=charity_id)
+        return qs
+
+
+class CharityImpactTierViewSet(viewsets.ModelViewSet):
+    queryset = models.CharityImpactTier.objects.all()
+    serializer_class = serializers.CharityImpactTierSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        charity_id = self.request.query_params.get('charity')
+        if charity_id:
+            qs = qs.filter(charity_id=charity_id)
+        return qs
+
+
+class EventCharityViewSet(viewsets.ModelViewSet):
+    """Through-table CRUD. Filter by ``?event=<id>`` or
+    ``?charity=<id>``. Setting is_primary=True demotes any other
+    primary row for the same event (handled in the model's save)."""
+    queryset = models.EventCharity.objects.select_related('event', 'charity').all()
+    serializer_class = serializers.EventCharitySerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        charity_id = self.request.query_params.get('charity')
+        if charity_id:
+            qs = qs.filter(charity_id=charity_id)
         return qs

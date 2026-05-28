@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faFloppyDisk,
+  faRotateLeft,
+  faPlay,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons';
 import {
   obsApi,
   usePolledQuery,
@@ -11,8 +18,14 @@ import {
   type OmnibarLane,
   type OmnibarOverride,
   type PlaythroughEvent,
+  type ScheduleEntry,
+  type ScheduleEntrySoundTrigger,
+  type SoundAsset,
+  type TriggerAnchor,
 } from '@/lib/obsApi';
 import { triggerTestSplash } from '@/lib/splashBus';
+import { DonationSplash } from '@/routes/obs/omnibar/panels/DonationSplash';
+import { EventBusProvider } from '@/routes/obs/omnibar/bus/EventBus';
 import {
   ALL_PANEL_IDS,
   DEFAULT_DONATION_REEL,
@@ -31,6 +44,8 @@ import {
   type DonationReelDirection,
   type PanelId,
 } from '@/routes/obs/omnibar/hooks/useLayoutConfig';
+import { SoundLibrarySection } from './SoundLibrarySection';
+import { useTableControls, type TableColumn } from './useTableControls';
 import {
   DEFAULT_TRANSITION,
   DELAY_MAX_MS,
@@ -58,22 +73,85 @@ import {
  * pipeline end-to-end without leaving the page: fire an event here, see
  * it show up on /obs/omnibar within 1–3 s of poll latency.
  */
+interface OmnibarTab {
+  id: string;
+  label: string;
+  render: () => ReactNode;
+}
+
+const OMNIBAR_TABS: OmnibarTab[] = [
+  { id: 'sandbox',           label: 'Sandbox',           render: () => <SandboxSection /> },
+  { id: 'layout',            label: 'Lane layout',       render: () => <LayoutSection /> },
+  { id: 'transitions',       label: 'Panel transitions', render: () => <TransitionsSection /> },
+  { id: 'donation-reel',     label: 'Donation reel',     render: () => <DonationReelSection /> },
+  { id: 'sound-library',     label: 'Sound library',     render: () => <SoundLibrarySection /> },
+  { id: 'schedule-triggers', label: 'Schedule sounds',   render: () => <ScheduleSoundTriggersSection /> },
+  { id: 'splash',            label: 'Donation splash',   render: () => <SplashSection /> },
+  { id: 'charity',           label: 'Charity slides',    render: () => <CharitySlidesSection /> },
+  { id: 'overrides',         label: 'Overrides',         render: () => <OverridesSection /> },
+  { id: 'objective',         label: 'Objective',         render: () => <ObjectiveSection /> },
+  { id: 'setpiece',          label: 'Setpiece',          render: () => <SetpieceSection /> },
+  { id: 'playthrough',       label: 'Playthrough events', render: () => <PlaythroughEventsSection /> },
+  { id: 'incentives',        label: 'Incentives',        render: () => <IncentivesSection /> },
+  { id: 'milestones',        label: 'Milestones',        render: () => <MilestonesSection /> },
+  { id: 'external',          label: 'External events',   render: () => <ExternalEventsSection /> },
+];
+
+const DEFAULT_TAB_ID = OMNIBAR_TABS[0].id;
+
+function readTabFromHash(): string {
+  if (typeof window === 'undefined') return DEFAULT_TAB_ID;
+  const hash = window.location.hash.replace(/^#/, '');
+  return OMNIBAR_TABS.some((t) => t.id === hash) ? hash : DEFAULT_TAB_ID;
+}
+
 export function OmnibarControl() {
+  const [activeTab, setActiveTab] = useState<string>(() => readTabFromHash());
+
+  // Cross-tab + back/forward sync via the URL hash, so deep links to
+  // a specific section work and the browser history records moves
+  // through the control surface.
+  useEffect(() => {
+    const onHash = () => setActiveTab(readTabFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const selectTab = (id: string) => {
+    setActiveTab(id);
+    if (typeof window !== 'undefined') {
+      // Replace so each tab click doesn't pile up the history stack —
+      // back-button still navigates to wherever the user came from
+      // rather than walking through every tab they sampled.
+      window.history.replaceState(null, '', `#${id}`);
+    }
+  };
+
+  const active = OMNIBAR_TABS.find((t) => t.id === activeTab) ?? OMNIBAR_TABS[0];
+
   return (
     <div className="control-stack" style={{ display: 'grid', gap: '1.5rem' }}>
-      <SandboxSection />
-      <LayoutSection />
-      <TransitionsSection />
-      <DonationReelSection />
-      <SplashSection />
-      <CharitySlidesSection />
-      <OverridesSection />
-      <ObjectiveSection />
-      <SetpieceSection />
-      <PlaythroughEventsSection />
-      <IncentivesSection />
-      <MilestonesSection />
-      <ExternalEventsSection />
+      <nav
+        className="control-card"
+        style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', padding: '0.85rem' }}
+        aria-label="Omnibar control sections"
+      >
+        {OMNIBAR_TABS.map((tab) => {
+          const isActive = tab.id === active.id;
+          return (
+            <button
+              type="button"
+              key={tab.id}
+              className={`btn btn-sm ${isActive ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+              onClick={() => selectTab(tab.id)}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+      {active.render()}
     </div>
   );
 }
@@ -164,6 +242,7 @@ function SplashSection() {
             donation total when fresh donations arrive. Stored on
             <code> Event.omnibar_layout.splash.color_mode</code>.
           </p>
+          <SplashPreview colorMode={current} />
           <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'center' }}>
             {(['theme', 'gold', 'rainbow'] as SplashColorMode[]).map((mode) => (
               <button
@@ -212,6 +291,59 @@ function SplashSection() {
         </>
       )}
     </section>
+  );
+}
+
+/** Inline preview for the Donation splash section. Renders a mini
+ *  mock of the omnibar's right-cluster total with a live
+ *  DonationSplash overlay, plus a "Fire preview" button that flashes
+ *  a single splash badge so the operator can see what each color
+ *  mode actually looks like before saving.
+ *
+ *  DonationSplash calls `useBusSubscription('donation-arrived', …)`
+ *  internally, so we mount a local `<EventBusProvider>` here — the
+ *  bus is just for the splash to subscribe to; no real donation
+ *  events will flow through it on the control page, but the
+ *  contract is satisfied. The splashBus (BroadcastChannel + local
+ *  listeners) is what actually drives the preview button. */
+function SplashPreview({ colorMode }: { colorMode: SplashColorMode }) {
+  const fire = () => {
+    triggerTestSplash({ amount: 10, currency: 'GBP' });
+  };
+  return (
+    <EventBusProvider>
+      <div className="mt-2 mb-4" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div
+          className="omnibar omnibar--v2"
+          style={{
+            ['--obs-stage-width' as keyof CSSProperties]: '320px' as never,
+            position: 'relative',
+            width: 320,
+            height: 64,
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
+          <div className="ob-total" style={{ width: '100%', height: '100%', justifyContent: 'center' }}>
+            <div
+              className="ob-total-amount-wrap"
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <DonationSplash colorMode={colorMode} />
+              <span className="ob-total-currency" style={{ fontSize: '1.4rem' }}>£</span>
+              <span className="ob-total-amount" style={{ fontSize: '1.4rem' }}>1234</span>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn btn-sm btn-bloodmoon"
+          onClick={fire}
+        >
+          Fire preview
+        </button>
+      </div>
+    </EventBusProvider>
   );
 }
 
@@ -333,35 +465,63 @@ function CharitySlidesSection() {
         </button>
       </div>
 
-      <table className="control-table mt-3">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Kind</th>
-            <th>Preview</th>
-            <th>Active</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.length === 0 && (
-            <tr><td colSpan={5} className="text-white-50">
-              No slides — using bundled defaults.
-            </td></tr>
-          )}
-          {sorted.map((s, i) => (
-            <CharitySlideRow
-              key={s.id}
-              slide={s}
-              first={i === 0}
-              last={i === sorted.length - 1}
-              prev={sorted[i - 1]}
-              next={sorted[i + 1]}
-            />
-          ))}
-        </tbody>
-      </table>
+      <CharitySlidesTable rows={sorted} />
     </section>
+  );
+}
+
+const CHARITY_COLUMNS: TableColumn<CharitySlide>[] = [
+  // Order column is intentionally non-sortable — moves are managed
+  // by the per-row ↑/↓ buttons, and click-sorting here would
+  // visually decouple ↑/↓ from row identity. Filter only.
+  { id: 'order',   header: '#',         filterValue: (s) => String(s.order),                initialWidth: 60 },
+  { id: 'kind',    header: 'Kind',      sortValue: (s) => s.kind,                          initialWidth: 90 },
+  { id: 'preview', header: 'Preview',   filterValue: (s) => `${s.title} ${s.body} ${s.alt_text}` },
+  { id: 'active',  header: 'Active',    sortValue: (s) => (s.is_active ? 0 : 1),           initialWidth: 110 },
+  { id: 'actions', header: '',                                                              initialWidth: 240 },
+];
+
+function CharitySlidesTable({ rows }: { rows: CharitySlide[] }) {
+  const ctrl = useTableControls(rows, CHARITY_COLUMNS, 'control:charity-slides-v1');
+  return (
+    <div className="mt-3">
+      <ctrl.FilterInput placeholder="Filter slides…" />
+      <div style={{ overflowX: 'auto' }}>
+        <table className="control-table" style={{ minWidth: 880, tableLayout: 'fixed' }}>
+          <colgroup>
+            {CHARITY_COLUMNS.map((c) => <col key={c.id} style={ctrl.colStyle(c.id)} />)}
+          </colgroup>
+          <thead>
+            <tr>
+              {CHARITY_COLUMNS.map((c) => (
+                <th key={c.id} {...ctrl.headerProps(c.id)}>
+                  {c.header}
+                  {ctrl.sortIndicator(c.id)}
+                  {ctrl.resizeHandle(c.id)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ctrl.rows.length === 0 && (
+              <tr><td colSpan={CHARITY_COLUMNS.length} className="text-white-50">
+                No slides — using bundled defaults.
+              </td></tr>
+            )}
+            {ctrl.rows.map((s, i) => (
+              <CharitySlideRow
+                key={s.id}
+                slide={s}
+                first={i === 0}
+                last={i === ctrl.rows.length - 1}
+                prev={ctrl.rows[i - 1]}
+                next={ctrl.rows[i + 1]}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -1079,6 +1239,8 @@ function TransitionsSection() {
         Saves to <code>Event.omnibar_transitions</code>.
       </p>
 
+      <PanelTransitionPreview transition={defaults} />
+
       <h3 style={{
         fontFamily: 'Bungee, sans-serif',
         fontSize: '0.95rem',
@@ -1196,6 +1358,89 @@ function TransitionsSection() {
   );
 }
 
+/** Live preview for Panel transitions. Renders a single-lane mini
+ *  omnibar with a sample panel that cycles through enter → dwell →
+ *  exit → lead-in using the editor's current Default row config.
+ *  Re-keying the wrapper on each phase change re-mounts the slot,
+ *  which forces the CSS animations to restart so the preview keeps
+ *  looping without manual intervention. */
+function PanelTransitionPreview({ transition }: { transition: PanelTransition }) {
+  type Phase = 'enter' | 'dwell' | 'exit' | 'gap';
+  const [phase, setPhase] = useState<Phase>('enter');
+  const [cycle, setCycle] = useState(0);
+
+  const fullEnterMs =
+    transition.tagEnterMs + transition.bodyEnterDelayMs + transition.bodyEnterMs;
+  const fullExitMs =
+    transition.bodyExitMs + transition.bodyExitDelayMs + transition.tagExitMs;
+
+  useEffect(() => {
+    let nextMs: number;
+    let nextPhase: Phase;
+    switch (phase) {
+      case 'enter': nextMs = fullEnterMs; nextPhase = 'dwell'; break;
+      case 'dwell': nextMs = Math.max(800, Math.min(3000, transition.dwellMs)); nextPhase = 'exit'; break;
+      case 'exit':  nextMs = fullExitMs; nextPhase = 'gap'; break;
+      case 'gap':   nextMs = transition.leadInMs + 300; nextPhase = 'enter'; break;
+    }
+    const t = window.setTimeout(() => {
+      if (nextPhase === 'enter') setCycle((c) => c + 1);
+      setPhase(nextPhase);
+    }, nextMs);
+    return () => window.clearTimeout(t);
+  }, [phase, transition, fullEnterMs, fullExitMs]);
+
+  const slotStyle: CSSProperties = {
+    ['--ob-tag-enter-ms' as keyof CSSProperties]: `${transition.tagEnterMs}ms` as never,
+    ['--ob-tag-exit-ms' as keyof CSSProperties]: `${transition.tagExitMs}ms` as never,
+    ['--ob-body-enter-ms' as keyof CSSProperties]: `${transition.bodyEnterMs}ms` as never,
+    ['--ob-body-exit-ms' as keyof CSSProperties]: `${transition.bodyExitMs}ms` as never,
+    ['--ob-body-enter-delay-ms' as keyof CSSProperties]:
+      `${transition.bodyEnterDelayMs}ms` as never,
+    ['--ob-body-exit-delay-ms' as keyof CSSProperties]:
+      `${transition.bodyExitDelayMs}ms` as never,
+  };
+
+  return (
+    <div
+      className="omnibar omnibar--v2 mb-3"
+      style={{
+        ['--obs-stage-width' as keyof CSSProperties]: '600px' as never,
+        width: 600,
+        height: 48,
+        borderRadius: 6,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+      aria-label="Panel transition preview"
+    >
+      <div className="ob-lanes" style={{ height: '100%' }}>
+        <div className="ob-lane ob-lane--top" style={{ height: '100%' }}>
+          {phase !== 'gap' && (
+            <div
+              key={`${cycle}:${phase}`}
+              className={`ob-slot${phase === 'exit' ? ' is-leaving' : ''}`}
+              data-tag-enter={transition.tagEnter}
+              data-tag-exit={transition.tagExit}
+              data-body-enter={transition.bodyEnter}
+              data-body-exit={transition.bodyExit}
+              style={slotStyle}
+            >
+              <div className="ob-row">
+                <span className="ob-tag ob-tag--arrow">SAMPLE</span>
+                <div className="ob-row-body">
+                  <span className="ob-text-strong">Preview panel</span>
+                  <span className="ob-text-muted">applies the Default row</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TransitionRow({
   label,
   transition,
@@ -1228,17 +1473,16 @@ function TransitionRow({
     min: number,
     max: number,
   ) => (
-    <input
-      type="number"
+    // ClampedNumberInput commits on blur / Enter rather than per
+    // keystroke, so typing "700" doesn't get stomped to "1000" by an
+    // intermediate "7" hitting the min-clamp.
+    <ClampedNumberInput
+      value={transition[field]}
       min={min}
       max={max}
       step={20}
-      value={transition[field]}
-      onChange={(e) => {
-        const n = Math.max(min, Math.min(max, Number(e.target.value) || min));
-        onChange({ [field]: n });
-      }}
-      style={{ width: 80 }}
+      onCommit={(v) => onChange({ [field]: v })}
+      style={{ width: 90 }}
     />
   );
   const dirSelect = (field: 'tagEnter' | 'tagExit' | 'bodyEnter' | 'bodyExit') => (
@@ -1303,6 +1547,87 @@ const REEL_DIRECTION_OPTIONS: { value: DonationReelDirection; label: string }[] 
   { value: 'right', label: 'Slide right (newer comes in from the left)' },
   { value: 'fade',  label: 'Fade only' },
 ];
+
+const REEL_PREVIEW_DONORS: { name: string; amount: string }[] = [
+  { name: 'Ada Lovelace',  amount: '50.00' },
+  { name: 'Grace Hopper',  amount: '25.00' },
+  { name: 'Linus Torvalds', amount: '10.00' },
+];
+
+/** Live preview for the Donation reel section. Cycles through three
+ *  fake donors using the draft cycle config so the operator can see
+ *  the configured enter → dwell → exit → lead-in beat before saving. */
+function DonationReelPreview({ cycle }: { cycle: DonationReelConfig }) {
+  type Phase = 'enter' | 'rest' | 'exit' | 'gap';
+  const [phase, setPhase] = useState<Phase>('enter');
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    let nextPhase: Phase;
+    let nextMs: number;
+    let advance = false;
+    switch (phase) {
+      case 'enter': nextPhase = 'rest'; nextMs = cycle.enterMs; break;
+      case 'rest':  nextPhase = 'exit'; nextMs = cycle.dwellMs; break;
+      case 'exit':  nextPhase = 'gap';  nextMs = cycle.exitMs; break;
+      case 'gap':   nextPhase = 'enter'; nextMs = cycle.leadInMs + 200; advance = true; break;
+    }
+    const t = window.setTimeout(() => {
+      if (advance) setIdx((i) => (i + 1) % REEL_PREVIEW_DONORS.length);
+      setPhase(nextPhase);
+    }, nextMs);
+    return () => window.clearTimeout(t);
+  }, [phase, cycle]);
+
+  const rowStyle: CSSProperties = {
+    ['--ob-donor-enter-ms' as keyof CSSProperties]: `${cycle.enterMs}ms` as never,
+    ['--ob-donor-exit-ms' as keyof CSSProperties]: `${cycle.exitMs}ms` as never,
+  };
+
+  const d = REEL_PREVIEW_DONORS[idx];
+
+  return (
+    <div
+      className="omnibar omnibar--v2 mb-3"
+      style={{
+        ['--obs-stage-width' as keyof CSSProperties]: '480px' as never,
+        width: 480,
+        height: 48,
+        borderRadius: 6,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+      aria-label="Donation reel preview"
+    >
+      <div className="ob-lanes" style={{ height: '100%' }}>
+        <div className="ob-lane ob-lane--bottom" style={{ height: '100%' }}>
+          <div className="ob-slot">
+            <div className="ob-row">
+              <span className="ob-tag">RECENT</span>
+              <div className="ob-row-body">
+                <div className="ob-donor-reel">
+                  {phase !== 'gap' && (
+                    <div
+                      key={idx}
+                      className="ob-donor-row"
+                      data-phase={phase}
+                      data-cycle-dir={cycle.direction}
+                      style={rowStyle}
+                    >
+                      <span className="ob-donor-rank">#{idx + 1}</span>
+                      <span className="ob-donor-name">{d.name}</span>
+                      <span className="ob-donor-amount">£{d.amount}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DonationReelSection() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
@@ -1373,6 +1698,8 @@ function DonationReelSection() {
         crawl. The two donors never overlap — the outgoing one fully
         exits before the next begins entering.
       </p>
+
+      <DonationReelPreview cycle={draft} />
 
       <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <label className="d-flex flex-column">
@@ -1533,6 +1860,496 @@ function ClampedNumberInput({
   );
 }
 
+
+// ── Schedule sound triggers ──────────────────────────────────────────────
+
+const ANCHOR_OPTIONS: { value: TriggerAnchor; label: string }[] = [
+  { value: 'start', label: 'Entry start' },
+  { value: 'end',   label: 'Entry end' },
+];
+
+function ScheduleSoundTriggersSection() {
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  const { data: schedule } = usePolledQuery(
+    () => event ? obsApi.schedule(event.id) : Promise.resolve([] as ScheduleEntry[]),
+    5000,
+    [event?.id],
+  );
+  const { data: triggers } = usePolledQuery(
+    () => obsApi.scheduleEntrySoundTriggers(),
+    3000,
+  );
+  const { data: assets } = usePolledQuery(obsApi.soundAssets, 10_000);
+  const [busy, setBusy] = useState(false);
+  const [draftEntryId, setDraftEntryId] = useState<number | ''>('');
+  const [draftSoundId, setDraftSoundId] = useState<number | ''>('');
+
+  // Include child entries (parent_entry != null) — e.g. an "other" slot
+  // nested inside a game row like "Dawn of the First Day" under Hyrule
+  // Warriors. Sort by the parent's order so children render next to
+  // their parent rather than at the top.
+  const entries = useMemo(() => {
+    const all = (schedule ?? []).slice();
+    const byId = new Map(all.map((e) => [e.id, e]));
+    const orderOf = (e: ScheduleEntry): number => {
+      if (e.parent_entry == null) return e.order * 1000;
+      const parent = byId.get(e.parent_entry);
+      return (parent ? parent.order * 1000 : e.order * 1000) + e.start_offset_minutes;
+    };
+    return all.sort((a, b) => orderOf(a) - orderOf(b));
+  }, [schedule]);
+  const labelForEntry = (entry: ScheduleEntry): string => {
+    const base = entry.display_title || entry.title;
+    if (entry.parent_entry == null) return base;
+    const parent = (schedule ?? []).find((s) => s.id === entry.parent_entry);
+    const parentLabel = parent?.display_title || parent?.title || `#${entry.parent_entry}`;
+    return `↳ ${base}  (in ${parentLabel})`;
+  };
+  const triggersByEntry = useMemo(() => {
+    const map = new Map<number, ScheduleEntrySoundTrigger[]>();
+    for (const t of triggers ?? []) {
+      const arr = map.get(t.schedule_entry) ?? [];
+      arr.push(t);
+      map.set(t.schedule_entry, arr);
+    }
+    return map;
+  }, [triggers]);
+
+  const addTrigger = async () => {
+    if (!draftEntryId || !draftSoundId) return;
+    setBusy(true);
+    try {
+      await obsApi.createScheduleEntrySoundTrigger({
+        schedule_entry: Number(draftEntryId),
+        sound: Number(draftSoundId),
+        anchor: 'start',
+        offset_seconds: 0,
+        message: '',
+        priority: 5,
+        duration_seconds: 6,
+        show_banner: true,
+        is_active: true,
+      });
+      setDraftSoundId('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetAll = async () => {
+    if (!confirm('Clear last-fired timestamps on every trigger of the active event?')) return;
+    setBusy(true);
+    try {
+      await obsApi.resetScheduleEntrySoundTriggers();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!event) {
+    return (
+      <section className="control-card">
+        <h2>Schedule sound triggers</h2>
+        <p className="text-warning">No active event.</p>
+      </section>
+    );
+  }
+
+  const entriesWithTriggers = entries.filter((e) => (triggersByEntry.get(e.id) ?? []).length > 0);
+  const soundOptions = assets ?? [];
+
+  return (
+    <section className="control-card" style={{ minWidth: 0 }}>
+      <h2>Schedule sound triggers</h2>
+      <p className="text-white-50">
+        Wire sounds from the library to schedule entries at signed
+        offsets from the entry's start or end ETA. <strong>Anchor</strong>{' '}
+        picks start or end; <strong>Offset</strong> is signed seconds —
+        negative fires before, 0 at, positive after.{' '}
+        <strong>Show banner</strong> off → audio plays alone, no
+        celebration takeover (use for ambient cues like warning bells).
+        Bell example: 3 rows, anchor=start, offsets <code>-30</code>,{' '}
+        <code>-20</code>, <code>-10</code>, Show banner off; plus a
+        4th row at <code>0</code> with the start sting and Show banner
+        on.
+      </p>
+
+      <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <label className="d-flex flex-column">
+          <small>Add trigger to entry</small>
+          <select
+            value={draftEntryId}
+            onChange={(e) => setDraftEntryId(e.target.value ? Number(e.target.value) : '')}
+            style={{ minWidth: 280 }}
+          >
+            <option value="">Pick a schedule entry…</option>
+            {entries.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.parent_entry == null ? `#${entry.order} ` : ''}{labelForEntry(entry)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="d-flex flex-column">
+          <small>Sound</small>
+          <select
+            value={draftSoundId}
+            onChange={(e) => setDraftSoundId(e.target.value ? Number(e.target.value) : '')}
+            style={{ minWidth: 200 }}
+          >
+            <option value="">Pick a sound…</option>
+            {soundOptions.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="btn btn-bloodmoon"
+          disabled={busy || !draftEntryId || !draftSoundId}
+          onClick={addTrigger}
+        >
+          Add trigger
+        </button>
+        <button
+          className="btn btn-outline-light"
+          disabled={busy}
+          onClick={resetAll}
+          style={{ marginLeft: 'auto' }}
+          title="Clears last_fired_at on every trigger so the show can be re-run"
+        >
+          Reset all (re-arm)
+        </button>
+      </div>
+
+      {entriesWithTriggers.length === 0 && (
+        <p className="text-white-50 mt-3">No triggers yet.</p>
+      )}
+
+      {entriesWithTriggers.map((entry) => {
+        const entryTriggers = (triggersByEntry.get(entry.id) ?? [])
+          .slice()
+          .sort((a, b) => {
+            if (a.anchor !== b.anchor) return a.anchor === 'start' ? -1 : 1;
+            return a.offset_seconds - b.offset_seconds;
+          });
+        return (
+          <div key={entry.id} className="mt-3">
+            <h3 style={{ fontSize: '0.95rem', margin: '0 0 0.35rem' }}>
+              <code>#{entry.order}</code> {labelForEntry(entry)}
+            </h3>
+            <table
+              className="control-table trigger-table"
+              style={{ fontSize: '0.8em', width: '100%', tableLayout: 'fixed' }}
+            >
+              <colgroup>
+                <col style={{ width: 84 }} />
+                <col style={{ width: 64 }} />
+                <col style={{ width: 130 }} />
+                <col style={{ width: 56 }} />
+                <col style={{ width: 130 }} />
+                <col />
+                <col />
+                <col style={{ width: 52 }} />
+                <col style={{ width: 52 }} />
+                <col style={{ width: 48 }} />
+                <col style={{ width: 70 }} />
+                <col style={{ width: 132 }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Anchor</th>
+                  <th title="Offset in seconds — signed">Off (s)</th>
+                  <th>Sound</th>
+                  <th title="Show banner">Bnr</th>
+                  <th>Tag</th>
+                  <th>Message</th>
+                  <th>Subhead</th>
+                  <th title="Priority">Pri</th>
+                  <th title="Duration in seconds">Dur</th>
+                  <th title="Active">On</th>
+                  <th>Fired</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {entryTriggers.map((t) => (
+                  <TriggerRow key={t.id} trigger={t} sounds={soundOptions} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+interface OmnibarTriggerDraft {
+  anchor: TriggerAnchor;
+  sound: number;
+  offset_seconds: string;
+  show_banner: boolean;
+  tag: string;
+  message: string;
+  subhead: string;
+  priority: string;
+  duration_seconds: string;
+  is_active: boolean;
+}
+
+function omnibarTriggerDraft(t: ScheduleEntrySoundTrigger): OmnibarTriggerDraft {
+  return {
+    anchor: t.anchor,
+    sound: t.sound,
+    offset_seconds: String(t.offset_seconds),
+    show_banner: t.show_banner,
+    tag: t.tag,
+    message: t.message,
+    subhead: t.subhead,
+    priority: String(t.priority),
+    duration_seconds: String(t.duration_seconds),
+    is_active: t.is_active,
+  };
+}
+
+function TriggerRow({
+  trigger,
+  sounds,
+}: {
+  trigger: ScheduleEntrySoundTrigger;
+  sounds: SoundAsset[];
+}) {
+  const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState<OmnibarTriggerDraft>(() => omnibarTriggerDraft(trigger));
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (dirty) return;
+    setDraft(omnibarTriggerDraft(trigger));
+  }, [trigger, dirty]);
+
+  const patch = <K extends keyof OmnibarTriggerDraft>(key: K, value: OmnibarTriggerDraft[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+    setDirty(true);
+  };
+
+  const clampInt = (s: string, lo: number, hi: number, fallback: number) => {
+    const n = Number(s);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(lo, Math.min(hi, Math.round(n)));
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await obsApi.updateScheduleEntrySoundTrigger(trigger.id, {
+        anchor: draft.anchor,
+        sound: draft.sound,
+        offset_seconds: clampInt(draft.offset_seconds, -3600, 3600, trigger.offset_seconds),
+        show_banner: draft.show_banner,
+        tag: draft.tag,
+        message: draft.message,
+        subhead: draft.subhead,
+        priority: clampInt(draft.priority, 0, 100, trigger.priority),
+        duration_seconds: clampInt(draft.duration_seconds, 1, 120, trigger.duration_seconds),
+        is_active: draft.is_active,
+      });
+      setDirty(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetDraft = () => {
+    setDraft(omnibarTriggerDraft(trigger));
+    setDirty(false);
+  };
+
+  const test = () => {
+    const asset = sounds.find((s) => s.id === draft.sound);
+    if (!asset?.url) return;
+    try {
+      const audio = new Audio(asset.url);
+      audio.volume = Math.max(0, Math.min(1, asset.volume));
+      audio.play().catch(() => {});
+    } catch { /* ignore */ }
+  };
+
+  const remove = async () => {
+    if (!confirm('Delete this trigger?')) return;
+    setBusy(true);
+    try {
+      await obsApi.deleteScheduleEntrySoundTrigger(trigger.id);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Visual dimming on the banner-only columns when show_banner is off.
+  const dimWhenSilent = !draft.show_banner ? { opacity: 0.55 as const } : undefined;
+  const rowStyle = dirty ? { background: 'rgba(255, 210, 58, 0.06)' } : undefined;
+
+  const inputFill: CSSProperties = { width: '100%', boxSizing: 'border-box', minWidth: 0 };
+  return (
+    <tr style={rowStyle}>
+      <td>
+        <select
+          disabled={busy}
+          value={draft.anchor}
+          onChange={(e) => patch('anchor', e.target.value as TriggerAnchor)}
+          style={inputFill}
+        >
+          {ANCHOR_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <input
+          type="number"
+          disabled={busy}
+          min={-3600}
+          max={3600}
+          step={5}
+          value={draft.offset_seconds}
+          onChange={(e) => patch('offset_seconds', e.target.value)}
+          style={inputFill}
+        />
+      </td>
+      <td>
+        <select
+          disabled={busy}
+          value={draft.sound}
+          onChange={(e) => patch('sound', Number(e.target.value))}
+          style={inputFill}
+        >
+          {sounds.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </td>
+      <td style={{ textAlign: 'center' }}>
+        <input
+          type="checkbox"
+          disabled={busy}
+          checked={draft.show_banner}
+          onChange={(e) => patch('show_banner', e.target.checked)}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.tag}
+          onChange={(e) => patch('tag', e.target.value)}
+          placeholder="NOW PLAYING"
+          maxLength={64}
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.message}
+          onChange={(e) => patch('message', e.target.value)}
+          placeholder="Banner headline"
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.subhead}
+          onChange={(e) => patch('subhead', e.target.value)}
+          placeholder="Optional subline"
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="number"
+          disabled={busy}
+          min={0}
+          max={100}
+          step={1}
+          value={draft.priority}
+          onChange={(e) => patch('priority', e.target.value)}
+          style={inputFill}
+        />
+      </td>
+      <td style={dimWhenSilent}>
+        <input
+          type="number"
+          disabled={busy}
+          min={1}
+          max={120}
+          step={1}
+          value={draft.duration_seconds}
+          onChange={(e) => patch('duration_seconds', e.target.value)}
+          style={inputFill}
+        />
+      </td>
+      <td style={{ textAlign: 'center' }}>
+        <input
+          type="checkbox"
+          disabled={busy}
+          checked={draft.is_active}
+          onChange={(e) => patch('is_active', e.target.checked)}
+        />
+      </td>
+      <td className="text-white-50" style={{ fontSize: '0.85em' }}>
+        {trigger.last_fired_at ? fmtTime(trigger.last_fired_at) : '—'}
+      </td>
+      <td style={{ whiteSpace: 'nowrap', padding: '0.25rem' }}>
+        <div style={{ display: 'inline-flex', gap: '0.2rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon trigger-icon-btn"
+            disabled={!dirty || busy}
+            onClick={save}
+            title={dirty ? 'Save pending edits' : 'No changes'}
+            aria-label="Save"
+          >
+            <FontAwesomeIcon icon={faFloppyDisk} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light trigger-icon-btn"
+            disabled={!dirty || busy}
+            onClick={resetDraft}
+            title="Discard pending edits"
+            aria-label="Reset"
+          >
+            <FontAwesomeIcon icon={faRotateLeft} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light trigger-icon-btn"
+            disabled={busy}
+            onClick={test}
+            title="Play the wired sound asset locally"
+            aria-label="Test sound"
+          >
+            <FontAwesomeIcon icon={faPlay} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger trigger-icon-btn"
+            disabled={busy}
+            onClick={remove}
+            title="Delete trigger"
+            aria-label="Delete"
+          >
+            <FontAwesomeIcon icon={faTrash} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 // ── Objective editor ─────────────────────────────────────────────────────
 
 function ObjectiveSection() {
@@ -1620,6 +2437,16 @@ function ObjectiveSection() {
 }
 
 // ── 1. Overrides ─────────────────────────────────────────────────────────
+
+const OVERRIDE_COLUMNS: TableColumn<OmnibarOverride>[] = [
+  { id: 'kind',     header: 'Kind',     sortValue: (o) => o.kind, initialWidth: 140 },
+  { id: 'lane',     header: 'Lane',     sortValue: (o) => o.target_lane, initialWidth: 100 },
+  { id: 'message',  header: 'Message',  sortValue: (o) => String(o.payload?.message ?? '') },
+  { id: 'priority', header: 'Priority', sortValue: (o) => o.priority, initialWidth: 90 },
+  { id: 'window',   header: 'Window',   sortValue: (o) => new Date(o.starts_at).getTime(), initialWidth: 180 },
+  { id: 'state',    header: 'State',    sortValue: (o) => (o.is_live ? 0 : o.is_active ? 1 : 2), initialWidth: 100 },
+  { id: 'actions',  header: '',         initialWidth: 360 },
+];
 
 function OverridesSection() {
   const { data: overrides } = usePolledQuery(obsApi.overrides, 3000);
@@ -1721,33 +2548,98 @@ function OverridesSection() {
         </button>
       </div>
 
-      <table className="control-table mt-3">
-        <thead>
-          <tr>
-            <th>Kind</th>
-            <th>Lane</th>
-            <th>Message</th>
-            <th>Priority</th>
-            <th>Window</th>
-            <th>State</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {(overrides ?? []).length === 0 && (
-            <tr><td colSpan={7} className="text-white-50">No overrides yet.</td></tr>
-          )}
-          {(overrides ?? []).map((o) => (
-            <OverrideRow key={o.id} o={o} />
-          ))}
-        </tbody>
-      </table>
+      <OverridesTable rows={overrides ?? []} />
     </section>
   );
 }
 
+function OverridesTable({ rows }: { rows: OmnibarOverride[] }) {
+  const ctrl = useTableControls(rows, OVERRIDE_COLUMNS, 'control:overrides-v1');
+  return (
+    <div className="mt-3">
+      <ctrl.FilterInput placeholder="Filter overrides…" />
+      <div style={{ overflowX: 'auto' }}>
+        <table className="control-table" style={{ minWidth: 1080, tableLayout: 'fixed' }}>
+          <colgroup>
+            {OVERRIDE_COLUMNS.map((c) => <col key={c.id} style={ctrl.colStyle(c.id)} />)}
+          </colgroup>
+          <thead>
+            <tr>
+              {OVERRIDE_COLUMNS.map((c) => (
+                <th key={c.id} {...ctrl.headerProps(c.id)}>
+                  {c.header}
+                  {ctrl.sortIndicator(c.id)}
+                  {ctrl.resizeHandle(c.id)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ctrl.rows.length === 0 && (
+              <tr><td colSpan={OVERRIDE_COLUMNS.length} className="text-white-50">No overrides match.</td></tr>
+            )}
+            {ctrl.rows.map((o) => (
+              <OverrideRow key={o.id} o={o} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+interface OverrideDraft {
+  kind: string;
+  target_lane: OmnibarLane;
+  message: string;
+  priority: string;
+}
+
+function overrideDraft(o: OmnibarOverride): OverrideDraft {
+  return {
+    kind: o.kind,
+    target_lane: o.target_lane,
+    message: String(o.payload?.message ?? ''),
+    priority: String(o.priority),
+  };
+}
+
 function OverrideRow({ o }: { o: OmnibarOverride }) {
   const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState<OverrideDraft>(() => overrideDraft(o));
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    if (dirty) return;
+    setDraft(overrideDraft(o));
+  }, [o, dirty]);
+
+  const patch = <K extends keyof OverrideDraft>(key: K, value: OverrideDraft[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+    setDirty(true);
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const priority = Number(draft.priority);
+      // Merge the message into the existing payload so other JSON
+      // keys (sound_url for schedule-entry-sound, etc.) survive.
+      const existingPayload = (o.payload && typeof o.payload === 'object') ? o.payload : {};
+      await obsApi.updateOverride(o.id, {
+        kind: draft.kind.trim(),
+        target_lane: draft.target_lane,
+        payload: { ...existingPayload, message: draft.message },
+        priority: Number.isFinite(priority) ? Math.round(priority) : o.priority,
+      });
+      setDirty(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const reset = () => {
+    setDraft(overrideDraft(o));
+    setDirty(false);
+  };
   const toggle = async () => {
     setBusy(true);
     try {
@@ -1758,15 +2650,54 @@ function OverrideRow({ o }: { o: OmnibarOverride }) {
     }
   };
   const remove = async () => {
+    if (!confirm(`Delete override "${o.kind}"?`)) return;
     setBusy(true);
     try { await obsApi.deleteOverride(o.id); } finally { setBusy(false); }
   };
+
+  const rowStyle = dirty ? { background: 'rgba(255, 210, 58, 0.06)' } : undefined;
   return (
-    <tr>
-      <td><code>{o.kind}</code></td>
-      <td><code>{o.target_lane}</code></td>
-      <td>{String(o.payload?.message ?? '')}</td>
-      <td>{o.priority}</td>
+    <tr style={rowStyle}>
+      <td>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.kind}
+          onChange={(e) => patch('kind', e.target.value)}
+          style={{ width: '100%', minWidth: 120 }}
+        />
+      </td>
+      <td>
+        <select
+          disabled={busy}
+          value={draft.target_lane}
+          onChange={(e) => patch('target_lane', e.target.value as OmnibarLane)}
+        >
+          <option value="top">top</option>
+          <option value="bottom">bottom</option>
+          <option value="both">both</option>
+        </select>
+      </td>
+      <td>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.message}
+          onChange={(e) => patch('message', e.target.value)}
+          style={{ width: '100%', minWidth: 200 }}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          disabled={busy}
+          min={0}
+          step={1}
+          value={draft.priority}
+          onChange={(e) => patch('priority', e.target.value)}
+          style={{ width: 70 }}
+        />
+      </td>
       <td className="text-white-50" style={{ fontSize: '0.85em' }}>
         {fmtTimeRange(o.starts_at, o.expires_at)}
       </td>
@@ -1775,13 +2706,32 @@ function OverrideRow({ o }: { o: OmnibarOverride }) {
           o.is_active ? <span className="text-warning">queued</span> :
             <span className="text-white-50">paused</span>}
       </td>
-      <td className="control-btn-row">
-        <button className="btn btn-sm btn-outline-light" disabled={busy} onClick={toggle}>
-          {o.is_active ? 'Deactivate' : 'Activate'}
-        </button>
-        <button className="btn btn-sm btn-outline-danger" disabled={busy} onClick={remove}>
-          Delete
-        </button>
+      <td style={{ whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'inline-flex', gap: '0.35rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            disabled={!dirty || busy}
+            onClick={save}
+            title={dirty ? 'Commit pending edits' : 'No changes'}
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light"
+            disabled={!dirty || busy}
+            onClick={reset}
+          >
+            Reset
+          </button>
+          <button type="button" className="btn btn-sm btn-outline-light" disabled={busy} onClick={toggle}>
+            {o.is_active ? 'Deactivate' : 'Activate'}
+          </button>
+          <button type="button" className="btn btn-sm btn-outline-danger" disabled={busy} onClick={remove}>
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -1892,28 +2842,53 @@ function PlaythroughEventsSection() {
 
           <PayloadHelp onPickExample={setCustomPayload} />
 
-          <table className="control-table mt-3">
-            <thead>
-              <tr>
-                <th>Kind</th>
-                <th>Payload</th>
-                <th>Created</th>
-                <th>Expires</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(events ?? []).length === 0 && (
-                <tr><td colSpan={5} className="text-white-50">No events yet.</td></tr>
-              )}
-              {(events ?? []).map((e) => (
-                <PlaythroughEventRow key={e.id} ev={e} />
-              ))}
-            </tbody>
-          </table>
+          <PlaythroughEventsTable rows={events ?? []} />
         </>
       )}
     </section>
+  );
+}
+
+const PLAYTHROUGH_COLUMNS: TableColumn<PlaythroughEvent>[] = [
+  { id: 'kind',    header: 'Kind',    sortValue: (e) => e.kind,                                                  initialWidth: 180 },
+  { id: 'payload', header: 'Payload', filterValue: (e) => JSON.stringify(e.payload) },
+  { id: 'created', header: 'Created', sortValue: (e) => new Date(e.created_at).getTime(),                       initialWidth: 130 },
+  { id: 'expires', header: 'Expires', sortValue: (e) => (e.expires_at ? new Date(e.expires_at).getTime() : 0),  initialWidth: 130 },
+  { id: 'actions', header: '',                                                                                   initialWidth: 110 },
+];
+
+function PlaythroughEventsTable({ rows }: { rows: PlaythroughEvent[] }) {
+  const ctrl = useTableControls(rows, PLAYTHROUGH_COLUMNS, 'control:playthrough-events-v1');
+  return (
+    <div className="mt-3">
+      <ctrl.FilterInput placeholder="Filter events…" />
+      <div style={{ overflowX: 'auto' }}>
+        <table className="control-table" style={{ minWidth: 840, tableLayout: 'fixed' }}>
+          <colgroup>
+            {PLAYTHROUGH_COLUMNS.map((c) => <col key={c.id} style={ctrl.colStyle(c.id)} />)}
+          </colgroup>
+          <thead>
+            <tr>
+              {PLAYTHROUGH_COLUMNS.map((c) => (
+                <th key={c.id} {...ctrl.headerProps(c.id)}>
+                  {c.header}
+                  {ctrl.sortIndicator(c.id)}
+                  {ctrl.resizeHandle(c.id)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ctrl.rows.length === 0 && (
+              <tr><td colSpan={PLAYTHROUGH_COLUMNS.length} className="text-white-50">No events match.</td></tr>
+            )}
+            {ctrl.rows.map((e) => (
+              <PlaythroughEventRow key={e.id} ev={e} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -2025,6 +3000,15 @@ function PlaythroughEventRow({ ev }: { ev: PlaythroughEvent }) {
 
 // ── 3. Incentives ────────────────────────────────────────────────────────
 
+const INCENTIVE_COLUMNS: TableColumn<Incentive>[] = [
+  { id: 'name',     header: 'Name',     sortValue: (i) => i.name,                                       initialWidth: 220 },
+  { id: 'goal',     header: 'Goal (£)', sortValue: (i) => Number(i.goal_amount) || 0,                   initialWidth: 110 },
+  { id: 'progress', header: 'Progress', sortValue: (i) => i.progress_pct,                               initialWidth: 220 },
+  { id: 'state',    header: 'State',    sortValue: (i) => (i.is_reached ? 0 : i.is_active ? 1 : 2),     initialWidth: 110 },
+  { id: 'contribute', header: 'Contribute',                                                              initialWidth: 320 },
+  { id: 'actions',  header: '',                                                                          initialWidth: 360 },
+];
+
 function IncentivesSection() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
   const { data: incentives } = usePolledQuery(
@@ -2123,25 +3107,7 @@ function IncentivesSection() {
             </button>
           </div>
 
-          <table className="control-table mt-3">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Progress</th>
-                <th>State</th>
-                <th>Contribute</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(incentives ?? []).length === 0 && (
-                <tr><td colSpan={5} className="text-white-50">No incentives yet.</td></tr>
-              )}
-              {(incentives ?? []).map((i) => (
-                <IncentiveRow key={i.id} incentive={i} />
-              ))}
-            </tbody>
-          </table>
+          <IncentivesTable rows={incentives ?? []} />
         </>
       )}
     </section>
@@ -2169,11 +3135,93 @@ function readBidWarOptions(incentive: Incentive): BidWarOption[] | null {
     }));
 }
 
+function IncentivesTable({ rows }: { rows: Incentive[] }) {
+  const ctrl = useTableControls(rows, INCENTIVE_COLUMNS, 'control:incentives-v1');
+  return (
+    <div className="mt-3">
+      <ctrl.FilterInput placeholder="Filter incentives…" />
+      <div style={{ overflowX: 'auto' }}>
+        <table className="control-table" style={{ minWidth: 1180, tableLayout: 'fixed' }}>
+          <colgroup>
+            {INCENTIVE_COLUMNS.map((c) => <col key={c.id} style={ctrl.colStyle(c.id)} />)}
+          </colgroup>
+          <thead>
+            <tr>
+              {INCENTIVE_COLUMNS.map((c) => (
+                <th key={c.id} {...ctrl.headerProps(c.id)}>
+                  {c.header}
+                  {ctrl.sortIndicator(c.id)}
+                  {ctrl.resizeHandle(c.id)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ctrl.rows.length === 0 && (
+              <tr><td colSpan={INCENTIVE_COLUMNS.length} className="text-white-50">No incentives match.</td></tr>
+            )}
+            {ctrl.rows.map((i) => (
+              <IncentiveRow key={i.id} incentive={i} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+interface IncentiveDraft {
+  name: string;
+  goal_amount: string;
+  description: string;
+  is_active: boolean;
+}
+
+function incentiveDraft(i: Incentive): IncentiveDraft {
+  return {
+    name: i.name,
+    goal_amount: i.goal_amount,
+    description: i.description,
+    is_active: i.is_active,
+  };
+}
+
 function IncentiveRow({ incentive }: { incentive: Incentive }) {
   const [busy, setBusy] = useState(false);
   const [amount, setAmount] = useState('5.00');
   const [flash, setFlash] = useState(false);
+  const [draft, setDraft] = useState<IncentiveDraft>(() => incentiveDraft(incentive));
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    if (dirty) return;
+    setDraft(incentiveDraft(incentive));
+  }, [incentive, dirty]);
+
+  const patch = <K extends keyof IncentiveDraft>(key: K, value: IncentiveDraft[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+    setDirty(true);
+  };
+
   const options = readBidWarOptions(incentive);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await obsApi.updateIncentive(incentive.id, {
+        name: draft.name.trim(),
+        goal_amount: draft.goal_amount.trim(),
+        description: draft.description,
+        is_active: draft.is_active,
+      });
+      setDirty(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const resetDraft = () => {
+    setDraft(incentiveDraft(incentive));
+    setDirty(false);
+  };
 
   const contribute = async (optionId?: string) => {
     setBusy(true);
@@ -2189,11 +3237,12 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
   };
 
   const remove = async () => {
+    if (!confirm(`Delete incentive "${incentive.name}"?`)) return;
     setBusy(true);
     try { await obsApi.deleteIncentive(incentive.id); } finally { setBusy(false); }
   };
 
-  const reset = async () => {
+  const resetProgress = async () => {
     if (
       !confirm(
         `Reset "${incentive.name}" back to £0?\n\n` +
@@ -2214,13 +3263,42 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
     }
   };
 
+  const rowStyle = flash
+    ? { background: 'rgba(255, 210, 58, 0.18)' }
+    : dirty
+      ? { background: 'rgba(255, 210, 58, 0.06)' }
+      : undefined;
+
   return (
-    <tr style={flash ? { background: 'rgba(255, 210, 58, 0.18)' } : undefined}>
+    <tr style={rowStyle}>
       <td>
-        <div>{incentive.name}</div>
-        {incentive.description && (
-          <small className="text-white-50">{incentive.description}</small>
-        )}
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.name}
+          onChange={(e) => patch('name', e.target.value)}
+          style={{ width: '100%', minWidth: 180 }}
+        />
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.description}
+          onChange={(e) => patch('description', e.target.value)}
+          placeholder="Description (optional)"
+          className="mt-1"
+          style={{ width: '100%', minWidth: 180, fontSize: '0.85em' }}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          disabled={busy}
+          step="0.01"
+          min="0"
+          value={draft.goal_amount}
+          onChange={(e) => patch('goal_amount', e.target.value)}
+          style={{ width: 110 }}
+        />
       </td>
       <td style={{ minWidth: 220 }}>
         <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.12)' }}>
@@ -2239,24 +3317,34 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
         </small>
       </td>
       <td>
-        {incentive.is_reached
-          ? <span className="text-success">REACHED</span>
-          : incentive.is_active
-            ? <span>active</span>
-            : <span className="text-white-50">paused</span>}
+        <label className="d-inline-flex align-items-center gap-1">
+          <input
+            type="checkbox"
+            disabled={busy}
+            checked={draft.is_active}
+            onChange={(e) => patch('is_active', e.target.checked)}
+          />
+          <small>active</small>
+        </label>
+        <div className="text-white-50" style={{ fontSize: '0.8em' }}>
+          {incentive.is_reached
+            ? <span className="text-success">REACHED</span>
+            : null}
+        </div>
       </td>
       <td>
-        <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'inline-flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             type="number"
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            style={{ width: 90 }}
+            style={{ width: 80 }}
           />
           {options ? (
             options.map((o) => (
               <button
+                type="button"
                 key={o.id}
                 className="btn btn-sm btn-outline-light"
                 disabled={busy}
@@ -2268,22 +3356,39 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
               </button>
             ))
           ) : (
-            <button className="btn btn-sm btn-bloodmoon" disabled={busy} onClick={() => contribute()}>
+            <button type="button" className="btn btn-sm btn-bloodmoon" disabled={busy} onClick={() => contribute()}>
               +£{amount}
             </button>
           )}
         </div>
       </td>
-      <td>
-        <div className="d-flex gap-1">
+      <td style={{ whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'inline-flex', gap: '0.35rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            disabled={!dirty || busy}
+            onClick={save}
+            title={dirty ? 'Commit pending edits' : 'No changes'}
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light"
+            disabled={!dirty || busy}
+            onClick={resetDraft}
+          >
+            Reset
+          </button>
           <button
             type="button"
             className="btn btn-sm btn-outline-warning"
             disabled={busy}
-            onClick={reset}
+            onClick={resetProgress}
             title="Reset progress to £0 (clears reached, zeros bid-war votes)"
           >
-            ⟲ Reset
+            ⟲ Re-arm
           </button>
           <button
             type="button"
@@ -2300,6 +3405,16 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
 }
 
 // ── 4. Milestones ────────────────────────────────────────────────────────
+
+const MILESTONE_COLUMNS: TableColumn<Milestone>[] = [
+  { id: 'name',      header: 'Name',       sortValue: (m) => m.name,                            initialWidth: 200 },
+  { id: 'threshold', header: 'Threshold',  sortValue: (m) => Number(m.threshold_amount) || 0,   initialWidth: 130 },
+  { id: 'message',   header: 'Message',    sortValue: (m) => m.celebration_message,             initialWidth: 260 },
+  { id: 'audio_url', header: 'Audio URL',  sortValue: (m) => m.audio_url,                       initialWidth: 240 },
+  { id: 'order',     header: 'Order',      sortValue: (m) => m.order,                           initialWidth: 80 },
+  { id: 'state',     header: 'State',      sortValue: (m) => (m.is_reached ? 0 : 1),            initialWidth: 140 },
+  { id: 'actions',   header: '',                                                                initialWidth: 480 },
+];
 
 function MilestonesSection() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
@@ -2374,38 +3489,123 @@ function MilestonesSection() {
             </button>
           </div>
 
-          <table className="control-table mt-3">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Threshold</th>
-                <th>Message</th>
-                <th>State</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(milestones ?? []).length === 0 && (
-                <tr><td colSpan={5} className="text-white-50">No milestones yet.</td></tr>
-              )}
-              {(milestones ?? []).map((m) => (
-                <MilestoneRow key={m.id} milestone={m} />
-              ))}
-            </tbody>
-          </table>
+          <p className="text-white-50 small mt-3 mb-1">
+            Edits stage locally on each row — hit <strong>Save</strong> to
+            commit or <strong>Reset</strong> to discard. Audio URL is
+            optional fanfare audio that plays alongside the celebration
+            banner when the milestone is reached.
+          </p>
+          <MilestonesTable rows={milestones ?? []} />
         </>
       )}
     </section>
   );
 }
 
+function MilestonesTable({ rows }: { rows: Milestone[] }) {
+  const ctrl = useTableControls(rows, MILESTONE_COLUMNS, 'control:milestones-v1');
+  return (
+    <div>
+      <ctrl.FilterInput placeholder="Filter milestones…" />
+      <div style={{ overflowX: 'auto' }}>
+        <table className="control-table" style={{ minWidth: 1100, tableLayout: 'fixed' }}>
+          <colgroup>
+            {MILESTONE_COLUMNS.map((c) => <col key={c.id} style={ctrl.colStyle(c.id)} />)}
+          </colgroup>
+          <thead>
+            <tr>
+              {MILESTONE_COLUMNS.map((c) => (
+                <th key={c.id} {...ctrl.headerProps(c.id)}>
+                  {c.header}
+                  {ctrl.sortIndicator(c.id)}
+                  {ctrl.resizeHandle(c.id)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ctrl.rows.length === 0 && (
+              <tr><td colSpan={MILESTONE_COLUMNS.length} className="text-white-50">No milestones match.</td></tr>
+            )}
+            {ctrl.rows.map((m) => (
+              <MilestoneRow key={m.id} milestone={m} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+interface MilestoneDraft {
+  name: string;
+  threshold_amount: string;
+  celebration_message: string;
+  audio_url: string;
+  order: string;
+}
+
+function milestoneDraft(m: Milestone): MilestoneDraft {
+  return {
+    name: m.name,
+    threshold_amount: m.threshold_amount,
+    celebration_message: m.celebration_message,
+    audio_url: m.audio_url,
+    order: String(m.order),
+  };
+}
+
 function MilestoneRow({ milestone }: { milestone: Milestone }) {
   const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState<MilestoneDraft>(() => milestoneDraft(milestone));
+  const [dirty, setDirty] = useState(false);
+
+  // Re-seed from the canonical milestone on every poll, but only
+  // when the row is CLEAN. If the operator has staged unsaved edits,
+  // leave the drafts alone so a background poll doesn't wipe them.
+  useEffect(() => {
+    if (dirty) return;
+    setDraft(milestoneDraft(milestone));
+  }, [milestone, dirty]);
+
+  const patch = <K extends keyof MilestoneDraft>(key: K, value: MilestoneDraft[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+    setDirty(true);
+  };
+
+  const canSave =
+    dirty &&
+    !busy &&
+    draft.name.trim() !== '' &&
+    draft.threshold_amount.trim() !== '';
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const orderN = Number(draft.order);
+      await obsApi.updateMilestone(milestone.id, {
+        name: draft.name.trim(),
+        threshold_amount: draft.threshold_amount.trim(),
+        celebration_message: draft.celebration_message,
+        audio_url: draft.audio_url.trim(),
+        order: Number.isFinite(orderN) ? Math.max(0, Math.round(orderN)) : milestone.order,
+      });
+      setDirty(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetDraft = () => {
+    setDraft(milestoneDraft(milestone));
+    setDirty(false);
+  };
+
   const mark = async () => {
     setBusy(true);
     try { await obsApi.markMilestoneReached(milestone.id); } finally { setBusy(false); }
   };
-  const reset = async () => {
+  const resetReached = async () => {
     if (
       !confirm(
         `Reset "${milestone.name}" back to pending?\n\n` +
@@ -2426,49 +3626,153 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
     }
   };
   const remove = async () => {
+    if (!confirm(`Delete milestone "${milestone.name}"?`)) return;
     setBusy(true);
     try { await obsApi.deleteMilestone(milestone.id); } finally { setBusy(false); }
   };
+
+  // Subtle gold tint on dirty rows so it's obvious which rows have
+  // pending edits awaiting Save.
+  const rowStyle = dirty ? { background: 'rgba(255, 210, 58, 0.06)' } : undefined;
+
   return (
-    <tr>
-      <td>{milestone.name}</td>
-      <td>£{milestone.threshold_amount}</td>
-      <td className="text-white-50">{milestone.celebration_message || '—'}</td>
+    <tr style={rowStyle}>
+      <td>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.name}
+          onChange={(e) => patch('name', e.target.value)}
+          placeholder="Name"
+          style={{ width: '100%', minWidth: 140 }}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          disabled={busy}
+          step="0.01"
+          min="0"
+          value={draft.threshold_amount}
+          onChange={(e) => patch('threshold_amount', e.target.value)}
+          style={{ width: 110 }}
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.celebration_message}
+          onChange={(e) => patch('celebration_message', e.target.value)}
+          placeholder="Halfway to the moon!"
+          style={{ width: '100%', minWidth: 200 }}
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          disabled={busy}
+          value={draft.audio_url}
+          onChange={(e) => patch('audio_url', e.target.value)}
+          placeholder="https://… (optional)"
+          style={{ width: '100%', minWidth: 200 }}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          disabled={busy}
+          step="1"
+          min="0"
+          value={draft.order}
+          onChange={(e) => patch('order', e.target.value)}
+          style={{ width: 70 }}
+        />
+      </td>
       <td>
         {milestone.is_reached
           ? <span className="text-success">REACHED · {fmtTime(milestone.reached_at!)}</span>
           : <span>pending</span>}
       </td>
-      <td className="control-btn-row">
-        <button
-          className="btn btn-sm btn-bloodmoon"
-          disabled={busy || milestone.is_reached}
-          onClick={mark}
-        >
-          Mark reached
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-warning"
-          disabled={busy || !milestone.is_reached}
-          onClick={reset}
-          title={
-            milestone.is_reached
-              ? 'Reset to pending so the celebration can fire again'
-              : 'Milestone is already pending — nothing to reset'
-          }
-        >
-          ⟲ Reset
-        </button>
-        <button className="btn btn-sm btn-outline-danger" disabled={busy} onClick={remove}>
-          Delete
-        </button>
+      <td style={{ whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'inline-flex', gap: '0.35rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            disabled={!canSave}
+            onClick={save}
+            title={dirty ? 'Commit pending edits' : 'No changes'}
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light"
+            disabled={!dirty || busy}
+            onClick={resetDraft}
+            title="Discard pending edits"
+          >
+            Reset
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light"
+            disabled={busy || !draft.audio_url.trim()}
+            onClick={() => {
+              try {
+                const audio = new Audio(draft.audio_url.trim());
+                audio.volume = 0.85;
+                audio.play().catch(() => {});
+              } catch { /* ignore */ }
+            }}
+            title={draft.audio_url ? 'Play the fanfare audio locally' : 'Set an Audio URL to test'}
+          >
+            ▶ Test
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-light"
+            disabled={busy || milestone.is_reached}
+            onClick={mark}
+          >
+            Mark reached
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-warning"
+            disabled={busy || !milestone.is_reached}
+            onClick={resetReached}
+            title={
+              milestone.is_reached
+                ? 'Reset to pending so the celebration can fire again'
+                : 'Milestone is already pending — nothing to reset'
+            }
+          >
+            ⟲ Re-arm
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger"
+            disabled={busy}
+            onClick={remove}
+          >
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   );
 }
 
 // ── 5. External events ───────────────────────────────────────────────────
+
+const EXTERNAL_COLUMNS: TableColumn<ExternalEvent>[] = [
+  { id: 'source',   header: 'Source',   sortValue: (e) => e.source,                            initialWidth: 110 },
+  { id: 'kind',     header: 'Kind',     sortValue: (e) => e.kind,                              initialWidth: 160 },
+  { id: 'payload',  header: 'Payload',  filterValue: (e) => JSON.stringify(e.payload) },
+  { id: 'occurred', header: 'Occurred', sortValue: (e) => new Date(e.occurred_at).getTime(),   initialWidth: 130 },
+  { id: 'actions',  header: '',                                                                initialWidth: 120 },
+];
 
 function ExternalEventsSection() {
   const { data: events } = usePolledQuery(
@@ -2482,26 +3786,43 @@ function ExternalEventsSection() {
         Unconsumed inbound events from Twitch / Discord webhooks. The
         omnibar polls these and marks them consumed once shown.
       </p>
-      <table className="control-table">
-        <thead>
-          <tr>
-            <th>Source</th>
-            <th>Kind</th>
-            <th>Payload</th>
-            <th>Occurred</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {(events ?? []).length === 0 && (
-            <tr><td colSpan={5} className="text-white-50">No pending external events.</td></tr>
-          )}
-          {(events ?? []).map((e) => (
-            <ExternalEventRow key={e.id} ev={e} />
-          ))}
-        </tbody>
-      </table>
+      <ExternalEventsTable rows={events ?? []} />
     </section>
+  );
+}
+
+function ExternalEventsTable({ rows }: { rows: ExternalEvent[] }) {
+  const ctrl = useTableControls(rows, EXTERNAL_COLUMNS, 'control:external-events-v1');
+  return (
+    <div className="mt-3">
+      <ctrl.FilterInput placeholder="Filter events…" />
+      <div style={{ overflowX: 'auto' }}>
+        <table className="control-table" style={{ minWidth: 820, tableLayout: 'fixed' }}>
+          <colgroup>
+            {EXTERNAL_COLUMNS.map((c) => <col key={c.id} style={ctrl.colStyle(c.id)} />)}
+          </colgroup>
+          <thead>
+            <tr>
+              {EXTERNAL_COLUMNS.map((c) => (
+                <th key={c.id} {...ctrl.headerProps(c.id)}>
+                  {c.header}
+                  {ctrl.sortIndicator(c.id)}
+                  {ctrl.resizeHandle(c.id)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ctrl.rows.length === 0 && (
+              <tr><td colSpan={EXTERNAL_COLUMNS.length} className="text-white-50">No pending external events.</td></tr>
+            )}
+            {ctrl.rows.map((e) => (
+              <ExternalEventRow key={e.id} ev={e} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

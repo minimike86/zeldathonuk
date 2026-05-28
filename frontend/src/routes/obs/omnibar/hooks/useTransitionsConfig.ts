@@ -81,18 +81,19 @@ export const DEFAULT_TRANSITION: PanelTransition = {
 
 const DIRECTIONS: AnimDirection[] = ['left', 'right', 'top', 'bottom', 'fade'];
 
-// Bounds the control-panel sliders also pin to. Picked wide enough to
-// allow comically slow rehearsals (2s) but narrow enough that an
-// accidental zero doesn't ship a no-animation rotation to broadcast.
-export const DURATION_MIN_MS = 100;
-export const DURATION_MAX_MS = 2000;
+// Bounds the control-panel editor clamps to on Save. Generous
+// ceilings so an operator can stage slow, deliberate broadcast-style
+// rotations without hitting an artificial wall — the omnibar's
+// rendering doesn't actually care how long these are.
+export const DURATION_MIN_MS = 50;
+export const DURATION_MAX_MS = 10_000;
 export const DELAY_MIN_MS = 0;
-export const DELAY_MAX_MS = 2000;
+export const DELAY_MAX_MS = 10_000;
 // Dwell is the longest natural value in a panel cycle (the active
-// display time between enter and exit), so it gets a much wider
-// range than the inter-element delays.
+// display time between enter and exit). A single panel could
+// reasonably sit on-screen for a minute or two.
 export const DWELL_MIN_MS = 0;
-export const DWELL_MAX_MS = 60000;
+export const DWELL_MAX_MS = 120_000;
 
 export interface OmnibarTransitions {
   /** Lookup by panel id. */

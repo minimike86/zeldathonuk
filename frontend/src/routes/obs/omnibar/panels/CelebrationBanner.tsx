@@ -114,6 +114,21 @@ function parseReason(reason: CelebrationReason, symbol: string): BannerView {
       };
     }
   }
+  if (reason.kind === 'schedule-entry-sound') {
+    // Schedule-entry sound triggers carry their banner copy in
+    // `payload.tag` / `.message` / `.subhead`. Tag falls back to
+    // "NOW PLAYING" when the operator didn't customise it. The
+    // sound itself plays from Omnibar.tsx's override-arrived
+    // subscription; this branch is just the visual.
+    const tag = typeof payload.tag === 'string' ? payload.tag.trim() : '';
+    const message = typeof payload.message === 'string' ? payload.message.trim() : '';
+    const sub = typeof payload.subhead === 'string' ? payload.subhead.trim() : '';
+    return {
+      tag: tag || 'NOW PLAYING',
+      headline: message || 'Schedule cue',
+      subhead: sub,
+    };
+  }
   // Unknown kind — render something readable instead of blanking.
   return {
     tag: 'ACHIEVEMENT UNLOCKED!',

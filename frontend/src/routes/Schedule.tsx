@@ -14,6 +14,7 @@ const BREAK_META: Record<string, SlotMeta> = {
   sleep: { label: 'Sleep break', icon: '💤' },
   break: { label: 'Break', icon: '☕' },
   end: { label: 'Stream end', icon: '🏁' },
+  other: { label: 'Other', icon: '⭐' },
 };
 
 interface Slot {

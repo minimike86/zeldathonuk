@@ -20,11 +20,36 @@ interface Data {
   blurb: string;
 }
 
+// SpecialEffect's wordmark used in place of the text headline so
+// the charity is identified at a glance — viewers don't need to
+// read "SpecialEffect" to recognise the brand. SVG so it scales
+// crisply at any DPR.
+const CHARITY_LOGO_URL = '/assets/img/specialeffect-logo.svg';
+const CHARITY_LABEL = 'SpecialEffect';
+
 function Panel({ data }: PanelProps<Data>) {
   return (
     <PanelRow tag="BENEFITTING">
-      <span className="ob-text-strong">SpecialEffect</span>
-      <span className="ob-text-muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <img
+        src={CHARITY_LOGO_URL}
+        alt={CHARITY_LABEL}
+        // Sized to the lane's body content height so the logo sits
+        // alongside the blurb without overflowing the 48px half-lane.
+        // `filter: drop-shadow` echoes the brand chevron + tag pill
+        // styling so the logo doesn't look pasted-on.
+        style={{
+          height: '1.7rem',
+          width: 'auto',
+          display: 'inline-block',
+          verticalAlign: 'middle',
+          filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45))',
+          flexShrink: 0,
+        }}
+      />
+      <span
+        className="ob-text-muted"
+        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+      >
         {data.blurb}
       </span>
     </PanelRow>
