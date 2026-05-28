@@ -176,6 +176,70 @@
   }
 }
 
+/* Twitch player ratio container — caps the player so the rest of the
+ * homepage fits in the viewport at 100% zoom. The cap scales DOWN as
+ * the viewport gets shorter so the bottom card (Currently Playing +
+ * Up Next + charity panel) doesn't get pushed below the fold on
+ * laptops and smaller monitors. Width-driven 16:9 means each step
+ * also narrows the player, but that's the right trade — staying
+ * scroll-free beats a slightly larger window. */
+.twitch-player-ratio {
+  max-height: 60vh;
+}
+@media (max-height: 899px) {
+  .twitch-player-ratio { max-height: 55vh; }
+}
+@media (max-height: 799px) {
+  .twitch-player-ratio { max-height: 50vh; }
+}
+@media (max-height: 699px) {
+  .twitch-player-ratio { max-height: 45vh; }
+}
+@media (max-height: 599px) {
+  .twitch-player-ratio { max-height: 40vh; }
+}
+
+/* Live pill — sits next to the channel name on the homepage's
+ * "currently streaming" header. The dot pulses with a soft red halo
+ * so peripheral vision picks it up as "this is happening NOW". */
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.55rem 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 60, 60, 0.18);
+  border: 1px solid rgba(255, 60, 60, 0.45);
+  color: #ff6e6e;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.live-pill-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #ff2a2a;
+  box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.6);
+  animation: live-pill-pulse 1.4s ease-out infinite;
+}
+
+@keyframes live-pill-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 0.55rem rgba(255, 42, 42, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 42, 42, 0);
+  }
+}
+
 /* WaveText is styled in its own component CSS (components/WaveText.css).
  * Here we just override the per-character colour when the wave is used
  * inside a .text-bloodmoon ancestor — that class paints text via a

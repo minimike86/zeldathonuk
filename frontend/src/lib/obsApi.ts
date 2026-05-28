@@ -695,6 +695,9 @@ export const obsApi = {
     return api<{
       login: string;
       is_live: boolean;
+      /** Twitch display name with the broadcaster's preferred casing
+       *  (e.g. "MSec"). Empty when offline. */
+      user_name?: string;
       started_at?: string;
       game_name?: string;
       title?: string;

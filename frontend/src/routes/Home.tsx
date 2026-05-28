@@ -148,7 +148,7 @@ export function Home() {
     <div className="container-fluid">
       <div className="d-block card card-header mt-2 p-0">
         <div className="d-flex flex-row">
-          <div className="ratio ratio-16x9" style={{ maxHeight: '60vh' }}>
+          <div className="ratio ratio-16x9 twitch-player-ratio">
             <iframe
               src={`https://player.twitch.tv/?channel=${twitchChannel}&${TWITCH_PARENT_QS}&autoplay=false`}
               frameBorder="0"
@@ -196,67 +196,106 @@ export function Home() {
                 />
               ) : isLive ? (
                 // Channel is live on Twitch but no schedule entry is set
-                // as currently-playing in /control. Compact two-line
-                // layout: pill + channel + game + viewers + Watch on
-                // one row, optional stream title on a second muted
-                // line. Keeps the whole panel under ~3em so the page
-                // doesn't overflow at 100% zoom.
-                <div
-                  className="d-flex align-items-center flex-wrap"
-                  style={{ rowGap: '0.25rem', columnGap: '0.5rem' }}
-                >
-                  <span
-                    className="badge bg-success"
-                    style={{ fontSize: '0.7rem', letterSpacing: '0.05em' }}
-                  >
-                    LIVE
-                  </span>
-                  <a
-                    href={`https://www.twitch.tv/${twitchChannel}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-white text-decoration-none"
-                    style={{ fontWeight: 700 }}
-                    title="Watch on Twitch"
-                  >
-                    {twitchChannelDisplay}
-                  </a>
-                  {streamStatus?.game_name && (
-                    <span className="text-white-50">
-                      · <b className="text-light">{streamStatus.game_name}</b>
-                    </span>
-                  )}
-                  {typeof streamStatus?.viewer_count === 'number' && streamStatus.viewer_count > 0 && (
-                    <span className="text-white-50">
-                      · {streamStatus.viewer_count.toLocaleString('en-GB')} watching
-                    </span>
-                  )}
-                  <span className="ms-auto">
-                    <a
-                      className="btn btn-sm btn-bloodmoon"
-                      style={{ padding: '0.15rem 0.7rem', fontSize: '0.75rem' }}
-                      href={`https://www.twitch.tv/${twitchChannel}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Watch →
-                    </a>
-                  </span>
-                  {streamStatus?.title && (
+                // as currently-playing in /control. 2×2 grid:
+                //   row 1: <DisplayName> Live   |   Watch → button
+                //   row 2: <game name>          |   <n> viewers
+                // Plus an optional italicised stream title spanning both
+                // columns underneath. Display name comes from Helix's
+                // `user_name` which preserves the broadcaster's preferred
+                // casing (e.g. "MSec"), falling back to the lowercased
+                // login if the Twitch API didn't return it.
+                (() => {
+                  const displayName =
+                    streamStatus?.user_name?.trim() || twitchChannelDisplay;
+                  const hasGame = !!streamStatus?.game_name;
+                  const hasViewers =
+                    typeof streamStatus?.viewer_count === 'number' && streamStatus.viewer_count > 0;
+                  return (
                     <div
-                      className="text-white-50 w-100"
                       style={{
-                        fontStyle: 'italic',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr auto',
+                        columnGap: '1rem',
+                        rowGap: '0.3rem',
+                        alignItems: 'center',
                       }}
-                      title={streamStatus.title}
                     >
-                      "{streamStatus.title}"
+                      <div className="d-flex align-items-center" style={{ gap: '0.6rem' }}>
+                        <a
+                          href={`https://www.twitch.tv/${twitchChannel}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-white text-decoration-none"
+                          style={{ fontWeight: 700, fontSize: '1.15rem' }}
+                          title="Watch on Twitch"
+                        >
+                          {displayName}
+                        </a>
+                        <span className="live-pill" aria-label="Live now">
+                          <span className="live-pill-dot" aria-hidden />
+                          Live
+                        </span>
+                      </div>
+                      <a
+                        className="btn btn-bloodmoon"
+                        style={{
+                          padding: '0.1rem 1.25rem',
+                          fontSize: '0.95rem',
+                          fontFamily: "'Bungee', cursive",
+                          letterSpacing: '0.03em',
+                          justifySelf: 'end',
+                        }}
+                        href={`https://www.twitch.tv/${twitchChannel}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Watch →
+                      </a>
+                      <div
+                        className="text-white-50"
+                        style={{
+                          fontSize: '0.9rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                        }}
+                        title={streamStatus?.game_name || ''}
+                      >
+                        {hasGame ? (
+                          <b className="text-light">{streamStatus!.game_name}</b>
+                        ) : (
+                          <span style={{ opacity: 0.5 }}>—</span>
+                        )}
+                      </div>
+                      <div
+                        className="text-white-50"
+                        style={{ fontSize: '0.9rem', textAlign: 'right', whiteSpace: 'nowrap' }}
+                      >
+                        {hasViewers ? (
+                          <>{streamStatus!.viewer_count!.toLocaleString('en-GB')} viewers</>
+                        ) : (
+                          <span style={{ opacity: 0.5 }}>—</span>
+                        )}
+                      </div>
+                      {streamStatus?.title && (
+                        <div
+                          className="text-white-50"
+                          style={{
+                            gridColumn: '1 / -1',
+                            fontStyle: 'italic',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                          title={streamStatus.title}
+                        >
+                          "{streamStatus.title}"
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  );
+                })()
               ) : (
                 <>
                   <h5>{twitchChannelDisplay} is Offline</h5>
@@ -280,7 +319,7 @@ export function Home() {
               style={{
                 borderTop:
                   'var(--theme-divider-thickness, 2px) solid var(--theme-primary, var(--bs-danger))',
-                paddingTop: '0.75rem',
+                paddingTop: '0.35rem',
               }}
             >
               {nextEntry ? (
@@ -528,7 +567,7 @@ function ScheduleEntryCard({
   const game = entry.game;
   const title = entry.display_title || game?.title;
   return (
-    <div className="d-flex align-items-center gap-3 mt-2">
+    <div className="d-flex align-items-center gap-3">
       {game?.box_art_url ? (
         <img
           src={game.box_art_url}

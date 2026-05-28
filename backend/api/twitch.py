@@ -262,6 +262,11 @@ def stream_status(request: Request) -> Response:
     return Response({
         'login': login,
         'is_live': True,
+        # `user_name` is the broadcaster's preferred display name with
+        # original casing (e.g. "MSec"), whereas `user_login` is forced
+        # lowercase. Surface both so the UI can show the styled name
+        # while keeping the lowercase handle for URLs.
+        'user_name': stream.get('user_name') or '',
         'started_at': stream.get('started_at'),
         'game_name': stream.get('game_name') or '',
         'title': stream.get('title') or '',
