@@ -61,6 +61,9 @@ urlpatterns = [
     path('webhooks/donation/', webhooks.generic_webhook, name='wh-generic'),
     # Twitch — push the active schedule to the channel's Twitch schedule.
     path('twitch/push-schedule/', twitch.push_schedule, name='twitch-push'),
+    # Read-only live-status check used by the public homepage to decide
+    # whether to show the "<channel> is Offline" placeholder.
+    path('twitch/stream-status/', twitch.stream_status, name='twitch-stream-status'),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to
     # ExternalEvent; omnibar polls for these on a 1.5s tick.
     path('twitch/eventsub/', eventsub.eventsub_webhook, name='twitch-eventsub'),

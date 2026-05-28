@@ -146,6 +146,7 @@ class EventSerializer(serializers.ModelSerializer):
             'start_time',
             'currency_symbol',
             'is_active',
+            'twitch_channel',
             'logo_url',
             'banner_url',
             'gameblast_logo_url',

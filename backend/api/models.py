@@ -91,6 +91,15 @@ class Event(models.Model):
     start_time = models.DateTimeField()
     currency_symbol = models.CharField(max_length=4, default='£')
     is_active = models.BooleanField(default=False, help_text='Only one event can be active at a time.')
+    twitch_channel = models.CharField(
+        max_length=50,
+        blank=True,
+        default='zeldathonuk',
+        help_text='Twitch channel login name (the bit after twitch.tv/) used '
+                  'for the embedded stream, chat, and "Follow Us On Twitch" '
+                  'links. Lowercase, 4-25 chars per Twitch rules. Blank → '
+                  'consumers fall back to "zeldathonuk".',
+    )
     # CharField (not URLField) on every operator-set media URL so the
     # /control/events form accepts site-relative paths
     # (/assets/img/foo.svg) alongside absolute URLs. URLField's

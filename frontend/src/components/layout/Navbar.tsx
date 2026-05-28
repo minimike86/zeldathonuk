@@ -198,9 +198,13 @@ export function Navbar() {
           <div className="d-flex flex-shrink-0 align-items-center">
             {donationPages.length > 0 && (
               <div className={cn('me-3', !collapsed && 'p-1')}>
+                {/* `p-2 px-5` matches the "Follow Us On Twitch" CTA on the
+                  * home page so every donate-flavoured button across the
+                  * app shares the same padding + size. */}
                 <DonateButton
                   pages={donationPages}
                   currencySymbol={event?.currency_symbol}
+                  className="p-2 px-5"
                 />
               </div>
             )}

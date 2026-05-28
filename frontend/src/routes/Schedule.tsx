@@ -169,6 +169,7 @@ export function Schedule() {
                     slot={slot}
                     isPlaying={!isGhost && currentEntryId === slot.entry.id}
                     isGhost={isGhost}
+                    twitchChannel={event?.twitch_channel || 'zeldathonuk'}
                   />
                 ))}
               </div>
@@ -259,10 +260,12 @@ function GameCard({
   slot,
   isPlaying,
   isGhost,
+  twitchChannel,
 }: {
   slot: Slot;
   isPlaying: boolean;
   isGhost: boolean;
+  twitchChannel: string;
 }) {
   const { entry, start, end, children } = slot;
   const isCompleted = entry.is_completed;
@@ -366,7 +369,7 @@ function GameCard({
           )}
           {isPlaying && !liveBreak && (
             <a
-              href="https://www.twitch.tv/zeldathonuk"
+              href={`https://www.twitch.tv/${twitchChannel}`}
               target="_blank"
               rel="noreferrer"
               className="schedule-pill schedule-pill--live"

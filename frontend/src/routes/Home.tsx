@@ -35,6 +35,23 @@ export function Home() {
   const innerWidth = useInnerWidth();
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
   const donationPages = event?.donation_pages ?? [];
+  const twitchChannel = event?.twitch_channel || 'zeldathonuk';
+  // Display version of the channel login for headers like "<x> is
+  // Offline" — Twitch logins are forced lowercase, but a capitalised
+  // form reads better in body copy. Preserves the rest of the handle
+  // so mixed-case channel names (rendered lowercase by Twitch) still
+  // look intentional.
+  const twitchChannelDisplay =
+    twitchChannel.charAt(0).toUpperCase() + twitchChannel.slice(1);
+  // Poll Twitch directly so "Offline" reflects the channel's actual
+  // live state, not just whether a schedule entry is marked currently-
+  // playing in /control. 30s cadence keeps Helix usage trivial.
+  const { data: streamStatus } = usePolledQuery(
+    () => obsApi.twitchStreamStatus(twitchChannel),
+    30_000,
+    [twitchChannel],
+  );
+  const isLive = !!streamStatus?.is_live;
   // Beneficiaries ordered primary-first, then by curator-set `order`.
   // Hidden entirely when the event has no linked charities yet so the
   // home page doesn't show a stale SpecialEffect card during seeding.
@@ -133,11 +150,11 @@ export function Home() {
         <div className="d-flex flex-row">
           <div className="ratio ratio-16x9" style={{ maxHeight: '60vh' }}>
             <iframe
-              src={`https://player.twitch.tv/?channel=zeldathonuk&${TWITCH_PARENT_QS}&autoplay=false`}
+              src={`https://player.twitch.tv/?channel=${twitchChannel}&${TWITCH_PARENT_QS}&autoplay=false`}
               frameBorder="0"
               scrolling="no"
               allowFullScreen
-              title="ZeldathonUK Twitch stream"
+              title={`${twitchChannelDisplay} Twitch stream`}
             />
           </div>
           {innerWidth >= 750 && (
@@ -145,7 +162,7 @@ export function Home() {
               frameBorder="0"
               scrolling="no"
               id="chat_embed_widescreen"
-              src={`https://www.twitch.tv/embed/zeldathonuk/chat?darkpopout&${TWITCH_PARENT_QS}`}
+              src={`https://www.twitch.tv/embed/${twitchChannel}/chat?darkpopout&${TWITCH_PARENT_QS}`}
               width="33.5%"
               title="Twitch chat"
             />
@@ -156,7 +173,7 @@ export function Home() {
             frameBorder="0"
             scrolling="no"
             id="chat_embed_mobile"
-            src={`https://www.twitch.tv/embed/zeldathonuk/chat?darkpopout&${TWITCH_PARENT_QS}`}
+            src={`https://www.twitch.tv/embed/${twitchChannel}/chat?darkpopout&${TWITCH_PARENT_QS}`}
             height="250px"
             width="100%"
             title="Twitch chat"
@@ -177,14 +194,49 @@ export function Home() {
                   etaTime={currentEnd}
                   liveBreak={liveBreak}
                 />
+              ) : isLive ? (
+                // Channel is live on Twitch but no schedule entry is set
+                // as currently-playing in /control. Show the stream's
+                // own metadata instead of the offline placeholder so the
+                // homepage matches reality.
+                <>
+                  <h5>
+                    <span className="badge bg-success me-2">LIVE</span>
+                    {twitchChannelDisplay} is streaming now
+                  </h5>
+                  {streamStatus?.title && (
+                    <div className="mt-1 text-light" style={{ fontStyle: 'italic' }}>
+                      {streamStatus.title}
+                    </div>
+                  )}
+                  {streamStatus?.game_name && (
+                    <div className="mt-1 text-white-50">
+                      Playing <b>{streamStatus.game_name}</b>
+                      {typeof streamStatus.viewer_count === 'number' && streamStatus.viewer_count > 0 && (
+                        <> · {streamStatus.viewer_count.toLocaleString('en-GB')} watching</>
+                      )}
+                    </div>
+                  )}
+                  <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
+                    <a
+                      className="btn btn-sm btn-bloodmoon p-2 px-5"
+                      title="Watch on Twitch"
+                      href={`https://www.twitch.tv/${twitchChannel}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Watch on Twitch
+                    </a>
+                  </div>
+                </>
               ) : (
                 <>
-                  <h5>ZeldathonUK is Offline</h5>
+                  <h5>{twitchChannelDisplay} is Offline</h5>
                   <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
                     <a
                       className="btn btn-sm btn-bloodmoon p-2 px-5"
                       title="Follow Us On Twitch"
-                      href="https://www.twitch.tv/zeldathonuk"
+                      href={`https://www.twitch.tv/${twitchChannel}`}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -351,15 +403,13 @@ function BenefittingCard({
               </button>
             )}
             {donateUrl && (
-              // Theme secondary palette so the donate CTA reads as a
-              // distinct action from the primary help CTA next to it.
-              // Same shape + size as the help button so the row stays
-              // visually balanced (no `btn-lg`). Bungee font matches
-              // both the help CTA (`.btn-specialeffect`) and the
-              // navbar DonateButton so the donate-flavoured buttons
-              // share one visual lineage across the app.
+              // Styled to match the "Follow Us On Twitch" button verbatim
+              // (`btn btn-sm btn-bloodmoon p-2 px-5` + Bungee) so every
+              // donate-flavoured CTA in the app — this card button, the
+              // navbar Donate button, the Twitch follow button — reads
+              // as one cohesive theme primary action.
               <button
-                className="btn btn-bloodmoon-secondary"
+                className="btn btn-sm btn-bloodmoon p-2 px-5"
                 style={{ fontFamily: "'Bungee', cursive" }}
                 title={donateTooltip}
                 onClick={() => openExternal(donateUrl)}

@@ -25,16 +25,10 @@
   padding-bottom: 0.5rem;
 }
 
-/* The donate buttons in the navbar — Angular pairs the bloodmoon gradient with
- * a subtle white outline so they pop against the bloodmoon header. */
-.navbar .btn-bloodmoon {
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25) inset;
-}
-
-.navbar .btn-bloodmoon:hover {
-  border-color: rgba(255, 255, 255, 0.6);
-}
+/* No navbar-specific overrides on `.btn-bloodmoon` — the navbar Donate
+ * button is intentionally identical to the page-content "Follow Us On
+ * Twitch" CTA, so it inherits the default `.btn-bloodmoon` treatment
+ * from index.css with no scope-specific border / shadow tweaks. */
 
 .nav-link-dark {
   font-weight: 500;

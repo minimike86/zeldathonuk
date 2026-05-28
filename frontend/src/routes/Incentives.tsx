@@ -1,25 +1,27 @@
 import { useRef } from 'react';
 import type { DonationIncentive, Prize } from '@/types/game';
+import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import './incentives.css';
 
-const donationIncentives: DonationIncentive[] = [
-  {
-    name: 'Twitch Viewership',
-    type: 'Audience',
-    typeColour: 'bg-success',
-    constraint: '',
-    constraintColour: '',
-    imageSrcUrl: '/assets/img/challenges/twitch-views.jpg',
-    imageHrefUrl: '/assets/img/challenges/twitch-views.jpg',
-    description:
-      '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Raid</a>, ' +
-      '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Host</a>, ' +
-      '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Share</a>, and ' +
-      '<a href="https://www.twitch.tv/zeldathonuk/" class="bg-dark text-success font-weight-bold px-1">Watch</a> the stream is the best thing ' +
-      'you can do to support us! More views = more donations for ' +
-      '<a href="https://www.specialeffect.org.uk/what-we-do" target="_blank" class="bg-dark text-light font-weight-bold px-1">SpecialEffect</a>',
-    donationAmount: 0,
-  },
+function buildDonationIncentives(twitchChannel: string): DonationIncentive[] {
+  const channelHref = `https://www.twitch.tv/${twitchChannel}/`;
+  const link = (label: string) =>
+    `<a href="${channelHref}" class="bg-dark text-success font-weight-bold px-1">${label}</a>`;
+  return [
+    {
+      name: 'Twitch Viewership',
+      type: 'Audience',
+      typeColour: 'bg-success',
+      constraint: '',
+      constraintColour: '',
+      imageSrcUrl: '/assets/img/challenges/twitch-views.jpg',
+      imageHrefUrl: '/assets/img/challenges/twitch-views.jpg',
+      description:
+        `${link('Raid')}, ${link('Host')}, ${link('Share')}, and ${link('Watch')} ` +
+        'the stream is the best thing you can do to support us! More views = more donations for ' +
+        '<a href="https://www.specialeffect.org.uk/what-we-do" target="_blank" class="bg-dark text-light font-weight-bold px-1">SpecialEffect</a>',
+      donationAmount: 0,
+    },
   {
     name: 'EXERCISE',
     type: 'ZeldathonUK Team',
@@ -45,7 +47,8 @@ const donationIncentives: DonationIncentive[] = [
       '<span class="bg-dark text-success font-weight-bold px-1">Donate £50</span> and you can commission some beautiful artwork from Heennnrrrryyyyyyyyy!',
     donationAmount: 50,
   },
-];
+  ];
+}
 
 const prizes: Prize[] = [
   {
@@ -96,6 +99,9 @@ const currency = new Intl.NumberFormat('en-GB', {
 export function Incentives() {
   const activitiesRef = useRef<HTMLSpanElement | null>(null);
   const raffleRef = useRef<HTMLSpanElement | null>(null);
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 30_000);
+  const twitchChannel = event?.twitch_channel || 'zeldathonuk';
+  const donationIncentives = buildDonationIncentives(twitchChannel);
 
   const scrollTo = (ref: React.RefObject<HTMLSpanElement | null>) => {
     setTimeout(() => {

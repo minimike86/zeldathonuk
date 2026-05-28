@@ -206,6 +206,69 @@ def fetch_user_profile(login: str) -> dict | None:
     return data[0] if data else None
 
 
+def fetch_stream(login: str) -> dict | None:
+    """Return Helix /streams entry for `login` when the channel is live, else None.
+
+    The endpoint omits offline channels entirely, so a None return == offline.
+    Uses an app access token (no user OAuth scope needed).
+    """
+    headers = _app_auth_headers()
+    resp = requests.get(
+        f'{HELIX}/streams', headers=headers, params={'user_login': login}, timeout=15
+    )
+    if resp.status_code == 401:
+        headers = {
+            **_app_auth_headers(),
+            'Authorization': f'Bearer {get_app_access_token(force_refresh=True)}',
+        }
+        resp = requests.get(
+            f'{HELIX}/streams', headers=headers, params={'user_login': login}, timeout=15
+        )
+    if not resp.ok:
+        return None
+    data = resp.json().get('data') or []
+    return data[0] if data else None
+
+
+@api_view(['GET'])
+def stream_status(request: Request) -> Response:
+    """Return whether a Twitch channel is currently live.
+
+    Query params: ?login=<channel-login>. Falls back to the active event's
+    `twitch_channel` when omitted, so the homepage can call it without
+    threading the channel into the URL. Lightweight response shape so
+    consumers can poll on a short cadence without dragging metadata in.
+    """
+    login = (request.query_params.get('login') or '').strip().lower()
+    if not login:
+        event = models.Event.objects.filter(is_active=True).first()
+        if event and event.twitch_channel:
+            login = event.twitch_channel.strip().lower()
+    if not login or not _TWITCH_LOGIN_RE.match(login):
+        return Response(
+            {'error': 'login required'}, status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        stream = fetch_stream(login)
+    except (TwitchAuthError, requests.RequestException) as exc:
+        # Network blips / token issues shouldn't blank the homepage —
+        # report unknown state with the error so the client can decide.
+        return Response(
+            {'login': login, 'is_live': False, 'error': str(exc)},
+            status=status.HTTP_200_OK,
+        )
+    if not stream:
+        return Response({'login': login, 'is_live': False})
+    return Response({
+        'login': login,
+        'is_live': True,
+        'started_at': stream.get('started_at'),
+        'game_name': stream.get('game_name') or '',
+        'title': stream.get('title') or '',
+        'viewer_count': stream.get('viewer_count') or 0,
+    })
+
+
 @api_view(['POST'])
 def push_schedule(_request: Request) -> Response:
     """Replace the Twitch channel schedule with the active event's lineup."""

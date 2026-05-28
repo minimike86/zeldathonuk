@@ -102,51 +102,50 @@
   text-transform: uppercase;
 }
 
-/* SpecialEffect brand button — designed as a sibling to
- * `.btn-bloodmoon-secondary` (the donate CTA next to it on the home
- * page Benefitting card). Same shape, same border treatment, same
- * inset highlight/shadow depth — only the palette differs (blue
- * gradient vs theme wine gradient). The border uses the same
- * translucent-white token as the donate button so both render as a
- * lighter-than-background rim and feel like a matched pair. */
-.btn-specialeffect {
+/* SpecialEffect brand button — bespoke blue gradient + bright white
+ * rim. Selectors are double-classed (`.btn.btn-specialeffect`) so
+ * specificity beats Bootstrap's plain `.btn`, which sets `border` via
+ * its own CSS variables (`--bs-btn-border-*`). Single-class selectors
+ * lose to Bootstrap when route CSS loads before vendor styles, which
+ * was making the white rim disappear. */
+.btn.btn-specialeffect {
   font-family: 'Bungee', 'Open Sans', cursive !important;
   color: #fff;
   background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
-  /* Hardcoded brighter border than the global `--theme-button-border`
-   * token (default 0.4 alpha) — white at 0.4 reads fine over the wine
-   * `.btn-bloodmoon-secondary` gradient but vanishes against this
-   * blue, so the pair is bumped to ~0.75 in both places to stay both
-   * matched and visible. */
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  /* Border + inset highlight/shadow lifted directly from `.btn-bloodmoon`
+   * so the rim brightness matches the paired donate button. Only the
+   * background gradient differs (SpecialEffect blue vs theme bloodmoon
+   * wine). */
+  border: 1px solid var(--theme-button-border, rgba(255, 255, 255, 0.4));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.25);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
   transition: filter 0.15s ease, border-color 0.15s ease;
 }
 
-.btn-specialeffect:hover,
-.btn-specialeffect:focus-visible {
+.btn.btn-specialeffect:hover,
+.btn.btn-specialeffect:focus-visible {
   color: #fff;
   background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
-  border-color: rgba(255, 255, 255, 0.95);
+  /* Same hover border lift as `.btn-bloodmoon` — `--theme-primary-bright`
+   * with a fully-white fallback. */
+  border-color: var(--theme-primary-bright, rgba(255, 255, 255, 0.7));
   filter: brightness(1.1);
   /* Restate the rest-state inset shadows so Bootstrap's default
    * `.btn:focus-visible` box-shadow (a 0.25rem outer ring) doesn't
    * paint a halo around the button after it has been clicked, which
    * reads as the button "growing" on hover. */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.25);
   outline: none;
 }
 
-.btn-specialeffect:active {
+.btn.btn-specialeffect:active {
   filter: brightness(0.95);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+    inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 /* Bump up Currently Playing / Up Next / Benefitting text — Bootstrap's

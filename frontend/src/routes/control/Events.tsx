@@ -314,6 +314,7 @@ function EventForm({
   const [gameblastLogoUrl, setGameblastLogoUrl] = useState(
     event?.gameblast_logo_url ?? '',
   );
+  const [twitchChannel, setTwitchChannel] = useState(event?.twitch_channel ?? 'zeldathonuk');
   const [pendingPages, setPendingPages] = useState<DonationPageDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -328,6 +329,7 @@ function EventForm({
         start_time: new Date(startTime).toISOString(),
         currency_symbol: currency,
         is_active: isActive,
+        twitch_channel: twitchChannel.trim().toLowerCase(),
         logo_url: logoUrl.trim(),
         banner_url: bannerUrl.trim(),
         gameblast_logo_url: gameblastLogoUrl.trim(),
@@ -391,6 +393,20 @@ function EventForm({
             </option>
           ))}
         </select>
+      </div>
+      <div style={{ minWidth: 180 }}>
+        <label className="d-block small text-white-50">Twitch channel</label>
+        <div className="input-group input-group-sm">
+          <span className="input-group-text">twitch.tv/</span>
+          <input
+            value={twitchChannel}
+            onChange={(e) => setTwitchChannel(e.target.value)}
+            className="form-control form-control-sm"
+            placeholder="zeldathonuk"
+            spellCheck={false}
+            maxLength={50}
+          />
+        </div>
       </div>
       <div className="form-check mb-1">
         <input

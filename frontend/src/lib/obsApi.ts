@@ -102,6 +102,10 @@ export interface EventModel {
   start_time: string;
   currency_symbol: string;
   is_active: boolean;
+  /** Twitch channel login name (the bit after twitch.tv/) for the
+   *  embedded stream, chat, and Follow buttons. Lowercase 4-25 chars
+   *  per Twitch's rules. Blank → consumers fall back to "zeldathonuk". */
+  twitch_channel: string;
   logo_url: string;
   banner_url: string;
   /** SpecialEffect's current GameBlast campaign logo for this event.
@@ -682,6 +686,22 @@ export const obsApi = {
         body: { event_id: eventId, mute_reason: reason },
       },
     ),
+  /** Twitch live-status probe. Returns is_live=true when the named
+   *  channel is currently streaming, with optional metadata (game,
+   *  title, viewer count, started_at). Omit `login` to fall back to
+   *  the active event's configured channel server-side. */
+  twitchStreamStatus: (login?: string) => {
+    const qs = login ? `?login=${encodeURIComponent(login)}` : '';
+    return api<{
+      login: string;
+      is_live: boolean;
+      started_at?: string;
+      game_name?: string;
+      title?: string;
+      viewer_count?: number;
+      error?: string;
+    }>(`/api/twitch/stream-status/${qs}`);
+  },
   themeSettings: () => api<ThemeSettings>('/api/theme/'),
   // Theme mutations broadcast via themeBus on success so other tabs in
   // the same browser re-fetch immediately. Cross-browser / cross-device
@@ -840,8 +860,8 @@ export const obsApi = {
   updateEvent: (
     eventId: number,
     patch: Partial<Pick<EventModel,
-      'name' | 'start_time' | 'currency_symbol' | 'logo_url' | 'banner_url'
-      | 'gameblast_logo_url'
+      'name' | 'start_time' | 'currency_symbol' | 'twitch_channel'
+      | 'logo_url' | 'banner_url' | 'gameblast_logo_url'
     >> & {
       omnibar_layout?: Record<string, unknown>;
       omnibar_transitions?: Record<string, unknown>;

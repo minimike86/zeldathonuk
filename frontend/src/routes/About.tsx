@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import './about.css';
 
 const images = [
@@ -19,6 +20,8 @@ const urls = [
 export function About() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const { data: event } = usePolledQuery(obsApi.activeEvent, 30_000);
+  const twitchChannel = event?.twitch_channel || 'zeldathonuk';
 
   useEffect(() => {
     if (paused) return;
@@ -196,7 +199,7 @@ export function About() {
                   <li>
                     <a
                       className="link-danger"
-                      href="https://www.twitch.tv/zeldathonuk/schedule"
+                      href={`https://www.twitch.tv/${twitchChannel}/schedule`}
                       target="_blank"
                       rel="noreferrer"
                     >
