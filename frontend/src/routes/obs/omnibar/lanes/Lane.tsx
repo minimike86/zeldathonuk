@@ -246,10 +246,29 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
   }, [targetKey]);
 
   // Dwell timer — schedules the next TICK once the active panel has
-  // fully entered and held for its configured `dwellMs`. Reacts to
-  // activeIdent changes (a new panel committed) and suspend / takeover
-  // / live-count toggles so the rotation pauses when something else
-  // is in charge of the lane.
+  // fully entered and held for its configured `dwellMs`.
+  //
+  // CRITICAL: this effect's deps must be primitive values, not the
+  // `transitions` object. The active event polls every 10s and each
+  // poll produces a fresh `omnibar_transitions` reference, which
+  // makes `transitions` a new object even when nothing changed.
+  // If `transitions` is in the deps, the effect re-runs on every
+  // poll → cancels the pending TICK timer → schedules a fresh one →
+  // and if polls fire faster than `dwellWindowMs`, the timer NEVER
+  // fires and the lane gets stuck on its current panel. Reduce the
+  // dependency to the computed number so re-renders with identical
+  // config don't restart the clock.
+  const activeCfg =
+    activeIdent.kind === 'rotating'
+      ? transitionFor(activeIdent, transitions)
+      : null;
+  const dwellWindowMs = activeCfg
+    ? activeCfg.tagEnterMs +
+      activeCfg.bodyEnterDelayMs +
+      activeCfg.bodyEnterMs +
+      activeCfg.dwellMs
+    : 0;
+
   useEffect(() => {
     if (dwellTimerRef.current !== null) {
       window.clearTimeout(dwellTimerRef.current);
@@ -258,15 +277,13 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
     if (suspended || takeoverChild) return;
     if (activeIdent.kind !== 'rotating') return;
     if (live.length <= 1) return;
+    if (dwellWindowMs <= 0) return;
 
-    const cfg = transitionFor(activeIdent, transitions);
-    const fullEnterMs =
-      cfg.tagEnterMs + cfg.bodyEnterDelayMs + cfg.bodyEnterMs;
     const t = window.setTimeout(() => {
       if (dwellTimerRef.current !== t) return;
       dwellTimerRef.current = null;
       dispatch({ type: 'TICK' });
-    }, fullEnterMs + cfg.dwellMs);
+    }, dwellWindowMs);
     dwellTimerRef.current = t;
     return () => {
       if (dwellTimerRef.current === t) {
@@ -274,11 +291,8 @@ export function Lane({ config, feed, transitions, suspended, takeoverChild }: Pr
         dwellTimerRef.current = null;
       }
     };
-    // `dispatch` from useReducer is stable; `transitions` is checked
-    // by content via the effect's deps below indirectly through
-    // activeIdent (which changes when transitions change panel id).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIdent, suspended, takeoverChild, live.length, transitions]);
+  }, [activeIdent, suspended, takeoverChild, live.length, dwellWindowMs]);
 
   // Cleanup pending timers on unmount.
   useEffect(() => {
