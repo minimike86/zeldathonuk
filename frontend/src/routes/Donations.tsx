@@ -163,6 +163,14 @@ export function Donations() {
   );
 }
 
+/** Mask every visible character of an inappropriate donor name so the
+ *  card still reads as "a donor" without exposing the offending text.
+ *  Falls back to "Anonymous" when there's nothing to mask. */
+function obfuscateName(name: string): string {
+  const masked = name.replace(/\S/g, '•').trim();
+  return masked || 'Anonymous';
+}
+
 function DonationTile({
   donation: d,
   currency,
@@ -170,11 +178,25 @@ function DonationTile({
   donation: Donation;
   currency: string;
 }) {
-  // Donor names and messages are donor-supplied free text, so scrub them
-  // through the LDNOOBW filter before they hit the public donor wall.
-  const donorName = d.donor_name ? cleanForDisplay(d.donor_name) : '';
-  const initial = (donorName || 'A').charAt(0).toUpperCase();
-  const message = d.message ? cleanForDisplay(d.message) : '';
+  // Operator moderation takes priority over the automatic LDNOOBW scrub:
+  // a donation muted for an inappropriate name has the name obfuscated,
+  // and one muted for an inappropriate message has the message swapped for
+  // a friendly stand-in. Otherwise donor-supplied free text is still run
+  // through the LDNOOBW filter before it hits the public donor wall.
+  const nameMuted = d.mute_reason === 'naughty_name';
+  const messageMuted = d.mute_reason === 'naughty_message';
+
+  const donorName = nameMuted
+    ? obfuscateName(d.donor_name)
+    : d.donor_name
+      ? cleanForDisplay(d.donor_name)
+      : '';
+  const initial = nameMuted ? '•' : (donorName || 'A').charAt(0).toUpperCase();
+  const message = messageMuted
+    ? 'Thank you for your kind words!'
+    : d.message
+      ? cleanForDisplay(d.message)
+      : '';
   const when = new Date(d.donated_at);
   return (
     <div className="col-12 col-md-6">

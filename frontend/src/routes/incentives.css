@@ -119,20 +119,50 @@
   filter: hue-rotate(var(--theme-image-hue-rotate, 0deg));
 }
 
-/* Prizes are studio shots that look best uncropped on a neutral mat. */
+/* Prizes are studio shots that look best uncropped — shown contained over
+ * an ambient blurred backdrop of the same art so the letterbox gaps fill
+ * with the image's own edge colours. */
 .incentive-prize-media {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 220px;
+  overflow: hidden;
   background: rgba(0, 0, 0, 0.35);
 }
 
-.incentive-prize-media img {
+/* Zoomed + blurred fill behind the contained image. scale() hides the
+ * soft blurred edges; brightness keeps it from overpowering the subject. */
+.incentive-prize-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.2);
+  filter: blur(22px) brightness(0.65);
+  z-index: 0;
+}
+
+.incentive-prize-img {
+  position: relative;
+  z-index: 1;
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
 }
+
+/* Status blip (Open / Coming soon / Drawn) pinned to the image's top
+ * corner rather than competing with the title. */
+.incentive-card-status {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
 
 .incentive-card-body {
   display: flex;
@@ -166,6 +196,15 @@
 .incentive-inline-link:hover {
   color: var(--theme-link-hover, #fff);
   text-decoration: underline;
+}
+
+/* Prefix label sitting to the left of the delivery-method blip. */
+.incentive-delivery-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
 }
 
 /* ── Status badges ──────────────────────────────────────────────────── */

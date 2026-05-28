@@ -1428,7 +1428,20 @@ class Raffle(models.Model):
             end = None if self.event.is_active else self.closed_at
             return self.event.start_time, end
         if ct == RaffleConditionType.SCHEDULE_ENTRY and self.schedule_entry:
-            return self.schedule_entry.started_at, self.schedule_entry.finished_at
+            entry = self.schedule_entry
+            start, end = entry.started_at, entry.finished_at
+            # The run timer stamps started_at; but an operator may instead
+            # just mark the game as "currently playing" (the OBS pointer)
+            # without starting a timer. Treat that as the play having begun
+            # so a raffle gated to the live game opens immediately. The
+            # pointer's updated_at is when it became current → the window
+            # start; it stays open (end=None) until the timer finishes the
+            # entry or the pointer moves away (started_at falls back to None).
+            if start is None:
+                cp = CurrentlyPlaying.objects.filter(schedule_entry=entry).first()
+                if cp is not None:
+                    start = cp.updated_at
+            return start, end
         if ct == RaffleConditionType.DATE_RANGE:
             return self.window_start, self.window_end
         # MANUAL (and any auto type missing its anchor) → operator-stamped.

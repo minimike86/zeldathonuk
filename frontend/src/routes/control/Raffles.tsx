@@ -81,6 +81,13 @@ export function RafflesControl() {
 
   const symbol = event?.currency_symbol || '£';
 
+  // The raffle currently being edited. The edit form renders in a plain
+  // block above the table (same DOM context as the add form) rather than
+  // inside a colSpan'd <td> — a textarea's resize grip doesn't render
+  // inside a table cell, so inline-in-row editing broke the description box.
+  const editingRaffle =
+    editingId != null ? raffles?.find((r) => r.id === editingId) ?? null : null;
+
   const visible = useMemo(() => {
     if (!raffles) return [];
     const q = filter.trim().toLowerCase();
@@ -160,6 +167,19 @@ export function RafflesControl() {
         </div>
       )}
 
+      {editingRaffle && (
+        <div className="mt-3">
+          <RaffleForm
+            eventId={event.id}
+            raffle={editingRaffle}
+            schedule={schedule ?? []}
+            onCancel={() => setEditingId(null)}
+            onSaved={() => setEditingId(null)}
+          />
+          <WinnersPanel raffle={editingRaffle} />
+        </div>
+      )}
+
       {err && <p className="text-danger mt-2">{err}</p>}
 
       <table className="control-table mt-3">
@@ -175,22 +195,15 @@ export function RafflesControl() {
           </tr>
         </thead>
         <tbody>
-          {visible.map((r) =>
-            editingId === r.id ? (
-              <tr key={r.id}>
-                <td colSpan={7}>
-                  <RaffleForm
-                    eventId={event.id}
-                    raffle={r}
-                    schedule={schedule ?? []}
-                    onCancel={() => setEditingId(null)}
-                    onSaved={() => setEditingId(null)}
-                  />
-                  <WinnersPanel raffle={r} />
-                </td>
-              </tr>
-            ) : (
-              <tr key={r.id}>
+          {visible.map((r) => (
+              <tr
+                key={r.id}
+                style={
+                  editingId === r.id
+                    ? { background: 'rgba(255,255,255,0.06)' }
+                    : undefined
+                }
+              >
                 <td>
                   {r.image_url ? (
                     <img
@@ -277,9 +290,12 @@ export function RafflesControl() {
                     )}
                     <button
                       className="btn btn-sm btn-outline-light"
-                      onClick={() => setEditingId(r.id)}
+                      onClick={() => {
+                        setAdding(false);
+                        setEditingId(editingId === r.id ? null : r.id);
+                      }}
                     >
-                      Edit
+                      {editingId === r.id ? 'Close' : 'Edit'}
                     </button>
                     <button
                       className="btn btn-sm btn-outline-danger"
@@ -290,8 +306,7 @@ export function RafflesControl() {
                   </div>
                 </td>
               </tr>
-            ),
-          )}
+          ))}
           {raffles && raffles.length === 0 && (
             <tr>
               <td colSpan={7} className="text-white-50 text-center py-4">
@@ -505,6 +520,7 @@ function RaffleForm({
             onChange={(e) => setDescription(e.target.value)}
             className="form-control form-control-sm"
             rows={4}
+            style={{ resize: 'vertical', minHeight: '12rem' }}
             placeholder='e.g. A 3D-printed Master Sword — donate while open to enter!'
           />
         </div>
