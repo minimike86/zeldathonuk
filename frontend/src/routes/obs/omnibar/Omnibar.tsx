@@ -66,11 +66,26 @@ import './omnibar.css';
 
 // Lane configs come from `useLayoutConfig(event)` — driven by
 // `Event.omnibar_layout` JSON if set, falling back to defaults
-// declared in hooks/useLayoutConfig.ts. The fallbacks match what
-// used to be hardcoded here, so behaviour is unchanged when the
-// event ships no layout.
+// declared in hooks/useLayoutConfig.ts.
 
-const EVENT_FLASH_MS = 3500;
+// Base length of one celebration's enter→hold→exit choreography (kept in
+// sync with omnibar.css). A celebration can extend its hold via
+// `--ob-celebrate-hold-ms` (schedule-entry-sound overrides); milestones and
+// incentives use the base length.
+const CELEBRATION_BASE_MS = 6200;
+
+// Pause between consecutive queued celebrations (e.g. one donation crossing
+// several milestones), so each banner reads as its own moment.
+const CELEBRATION_GAP_MS = 350;
+
+/** A queued celebration takeover. `holdMs` is extra hold beyond the base
+ *  choreography; `audioUrl` (when set) plays as the banner enters. */
+interface CelebrationItem {
+  reason: CelebrationReason;
+  holdMs: number;
+  audioUrl?: string;
+  audioVolume?: number;
+}
 
 export function Omnibar() {
   return (
@@ -127,6 +142,80 @@ function OmnibarInner() {
   // default 6.2s celebration choreography. Milestone / incentive
   // celebrations leave this at 0.
   const [celebrateHoldMs, setCelebrateHoldMs] = useState(0);
+
+  // Celebration queue. A single event (e.g. a £10 donation crossing the
+  // £1/£5/£10 milestones at once) can fire several celebrations in the same
+  // tick; without a queue each `CELEBRATE` dispatch overwrote the last and
+  // only the final banner showed. Items play one-by-one — each gets its own
+  // flash + banner + fanfare via a fresh `celebrateNonce` remount, separated
+  // by a short gap — and the bar only returns to normal (`CELEBRATION_DONE`)
+  // once the queue drains.
+  const celebrationQueueRef = useRef<CelebrationItem[]>([]);
+  const celebratingActiveRef = useRef(false);
+  const celebrationTimerRef = useRef<number | null>(null);
+  const advanceCelebrationRef = useRef<() => void>(() => {});
+
+  const startCelebration = useCallback(
+    (item: CelebrationItem) => {
+      celebratingActiveRef.current = true;
+      setCelebrateHoldMs(item.holdMs);
+      dispatch({ type: 'CELEBRATE', reason: item.reason });
+      // Bump the nonce so the celebrate fullbar remounts and the flash +
+      // banner entrance animations restart for this item.
+      setCelebrateNonce((n) => n + 1);
+      if (item.audioUrl) {
+        const audio = new Audio(item.audioUrl);
+        audio.volume = item.audioVolume ?? 0.85;
+        audio.play().catch(() => {});
+      }
+      // After this item's choreography, advance to the next (or finish).
+      celebrationTimerRef.current = window.setTimeout(
+        () => advanceCelebrationRef.current(),
+        CELEBRATION_BASE_MS + item.holdMs,
+      );
+    },
+    [dispatch],
+  );
+
+  const advanceCelebration = useCallback(() => {
+    const next = celebrationQueueRef.current.shift();
+    if (!next) {
+      // Queue drained — drop the celebration takeover.
+      celebratingActiveRef.current = false;
+      dispatch({ type: 'CELEBRATION_DONE' });
+      return;
+    }
+    // Short beat between banners. We stay in `celebrating` through the gap
+    // (no CELEBRATION_DONE) so the rotating ticker doesn't pop back in — the
+    // celebrate bar just sits empty for the pause before the next enters.
+    celebrationTimerRef.current = window.setTimeout(
+      () => startCelebration(next),
+      CELEBRATION_GAP_MS,
+    );
+  }, [dispatch, startCelebration]);
+  advanceCelebrationRef.current = advanceCelebration;
+
+  // Enqueue a celebration. Starts immediately if nothing is celebrating,
+  // otherwise it plays after the in-flight queue (with the inter-item gap).
+  const enqueueCelebration = useCallback(
+    (item: CelebrationItem) => {
+      celebrationQueueRef.current.push(item);
+      if (!celebratingActiveRef.current) {
+        const next = celebrationQueueRef.current.shift();
+        if (next) startCelebration(next);
+      }
+    },
+    [startCelebration],
+  );
+
+  useEffect(
+    () => () => {
+      if (celebrationTimerRef.current !== null) {
+        window.clearTimeout(celebrationTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const emit = useBusEmit();
 
@@ -222,32 +311,20 @@ function OmnibarInner() {
 
   // Promote `incentive-unlocked` + `milestone-reached` to celebrations.
   useBusSubscription('milestone-reached', (e) => {
-    const reason: CelebrationReason = {
-      kind: 'milestone-reached',
-      payload: { milestone: e.milestone },
-    };
-    setCelebrateHoldMs(0); // milestones use the default 6.2s choreography
-    dispatch({ type: 'CELEBRATE', reason });
-    setCelebrateNonce((n) => n + 1);
-    // Optional fanfare audio per milestone — fire-and-forget; failure
-    // (autoplay blocked, missing file) is silent, the visual
-    // celebration still runs.
-    if (e.milestone.audio_url) {
-      const audio = new Audio(e.milestone.audio_url);
-      audio.volume = 0.85;
-      audio.play().catch(() => {});
-    }
-    window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 6200);
+    // Queue it — a single donation can cross several milestones at once, and
+    // each should get its own flash + banner + fanfare in sequence. The
+    // optional per-milestone fanfare audio plays as that banner enters.
+    enqueueCelebration({
+      reason: { kind: 'milestone-reached', payload: { milestone: e.milestone } },
+      holdMs: 0, // default 6.2s choreography
+      audioUrl: e.milestone.audio_url || undefined,
+    });
   });
   useBusSubscription('incentive-unlocked', (e) => {
-    const reason: CelebrationReason = {
-      kind: 'incentive-unlocked',
-      payload: { incentive: e.incentive },
-    };
-    setCelebrateHoldMs(0); // default choreography
-    dispatch({ type: 'CELEBRATE', reason });
-    setCelebrateNonce((n) => n + 1);
-    window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), 6200);
+    enqueueCelebration({
+      reason: { kind: 'incentive-unlocked', payload: { incentive: e.incentive } },
+      holdMs: 0,
+    });
   });
 
   // Override stream → urgent mode (or celebration, for the special
@@ -274,28 +351,26 @@ function OmnibarInner() {
         audio.play().catch(() => {});
       }
       if (payload.show_banner !== false) {
-        const reason: CelebrationReason = {
-          kind: 'schedule-entry-sound',
-          payload: payload as Record<string, unknown>,
-        };
         // Configured trigger duration in ms. Prefer the payload value
         // (server-authoritative); fall back to expires_at - now if the
-        // backend didn't include it. Floor at the default 6200ms
-        // celebration choreography length — anything longer is
-        // applied to the banner as an "extra hold" via the
-        // --ob-celebrate-hold-ms CSS var, which pushes the exit
+        // backend didn't include it. Floor at the default celebration
+        // choreography length — anything longer becomes "extra hold" via
+        // the --ob-celebrate-hold-ms CSS var, which pushes the exit
         // animations back in lockstep.
         const desiredMs =
           typeof payload.duration_seconds === 'number'
             ? payload.duration_seconds * 1000
             : new Date(ov.expires_at).getTime() - Date.now();
-        const CELEBRATION_BASE_MS = 6200;
         const holdMs = Math.max(CELEBRATION_BASE_MS, Math.min(120_000, desiredMs));
-        const extraHoldMs = holdMs - CELEBRATION_BASE_MS;
-        setCelebrateHoldMs(extraHoldMs);
-        dispatch({ type: 'CELEBRATE', reason });
-        setCelebrateNonce((n) => n + 1);
-        window.setTimeout(() => dispatch({ type: 'CELEBRATION_DONE' }), holdMs);
+        // Audio already played immediately above (always), so don't pass an
+        // audioUrl here — the queue would otherwise re-play it on enter.
+        enqueueCelebration({
+          reason: {
+            kind: 'schedule-entry-sound',
+            payload: payload as Record<string, unknown>,
+          },
+          holdMs: holdMs - CELEBRATION_BASE_MS,
+        });
       }
       return;
     }

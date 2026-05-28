@@ -1290,6 +1290,32 @@ class Milestone(models.Model):
     def is_reached(self) -> bool:
         return self.reached_at is not None
 
+    @classmethod
+    def mark_reached_for_event(cls, event_id) -> None:
+        """Stamp ``reached_at`` on every still-pending milestone of this event
+        whose threshold the running donation total now meets.
+
+        Called from the Donation ``post_save`` signal so milestones flip to
+        reached the moment a donation crosses them — the omnibar polls
+        ``is_reached`` and fires its celebration on the false→true transition.
+
+        The total sums *all* the event's donations (muted ones still count
+        toward totals — only their announcement is suppressed), matching
+        ``DonationViewSet.totals``. A single bulk UPDATE filtered on
+        ``reached_at__isnull=True`` keeps this idempotent and cheap, so it's
+        safe to run on every donation save.
+        """
+        if not event_id:
+            return
+        total = Donation.objects.filter(event_id=event_id).aggregate(
+            t=models.Sum('amount'),
+        )['t'] or Decimal('0')
+        cls.objects.filter(
+            event_id=event_id,
+            reached_at__isnull=True,
+            threshold_amount__lte=total,
+        ).update(reached_at=timezone.now())
+
 
 class RaffleDeliveryMethod(models.TextChoices):
     """How a won prize is delivered to its winner — drives both the badge on
