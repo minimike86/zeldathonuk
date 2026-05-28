@@ -1443,40 +1443,48 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Per-direction cycle keyframes. `--ob-cycle-ms` is set inline by
- * DonationReelPanel so the switch duration is configurable from the
- * control panel. The incoming row uses ease-out (lands softly); the
- * outgoing row uses ease-in (accelerates away). */
-.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="up"] {
-  animation: ob-donor-in-up var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+/* Per-phase cycle keyframes. The donor row sits at rest after its
+ * enter animation completes (no rule for `[data-phase="rest"]`, so
+ * the element holds its base transform); the next phase change
+ * either kicks off the exit animation or unmounts the row entirely
+ * (`gap` phase isn't rendered — see DonationReelPanel.tsx).
+ *
+ * Separate `--ob-donor-enter-ms` / `--ob-donor-exit-ms` CSS vars let
+ * the two halves of the cycle have independent durations, set inline
+ * by the panel from its config.
+ *
+ * The incoming row uses ease-out (lands softly); the outgoing row
+ * uses ease-in (accelerates away). */
+.omnibar--v2 .ob-donor-row[data-phase="enter"][data-cycle-dir="up"] {
+  animation: ob-donor-in-up var(--ob-donor-enter-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="down"] {
-  animation: ob-donor-in-down var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+.omnibar--v2 .ob-donor-row[data-phase="enter"][data-cycle-dir="down"] {
+  animation: ob-donor-in-down var(--ob-donor-enter-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="left"] {
-  animation: ob-donor-in-left var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+.omnibar--v2 .ob-donor-row[data-phase="enter"][data-cycle-dir="left"] {
+  animation: ob-donor-in-left var(--ob-donor-enter-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="right"] {
-  animation: ob-donor-in-right var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+.omnibar--v2 .ob-donor-row[data-phase="enter"][data-cycle-dir="right"] {
+  animation: ob-donor-in-right var(--ob-donor-enter-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-in[data-cycle-dir="fade"] {
-  animation: ob-donor-in-fade var(--ob-cycle-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+.omnibar--v2 .ob-donor-row[data-phase="enter"][data-cycle-dir="fade"] {
+  animation: ob-donor-in-fade var(--ob-donor-enter-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="up"] {
-  animation: ob-donor-out-up var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-donor-row[data-phase="exit"][data-cycle-dir="up"] {
+  animation: ob-donor-out-up var(--ob-donor-exit-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="down"] {
-  animation: ob-donor-out-down var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-donor-row[data-phase="exit"][data-cycle-dir="down"] {
+  animation: ob-donor-out-down var(--ob-donor-exit-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="left"] {
-  animation: ob-donor-out-left var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-donor-row[data-phase="exit"][data-cycle-dir="left"] {
+  animation: ob-donor-out-left var(--ob-donor-exit-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="right"] {
-  animation: ob-donor-out-right var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-donor-row[data-phase="exit"][data-cycle-dir="right"] {
+  animation: ob-donor-out-right var(--ob-donor-exit-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
 }
-.omnibar--v2 .ob-donor-row.is-cycling-out[data-cycle-dir="fade"] {
-  animation: ob-donor-out-fade var(--ob-cycle-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
+.omnibar--v2 .ob-donor-row[data-phase="exit"][data-cycle-dir="fade"] {
+  animation: ob-donor-out-fade var(--ob-donor-exit-ms, 320ms) cubic-bezier(0.55, 0, 0.78, 0) both;
 }
 
 @keyframes ob-donor-in-up    { from { opacity: 0; transform: translateY( 100%); } to { opacity: 1; transform: translateY(0); } }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
@@ -14,27 +14,30 @@ import type { Donation } from '@/lib/obsApi';
  * LiveDonationPanel takeover — this is just an "ICYMI" recap that
  * shares the bottom-lane rotation slot.
  *
- * Visual elements per donor:
+ * Layout per donor row:
  *   [#N rank chip]  Donor name  £Amount  [👑 if top donor]  "msg…"  Xm ago
  *
- * Cycle direction / duration / cadence / reel length are all driven
- * by `Event.omnibar_layout.donationReel` — set in /control/omnibar.
+ * Cycle is a 4-phase state machine, mirroring the lane-level panel
+ * timing model (enter → dwell → exit → lead-in):
  *
- * Switching is a two-row ping-pong: the outgoing row keeps painting
- * (with `.is-cycling-out`) for the configured `switchMs` while the
- * incoming row mounts behind it with `.is-cycling-in`. Both rows are
- * absolutely positioned inside `.ob-donor-reel` so they overlap and
- * the slide motion reads as a clean cross-fade.
+ *      enterMs    dwellMs    exitMs    leadInMs
+ *   ───────────┬───────────┬──────────┬──────────┐
+ *     enter   │   rest    │   exit   │   gap    │  (empty reel)
+ *   ───────────┴───────────┴──────────┴──────────┘
  *
- * Returns null when there are no donations so the panel falls out of
- * rotation entirely (no "no donors yet" dead card).
+ * Only ONE donor row is rendered at a time — the outgoing donor
+ * fully exits before the next enters, with `leadInMs` of empty reel
+ * between them so the two rows never overlap visually. Direction,
+ * durations and dwell are all driven by
+ * `Event.omnibar_layout.donationReel` (set in /control/omnibar).
+ *
+ * `selectData` returns null when there are no donations so the panel
+ * falls out of rotation entirely.
  */
 
 const MESSAGE_MAX_CHARS = 50;
-// Small buffer beyond the configured switchMs before unmounting the
-// outgoing row, so its CSS animation has a frame to settle at the
-// final state before React removes the node.
-const SWITCH_UNMOUNT_BUFFER_MS = 40;
+
+type CyclePhase = 'enter' | 'rest' | 'exit' | 'gap';
 
 interface Data {
   donations: Donation[];
@@ -49,107 +52,112 @@ function Panel({ data }: PanelProps<Data>) {
   const { donations, fallbackCurrency, cycle, now } = data;
   const total = donations.length;
 
-  // Index of the currently-shown donor in `donations`. State, not ref,
-  // so the row re-renders when it advances.
+  // Current donor in the reel.
   const [idx, setIdx] = useState(0);
-  // Snapshot of the previously-shown index while its exit animation
-  // is playing. Cleared once the switch window elapses.
-  const [leavingIdx, setLeavingIdx] = useState<number | null>(null);
-  const switchTimerRef = useRef<number | null>(null);
+  // Phase of the current donor's lifecycle (see diagram in the
+  // module docstring above).
+  const [phase, setPhase] = useState<CyclePhase>('enter');
 
   // Keep `idx` valid when the donation list shrinks (e.g. reelLength
-  // dropped via control panel).
+  // dropped via control panel). Reset phase to `enter` so the new
+  // first donor plays its entrance.
   useEffect(() => {
-    if (idx >= total && total > 0) setIdx(0);
+    if (total === 0) return;
+    if (idx >= total) {
+      setIdx(0);
+      setPhase('enter');
+    }
   }, [total, idx]);
 
-  // Cycle timer. Skips when only one donor is in the reel.
+  // Phase scheduler. Each phase has its own duration; when it
+  // elapses we step to the next phase, advancing `idx` when we wrap
+  // from `gap` back to `enter`. Single timer per phase keeps the
+  // state simple and lets the cleanup unconditionally cancel.
   useEffect(() => {
     if (total <= 1) return;
-    const id = window.setInterval(() => {
-      setIdx((i) => {
-        const next = (i + 1) % total;
-        setLeavingIdx(i);
-        if (switchTimerRef.current !== null) {
-          window.clearTimeout(switchTimerRef.current);
-        }
-        const t = window.setTimeout(() => {
-          if (switchTimerRef.current !== t) return;
-          switchTimerRef.current = null;
-          setLeavingIdx(null);
-        }, cycle.switchMs + SWITCH_UNMOUNT_BUFFER_MS);
-        switchTimerRef.current = t;
-        return next;
-      });
-    }, cycle.cycleMs);
-    return () => {
-      window.clearInterval(id);
-      if (switchTimerRef.current !== null) {
-        window.clearTimeout(switchTimerRef.current);
-        switchTimerRef.current = null;
-      }
-    };
-  }, [total, cycle.cycleMs, cycle.switchMs]);
+    let nextPhase: CyclePhase;
+    let nextMs: number;
+    let advance = false;
+    switch (phase) {
+      case 'enter':
+        nextPhase = 'rest';
+        nextMs = cycle.enterMs;
+        break;
+      case 'rest':
+        nextPhase = 'exit';
+        nextMs = cycle.dwellMs;
+        break;
+      case 'exit':
+        nextPhase = 'gap';
+        nextMs = cycle.exitMs;
+        break;
+      case 'gap':
+        nextPhase = 'enter';
+        nextMs = cycle.leadInMs;
+        advance = true;
+        break;
+    }
+    const t = window.setTimeout(() => {
+      if (advance) setIdx((i) => (i + 1) % total);
+      setPhase(nextPhase);
+    }, nextMs);
+    return () => window.clearTimeout(t);
+  }, [phase, idx, total, cycle.enterMs, cycle.dwellMs, cycle.exitMs, cycle.leadInMs]);
 
   if (total === 0) return null;
 
-  // Top donor by amount across the WHOLE visible reel (not just the
-  // current donor) — the crown follows the same donor through every
-  // cycle so viewers learn who the big tipper is.
+  // Crown follows the highest-amount donor across the visible slice
+  // (not just the most recent), so viewers learn who the big tipper
+  // is even as the reel cycles.
   const topAmount = Math.max(...donations.map((d) => Number(d.amount) || 0));
   const topDonationId = donations.find((d) => Number(d.amount) === topAmount)?.id;
 
   const label = total === 1 ? 'RECENT DONOR' : `RECENT ${total} DONORS`;
 
-  const rowStyle: CSSProperties = {
-    ['--ob-cycle-ms' as keyof CSSProperties]: `${cycle.switchMs}ms` as never,
-  };
+  const d = donations[Math.min(idx, total - 1)];
+  if (!d) return null;
+  const symbol = currencySymbol(d.currency, fallbackCurrency);
+  const amountStr = `${symbol}${Number(d.amount).toFixed(2)}`;
+  const isTop = d.id === topDonationId && total > 1;
+  const hasMessage = Boolean(d.message && d.message.trim());
+  const displayMessage = hasMessage
+    ? truncate(cleanForDisplay(d.message), MESSAGE_MAX_CHARS)
+    : '';
 
-  const renderRow = (i: number, role: 'in' | 'out' | 'static') => {
-    const d = donations[i];
-    if (!d) return null;
-    const symbol = currencySymbol(d.currency, fallbackCurrency);
-    const amountStr = `${symbol}${Number(d.amount).toFixed(2)}`;
-    const isTop = d.id === topDonationId && total > 1;
-    const hasMessage = Boolean(d.message && d.message.trim());
-    const displayMessage = hasMessage
-      ? truncate(cleanForDisplay(d.message), MESSAGE_MAX_CHARS)
-      : '';
-    const cls =
-      'ob-donor-row' +
-      (role === 'in' ? ' is-cycling-in' : '') +
-      (role === 'out' ? ' is-cycling-out' : '');
-    return (
-      <div
-        key={`${role}:${d.id}`}
-        className={cls}
-        data-cycle-dir={cycle.direction}
-        style={rowStyle}
-      >
-        <span className={`ob-donor-rank${isTop ? ' is-top' : ''}`}>#{i + 1}</span>
-        <span className="ob-donor-name">{d.donor_name?.trim() || 'Anonymous'}</span>
-        <span className="ob-donor-amount">{amountStr}</span>
-        {isTop && (
-          <span className="ob-donor-crown" aria-label="Top donor">👑</span>
-        )}
-        {displayMessage && (
-          <span className="ob-donor-message">“{displayMessage}”</span>
-        )}
-        <span className="ob-donor-age">{formatRelativeTime(d.donated_at, now)}</span>
-      </div>
-    );
+  const rowStyle: CSSProperties = {
+    ['--ob-donor-enter-ms' as keyof CSSProperties]: `${cycle.enterMs}ms` as never,
+    ['--ob-donor-exit-ms' as keyof CSSProperties]: `${cycle.exitMs}ms` as never,
   };
 
   return (
     <PanelRow tag={label}>
       <div className="ob-donor-reel">
-        {/* Render leaving FIRST so it sits behind the incoming row in
-          * the stacking order — slide animations cross visually,
-          * but the new content is what the viewer ends up reading. */}
-        {leavingIdx !== null && leavingIdx !== idx
-          ? renderRow(leavingIdx, 'out')
-          : null}
-        {renderRow(idx, leavingIdx !== null ? 'in' : 'static')}
+        {/* `gap` phase renders nothing — that's the empty-reel pause
+          * between donors. `key={idx}` keeps the row mounted across
+          * enter → rest → exit on the same donor, so changing the
+          * data-phase attribute is enough to re-trigger CSS animation
+          * rules. Bumping idx on the gap → enter transition mounts a
+          * fresh row, which kicks off the enter keyframe from t=0. */}
+        {phase !== 'gap' && (
+          <div
+            key={idx}
+            className="ob-donor-row"
+            data-phase={phase}
+            data-cycle-dir={cycle.direction}
+            style={rowStyle}
+          >
+            <span className={`ob-donor-rank${isTop ? ' is-top' : ''}`}>#{idx + 1}</span>
+            <span className="ob-donor-name">{d.donor_name?.trim() || 'Anonymous'}</span>
+            <span className="ob-donor-amount">{amountStr}</span>
+            {isTop && (
+              <span className="ob-donor-crown" aria-label="Top donor">👑</span>
+            )}
+            {displayMessage && (
+              <span className="ob-donor-message">“{displayMessage}”</span>
+            )}
+            <span className="ob-donor-age">{formatRelativeTime(d.donated_at, now)}</span>
+          </div>
+        )}
       </div>
     </PanelRow>
   );

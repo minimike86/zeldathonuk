@@ -80,31 +80,41 @@ const KNOWN_IDS = new Set<string>(ALL_PANEL_IDS);
 export type DonationReelDirection = 'up' | 'down' | 'left' | 'right' | 'fade';
 
 export interface DonationReelConfig {
-  /** Direction the next donor enters from (the previous one exits to
-   *  the opposite side). */
+  /** Direction the donor row enters from (it exits in the matching
+   *  opposite direction; e.g. `up` = enter from below, exit upward). */
   direction: DonationReelDirection;
-  /** Duration of the switch animation, in ms. */
-  switchMs: number;
-  /** How often to advance to the next donor, in ms. */
-  cycleMs: number;
+  /** Duration of the row's enter animation, in ms. */
+  enterMs: number;
+  /** Duration of the row's exit animation, in ms. */
+  exitMs: number;
+  /** Gap between the previous donor's exit completing and the next
+   *  donor's enter starting, in ms. The reel is empty during this
+   *  window so the two donors never overlap on-screen. */
+  leadInMs: number;
+  /** Time the row sits fully landed between enter and exit, in ms. */
+  dwellMs: number;
   /** How many donors are kept in the reel. */
   reelLength: number;
 }
 
 export const DEFAULT_DONATION_REEL: DonationReelConfig = {
   direction: 'up',
-  switchMs: 320,
-  cycleMs: 2500,
+  enterMs: 320,
+  exitMs: 320,
+  leadInMs: 80,
+  dwellMs: 2000,
   reelLength: 5,
 };
 
 const REEL_DIRECTIONS: DonationReelDirection[] = ['up', 'down', 'left', 'right', 'fade'];
 
 // Bounds the control-panel editor also pins to.
-export const REEL_SWITCH_MIN_MS = 100;
-export const REEL_SWITCH_MAX_MS = 1500;
-export const REEL_CYCLE_MIN_MS = 500;
-export const REEL_CYCLE_MAX_MS = 10000;
+export const REEL_ANIM_MIN_MS = 100;
+export const REEL_ANIM_MAX_MS = 1500;
+export const REEL_LEAD_IN_MIN_MS = 0;
+export const REEL_LEAD_IN_MAX_MS = 2000;
+export const REEL_DWELL_MIN_MS = 100;
+export const REEL_DWELL_MAX_MS = 10000;
 export const REEL_LENGTH_MIN = 1;
 export const REEL_LENGTH_MAX = 10;
 
@@ -118,19 +128,45 @@ export function readDonationReelConfig(layout: unknown): DonationReelConfig {
     REEL_DIRECTIONS.includes(v.direction as DonationReelDirection)
       ? (v.direction as DonationReelDirection)
       : DEFAULT_DONATION_REEL.direction;
-  const switchMs =
+  // Backward-compat: the previous shape had `switchMs` shared by both
+  // enter and exit. Fall back to it when the split fields are absent.
+  const switchFallback =
     typeof v.switchMs === 'number'
-      ? clamp(Math.round(v.switchMs), REEL_SWITCH_MIN_MS, REEL_SWITCH_MAX_MS)
-      : DEFAULT_DONATION_REEL.switchMs;
-  const cycleMs =
+      ? clamp(Math.round(v.switchMs), REEL_ANIM_MIN_MS, REEL_ANIM_MAX_MS)
+      : null;
+  const enterMs =
+    typeof v.enterMs === 'number'
+      ? clamp(Math.round(v.enterMs), REEL_ANIM_MIN_MS, REEL_ANIM_MAX_MS)
+      : switchFallback ?? DEFAULT_DONATION_REEL.enterMs;
+  const exitMs =
+    typeof v.exitMs === 'number'
+      ? clamp(Math.round(v.exitMs), REEL_ANIM_MIN_MS, REEL_ANIM_MAX_MS)
+      : switchFallback ?? DEFAULT_DONATION_REEL.exitMs;
+  const leadInMs =
+    typeof v.leadInMs === 'number'
+      ? clamp(Math.round(v.leadInMs), REEL_LEAD_IN_MIN_MS, REEL_LEAD_IN_MAX_MS)
+      : DEFAULT_DONATION_REEL.leadInMs;
+  // Backward-compat: previous shape had `cycleMs` = interval between
+  // switches starting. We translate that to a dwell of (cycle - one
+  // switch) when the new field is absent, so existing saved configs
+  // still pace correctly.
+  const dwellFallback =
     typeof v.cycleMs === 'number'
-      ? clamp(Math.round(v.cycleMs), REEL_CYCLE_MIN_MS, REEL_CYCLE_MAX_MS)
-      : DEFAULT_DONATION_REEL.cycleMs;
+      ? clamp(
+          Math.round(v.cycleMs - (switchFallback ?? DEFAULT_DONATION_REEL.enterMs)),
+          REEL_DWELL_MIN_MS,
+          REEL_DWELL_MAX_MS,
+        )
+      : null;
+  const dwellMs =
+    typeof v.dwellMs === 'number'
+      ? clamp(Math.round(v.dwellMs), REEL_DWELL_MIN_MS, REEL_DWELL_MAX_MS)
+      : dwellFallback ?? DEFAULT_DONATION_REEL.dwellMs;
   const reelLength =
     typeof v.reelLength === 'number'
       ? clamp(Math.round(v.reelLength), REEL_LENGTH_MIN, REEL_LENGTH_MAX)
       : DEFAULT_DONATION_REEL.reelLength;
-  return { direction, switchMs, cycleMs, reelLength };
+  return { direction, enterMs, exitMs, leadInMs, dwellMs, reelLength };
 }
 
 function clamp(n: number, lo: number, hi: number): number {

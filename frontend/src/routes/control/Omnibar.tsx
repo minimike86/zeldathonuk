@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
   obsApi,
   usePolledQuery,
@@ -19,12 +19,14 @@ import {
   DEFAULT_LAYOUT,
   parseLayout,
   readDonationReelConfig,
-  REEL_CYCLE_MAX_MS,
-  REEL_CYCLE_MIN_MS,
+  REEL_ANIM_MAX_MS,
+  REEL_ANIM_MIN_MS,
+  REEL_DWELL_MAX_MS,
+  REEL_DWELL_MIN_MS,
+  REEL_LEAD_IN_MAX_MS,
+  REEL_LEAD_IN_MIN_MS,
   REEL_LENGTH_MAX,
   REEL_LENGTH_MIN,
-  REEL_SWITCH_MAX_MS,
-  REEL_SWITCH_MIN_MS,
   type DonationReelConfig,
   type DonationReelDirection,
   type PanelId,
@@ -1363,9 +1365,18 @@ function DonationReelSection() {
         <code>Event.omnibar_layout.donationReel</code>.
       </p>
 
+      <p className="text-white-50" style={{ fontSize: '0.85em', marginTop: 0 }}>
+        Each donor's cycle plays in order:{' '}
+        <strong>Enter → Dwell → Exit → Lead-in</strong> (empty reel),
+        then the next donor enters. Tuning the four timings lets you
+        pick anything from a snappy ticker to a deliberate broadcast
+        crawl. The two donors never overlap — the outgoing one fully
+        exits before the next begins entering.
+      </p>
+
       <div className="control-btn-row" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <label className="d-flex flex-column">
-          <small>Switch direction</small>
+          <small>Direction</small>
           <select
             value={draft.direction}
             onChange={(e) => update('direction', e.target.value as DonationReelDirection)}
@@ -1376,54 +1387,63 @@ function DonationReelSection() {
           </select>
         </label>
         <label className="d-flex flex-column">
-          <small title="Duration of the switch animation between donors">Switch ms</small>
-          <input
-            type="number"
-            min={REEL_SWITCH_MIN_MS}
-            max={REEL_SWITCH_MAX_MS}
+          <small>Enter ms</small>
+          <ClampedNumberInput
+            min={REEL_ANIM_MIN_MS}
+            max={REEL_ANIM_MAX_MS}
             step={20}
-            value={draft.switchMs}
-            onChange={(e) =>
-              update(
-                'switchMs',
-                clampN(Number(e.target.value), REEL_SWITCH_MIN_MS, REEL_SWITCH_MAX_MS),
-              )
-            }
-            style={{ width: 100 }}
+            value={draft.enterMs}
+            onCommit={(v) => update('enterMs', v)}
+            style={{ width: 90 }}
+            title="Duration of the donor row's enter animation"
           />
         </label>
         <label className="d-flex flex-column">
-          <small title="How often the reel advances to the next donor">Cycle ms</small>
-          <input
-            type="number"
-            min={REEL_CYCLE_MIN_MS}
-            max={REEL_CYCLE_MAX_MS}
+          <small>Dwell ms</small>
+          <ClampedNumberInput
+            min={REEL_DWELL_MIN_MS}
+            max={REEL_DWELL_MAX_MS}
             step={100}
-            value={draft.cycleMs}
-            onChange={(e) =>
-              update(
-                'cycleMs',
-                clampN(Number(e.target.value), REEL_CYCLE_MIN_MS, REEL_CYCLE_MAX_MS),
-              )
-            }
-            style={{ width: 110 }}
+            value={draft.dwellMs}
+            onCommit={(v) => update('dwellMs', v)}
+            style={{ width: 100 }}
+            title="Time the donor row sits fully on-screen between enter and exit"
           />
         </label>
         <label className="d-flex flex-column">
-          <small title="How many of the most-recent donors the reel rotates through">Reel length</small>
-          <input
-            type="number"
+          <small>Exit ms</small>
+          <ClampedNumberInput
+            min={REEL_ANIM_MIN_MS}
+            max={REEL_ANIM_MAX_MS}
+            step={20}
+            value={draft.exitMs}
+            onCommit={(v) => update('exitMs', v)}
+            style={{ width: 90 }}
+            title="Duration of the donor row's exit animation"
+          />
+        </label>
+        <label className="d-flex flex-column">
+          <small>Lead-in ms</small>
+          <ClampedNumberInput
+            min={REEL_LEAD_IN_MIN_MS}
+            max={REEL_LEAD_IN_MAX_MS}
+            step={20}
+            value={draft.leadInMs}
+            onCommit={(v) => update('leadInMs', v)}
+            style={{ width: 100 }}
+            title="Empty-reel pause between one donor exiting and the next entering"
+          />
+        </label>
+        <label className="d-flex flex-column">
+          <small>Reel length</small>
+          <ClampedNumberInput
             min={REEL_LENGTH_MIN}
             max={REEL_LENGTH_MAX}
             step={1}
             value={draft.reelLength}
-            onChange={(e) =>
-              update(
-                'reelLength',
-                clampN(Number(e.target.value), REEL_LENGTH_MIN, REEL_LENGTH_MAX),
-              )
-            }
+            onCommit={(v) => update('reelLength', v)}
             style={{ width: 90 }}
+            title="How many of the most-recent donors the reel rotates through"
           />
         </label>
       </div>
@@ -1448,6 +1468,69 @@ function DonationReelSection() {
 function clampN(n: number, lo: number, hi: number): number {
   if (!Number.isFinite(n)) return lo;
   return Math.max(lo, Math.min(hi, Math.round(n)));
+}
+
+/**
+ * Numeric `<input>` that lets the user TYPE freely (no per-keystroke
+ * clamping that snaps `4` to `100` mid-edit) and only commits the
+ * clamped value on blur or Enter. The draft state mirrors what the
+ * user has typed so far; if it ends up out of range or empty when
+ * they leave the field, we clamp to the bounds and push the value
+ * back up to the parent.
+ */
+function ClampedNumberInput({
+  value,
+  min,
+  max,
+  step,
+  onCommit,
+  style,
+  title,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onCommit: (v: number) => void;
+  style?: CSSProperties;
+  title?: string;
+}) {
+  const [draft, setDraft] = useState<string>(String(value));
+  const lastExternalRef = useRef(value);
+  // Re-seed the draft when the canonical value changes from outside
+  // (e.g. reset button, fresh poll after the event identity changed).
+  useEffect(() => {
+    if (value !== lastExternalRef.current) {
+      lastExternalRef.current = value;
+      setDraft(String(value));
+    }
+  }, [value]);
+  const commit = () => {
+    const parsed = Number(draft);
+    const clamped = Number.isFinite(parsed) ? clampN(parsed, min, max) : value;
+    setDraft(String(clamped));
+    lastExternalRef.current = clamped;
+    if (clamped !== value) onCommit(clamped);
+  };
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      step={step}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          commit();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      style={style}
+      title={title}
+    />
+  );
 }
 
 // ── Objective editor ─────────────────────────────────────────────────────
