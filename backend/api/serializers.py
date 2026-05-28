@@ -51,6 +51,7 @@ class DonationPlatformProfileSerializer(serializers.ModelSerializer):
             'platform',
             'platform_label',
             'display_label',
+            'logo_url',
             'fees_url',
             'gift_aid_url',
             'fee_warning',
@@ -68,6 +69,7 @@ class DonationPageSerializer(serializers.ModelSerializer):
     """
 
     display_label = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
     fees_url = serializers.SerializerMethodField()
     gift_aid_url = serializers.SerializerMethodField()
     fee_warning = serializers.SerializerMethodField()
@@ -80,6 +82,7 @@ class DonationPageSerializer(serializers.ModelSerializer):
             'event',
             'platform',
             'display_label',
+            'logo_url',
             'label',
             'url',
             'external_id',
@@ -111,6 +114,10 @@ class DonationPageSerializer(serializers.ModelSerializer):
         if p and p.display_label:
             return p.display_label
         return obj.get_platform_display()
+
+    def get_logo_url(self, obj) -> str:
+        p = self._profile(obj)
+        return p.logo_url if p else ''
 
     def get_fees_url(self, obj) -> str:
         p = self._profile(obj)
@@ -476,11 +483,12 @@ class ThemeSettingsSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'is_active',
             'primary', 'primary_bright', 'secondary',
-            'background_from', 'background_to',
+            'background_from', 'background_to', 'background_gradient_angle',
+            'navbar_tint_color',
             'text_color', 'text_muted', 'line_color',
             'logo_url', 'logo_small_url', 'favicon_url',
             'background_video_url', 'background_image_url',
-            'button_gradient_from', 'button_gradient_to',
+            'button_gradient_from', 'button_gradient_to', 'button_gradient_angle',
             'button_text_color', 'button_border_color',
             'divider_thickness', 'image_hue_rotate',
             'link_color', 'link_hover_color',

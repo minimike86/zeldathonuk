@@ -63,24 +63,31 @@
 }
 
 .charity-side-eyebrow {
-  color: #5cc1ee;
+  /* Theme secondary so the eyebrow distinguishes the "info" side
+   * (learn-about-charity) from the primary donate flow. */
+  color: var(--theme-secondary, #5cc1ee);
 }
 
 .charity-blurb {
   font-size: 1rem;
   line-height: 1.5;
   margin: 0;
+  /* Preserve newlines authored in the mission statement (textarea in
+   * /control/charities) while still wrapping long lines normally. */
+  white-space: pre-line;
 }
 
-/* SpecialEffect-themed blue card — matches the .benefitting-card on the
- * home page so the brand styling is consistent across surfaces. */
+/* Theme-driven card — matches the .benefitting-card on the home page
+ * so the same palette cascades across both surfaces. Charity-specific
+ * brand colours (the SpecialEffect blue) ride on `.btn-specialeffect`
+ * inside the card instead. */
 .charity-panel {
   background: linear-gradient(
     135deg,
-    rgba(67, 154, 190, 0.16) 0%,
-    rgba(0, 91, 144, 0.08) 100%
+    color-mix(in srgb, var(--theme-primary, #b92753) 16%, transparent) 0%,
+    color-mix(in srgb, var(--theme-secondary, #731c37) 10%, transparent) 100%
   );
-  border: 1px solid rgba(67, 154, 190, 0.45);
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 45%, transparent);
   border-radius: 10px;
   padding: 1.25rem 1.5rem;
 }
@@ -113,9 +120,10 @@
 
 .charity-cta {
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 1rem 1.1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem;
   border-radius: 10px;
   text-decoration: none;
   color: #fff;
@@ -130,15 +138,6 @@
   box-sizing: border-box;
 }
 
-.charity-cta::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: currentColor;
-  opacity: 0.85;
-}
-
 .charity-cta:hover {
   transform: translateY(-2px);
   background: rgba(0, 0, 0, 0.5);
@@ -146,12 +145,14 @@
 }
 
 .charity-cta--learn {
-  border-color: rgba(67, 154, 190, 0.55);
-  color: #5cc1ee;
+  /* "Get help" tile uses the theme's secondary colour — pairs with
+   * `.charity-cta--donate` (primary) to read as info vs action. */
+  border-color: color-mix(in srgb, var(--theme-secondary, #5cc1ee) 55%, transparent);
+  color: var(--theme-secondary, #5cc1ee);
 }
 
 .charity-cta--learn:hover {
-  border-color: rgba(67, 154, 190, 0.95);
+  border-color: color-mix(in srgb, var(--theme-secondary, #5cc1ee) 95%, transparent);
 }
 
 .charity-cta--donate {
@@ -173,15 +174,10 @@
 
 .charity-cta-title {
   font-family: 'Bungee', sans-serif;
-  font-size: clamp(1rem, 1.4vw, 1.3rem);
+  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
   color: #fff;
   line-height: 1.1;
-}
-
-.charity-cta-sub {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.4;
+  text-align: center;
 }
 
 /* Strip default <button> chrome so a DonateButton with custom children
@@ -212,7 +208,9 @@
 }
 
 .charity-video-eyebrow {
-  color: #5cc1ee;
+  /* Matches `.charity-side-eyebrow` — theme secondary keeps the
+   * "info" tone consistent across both panels. */
+  color: var(--theme-secondary, #5cc1ee);
 }
 
 .charity-video-frame {
@@ -257,3 +255,407 @@
  * to live here clashed with home.css under different cascade orders
  * (1px rest vs 2px hover, or vice versa) which read as the button
  * "growing" on hover. /charity does not use this class today. */
+
+/* ─── Multi-charity sections ──────────────────────────────────────────
+ * Everything below renders one charity block per `event_charity` link
+ * on the active event. Each block has a hero header, a two-column body
+ * (about + connect), then sequential sections for impact tiers,
+ * videos, and gallery — each only rendered when the charity has rows
+ * for it. */
+
+.charity-event-tag {
+  font-family: 'Bungee', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--theme-line, rgba(231, 19, 71, 0.5));
+  border-radius: 999px;
+}
+
+.charity-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.charity-block + .charity-block {
+  padding-top: 1.5rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+/* Hero — logo on left, name + short_name + charity number on right. */
+.charity-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(
+    135deg,
+    rgba(67, 154, 190, 0.12) 0%,
+    rgba(0, 91, 144, 0.05) 100%
+  );
+  border: 1px solid rgba(67, 154, 190, 0.35);
+  border-radius: 10px;
+}
+
+/* Banner variant — the wide hero image is set inline as the background.
+ * A darkening gradient overlay keeps the logo + name legible regardless
+ * of the photo, and the content is lifted above it. */
+.charity-hero--banner {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  min-height: 160px;
+}
+
+.charity-hero--banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0.45) 60%,
+    rgba(0, 0, 0, 0.25) 100%
+  );
+}
+
+.charity-hero--banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+.charity-hero-logo {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.charity-hero-logo img {
+  /* Explicit height (not `auto`) so logos shipped as SVGs declaring
+   * `width/height="100%"` size from their viewBox aspect ratio instead of
+   * collapsing to a zero intrinsic size inside an auto-sized <img>. */
+  height: clamp(48px, 6vw, 64px);
+  max-width: 220px;
+  width: auto;
+  object-fit: contain;
+}
+
+.charity-hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.charity-hero-name {
+  font-family: 'Bungee', sans-serif;
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.charity-hero-badge {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: var(--theme-primary, #e71347);
+  color: #fff;
+}
+
+.charity-hero-sub {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
+}
+
+.charity-hero-number {
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+/* Right column of the shell — connect rail. */
+.charity-side--links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.charity-social-list,
+.charity-link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.charity-social-pill,
+.charity-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.charity-social-pill:hover,
+.charity-link:hover {
+  color: #fff;
+  border-color: rgba(67, 154, 190, 0.85);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.charity-social-glyph {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(67, 154, 190, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.charity-social-text {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.charity-social-platform {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.charity-social-handle {
+  font-size: 0.85rem;
+  color: #fff;
+}
+
+/* Section header — small Bungee eyebrow + optional right-aligned meta
+ * (e.g. image count). Used by impact tiers, videos, gallery. */
+.charity-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Impact tiers — "What could your donation do?" — mirrors the existing
+ * /donations side panel rows but laid out as a responsive grid so all
+ * tiers are visible at a glance. */
+.charity-impact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.charity-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.charity-impact-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  text-align: center;
+  align-items: center;
+}
+
+.charity-impact-amount {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.45rem;
+  letter-spacing: 0.02em;
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.charity-impact-img {
+  width: 100%;
+  max-width: 110px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.charity-impact-desc {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.35;
+}
+
+.charity-impact-desc a {
+  color: var(--theme-link, #ffc2e0);
+}
+
+.charity-impact-desc a:hover {
+  color: var(--theme-link-hover, #ffffff);
+}
+
+/* Video gallery — first YouTube embed becomes the featured player,
+ * the rest tile as click-out thumbnails. */
+.charity-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.charity-video-caption {
+  padding: 0.6rem 0.9rem 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.charity-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.charity-video-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.charity-video-card:hover {
+  color: #fff;
+  border-color: rgba(67, 154, 190, 0.85);
+  transform: translateY(-2px);
+}
+
+.charity-video-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.charity-video-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 2.5rem;
+}
+
+.charity-video-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.85rem 0.85rem;
+}
+
+/* Image gallery — masonry-ish grid with an in-place "show more" cap so
+ * a charity with 19+ images doesn't dump the entire archive on first
+ * paint. */
+.charity-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.charity-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-auto-rows: 160px;
+  gap: 0.5rem;
+}
+
+.charity-gallery-tile {
+  position: relative;
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+  color: #fff;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.charity-gallery-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(67, 154, 190, 0.85);
+}
+
+.charity-gallery-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.charity-gallery-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.35rem 0.55rem;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+  font-size: 0.75rem;
+  color: #fff;
+  line-height: 1.25;
+}
+
+.charity-gallery-more {
+  align-self: center;
+  background: transparent;
+  color: #5cc1ee;
+  border: 1px solid rgba(67, 154, 190, 0.55);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.charity-gallery-more:hover {
+  background: rgba(67, 154, 190, 0.2);
+  border-color: rgba(67, 154, 190, 0.85);
+}

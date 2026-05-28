@@ -483,7 +483,7 @@ function renderTitleWithLogo(name: string): React.ReactNode {
   return (
     <>
       <img
-        src="/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg"
+        src="/assets/img/brand/logo/Zeldathon-Logo-2026-Gold-Flash.svg"
         alt="ZeldathonUK"
         className="schedule-hero-logo-inline"
       />

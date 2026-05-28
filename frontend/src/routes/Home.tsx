@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { WaveText } from '@/components/WaveText';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { EventCharityLink, ScheduleEntry } from '@/lib/obsApi';
+import type { DonationPage, EventCharityLink, ScheduleEntry } from '@/lib/obsApi';
 import './home.css';
 
 // Pass every plausible parent so Twitch's iframe security check passes
@@ -186,7 +186,7 @@ export function Home() {
           {/* Left column: Currently Playing on top, Up Next stacked beneath. */}
           <div className="col-lg-5 d-flex flex-column gap-2">
             <div className="ps-3">
-              <h6 className="text-bloodmoon mb-1">Currently Playing</h6>
+              <h6 className="home-section-heading mb-1">Currently Playing</h6>
               {currentEntry ? (
                 <ScheduleEntryCard
                   entry={currentEntry}
@@ -318,13 +318,13 @@ export function Home() {
               className="ps-3"
               style={{
                 borderTop:
-                  'var(--theme-divider-thickness, 2px) solid var(--theme-primary, var(--bs-danger))',
+                  'var(--theme-divider-thickness, 2px) solid var(--theme-line, rgba(185,39,83,0.5))',
                 paddingTop: '0.35rem',
               }}
             >
               {nextEntry ? (
                 <>
-                  <h6 className="text-bloodmoon">
+                  <h6 className="home-section-heading">
                     <WaveText text={nextLabel} />
                   </h6>
                   <div key={nextEntry.id} className="upnext-card">
@@ -359,12 +359,12 @@ export function Home() {
             className="col-lg-7 ps-3"
             style={{
               borderLeft:
-                'var(--theme-divider-thickness, 2px) solid var(--theme-primary, var(--bs-danger))',
+                'var(--theme-divider-thickness, 2px) solid var(--theme-line, rgba(185,39,83,0.5))',
             }}
           >
             {benefitting.length > 0 && (
               <>
-                <h6 className="text-bloodmoon">
+                <h6 className="home-section-heading">
                   Benefitting{benefitting.length > 1 ? ` (${benefitting.length})` : ''}
                 </h6>
                 <div className="d-flex flex-column gap-3">
@@ -373,6 +373,8 @@ export function Home() {
                       key={link.id}
                       link={link}
                       showPrimaryBadge={benefitting.length > 1}
+                      donationPages={donationPages}
+                      currencySymbol={event?.currency_symbol}
                     />
                   ))}
                 </div>
@@ -407,11 +409,18 @@ export function Home() {
 function BenefittingCard({
   link,
   showPrimaryBadge,
+  donationPages,
+  currencySymbol,
 }: {
   link: EventCharityLink;
   /** Only true when the event has more than one beneficiary attached
    *  — a single-charity event needs no "primary" pill. */
   showPrimaryBadge: boolean;
+  /** Donation pages from the active event. When present, the donate CTA
+   *  opens the picker modal (fundraising page links); when empty (no
+   *  active event) it falls back to the charity's direct donate URL. */
+  donationPages: DonationPage[];
+  currencySymbol?: string;
 }) {
   const charity = link.charity_detail;
   // Help CTA — prefer the charity's own "how can they help you?" link;
@@ -421,12 +430,13 @@ function BenefittingCard({
     charity.help_cta_url?.trim() || charity.primary_website_url?.trim() || '';
   const helpLabel = (charity.help_cta_headline?.trim()
     || 'Can they help you?').toUpperCase();
-  // Donate CTA — built straight from the charity's `donate_cta_*`
-  // fields so each beneficiary points at its own evergreen donation
-  // page rather than the event-wide DonationPicker. Empty URL hides
-  // the button (consistent with how the help CTA behaves). The body
-  // text is surfaced as the button tooltip so curators can write a
-  // longer pitch without taking up card space.
+  // Donate CTA — when the active event has fundraising pages we open the
+  // event-wide DonationPicker modal (per-platform fundraising page links);
+  // otherwise (no active event) we fall back to the charity's own evergreen
+  // `donate_cta_url`. Empty URL with no pages hides the button (consistent
+  // with how the help CTA behaves). The body text is surfaced as the button
+  // tooltip so curators can write a longer pitch without taking up card space.
+  const hasFundraisingPages = donationPages.length > 0;
   const donateUrl = charity.donate_cta_url?.trim() || '';
   const donateLabel = (charity.donate_cta_headline?.trim()
     || 'Donate now').toUpperCase();
@@ -459,7 +469,7 @@ function BenefittingCard({
           <strong className="text-light">{charity.name}</strong>{' '}
           {blurbBody(charity.name, blurb)}
         </p>
-        {(helpUrl || donateUrl) && (
+        {(helpUrl || donateUrl || hasFundraisingPages) && (
           <div className="d-flex flex-wrap gap-2 align-items-center">
             {helpUrl && (
               <button
@@ -469,12 +479,19 @@ function BenefittingCard({
                 {helpLabel}
               </button>
             )}
-            {donateUrl && (
-              // Styled to match the "Follow Us On Twitch" button verbatim
-              // (`btn btn-sm btn-bloodmoon p-2 px-5` + Bungee) so every
-              // donate-flavoured CTA in the app — this card button, the
-              // navbar Donate button, the Twitch follow button — reads
-              // as one cohesive theme primary action.
+            {/* Styled to match the "Follow Us On Twitch" button verbatim
+              * (`btn btn-sm btn-bloodmoon p-2 px-5` + Bungee) so every
+              * donate-flavoured CTA in the app — this card button, the
+              * navbar Donate button, the Twitch follow button — reads
+              * as one cohesive theme primary action. */}
+            {hasFundraisingPages ? (
+              <DonateButton
+                pages={donationPages}
+                currencySymbol={currencySymbol}
+                className="p-2 px-5"
+                label={donateLabel}
+              />
+            ) : donateUrl ? (
               <button
                 className="btn btn-sm btn-bloodmoon p-2 px-5"
                 style={{ fontFamily: "'Bungee', cursive" }}
@@ -483,7 +500,7 @@ function BenefittingCard({
               >
                 {donateLabel}
               </button>
-            )}
+            ) : null}
           </div>
         )}
       </div>
@@ -691,9 +708,13 @@ function fmtRelativeTime(date: Date): string {
   const absMin = Math.abs(diffMs) / 60_000;
   const abs = (() => {
     if (absMin < 60) return `${Math.round(absMin)}m`;
-    const h = Math.floor(absMin / 60);
-    const m = Math.round(absMin % 60);
-    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+    const totalMin = Math.round(absMin);
+    const d = Math.floor(totalMin / 1440);
+    const h = Math.floor((totalMin % 1440) / 60);
+    const m = totalMin % 60;
+    return [d ? `${d}d` : '', h ? `${h}h` : '', m ? `${m}m` : '']
+      .filter(Boolean)
+      .join(' ');
   })();
   const clock = date.toLocaleTimeString('en-GB', {
     hour: '2-digit',

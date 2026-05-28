@@ -29,7 +29,15 @@
   content: '';
   width: 100%;
   height: 100%;
-  background: linear-gradient(45deg, #ffc2e0, #e59fcb, #d96da9);
+  /* Theme-driven wash — matches `.bg-bloodmoon::before` on the home
+   * page so the same gentle tint cascades across all bg-bloodmoon
+   * containers regardless of which theme is active. */
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary-bright, #ffc2e0),
+    var(--theme-primary, #e59fcb),
+    var(--theme-secondary, #d96da9)
+  );
   opacity: 0.15;
   z-index: -1;
 }
@@ -56,6 +64,117 @@
   height: auto;
 }
 
+/* ── Donor-wall headers ─────────────────────────────────────────────────
+ * Flat heading text in the theme's heading font with a short gradient
+ * accent rule underneath — palette-driven uplift over the old all-gradient
+ * `.text-bloodmoon` wordmarks. */
+.donation-heading {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  color: var(--theme-text, #fff);
+  margin-bottom: 1rem;
+}
+
+.donation-heading::after {
+  content: '';
+  display: block;
+  margin-top: 0.5rem;
+  width: 3.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary, #e71347),
+    var(--theme-secondary, #731c37)
+  );
+}
+
+/* ── KPI strip ──────────────────────────────────────────────────────── */
+.donation-kpi {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  padding: 10px 14px;
+  height: 100%;
+}
+
+.donation-kpi-label {
+  letter-spacing: 0.05em;
+}
+
+.donation-kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--theme-text, #fff);
+}
+
+.donation-kpi-value--accent {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 28px;
+  color: var(--theme-primary, #e71347);
+}
+
+/* ── Donor tile ─────────────────────────────────────────────────────── */
+.donation-tile {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--theme-primary, #e71347) 10%, transparent) 0%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #e71347) 35%, transparent);
+  border-radius: 10px;
+  padding: 14px 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.donation-tile:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 60%, transparent);
+}
+
+.donation-tile-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--theme-primary, #e71347) 0%,
+    var(--theme-secondary, #731c37) 100%
+  );
+  color: var(--theme-text, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.donation-tile-name {
+  font-weight: 600;
+}
+
+.donation-tile-amount {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 22px;
+  color: var(--theme-primary, #e71347);
+  flex-shrink: 0;
+}
+
+.donation-tile-message {
+  padding-left: 12px;
+  border-left: 3px solid color-mix(in srgb, var(--theme-primary, #e71347) 55%, transparent);
+  font-style: italic;
+  white-space: pre-line;
+}
+
 .donation {
   color: white;
   border-radius: 0.25rem;
@@ -71,67 +190,4 @@
   height: 3em;
   max-height: 3em;
   max-width: 3em;
-}
-
-.facebook-donation {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-  background-color: rgba(231, 19, 71, 0.5);
-  border: rgba(231, 19, 71, 0.5) solid 2px;
-}
-
-.facebook-donation::before {
-  z-index: -1;
-  position: absolute;
-  top: -72%;
-  left: -30%;
-  width: 200%;
-  height: 200%;
-  content: '';
-  background: url('/assets/img/thumb_icon_header_image_05_2018.png') 0 0 no-repeat;
-  transform: rotate(-25deg) scale(0.45);
-  filter: grayscale(100%) opacity(0.2);
-}
-
-.tiltify-donation {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-  background-color: rgba(231, 19, 71, 0.5);
-  border: rgba(231, 19, 71, 0.5) solid 2px;
-}
-
-.tiltify-donation::before {
-  z-index: -1;
-  position: absolute;
-  top: -225%;
-  left: -140%;
-  width: 600%;
-  height: 600%;
-  content: '';
-  background: url('/assets/img/Tiltify_Logo.png') 0 0 no-repeat;
-  transform: rotate(-25deg) scale(0.45);
-  filter: grayscale(100%) opacity(0.2);
-}
-
-.justgiving-donation {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-  background-color: rgba(231, 19, 71, 0.5);
-  border: rgba(231, 19, 71, 0.5) solid 2px;
-}
-
-.justgiving-donation::before {
-  z-index: -1;
-  position: absolute;
-  top: -325%;
-  left: -345%;
-  width: 800%;
-  height: 800%;
-  content: '';
-  background: url('/assets/img/JustGiving_Logo.svg.png') 0 0 no-repeat;
-  transform: rotate(-25deg) scale(0.1);
-  filter: grayscale(100%) opacity(0.2);
 }

@@ -1,5 +1,21 @@
 /* Ported from legacy/src/app/components/home/home.component.css */
 
+/* Flat secondary-coloured panel heading — no gradient, used for the
+ * Currently Playing / queue / Benefitting section titles. Mirrors the
+ * typography of `.text-bloodmoon` (bold, uppercase, 1.5em inside the
+ * bloodmoon panel) but paints a solid secondary colour instead. */
+.home-section-heading {
+  display: inline-block;
+  color: var(--theme-secondary, #731c37);
+  font-weight: bold;
+  font-size: 1.65em;
+  text-transform: uppercase;
+}
+
+.bg-bloodmoon h6.home-section-heading {
+  font-size: 1.5em;
+}
+
 .bg-bloodmoon {
   background-color: transparent;
   position: relative;
@@ -15,7 +31,15 @@
   content: '';
   width: 100%;
   height: 100%;
-  background: linear-gradient(45deg, #ffc2e0, #e59fcb, #d96da9);
+  /* Soft wash painted over the bg-bloodmoon container — uses the
+   * theme palette so each theme repaints the wash automatically.
+   * The fallback hex chain is the legacy bloodmoon-pink set. */
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary-bright, #ffc2e0),
+    var(--theme-primary, #e59fcb),
+    var(--theme-secondary, #d96da9)
+  );
   opacity: 0.15;
   z-index: -1;
 }
@@ -36,12 +60,17 @@
   align-items: center;
   gap: 1.25rem;
   padding: 1rem 1.25rem;
+  /* Driven by the theme palette via `color-mix` so each theme tints
+   * the beneficiary callout automatically. Earlier SpecialEffect-only
+   * blue tones lived here; charity-specific brand colours now ride on
+   * `.btn-specialeffect` (and analogues), keeping the card itself in
+   * the site's voice. */
   background: linear-gradient(
     135deg,
-    rgba(67, 154, 190, 0.16) 0%,
-    rgba(0, 91, 144, 0.08) 100%
+    color-mix(in srgb, var(--theme-primary, #b92753) 16%, transparent) 0%,
+    color-mix(in srgb, var(--theme-secondary, #731c37) 10%, transparent) 100%
   );
-  border: 1px solid rgba(67, 154, 190, 0.45);
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 45%, transparent);
   border-radius: 10px;
 }
 

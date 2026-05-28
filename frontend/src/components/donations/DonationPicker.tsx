@@ -60,9 +60,19 @@ export function DonationPicker({
       >
         <header
           className="d-flex justify-content-between align-items-center p-3"
-          style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.12)' }}
+          style={{
+            borderBottom:
+              'var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.45))',
+          }}
         >
-          <h2 className="m-0" style={{ fontSize: '1.4rem' }}>
+          <h2
+            className="m-0"
+            style={{
+              fontSize: '1.4rem',
+              fontFamily: "var(--theme-font-heading, 'Bungee', sans-serif)",
+              color: 'var(--theme-text, #fff)',
+            }}
+          >
             Choose how to donate
           </h2>
           <button
@@ -131,7 +141,17 @@ function DonationRow({
             color: '#fff',
           }}
         >
-          {meta?.icon}
+          {/* Prefer the platform's configured logo (DonationPlatformProfile);
+            * fall back to the built-in FontAwesome glyph when none is set. */}
+          {page.logo_url ? (
+            <img
+              src={page.logo_url}
+              alt={`${title} logo`}
+              style={{ maxWidth: 36, maxHeight: 36, objectFit: 'contain' }}
+            />
+          ) : (
+            meta?.icon
+          )}
         </div>
         <div className="flex-grow-1" style={{ minWidth: 0 }}>
           <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -148,7 +168,8 @@ function DonationRow({
                 href={page.fees_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-warning text-decoration-none"
+                className="text-decoration-none"
+                style={{ color: 'var(--theme-link, #ffc107)' }}
                 title={`Fees on ${page.display_label}`}
               >
                 Fees ↗
@@ -159,7 +180,8 @@ function DonationRow({
                 href={page.gift_aid_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-warning text-decoration-none"
+                className="text-decoration-none"
+                style={{ color: 'var(--theme-link, #ffc107)' }}
                 title="Gift Aid info"
               >
                 Gift Aid ↗

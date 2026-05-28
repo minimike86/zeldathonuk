@@ -421,6 +421,14 @@ class DonationPlatformProfile(models.Model):
         help_text='Optional override for the platform display name shown in '
                   'the donation picker. Falls back to the choice label.',
     )
+    logo_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Platform logo shown in the donation picker (e.g. '
+                  '/assets/img/fundraising-platforms/tiltify/Tiltify_Logo.png). '
+                  'Absolute URL or site-relative path. Blank → the picker '
+                  'falls back to the built-in FontAwesome glyph.',
+    )
     fees_url = models.URLField(
         blank=True,
         help_text='Link to the platform\'s fundraising-fee page.',
@@ -876,6 +884,18 @@ class ThemeSettings(models.Model):
         max_length=20, default='#1a0a10',
         help_text='Bottom stop of the page background gradient (--theme-bg-to).',
     )
+    background_gradient_angle = models.IntegerField(
+        default=180,
+        help_text='Direction of the page background gradient in degrees '
+                  '(--theme-bg-angle). 0 = upward, 90 = right, 180 = '
+                  'downward (default), 270 = left.',
+    )
+    navbar_tint_color = models.CharField(
+        max_length=40, default='#2b1b25',
+        help_text='Top stop of the navbar overlay gradient (--theme-navbar-tint), '
+                  'painted over the background gradient to lift the navbar slightly. '
+                  'Accepts hex or rgba.',
+    )
     text_color = models.CharField(
         max_length=20, default='#ffffff',
         help_text='Default text colour (--theme-text).',
@@ -937,6 +957,12 @@ class ThemeSettings(models.Model):
     button_gradient_to = models.CharField(
         max_length=20, default='#b92753',
         help_text='Last stop of the primary button gradient.',
+    )
+    button_gradient_angle = models.IntegerField(
+        default=180,
+        help_text='Direction of the primary button gradient in degrees '
+                  '(--theme-button-angle). 0 = upward, 90 = right, '
+                  '180 = downward (default), 270 = left.',
     )
     button_text_color = models.CharField(
         max_length=20, default='#ffffff',

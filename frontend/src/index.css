@@ -82,7 +82,7 @@ body {
  * ──────────────────────────────────────────────────────────────────────── */
 .zeldathon-bg {
   background:
-    linear-gradient(180deg, var(--theme-bg-from, #4c1324) 0%, var(--theme-bg-to, #1a0a10) 100%);
+    linear-gradient(var(--theme-bg-angle, 180deg), var(--theme-bg-from, #4c1324) 0%, var(--theme-bg-to, #1a0a10) 100%);
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -178,7 +178,7 @@ a.link-warning {
 .btn-bloodmoon {
   color: var(--theme-button-text, #fff);
   background: linear-gradient(
-    180deg,
+    var(--theme-button-angle, 180deg),
     var(--theme-button-to, #b92753) 0%,
     var(--theme-button-from, #4c1324) 100%
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { FontAwesomeIcon, FontAwesomeIconProps } from '@fortawesome/react-fontawesome';
 import {
@@ -16,6 +16,7 @@ import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import { cn } from '@/lib/utils';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { onThemeChanged } from '@/lib/themeBus';
 import './navbar.css';
 
 const DEFAULT_LOGO = '/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg';
@@ -76,7 +77,14 @@ export function Navbar() {
   const [collapsed, setCollapsed] = useState(true);
   const navigate = useNavigate();
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
-  const { data: theme } = usePolledQuery(obsApi.themeSettings, 60_000);
+  // Listen to themeBus so /control/theme edits land in roughly one
+  // render frame (same browser, BroadcastChannel) instead of waiting
+  // on the poll cadence. The 3s floor is for cross-browser refresh
+  // (e.g. OBS source picking up the new logo) and matches the cadence
+  // already used by ThemeProvider + useOmnibarFeed.
+  const [themeBump, dispatchThemeBump] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => onThemeChanged(dispatchThemeBump), []);
+  const { data: theme } = usePolledQuery(obsApi.themeSettings, 3000, [themeBump]);
   const donationPages = event?.donation_pages ?? [];
   const logoSrc = theme?.logo_url || DEFAULT_LOGO;
 
@@ -123,8 +131,8 @@ export function Navbar() {
             src="/assets/img/brand/1gxaef91xpst0u.png"
             style={{
               position: 'absolute',
-              top: -6,
-              right: -10,
+              top: 0,
+              right: -6,
               width: 32,
               height: 32,
               filter: 'opacity(0.75)',

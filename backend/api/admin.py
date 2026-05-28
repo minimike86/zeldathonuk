@@ -210,10 +210,15 @@ class DonationPlatformProfileAdmin(admin.ModelAdmin):
     so editing one row here updates every event's page for that platform.
     """
     list_display = ['platform', 'display_label', 'minimum_donation_amount',
-                    'has_fees_url', 'has_gift_aid_url', 'has_fee_warning']
+                    'has_logo', 'has_fees_url', 'has_gift_aid_url',
+                    'has_fee_warning']
     list_filter = ['platform']
-    fields = ['platform', 'display_label', 'fees_url', 'gift_aid_url',
-              'fee_warning', 'minimum_donation_amount']
+    fields = ['platform', 'display_label', 'logo_url', 'fees_url',
+              'gift_aid_url', 'fee_warning', 'minimum_donation_amount']
+
+    @admin.display(boolean=True, description='Logo?')
+    def has_logo(self, obj):
+        return bool(obj.logo_url)
 
     @admin.display(boolean=True, description='Fees URL?')
     def has_fees_url(self, obj):

@@ -60,11 +60,14 @@ export function applyTheme(t: ThemeSettings): void {
   root.style.setProperty('--theme-secondary', t.secondary);
   root.style.setProperty('--theme-bg-from', t.background_from);
   root.style.setProperty('--theme-bg-to', t.background_to);
+  root.style.setProperty('--theme-bg-angle', `${t.background_gradient_angle}deg`);
+  root.style.setProperty('--theme-navbar-tint', t.navbar_tint_color);
   root.style.setProperty('--theme-text', t.text_color);
   root.style.setProperty('--theme-text-muted', t.text_muted);
   root.style.setProperty('--theme-line', t.line_color);
   root.style.setProperty('--theme-button-from', t.button_gradient_from);
   root.style.setProperty('--theme-button-to', t.button_gradient_to);
+  root.style.setProperty('--theme-button-angle', `${t.button_gradient_angle}deg`);
   root.style.setProperty('--theme-button-text', t.button_text_color);
   root.style.setProperty('--theme-button-border', t.button_border_color);
   root.style.setProperty('--theme-divider-thickness', `${t.divider_thickness}px`);

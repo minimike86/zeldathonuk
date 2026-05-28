@@ -83,6 +83,10 @@ export interface DonationPage {
   event: number;
   platform: DonationPlatformKey;
   display_label: string;
+  /** Platform logo (site-relative path or absolute URL), denormalised from
+   *  the DonationPlatformProfile. Empty → the picker falls back to the
+   *  built-in per-platform icon in `platforms.tsx`. */
+  logo_url: string;
   label: string;
   url: string;
   external_id: string;
@@ -266,6 +270,10 @@ export interface ThemeSettings {
   secondary: string;
   background_from: string;
   background_to: string;
+  /** Direction of the page background gradient in degrees (--theme-bg-angle). */
+  background_gradient_angle: number;
+  /** Top stop of the navbar overlay gradient (--theme-navbar-tint). */
+  navbar_tint_color: string;
   text_color: string;
   text_muted: string;
   line_color: string;
@@ -276,6 +284,8 @@ export interface ThemeSettings {
   background_image_url: string;
   button_gradient_from: string;
   button_gradient_to: string;
+  /** Direction of the primary button gradient in degrees (--theme-button-angle). */
+  button_gradient_angle: number;
   button_text_color: string;
   button_border_color: string;
   divider_thickness: number;

@@ -21,7 +21,7 @@
   display: inline-block;
   height: clamp(2.4rem, 5.5vw, 4rem);
   width: auto;
-  filter: drop-shadow(0 4px 18px rgba(231, 19, 71, 0.35));
+  filter: drop-shadow(0 4px 18px var(--theme-line, rgba(231, 19, 71, 0.35)));
 }
 
 .zth-timeline {
@@ -99,22 +99,25 @@
 }
 
 .zth-timeline-card {
+  /* Theme-driven wash so each historical card tints to the active
+   * palette. color-mix blends the primary/secondary stops down to a
+   * subtle 10% overlay over whatever the page background is. */
   background: linear-gradient(
     45deg,
-    rgba(255, 194, 224, 0.1),
-    rgba(229, 159, 203, 0.1),
-    rgba(255, 194, 224, 0.1)
+    color-mix(in srgb, var(--theme-primary-bright, #ffc2e0) 12%, transparent),
+    color-mix(in srgb, var(--theme-primary, #e59fcb) 12%, transparent),
+    color-mix(in srgb, var(--theme-secondary, #d96da9) 12%, transparent)
   );
-  color: #fff;
+  color: var(--theme-text, #fff);
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(229, 159, 203, 0.2);
+  border: 1px solid var(--theme-line, rgba(229, 159, 203, 0.25));
 }
 
 .zth-card-header {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(229, 159, 203, 0.2);
+  border-bottom: 1px solid var(--theme-line, rgba(229, 159, 203, 0.25));
 }
 
 .zth-card-media iframe,

@@ -383,25 +383,44 @@
   50% { opacity: 1; box-shadow: 0 0 8px rgba(255, 210, 58, 0.45); }
 }
 
-/* /control/theme — picker on the left, editor on the right. */
+/* /control/theme — picker on the left, editor on the right. The
+ * shell fills its parent (`.control-main`, which is the scroll
+ * container) so the page itself never scrolls; instead the rail's
+ * theme list and the editor each get their own independent scroll.
+ * This stops the previous awkward behaviour where the page scrolled
+ * vertically AND moved the rail+editor together. */
 .theme-shell {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 1.25rem;
-  align-items: start;
+  height: 100%;
+  min-height: 0;
 }
 
 @media (max-width: 991px) {
   .theme-shell {
     grid-template-columns: 1fr;
+    /* Below the grid breakpoint the rail and editor stack, so let
+     * the page scroll normally rather than trapping each column in
+     * its own scroller (which feels wrong on a single-column phone
+     * layout). */
+    height: auto;
+    min-height: 0;
   }
 }
 
 .theme-rail {
-  position: sticky;
-  top: 1rem;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
+  /* The rail is itself a `.control-card`; override its default
+   * `margin-bottom` so the grid track height matches the viewport
+   * exactly (otherwise that margin reads as an unexplained gap
+   * below the rail card). */
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Hide overflow on the rail container so only the list (which
+   * gets `overflow-y: auto`) scrolls, keeping the header pinned. */
+  overflow: hidden;
 }
 
 .theme-list {
@@ -411,6 +430,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* Fill the rail's remaining height and scroll independently from
+   * the editor on the right. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .theme-list-item {
@@ -473,6 +497,21 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  /* Same dance as `.theme-rail`: take the full grid-cell height,
+   * own its scroll, so wheeling over the editor doesn't drag the
+   * rail along with it. */
+  min-height: 0;
+  overflow-y: auto;
+  /* Breathing room next to the scrollbar so the rightmost form
+   * controls don't visually butt against the track. */
+  padding-right: 0.25rem;
+}
+
+@media (max-width: 991px) {
+  /* On stacked mobile layout the editor scrolls with the page. */
+  .theme-editor {
+    overflow-y: visible;
+  }
 }
 
 .theme-editor .control-card {

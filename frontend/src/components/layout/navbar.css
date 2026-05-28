@@ -4,7 +4,7 @@
   --bs-navbar-padding-y: 0 !important;
   --bs-navbar-padding-x: 0 !important;
   background:
-    linear-gradient(180deg, #2b1b25, hsla(0, 0%, 100%, 0)),
+    linear-gradient(180deg, var(--theme-navbar-tint, #2b1b25), hsla(0, 0%, 100%, 0)),
     var(--theme-bg-from, #4c1324) !important;
   border-bottom: var(--theme-divider-thickness, 1px) solid
     var(--theme-primary, #bb225e);
@@ -43,7 +43,7 @@
 }
 
 .nav-icon-bloodmoon {
-  color: var(--theme-primary, #b92753);
+  color: var(--theme-secondary, #731c37);
 }
 
 .nav-item-bloodmoon:hover .nav-icon-bloodmoon {

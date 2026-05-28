@@ -12,7 +12,7 @@
 .schedule-hero {
   position: relative;
   padding: 4rem 1rem 3.5rem;
-  background-color: #0b0408;
+  background-color: var(--theme-bg-to, #0b0408);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -54,9 +54,9 @@
   background: linear-gradient(
     45deg,
     var(--theme-primary, #e71347),
-    var(--theme-link, #ffc2e0),
-    var(--theme-primary, #e7364b),
-    var(--theme-link, #ffc2e0),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-secondary, #731c37),
+    var(--theme-primary-bright, #da4471),
     var(--theme-primary, #e71347)
   );
   -webkit-background-clip: text;
@@ -85,6 +85,11 @@
   display: block;
   font-size: 0.55em;
   line-height: 1.1;
+  /* Opt out of the parent title's clipped gradient — render as flat
+   * theme text so the sub-line stays legible. */
+  background: none;
+  -webkit-text-fill-color: var(--theme-text, #fff);
+  color: var(--theme-text, #fff);
 }
 
 .schedule-hero-dates {
@@ -100,7 +105,7 @@
 }
 
 .schedule-hero-dash {
-  color: var(--theme-primary, rgba(231, 19, 71, 0.85));
+  color: var(--theme-text, #fff);
   font-size: 1.2em;
 }
 
@@ -125,15 +130,7 @@
   font-family: 'Bungee', sans-serif;
   font-size: 1.6rem;
   line-height: 1;
-  background: linear-gradient(
-    45deg,
-    var(--theme-primary, #e71347),
-    var(--theme-primary-bright, #da4471),
-    var(--theme-primary, #e7364b)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--theme-secondary, #731c37);
 }
 
 .schedule-hero-kpi-label {
@@ -162,7 +159,7 @@
   gap: 0.85rem;
   padding: 0.85rem 1rem;
   margin: 0 -1rem 1rem;
-  background: #0b0408;
+  background: var(--theme-bg-to, #0b0408);
   border-bottom: var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.45));
   /* Subtle inner glow so the header reads as a slab, not a flat strip. */
   box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.85);
@@ -171,15 +168,7 @@
 .schedule-day-weekday {
   font-family: 'Bungee', sans-serif;
   font-size: clamp(1.4rem, 2.4vw, 2rem);
-  background: linear-gradient(
-    45deg,
-    var(--theme-primary, #e71347),
-    var(--theme-primary-bright, #da4471),
-    var(--theme-primary, #e7364b)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--theme-secondary, #731c37);
   letter-spacing: 0.05em;
 }
 
@@ -202,7 +191,7 @@
   align-items: center;
   gap: 1.25rem;
   padding: 1rem 1.25rem;
-  background-color: #1a0a10;
+  background-color: color-mix(in srgb, var(--theme-bg-to, #1a0a10) 70%, var(--theme-bg-from, #4c1324) 30%);
   background-size: cover;
   background-position: center;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -258,9 +247,11 @@
 }
 
 .schedule-pill--ghost {
-  background: rgba(180, 180, 220, 0.12);
-  border-color: rgba(180, 180, 220, 0.35);
-  color: #c8d0e2;
+  /* Muted, secondary-tinted pill so ghost entries read as "still in
+   * play but elsewhere" without competing with the live primary. */
+  background: color-mix(in srgb, var(--theme-secondary, #731c37) 18%, transparent);
+  border-color: color-mix(in srgb, var(--theme-secondary, #731c37) 45%, transparent);
+  color: color-mix(in srgb, var(--theme-secondary, #731c37) 35%, #fff);
 }
 
 .schedule-card.is-completed {
@@ -328,9 +319,13 @@
 }
 
 .schedule-pill--overnight {
-  background: rgba(96, 113, 175, 0.18);
-  border-color: rgba(146, 158, 207, 0.6);
-  color: #d6dbf2;
+  /* Picks up the theme's secondary colour so the "ends after midnight"
+   * pill ties into the palette instead of being a hardcoded twilight
+   * blue. The lighter foreground keeps contrast against the tinted
+   * background regardless of which palette is active. */
+  background: color-mix(in srgb, var(--theme-secondary, #62182f) 22%, transparent);
+  border-color: color-mix(in srgb, var(--theme-secondary, #62182f) 55%, transparent);
+  color: color-mix(in srgb, var(--theme-secondary, #62182f) 30%, #fff);
 }
 
 .schedule-card-art {

@@ -92,10 +92,13 @@ export function ThemeControl() {
       const activated = await obsApi.themeActivate(id);
       await refresh();
       applyTheme(activated);
-      if (id === selectedId) {
-        setDraft(activated);
-        setSavedAt(new Date());
-      }
+      // Promote the activated theme into the editor pane regardless of
+      // what was selected before — operators expect "Activate" to also
+      // bring that theme up for editing, so the detail pane reflects
+      // what's now live on the site.
+      setSelectedId(activated.id);
+      setDraft(activated);
+      setSavedAt(new Date());
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -357,9 +360,17 @@ function ThemeEditor({
           <ColorField label="Secondary" value={draft.secondary} onChange={(v) => set('secondary', v)} />
           <ColorField label="Background — top" value={draft.background_from} onChange={(v) => set('background_from', v)} />
           <ColorField label="Background — bottom" value={draft.background_to} onChange={(v) => set('background_to', v)} />
+          <AngleField
+            label="Background angle (°)"
+            value={draft.background_gradient_angle}
+            onChange={(v) => set('background_gradient_angle', v)}
+            previewFrom={draft.background_from}
+            previewTo={draft.background_to}
+          />
+          <ColorField label="Navbar tint" value={draft.navbar_tint_color} onChange={(v) => set('navbar_tint_color', v)} />
           <ColorField label="Text" value={draft.text_color} onChange={(v) => set('text_color', v)} />
-          <TextField label="Muted text" value={draft.text_muted} onChange={(v) => set('text_muted', v)} placeholder="rgba(255,255,255,0.6)" />
-          <TextField label="Lines / borders" value={draft.line_color} onChange={(v) => set('line_color', v)} placeholder="rgba(185,39,83,0.5)" />
+          <ColorField label="Muted text" value={draft.text_muted} onChange={(v) => set('text_muted', v)} />
+          <ColorField label="Lines / borders" value={draft.line_color} onChange={(v) => set('line_color', v)} />
         </div>
       </div>
 
@@ -385,8 +396,15 @@ function ThemeEditor({
         <div className="row g-3 mt-2">
           <ColorField label="Button gradient — from" value={draft.button_gradient_from} onChange={(v) => set('button_gradient_from', v)} />
           <ColorField label="Button gradient — to" value={draft.button_gradient_to} onChange={(v) => set('button_gradient_to', v)} />
+          <AngleField
+            label="Button angle (°)"
+            value={draft.button_gradient_angle}
+            onChange={(v) => set('button_gradient_angle', v)}
+            previewFrom={draft.button_gradient_to}
+            previewTo={draft.button_gradient_from}
+          />
           <ColorField label="Button text" value={draft.button_text_color} onChange={(v) => set('button_text_color', v)} />
-          <TextField label="Button border" value={draft.button_border_color} onChange={(v) => set('button_border_color', v)} placeholder="rgba(255,255,255,0.4)" />
+          <ColorField label="Button border" value={draft.button_border_color} onChange={(v) => set('button_border_color', v)} />
           <div className="col-md-3">
             <label className="d-block small text-white-50">Divider thickness</label>
             <input
@@ -448,17 +466,28 @@ function ColorField({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const isHex = /^#[0-9a-f]{6}$/i.test(value);
+  // Parse value → { hex, alpha } so the colour picker + alpha slider
+  // both work for hex AND rgba() inputs. Themes serialise borders /
+  // muted text as `rgba(...)` for opacity control, so without the
+  // alpha-aware parser those fields would never get a colour picker.
+  const parsed = parseColor(value);
+  const hex = parsed?.hex ?? null;
+  const alpha = parsed?.alpha ?? 1;
+  // Only surface the alpha slider when the source value already
+  // implies opacity (rgba) or the user has dropped alpha below 1 via
+  // the slider. Solid hex fields stay visually unchanged.
+  const showAlpha = parsed?.hadAlpha ?? false;
   return (
     <div className="col-md-3">
       <label className="d-block small text-white-50">{label}</label>
       <div className="d-flex gap-2 align-items-center">
-        {isHex && (
+        {hex !== null && (
           <input
             type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
+            value={hex}
+            onChange={(e) => onChange(formatColor(e.target.value, alpha, showAlpha))}
             style={{ width: 36, height: 36, padding: 0, border: 0, background: 'transparent' }}
+            title="Pick colour"
           />
         )}
         <input
@@ -469,8 +498,143 @@ function ColorField({
           spellCheck={false}
         />
       </div>
+      {hex !== null && (
+        <div className="d-flex gap-2 align-items-center mt-1">
+          <small className="text-white-50" style={{ minWidth: 36 }}>
+            α {alpha.toFixed(2)}
+          </small>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={alpha}
+            onChange={(e) => onChange(formatColor(hex, Number(e.target.value), true))}
+            style={{ flex: 1 }}
+            title="Opacity"
+          />
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Numeric input + range slider + live preview swatch for a gradient
+ * angle (degrees, 0–360). The preview repaints in real time so the
+ * operator can see how each angle change rotates the gradient
+ * without having to save / reload. Wraps at 360°: typing 400 clamps
+ * to 360, -10 clamps to 0.
+ */
+function AngleField({
+  label,
+  value,
+  onChange,
+  previewFrom,
+  previewTo,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  previewFrom: string;
+  previewTo: string;
+}) {
+  const clamp = (n: number) => Math.max(0, Math.min(360, Math.round(n)));
+  return (
+    <div className="col-md-3">
+      <label className="d-block small text-white-50">{label}</label>
+      <div className="d-flex gap-2 align-items-center">
+        <div
+          aria-hidden
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 6,
+            border: '1px solid rgba(255,255,255,0.2)',
+            background: `linear-gradient(${value}deg, ${previewFrom} 0%, ${previewTo} 100%)`,
+            flexShrink: 0,
+          }}
+          title={`${value}°`}
+        />
+        <input
+          type="number"
+          min={0}
+          max={360}
+          step={5}
+          className="form-control form-control-sm"
+          value={value}
+          onChange={(e) => onChange(clamp(Number(e.target.value)))}
+          style={{ maxWidth: 90 }}
+        />
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={360}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(clamp(Number(e.target.value)))}
+        className="form-range mt-1"
+        title="Drag to rotate gradient"
+      />
+    </div>
+  );
+}
+
+/** Parse a CSS colour string into a hex + alpha pair. Returns null
+ *  when the input isn't a recognised hex / rgb / rgba — that lets the
+ *  caller fall back to a plain text field. `hadAlpha` records whether
+ *  the source value carried an explicit alpha so the field can decide
+ *  whether to show the opacity slider by default. */
+function parseColor(
+  value: string,
+): { hex: string; alpha: number; hadAlpha: boolean } | null {
+  const trimmed = value.trim();
+  // #rrggbb
+  const hexMatch = /^#([0-9a-f]{6})$/i.exec(trimmed);
+  if (hexMatch) {
+    return { hex: `#${hexMatch[1].toLowerCase()}`, alpha: 1, hadAlpha: false };
+  }
+  // #rgb shorthand
+  const shortMatch = /^#([0-9a-f]{3})$/i.exec(trimmed);
+  if (shortMatch) {
+    const [r, g, b] = shortMatch[1].split('');
+    return { hex: `#${r}${r}${g}${g}${b}${b}`.toLowerCase(), alpha: 1, hadAlpha: false };
+  }
+  // rgb(r,g,b) / rgba(r,g,b,a). Tolerates spaces and percentages.
+  const rgbMatch = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/i.exec(trimmed);
+  if (rgbMatch) {
+    const r = Math.min(255, Math.max(0, parseInt(rgbMatch[1], 10)));
+    const g = Math.min(255, Math.max(0, parseInt(rgbMatch[2], 10)));
+    const b = Math.min(255, Math.max(0, parseInt(rgbMatch[3], 10)));
+    const a = rgbMatch[4] != null
+      ? Math.min(1, Math.max(0, parseFloat(rgbMatch[4])))
+      : 1;
+    return {
+      hex: `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`,
+      alpha: a,
+      hadAlpha: rgbMatch[4] != null,
+    };
+  }
+  return null;
+}
+
+/** Round-trip a hex + alpha back to a CSS string. Stays in hex when
+ *  the colour is fully opaque AND the source value didn't already use
+ *  rgba(), so plain palette swatches don't suddenly switch syntax on
+ *  every edit. */
+function formatColor(hex: string, alpha: number, preferRgba: boolean): string {
+  const clamped = Math.max(0, Math.min(1, alpha));
+  if (clamped >= 0.999 && !preferRgba) return hex.toLowerCase();
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return hex;
+  const [, rr, gg, bb] = m;
+  const r = parseInt(rr, 16);
+  const g = parseInt(gg, 16);
+  const b = parseInt(bb, 16);
+  // Trim trailing zeroes so 0.50 reads as 0.5 in the saved theme.
+  const aStr = Number(clamped.toFixed(2)).toString();
+  return `rgba(${r}, ${g}, ${b}, ${aStr})`;
 }
 
 /**
