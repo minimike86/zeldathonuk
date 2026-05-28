@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { DonationPage } from '@/lib/obsApi';
 import { PLATFORM_META } from './platforms';
 
@@ -37,7 +38,11 @@ export function DonationPicker({
     return a.id - b.id;
   });
 
-  return (
+  // Render through a portal to <body> so the fixed overlay covers the
+  // viewport regardless of an ancestor's `transform`/`overflow` (e.g. the
+  // hover-lifted, overflow-hidden raffle cards on /incentives would
+  // otherwise trap and clip it inside the card).
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -94,7 +99,8 @@ export function DonationPicker({
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

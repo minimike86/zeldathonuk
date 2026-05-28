@@ -6,6 +6,7 @@
 import { api } from '@/lib/api';
 import { notifyCharitySlidesChanged } from '@/lib/charityBus';
 import { notifyEventChanged } from '@/lib/eventBus';
+import { notifyRafflesChanged } from '@/lib/raffleBus';
 import { notifyThemeChanged } from '@/lib/themeBus';
 
 /** Pass-through `.then()` callback that fires a theme-changed broadcast
@@ -31,6 +32,15 @@ function withCharityBroadcast<T>(value: T): T {
  *  render frame instead of waiting up to the active-event poll. */
 function withEventBroadcast<T>(value: T): T {
   notifyEventChanged();
+  return value;
+}
+
+/** Same pattern but for Raffle mutations. The public /incentives page
+ *  bumps its raffle poll the moment this fires, so opening/closing a
+ *  raffle in /control/raffles updates the card (Enter-now gating + LIVE
+ *  badge) in one render frame instead of waiting on the poll. */
+function withRaffleBroadcast<T>(value: T): T {
+  notifyRafflesChanged();
   return value;
 }
 
@@ -1087,7 +1097,7 @@ export const obsApi = {
     is_active?: boolean;
     order?: number;
     payload?: Record<string, unknown>;
-  }) => api<Raffle>('/api/raffles/', { method: 'POST', body }),
+  }) => api<Raffle>('/api/raffles/', { method: 'POST', body }).then(withRaffleBroadcast),
   updateRaffle: (
     id: number,
     patch: Partial<{
@@ -1104,17 +1114,17 @@ export const obsApi = {
       is_active: boolean;
       order: number;
     }>,
-  ) => api<Raffle>(`/api/raffles/${id}/`, { method: 'PATCH', body: patch }),
+  ) => api<Raffle>(`/api/raffles/${id}/`, { method: 'PATCH', body: patch }).then(withRaffleBroadcast),
   openRaffle: (id: number) =>
-    api<Raffle>(`/api/raffles/${id}/open/`, { method: 'POST' }),
+    api<Raffle>(`/api/raffles/${id}/open/`, { method: 'POST' }).then(withRaffleBroadcast),
   closeRaffle: (id: number) =>
-    api<Raffle>(`/api/raffles/${id}/close/`, { method: 'POST' }),
+    api<Raffle>(`/api/raffles/${id}/close/`, { method: 'POST' }).then(withRaffleBroadcast),
   drawRaffle: (id: number) =>
-    api<RaffleDrawResult>(`/api/raffles/${id}/draw/`, { method: 'POST' }),
+    api<RaffleDrawResult>(`/api/raffles/${id}/draw/`, { method: 'POST' }).then(withRaffleBroadcast),
   resetRaffle: (id: number) =>
-    api<Raffle>(`/api/raffles/${id}/reset/`, { method: 'POST' }),
+    api<Raffle>(`/api/raffles/${id}/reset/`, { method: 'POST' }).then(withRaffleBroadcast),
   deleteRaffle: (id: number) =>
-    api<void>(`/api/raffles/${id}/`, { method: 'DELETE' }),
+    api<void>(`/api/raffles/${id}/`, { method: 'DELETE' }).then(withRaffleBroadcast),
 
   // Raffle winners (PII — control panel only)
   raffleWinners: (params?: { raffleId?: number }) => {

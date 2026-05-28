@@ -295,7 +295,7 @@ export function RafflesControl() {
                         setEditingId(editingId === r.id ? null : r.id);
                       }}
                     >
-                      {editingId === r.id ? 'Close' : 'Edit'}
+                      {editingId === r.id ? 'Done' : 'Edit'}
                     </button>
                     <button
                       className="btn btn-sm btn-outline-danger"

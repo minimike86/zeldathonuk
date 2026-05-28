@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faBox, faEnvelope, faKey, faGift } from '@fortawesome/free-solid-svg-icons';
 import { faTwitch, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { onRafflesChanged } from '@/lib/raffleBus';
 import type {
   DonationPage,
   Incentive as ApiIncentive,
@@ -114,14 +116,26 @@ export function Incentives() {
     15_000,
     [event?.id],
   );
+  // Bumping this forces an immediate raffle re-fetch. Same-browser tabs
+  // (e.g. /control/raffles) push a notify the instant a raffle mutation
+  // succeeds, so open/close/draw lands here in ~one render frame; the
+  // poll below is the cross-device / cross-browser fallback.
+  const [raffleBump, setRaffleBump] = useState(0);
+  useEffect(() => onRafflesChanged(() => setRaffleBump((b) => b + 1)), []);
+
   const { data: raffles } = usePolledQuery(
     () =>
       event
         ? obsApi.raffles({ eventId: event.id, activeOnly: true })
         : Promise.resolve([] as Raffle[]),
-    15_000,
-    [event?.id],
+    5000,
+    [event?.id, raffleBump],
   );
+  // Polled often so the "LIVE — being played now" badge on game-gated
+  // raffles flips promptly when the operator switches the current game.
+  const { data: nowPlaying } = usePolledQuery(obsApi.currentlyPlaying, 5000);
+  const liveEntryId = nowPlaying?.schedule_entry ?? null;
+  const liveGameTitle = nowPlaying?.schedule_entry_detail?.display_title ?? '';
 
   const twitchChannel = event?.twitch_channel || 'zeldathonuk';
   const symbol = event?.currency_symbol || '£';
@@ -184,6 +198,8 @@ export function Incentives() {
                   raffle={raffle}
                   symbol={symbol}
                   donationPages={donationPages}
+                  liveEntryId={liveEntryId}
+                  liveGameTitle={liveGameTitle}
                 />
               ))}
             </div>
@@ -278,13 +294,24 @@ function RaffleCardView({
   raffle,
   symbol,
   donationPages,
+  liveEntryId,
+  liveGameTitle,
 }: {
   raffle: Raffle;
   symbol: string;
   donationPages: DonationPage[];
+  liveEntryId: number | null;
+  liveGameTitle: string;
 }) {
   const drawn = raffle.status === 'drawn';
   const pot = parseFloat(raffle.total_weight) || 0;
+  // This raffle is unlocked *because* its required game is the one being
+  // played right now — surface that with a live indicator.
+  const liveByGame =
+    raffle.is_open &&
+    raffle.condition_type === 'schedule_entry' &&
+    raffle.schedule_entry != null &&
+    raffle.schedule_entry === liveEntryId;
   // Status badge mirrors the incentive tones: drawn → unlocked, open → open.
   const badge = drawn
     ? { label: 'Drawn', tone: 'unlocked' as const }
@@ -292,7 +319,11 @@ function RaffleCardView({
       ? { label: 'Open', tone: 'open' as const }
       : { label: 'Coming soon', tone: 'free' as const };
   return (
-    <article className={`incentive-card${drawn ? ' incentive-card--reached' : ''}`}>
+    <article
+      className={`incentive-card${drawn ? ' incentive-card--reached' : ''}${
+        liveByGame ? ' incentive-card--live' : ''
+      }`}
+    >
       {raffle.image_url && (
         <div className="incentive-prize-media">
           {/* Blurred, zoomed copy of the same art fills the letterbox gaps
@@ -323,6 +354,18 @@ function RaffleCardView({
             </span>
           )}
         </div>
+
+        {liveByGame && (
+          <div className="incentive-live">
+            <span className="incentive-live-dot" aria-hidden />
+            <span>
+              <strong>LIVE</strong>
+              {liveGameTitle
+                ? ` — ${liveGameTitle} is being played now`
+                : ' — being played now'}
+            </span>
+          </div>
+        )}
 
         <div className="d-flex gap-2 flex-wrap align-items-center">
           <span className="incentive-delivery-label">Delivery method:</span>
@@ -366,7 +409,7 @@ function RaffleCardView({
           <DonateButton
             pages={donationPages}
             currencySymbol={symbol}
-            className="w-100 mt-2"
+            className="w-100 mt-2 incentive-enter-btn"
             label="Enter now"
           />
         )}

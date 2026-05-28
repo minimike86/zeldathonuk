@@ -1,6 +1,7 @@
 """API views — DRF viewsets for the control panel + read endpoints for OBS sources."""
 import random
 import secrets
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -25,6 +26,9 @@ ALLOWED_IMAGE_TYPES = {
     'image/svg+xml': 'svg',
 }
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+# How long the auto-generated "raffle entries closed" omnibar banner stays up.
+RAFFLE_CLOSE_BANNER_SECONDS = 20
 
 
 @api_view(['GET'])
@@ -959,9 +963,25 @@ class RaffleViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def close(self, request: Request, pk=None) -> Response:
         obj = self.get_object()
+        was_closed = obj.status == models.RaffleStatus.CLOSED
+        now = timezone.now()
         obj.status = models.RaffleStatus.CLOSED
-        obj.closed_at = timezone.now()
+        obj.closed_at = now
         obj.save(update_fields=['status', 'closed_at'])
+        # Confirm the closure on the omnibar with a short urgent banner so
+        # viewers know entries have stopped (winners are drawn shortly
+        # after). Skip if it was already closed — re-closing shouldn't spam
+        # a second banner.
+        if not was_closed:
+            models.OmnibarOverride.objects.create(
+                kind='raffle',
+                payload={'message': f'Entries closed — {obj.name}. Winners drawn soon!'},
+                target_lane=models.OmnibarOverride.LANE_BOTTOM,
+                starts_at=now,
+                expires_at=now + timedelta(seconds=RAFFLE_CLOSE_BANNER_SECONDS),
+                priority=5,
+                is_active=True,
+            )
         return Response(self.get_serializer(obj).data)
 
     @action(detail=True, methods=['post'])
