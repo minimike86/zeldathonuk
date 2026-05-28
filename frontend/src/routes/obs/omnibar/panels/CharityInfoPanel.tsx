@@ -22,7 +22,7 @@ interface Data {
 
 function Panel({ data }: PanelProps<Data>) {
   return (
-    <PanelRow tag="ABOUT">
+    <PanelRow tag="BENEFITTING">
       <span className="ob-text-strong">SpecialEffect</span>
       <span className="ob-text-muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {data.blurb}
