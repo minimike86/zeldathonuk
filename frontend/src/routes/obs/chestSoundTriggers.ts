@@ -17,9 +17,14 @@
  *                `69`         → any amount containing "69" anywhere
  *                `^69\.00$`   → exactly 69.00 and nothing else
  *                `\.69$`      → anything ending in 69 pence
- *   keyword  — any of `trigger.match` split on commas (lowercased,
- *              trimmed) appears as a case-insensitive substring of
- *              `donation.message`.
+ *   keyword  — `trigger.match` is compiled as a case-insensitive
+ *              JavaScript RegExp and tested against
+ *              `donation.message`. Use `|` for alternation
+ *              (`boss|master sword|ganon`). Backward-compat: a
+ *              pattern that contains commas and no `|` is treated
+ *              as a comma-separated list and converted to
+ *              alternation under the hood — so the old format
+ *              `happy,birthday,zelda` still matches the same way.
  *
  * Audio playback uses a fresh `Audio` element per call so overlapping
  * stings don't cancel each other (the streamer pre-vetted the audio so
@@ -62,6 +67,13 @@ export function pickTrigger(
 // patterns from one event to another with a different symbol.
 const CURRENCY_SYMBOLS_RE = /[£$€¥]/g;
 
+// Any of these in the keyword pattern marks it as "real regex" so
+// the legacy comma-to-alternation transform is bypassed. Notably
+// includes `{` and `}` so a quantifier like `{3,}` (which contains a
+// comma!) doesn't get torn in half by the comma split. Plain
+// alphanumeric + comma + space patterns still hit the legacy path.
+const REGEX_METACHARS_RE = /[\\^$.*+?()[\]{}|]/;
+
 function matchesTrigger(
   trigger: ChestAnnouncerSoundTrigger,
   donation: Donation,
@@ -86,15 +98,35 @@ function matchesTrigger(
       return re.test(donation.amount);
     }
     case 'keyword': {
-      const msg = (donation.message || '').toLowerCase();
-      if (!msg) return false;
-      const keywords = trigger.match
-        .toLowerCase()
-        .split(',')
-        .map((k) => k.trim())
-        .filter(Boolean);
-      if (keywords.length === 0) return false;
-      return keywords.some((k) => msg.includes(k));
+      const msg = donation.message || '';
+      if (!msg || !trigger.match) return false;
+      // Backward-compat: pre-regex configs used comma-separated
+      // substring matching (`happy,birthday,zelda`). When the
+      // pattern looks PURELY like that legacy format — commas but
+      // none of the regex metacharacters below — transform commas
+      // into alternation so old rules keep firing. As soon as the
+      // pattern has any real regex syntax (parens, brackets, braces,
+      // anchors, escapes, alternation, quantifiers, dot, etc.) the
+      // raw pattern is used as-is. Without this check the comma
+      // inside `{3,}`-style quantifiers would split the regex in
+      // half and silently break it.
+      const looksLikeRegex = REGEX_METACHARS_RE.test(trigger.match);
+      let pattern = trigger.match;
+      if (!looksLikeRegex && pattern.includes(',')) {
+        pattern = pattern
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .join('|');
+      }
+      if (!pattern) return false;
+      let re: RegExp;
+      try {
+        re = new RegExp(pattern, 'i');
+      } catch {
+        return false;
+      }
+      return re.test(msg);
     }
     default:
       return false;

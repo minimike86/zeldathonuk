@@ -1130,7 +1130,7 @@ function MatchCell({
       placeholder={
         kind === 'amount'
           ? '69 or ^69\\.00$ (regex on amount)'
-          : 'happy,birthday,zelda'
+          : 'happy|birthday|zelda (regex on message)'
       }
       style={{ width: '100%' }}
     />
@@ -1217,14 +1217,49 @@ function PatternExplainer() {
           Keyword
         </h4>
         <p className="mb-2">
-          The <code>Match</code> string is split on commas; whitespace
-          is trimmed and each term is lowercased. The trigger fires if
-          the donation message contains <em>any</em> term as a case-
-          insensitive substring. <code>happy,birthday</code> matches
-          "Happy 30th!", "BIRTHDAY 🎂", "unhappy days" (substring of
-          "happy"). For phrase matching, just include the spaces:{' '}
-          <code>game over, you win</code>.
+          The <code>Match</code> string is compiled as a
+          case-insensitive JavaScript regex and tested against the
+          donation message. Use <code>|</code> for alternation —{' '}
+          <code>boss|master sword|ganon</code> matches a message
+          containing any of those substrings. Anchors (<code>^</code>,{' '}
+          <code>$</code>), character classes (<code>[a-z]</code>),
+          quantifiers (<code>+</code>, <code>*</code>, <code>?</code>),
+          and word boundaries (<code>\b</code>) all work. Invalid regex
+          silently skips the rule.
         </p>
+        <p className="mb-2">
+          <strong>Backward compat:</strong> a pattern that contains
+          commas and no <code>|</code> is treated as the old comma-
+          separated list and converted to alternation under the hood,
+          so an existing <code>happy,birthday,zelda</code> rule keeps
+          firing without any edit needed.
+        </p>
+        <table className="control-table" style={{ fontSize: '0.95em' }}>
+          <thead>
+            <tr>
+              <th style={{ width: 220 }}>Pattern</th>
+              <th>Matches</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>boss|master sword</code></td>
+              <td>Messages mentioning either "boss" or "master sword" anywhere.</td>
+            </tr>
+            <tr>
+              <td><code>\bgg\b</code></td>
+              <td>"gg" as a standalone word — won't match "eggs" or "egg".</td>
+            </tr>
+            <tr>
+              <td><code>^thanks</code></td>
+              <td>Message starts with "thanks" (case-insensitive).</td>
+            </tr>
+            <tr>
+              <td><code>happy,birthday,zelda</code></td>
+              <td>Auto-converted to <code>happy|birthday|zelda</code> (legacy form).</td>
+            </tr>
+          </tbody>
+        </table>
 
         <p className="mb-0">
           <strong>Priority:</strong> the lowest-numbered active trigger
