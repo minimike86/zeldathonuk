@@ -8,6 +8,7 @@ import {
   type EventModel,
   type Incentive,
   type Milestone,
+  type Raffle,
   type ScheduleEntry,
   type ThemeSettings,
 } from '@/lib/obsApi';
@@ -42,6 +43,7 @@ export interface OmnibarFeed {
    *  milestones poll happens to resolve after some other gating
    *  poll the consumer was waiting on. */
   milestonesLoaded: boolean;
+  raffles: Raffle[];
   theme: ThemeSettings | null;
   phase: PlaythroughPhase;
   now: Date;
@@ -119,6 +121,14 @@ export function useOmnibarFeed(now: Date): OmnibarFeed {
     POLL_INCENTIVES_MS,
     [event?.id],
   );
+  const { data: raffles } = usePolledQuery(
+    () =>
+      event
+        ? obsApi.raffles({ eventId: event.id, activeOnly: true })
+        : Promise.resolve([] as Raffle[]),
+    POLL_INCENTIVES_MS,
+    [event?.id],
+  );
   const { data: theme } = usePolledQuery(obsApi.themeSettings, POLL_THEME_MS, [themeBump]);
 
   return useMemo<OmnibarFeed>(() => {
@@ -138,9 +148,10 @@ export function useOmnibarFeed(now: Date): OmnibarFeed {
       incentivesLoaded: incentives !== null,
       milestones: milestones ?? [],
       milestonesLoaded: milestones !== null,
+      raffles: raffles ?? [],
       theme: theme ?? null,
       phase: derivePlaythroughPhase(cp ?? null, sched),
       now,
     };
-  }, [event, cp, schedule, donations, totals, incentives, milestones, theme, now]);
+  }, [event, cp, schedule, donations, totals, incentives, milestones, raffles, theme, now]);
 }

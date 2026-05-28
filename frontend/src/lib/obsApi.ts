@@ -490,6 +490,68 @@ export interface Milestone {
   created_at: string;
 }
 
+// ── Raffles ──────────────────────────────────────────────────────────────
+//
+// A raffle is a winnable prize plus the window during which donors are
+// entered. Entrants aren't stored — they're derived from donations in the
+// window, and draw odds are weighted by amount. Winner contact details
+// (PII) live on RaffleWinner and are served only via /api/raffle-winners/.
+
+export type RaffleDeliveryMethodKey =
+  | 'physical' | 'email' | 'twitch' | 'discord' | 'code' | 'other';
+export type RaffleConditionTypeKey =
+  | 'manual' | 'whole_event' | 'schedule_entry' | 'date_range';
+export type RaffleStatusKey = 'draft' | 'open' | 'closed' | 'drawn';
+export type RaffleFulfillmentKey =
+  | 'pending' | 'contacted' | 'sent' | 'delivered' | 'forfeited';
+
+export interface Raffle {
+  id: number;
+  event: number;
+  name: string;
+  description: string;
+  image_url: string;
+  delivery_method: RaffleDeliveryMethodKey;
+  quantity: number;
+  min_amount: string;
+  condition_type: RaffleConditionTypeKey;
+  schedule_entry: number | null;
+  window_start: string | null;
+  window_end: string | null;
+  status: RaffleStatusKey;
+  opened_at: string | null;
+  closed_at: string | null;
+  is_active: boolean;
+  order: number;
+  payload: Record<string, unknown>;
+  /** Derived read-only stats from the backend. */
+  entrant_count: number;
+  total_weight: string;
+  is_open: boolean;
+  winner_names: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** Winner + fulfillment record. Carries PII (contact_info) — only fetched
+ *  in the control panel, never on the public page. */
+export interface RaffleWinner {
+  id: number;
+  raffle: number;
+  donation: number | null;
+  donor_name: string;
+  drawn_at: string;
+  contact_info: string;
+  delivery_code: string;
+  fulfillment_status: RaffleFulfillmentKey;
+  notes: string;
+}
+
+/** `draw` returns the raffle plus the winners drawn in this call. */
+export interface RaffleDrawResult extends Raffle {
+  drawn: RaffleWinner[];
+}
+
 // ── Charities ────────────────────────────────────────────────────────────
 //
 // A charity is the beneficiary of one or more events. The main row
@@ -1001,6 +1063,89 @@ export const obsApi = {
     api<Incentive>(`/api/incentives/${id}/reset/`, { method: 'POST' }),
   deleteIncentive: (id: number) =>
     api<void>(`/api/incentives/${id}/`, { method: 'DELETE' }),
+
+  // Raffles
+  raffles: (params?: { eventId?: number; activeOnly?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.eventId != null) qs.set('event', String(params.eventId));
+    if (params?.activeOnly) qs.set('active', 'true');
+    const tail = qs.toString();
+    return api<Raffle[]>(tail ? `/api/raffles/?${tail}` : '/api/raffles/');
+  },
+  createRaffle: (body: {
+    event: number;
+    name: string;
+    delivery_method?: RaffleDeliveryMethodKey;
+    description?: string;
+    image_url?: string;
+    quantity?: number;
+    min_amount?: string;
+    condition_type?: RaffleConditionTypeKey;
+    schedule_entry?: number | null;
+    window_start?: string | null;
+    window_end?: string | null;
+    is_active?: boolean;
+    order?: number;
+    payload?: Record<string, unknown>;
+  }) => api<Raffle>('/api/raffles/', { method: 'POST', body }),
+  updateRaffle: (
+    id: number,
+    patch: Partial<{
+      name: string;
+      description: string;
+      image_url: string;
+      delivery_method: RaffleDeliveryMethodKey;
+      quantity: number;
+      min_amount: string;
+      condition_type: RaffleConditionTypeKey;
+      schedule_entry: number | null;
+      window_start: string | null;
+      window_end: string | null;
+      is_active: boolean;
+      order: number;
+    }>,
+  ) => api<Raffle>(`/api/raffles/${id}/`, { method: 'PATCH', body: patch }),
+  openRaffle: (id: number) =>
+    api<Raffle>(`/api/raffles/${id}/open/`, { method: 'POST' }),
+  closeRaffle: (id: number) =>
+    api<Raffle>(`/api/raffles/${id}/close/`, { method: 'POST' }),
+  drawRaffle: (id: number) =>
+    api<RaffleDrawResult>(`/api/raffles/${id}/draw/`, { method: 'POST' }),
+  resetRaffle: (id: number) =>
+    api<Raffle>(`/api/raffles/${id}/reset/`, { method: 'POST' }),
+  deleteRaffle: (id: number) =>
+    api<void>(`/api/raffles/${id}/`, { method: 'DELETE' }),
+
+  // Raffle winners (PII — control panel only)
+  raffleWinners: (params?: { raffleId?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.raffleId != null) qs.set('raffle', String(params.raffleId));
+    const tail = qs.toString();
+    return api<RaffleWinner[]>(
+      tail ? `/api/raffle-winners/?${tail}` : '/api/raffle-winners/',
+    );
+  },
+  createRaffleWinner: (body: {
+    raffle: number;
+    donor_name: string;
+    donation?: number | null;
+    contact_info?: string;
+    delivery_code?: string;
+    fulfillment_status?: RaffleFulfillmentKey;
+    notes?: string;
+  }) => api<RaffleWinner>('/api/raffle-winners/', { method: 'POST', body }),
+  updateRaffleWinner: (
+    id: number,
+    patch: Partial<{
+      donor_name: string;
+      contact_info: string;
+      delivery_code: string;
+      fulfillment_status: RaffleFulfillmentKey;
+      notes: string;
+    }>,
+  ) => api<RaffleWinner>(`/api/raffle-winners/${id}/`, { method: 'PATCH', body: patch }),
+  deleteRaffleWinner: (id: number) =>
+    api<void>(`/api/raffle-winners/${id}/`, { method: 'DELETE' }),
 
   // Milestones
   milestones: (params?: { eventId?: number; reached?: boolean }) => {

@@ -1,4 +1,6 @@
 import moment from 'moment';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faExternalLinkAlt, faStar, faCheck } from '@fortawesome/free-solid-svg-icons';
 import './history.css';
 
 type TimelineEvent = {
@@ -160,15 +162,20 @@ export function History() {
     <div className="container p-3 min-vh-100 text-white text-center">
       <div className="my-3">
         <div className="mb-5 history-heading">
-          <h1 className="text-bloodmoon text-uppercase history-heading-text">
+          <h1 className="text-uppercase history-heading-text">
             {yearsSince2011()} Years of
           </h1>
           <img
-            src="/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg"
+            src="/assets/img/brand/logo/Zeldathon-Logo-2026-Gold-Flash.svg"
             alt="ZeldathonUK"
             className="history-heading-logo"
           />
         </div>
+
+        <p className="history-intro">
+          Every Zelda marathon we've run for charity, all the way back to where it
+          started in 2011.
+        </p>
 
         <ul className="zth-timeline">
           {events.map((ev, i) => {
@@ -182,12 +189,14 @@ export function History() {
               <span
                 className={`zth-timeline-marker ${isCurrent ? 'is-current' : 'is-past'}`}
               >
-                <i className={ev.icon} />
+                <FontAwesomeIcon icon={isCurrent ? faStar : faCheck} />
               </span>
               <div className="zth-timeline-card text-start">
                 <div className="zth-card-header">
-                  <h5 className="mb-0">{ev.status}</h5>
-                  <small className="text-white-50">{ev.date}</small>
+                  <h5 className="zth-card-title mb-0">{ev.status}</h5>
+                  <span className="zth-card-date">
+                    {moment(ev.date, 'DD/MM/YYYY HH:mm').format('D MMM YYYY')}
+                  </span>
                 </div>
                 <div className="zth-card-media">
                   {ev.image ? (
@@ -206,35 +215,38 @@ export function History() {
                 </div>
                 <div className="p-3">
                   <p>{ev.description}</p>
-                  <div className="row row-cols-3 mx-2">
+                  <div className="history-fundraiser-links">
                     {ev.facebookUrl && (
                       <a
-                        className="col btn btn-link text-decoration-none"
+                        className="history-fundraiser-link"
                         href={ev.facebookUrl}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Facebook Fundraiser
+                        <FontAwesomeIcon icon={faExternalLinkAlt} />
+                        <span>Facebook Fundraiser</span>
                       </a>
                     )}
                     {ev.tiltifyUrl && (
                       <a
-                        className="col btn btn-link text-decoration-none"
+                        className="history-fundraiser-link"
                         href={ev.tiltifyUrl}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Tiltify Page
+                        <FontAwesomeIcon icon={faExternalLinkAlt} />
+                        <span>Tiltify Page</span>
                       </a>
                     )}
                     {ev.justGivingUrl && (
                       <a
-                        className="col btn btn-link text-decoration-none"
+                        className="history-fundraiser-link"
                         href={ev.justGivingUrl}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        JustGiving Page
+                        <FontAwesomeIcon icon={faExternalLinkAlt} />
+                        <span>JustGiving Page</span>
                       </a>
                     )}
                   </div>

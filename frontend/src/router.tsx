@@ -38,6 +38,7 @@ import { GamesControl } from '@/routes/control/Games';
 import { RunnersControl } from '@/routes/control/Runners';
 import { EventsControl } from '@/routes/control/Events';
 import { CharitiesControl } from '@/routes/control/Charities';
+import { RafflesControl } from '@/routes/control/Raffles';
 import { ThemeControl } from '@/routes/control/Theme';
 import { AudioControl } from '@/routes/control/Audio';
 import { OmnibarControl } from '@/routes/control/Omnibar';
@@ -96,6 +97,7 @@ export const router = createBrowserRouter([
       { path: 'runners', element: <RunnersControl /> },
       { path: 'events', element: <EventsControl /> },
       { path: 'charities', element: <CharitiesControl /> },
+      { path: 'raffles', element: <RafflesControl /> },
       { path: 'theme', element: <ThemeControl /> },
       { path: 'omnibar', element: <OmnibarControl /> },
       { path: 'chest-announcer', element: <ChestAnnouncerControl /> },

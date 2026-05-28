@@ -11,7 +11,7 @@ import './audio-countdown.css';
  *  animated gold-flash Zeldathon wordmark gives the pre-stream screen a
  *  living, theatrical feel; the static gold mark is reserved for places
  *  that need a calmer brand (header, favicon, social). */
-const DEFAULT_AC_LOGO = '/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg';
+const DEFAULT_AC_LOGO = '/assets/img/brand/logo/Zeldathon-Logo-2026-Gold-Flash.svg';
 
 /**
  * Pre-stream countdown with a frequency-bar visualiser fed by a Zelda OCRemix

@@ -1,5 +1,6 @@
 /**
- * Profanity scrubber for live donation messages. Two sanitisation modes:
+ * Profanity scrubber for donor-facing text (donation messages + donor
+ * names). Two sanitisation modes:
  *
  *   cleanForDisplay  — visual: keeps the first/last character of each bad
  *                      word and replaces the middle with asterisks
@@ -10,45 +11,45 @@
  *                      cartoonish and dropping is the cleanest fix —
  *                      surrounding whitespace is collapsed.
  *
- * The list is deliberately small and conservative. False positives are
- * worse than letting the odd edge-case word slip — viewers tend to
- * notice "n**k" on a benign word more than a missed minor swear. Add
- * words here as real moderation needs come up; don't pre-emptively
- * bloat the list with every conceivable variant.
+ * The word list is the LDNOOBW ("List of Dirty, Naughty, Obscene, and
+ * Otherwise Bad Words") English list — the de-facto community blocklist —
+ * vendored locally in `ldnoobw-en.ts`, unioned with a handful of British
+ * swears the LDNOOBW list omits (e.g. "wanker", "prick"). It's vendored
+ * rather than imported from a package so the bundle resolves identically
+ * across host and container builds.
  */
 
-const BAD_WORDS = [
-  'fuck',
-  'fucking',
+import { LDNOOBW_EN } from './ldnoobw-en';
+
+// British / extra terms the LDNOOBW English list doesn't carry. Note "fuck"
+// is in LDNOOBW but with word-boundary matching "fucker" needs its own
+// entry, etc.
+const EXTRA_WORDS = [
   'fucker',
-  'shit',
   'shitting',
-  'bullshit',
-  'cunt',
-  'twat',
-  'wank',
   'wanker',
-  'bitch',
-  'bastard',
-  'arsehole',
-  'asshole',
   'dickhead',
-  'cock',
   'piss',
-  'bollocks',
   'prick',
-  'slut',
-  'whore',
-  'nigger',
-  'nigga',
-  'faggot',
   'retard',
   'retarded',
 ];
 
+// Escape regex metacharacters so any future list entry that contains one
+// (the current LDNOOBW en list has none) can't break the matcher.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// De-duped, sorted longest-first so multi-word phrases and longer terms
+// win over shorter overlapping ones in the alternation.
+const WORDS = Array.from(new Set([...LDNOOBW_EN, ...EXTRA_WORDS].map((w) => w.toLowerCase())))
+  .sort((a, b) => b.length - a.length)
+  .map(escapeRegExp);
+
 // Single combined regex with word boundaries. Case-insensitive so we
 // match "Fuck" and "FUCK" equally; the replacement preserves casing.
-const RE = new RegExp(`\\b(${BAD_WORDS.join('|')})\\b`, 'gi');
+const RE = new RegExp(`\\b(${WORDS.join('|')})\\b`, 'gi');
 
 export function containsProfanity(text: string): boolean {
   // .test consumes lastIndex on a /g regex; reset before use.

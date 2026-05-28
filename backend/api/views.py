@@ -1,4 +1,5 @@
 """API views — DRF viewsets for the control panel + read endpoints for OBS sources."""
+import random
 import secrets
 from decimal import Decimal
 
@@ -919,6 +920,121 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             obj.reached_at = None
             obj.save(update_fields=['reached_at'])
         return Response(self.get_serializer(obj).data)
+
+
+class RaffleViewSet(viewsets.ModelViewSet):
+    """CRUD on raffles (winnable prizes + their entry window).
+
+    Filterable via ``?event={id}&active=true``. Custom actions:
+
+      - ``POST /api/raffles/{id}/open/`` — manually open the entry window.
+      - ``POST /api/raffles/{id}/close/`` — close it (freezes entries).
+      - ``POST /api/raffles/{id}/draw/`` — draw ``quantity`` winners weighted
+        by donation amount and create RaffleWinner rows. Idempotently skips
+        donations that already won this raffle.
+      - ``POST /api/raffles/{id}/reset/`` — delete winners + reopen.
+    """
+    queryset = models.Raffle.objects.all()
+    serializer_class = serializers.RaffleSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        if self.request.query_params.get('active') == 'true':
+            qs = qs.filter(is_active=True)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def open(self, request: Request, pk=None) -> Response:
+        obj = self.get_object()
+        obj.status = models.RaffleStatus.OPEN
+        if obj.opened_at is None:
+            obj.opened_at = timezone.now()
+        obj.closed_at = None
+        obj.save(update_fields=['status', 'opened_at', 'closed_at'])
+        return Response(self.get_serializer(obj).data)
+
+    @action(detail=True, methods=['post'])
+    def close(self, request: Request, pk=None) -> Response:
+        obj = self.get_object()
+        obj.status = models.RaffleStatus.CLOSED
+        obj.closed_at = timezone.now()
+        obj.save(update_fields=['status', 'closed_at'])
+        return Response(self.get_serializer(obj).data)
+
+    @action(detail=True, methods=['post'])
+    def draw(self, request: Request, pk=None) -> Response:
+        """Draw winners weighted by donation amount. Freezes the window
+        (status=drawn, opened_at/closed_at stamped) so the result is
+        reproducible and the public page stops accruing entrants."""
+        obj = self.get_object()
+        now = timezone.now()
+        start, end = obj.effective_window(now)
+        # Freeze the window onto the row before drawing so entrant_count and
+        # the draw agree from here on.
+        obj.opened_at = start
+        obj.closed_at = (now if end is None else min(end, now))
+
+        pool = list(obj.qualifying_donations(now))
+        # Exclude donations that already won this raffle (so a re-draw to top
+        # up forfeited prizes doesn't pick an existing winner again).
+        already = set(
+            obj.winners.exclude(donation__isnull=True).values_list('donation_id', flat=True)
+        )
+        pool = [d for d in pool if d.id not in already]
+
+        remaining = max(0, obj.quantity - obj.winners.count())
+        drawn = []
+        while pool and remaining > 0:
+            weights = [float(d.amount) for d in pool]
+            if sum(weights) <= 0:
+                pick = random.choice(pool)
+            else:
+                pick = random.choices(pool, weights=weights, k=1)[0]
+            winner = models.RaffleWinner.objects.create(
+                raffle=obj,
+                donation=pick,
+                donor_name=pick.donor_name or 'Anonymous',
+            )
+            drawn.append(winner)
+            pool.remove(pick)
+            remaining -= 1
+
+        obj.status = models.RaffleStatus.DRAWN
+        obj.save(update_fields=['status', 'opened_at', 'closed_at'])
+        return Response({
+            **self.get_serializer(obj).data,
+            'drawn': serializers.RaffleWinnerSerializer(drawn, many=True).data,
+        })
+
+    @action(detail=True, methods=['post'])
+    def reset(self, request: Request, pk=None) -> Response:
+        """Delete drawn winners and reopen the raffle so it can be re-run."""
+        obj = self.get_object()
+        obj.winners.all().delete()
+        obj.status = models.RaffleStatus.OPEN
+        obj.closed_at = None
+        obj.save(update_fields=['status', 'closed_at'])
+        return Response(self.get_serializer(obj).data)
+
+
+class RaffleWinnerViewSet(viewsets.ModelViewSet):
+    """CRUD on raffle winners + their fulfillment trail (contact info, code,
+    status). Filterable via ``?raffle={id}``.
+
+    NOTE: serves PII (winner contact details). Must stay behind the same
+    reverse-proxy gate as the rest of /control."""
+    queryset = models.RaffleWinner.objects.all()
+    serializer_class = serializers.RaffleWinnerSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        raffle_id = self.request.query_params.get('raffle')
+        if raffle_id:
+            qs = qs.filter(raffle_id=raffle_id)
+        return qs
 
 
 class CharitySlideViewSet(viewsets.ModelViewSet):

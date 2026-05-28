@@ -19,7 +19,7 @@ import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onThemeChanged } from '@/lib/themeBus';
 import './navbar.css';
 
-const DEFAULT_LOGO = '/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg';
+const DEFAULT_LOGO = '/assets/img/brand/logo/Zeldathon-Logo-2026-Gold-Flash.svg';
 
 type Glyph = FontAwesomeIconProps['icon'];
 

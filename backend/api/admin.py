@@ -406,6 +406,33 @@ class MilestoneAdmin(admin.ModelAdmin):
     readonly_fields = ['is_reached', 'created_at']
 
 
+class RaffleWinnerInline(admin.TabularInline):
+    model = models.RaffleWinner
+    extra = 0
+    fields = ['donor_name', 'donation', 'fulfillment_status',
+              'contact_info', 'delivery_code', 'drawn_at']
+    readonly_fields = ['drawn_at']
+
+
+@admin.register(models.Raffle)
+class RaffleAdmin(admin.ModelAdmin):
+    list_display = ['name', 'event', 'status', 'delivery_method',
+                    'condition_type', 'quantity', 'is_active', 'order']
+    list_filter = ['event', 'status', 'delivery_method', 'condition_type',
+                   'is_active']
+    search_fields = ['name', 'description']
+    readonly_fields = ['created_at', 'updated_at']
+    inlines = [RaffleWinnerInline]
+
+
+@admin.register(models.RaffleWinner)
+class RaffleWinnerAdmin(admin.ModelAdmin):
+    list_display = ['donor_name', 'raffle', 'fulfillment_status', 'drawn_at']
+    list_filter = ['fulfillment_status', 'raffle__event']
+    search_fields = ['donor_name', 'contact_info', 'delivery_code']
+    readonly_fields = ['drawn_at']
+
+
 @admin.register(models.CharitySlide)
 class CharitySlideAdmin(admin.ModelAdmin):
     list_display = ['kind', 'order', 'preview', 'is_active']

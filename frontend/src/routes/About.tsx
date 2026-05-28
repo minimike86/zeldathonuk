@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import type { EventModel } from '@/lib/obsApi';
 import './about.css';
 
 const images = [
@@ -17,6 +18,31 @@ const urls = [
   'https://www.bournemouthecho.co.uk/news/17444417.zeldathonuk-play-legend-zelda-specialeffect/',
 ];
 
+/** Sister Zelda marathons around the world, surfaced in the FAQ. */
+const WORLDWIDE_MARATHONS = [
+  { name: 'Zeldathon', country: 'USA', label: 'zeldathon.com', href: 'https://zeldathon.com/' },
+  {
+    name: 'Zelda Dungeon',
+    country: 'USA',
+    label: 'zeldadungeon.net',
+    href: 'https://www.zeldadungeon.net/category/zelda-dungeon-marathon/',
+  },
+  {
+    name: 'Zelda Speed Runs',
+    country: 'USA',
+    label: 'zeldaspeedruns.com',
+    href: 'https://www.zeldaspeedruns.com/',
+  },
+  { name: 'Rupeethon', country: 'USA', label: 'rupeethon.org', href: 'http://rupeethon.org/' },
+  {
+    name: 'Hyrule Hustlers',
+    country: 'USA',
+    label: 'twitter.com/hyrulehustlers',
+    href: 'https://twitter.com/hyrulehustlers',
+  },
+  { name: 'Zeldathon', country: 'France', label: 'zeldathon.fr', href: 'https://zeldathon.fr/' },
+];
+
 export function About() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -31,15 +57,18 @@ export function About() {
     return () => window.clearInterval(id);
   }, [paused]);
 
+  const prevSlide = () => setIndex((i) => (i - 1 + images.length) % images.length);
+  const nextSlide = () => setIndex((i) => (i + 1) % images.length);
+
   return (
     <div className="container p-3 min-vh-100 text-center text-white">
       <div className="my-3">
         <div className="mb-5 about-heading">
-          <h1 className="text-bloodmoon text-uppercase about-heading-text">
+          <h1 className="text-uppercase about-heading-text">
             About
           </h1>
           <img
-            src="/assets/img/Zeldathon-Logo-2026-Gold-Flash.svg"
+            src="/assets/img/brand/logo/Zeldathon-Logo-2026-Gold-Flash.svg"
             alt="ZeldathonUK"
             className="about-heading-logo"
           />
@@ -50,32 +79,44 @@ export function About() {
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          <div className="carousel-caption position-absolute top-0 start-50 translate-middle-x mt-3">
-            <h3>{alts[index]}</h3>
-          </div>
-          <a href={urls[index]} target="_blank" rel="nofollow noopener noreferrer">
-            <div className="picsum-img-wrapper">
-              <img
-                src={images[index]}
-                alt={alts[index]}
-                className="about-carousel-img"
-                style={{ maxHeight: 200 }}
-              />
+          <div className="about-carousel-stage position-relative">
+            <div className="position-absolute top-0 start-50 translate-middle-x mt-3 z-1">
+              <span className="about-carousel-year">{alts[index]}</span>
             </div>
-          </a>
+            <a href={urls[index]} target="_blank" rel="nofollow noopener noreferrer">
+              <div className="picsum-img-wrapper">
+                <img
+                  src={images[index]}
+                  alt={alts[index]}
+                  className="about-carousel-img"
+                  style={{ maxHeight: 200 }}
+                />
+              </div>
+            </a>
+            <button
+              type="button"
+              className="about-carousel-arrow about-carousel-arrow--prev"
+              onClick={prevSlide}
+              aria-label="Previous slide"
+            >
+              ❮
+            </button>
+            <button
+              type="button"
+              className="about-carousel-arrow about-carousel-arrow--next"
+              onClick={nextSlide}
+              aria-label="Next slide"
+            >
+              ❯
+            </button>
+          </div>
           <div className="d-flex justify-content-center gap-2 mt-3">
             {images.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setIndex(i)}
                 aria-label={`Slide ${i + 1}`}
-                style={{
-                  width: 24,
-                  height: 4,
-                  border: 0,
-                  background: i === index ? '#fff' : 'rgba(255,255,255,0.35)',
-                  cursor: 'pointer',
-                }}
+                className={`about-carousel-dot${i === index ? ' is-active' : ''}`}
               />
             ))}
           </div>
@@ -94,119 +135,30 @@ export function About() {
                       We're based in the United Kingdom. There are other Zelda Marathons
                       run world-wide! Please check out these wonderful people as well:
                     </p>
-                    <ul className="mb-0">
-                      <li>
-                        Zeldathon (USA){' '}
-                        <a
-                          className="link-danger"
-                          href="https://zeldathon.com/"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          zeldathon.com
-                        </a>
-                      </li>
-                      <li>
-                        Zelda Dungeon (USA){' '}
-                        <a
-                          className="link-danger"
-                          href="https://www.zeldadungeon.net/category/zelda-dungeon-marathon/"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          zeldadungeon.net
-                        </a>
-                      </li>
-                      <li>
-                        Zelda Speed Runs (USA){' '}
-                        <a
-                          className="link-danger"
-                          href="https://www.zeldaspeedruns.com/"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          zeldaspeedruns.com
-                        </a>
-                      </li>
-                      <li>
-                        Rupeethon (USA){' '}
-                        <a
-                          className="link-danger"
-                          href="http://rupeethon.org/"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          rupeethon.org
-                        </a>
-                      </li>
-                      <li>
-                        Hyrule Hustlers (USA){' '}
-                        <a
-                          className="link-danger"
-                          href="https://twitter.com/hyrulehustlers"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          twitter.com/hyrulehustlers
-                        </a>
-                      </li>
-                      <li>
-                        Zeldathon (France){' '}
-                        <a
-                          className="link-danger"
-                          href="https://zeldathon.fr/"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          zeldathon.fr
-                        </a>
-                      </li>
+                    <ul className="faq-marathon-list mt-3">
+                      {WORLDWIDE_MARATHONS.map((m) => (
+                        <li key={m.href}>
+                          <span>
+                            {m.name}{' '}
+                            <span className="text-white-50">({m.country})</span>
+                          </span>
+                          <a
+                            className="charity-link"
+                            href={m.href}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {m.label}
+                          </a>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
               </Faq>
 
               <Faq question="When is the next marathon?">
-                25<sup>th</sup>-27<sup>th</sup> February 2022 for{' '}
-                <Link className="link-warning" to="/charity">
-                  SpecialEffect's #GameBlast22
-                </Link>
-                .
-                <p className="mt-2 mb-0">
-                  <strong>Pro-tip:</strong> Add the event to your calendar:
-                </p>
-                <ul>
-                  <li>
-                    <a
-                      className="link-danger"
-                      href="https://discord.com/invite/9eW9USX3KY?event=919648764032065546"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Discord Event
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      className="link-danger"
-                      href="https://www.facebook.com/events/1840159519515239/?ref=newsfeed"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Facebook Event
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      className="link-danger"
-                      href={`https://www.twitch.tv/${twitchChannel}/schedule`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Twitch Schedule
-                    </a>
-                  </li>
-                </ul>
+                <NextMarathon event={event} twitchChannel={twitchChannel} />
               </Faq>
 
               <Faq question="How can I help support the cause?">
@@ -234,7 +186,7 @@ export function About() {
 
               <Faq question="Can I ask more questions?">
                 <a
-                  className="link-danger"
+                  className="charity-link"
                   href="https://t.co/hFFRHgJE0l"
                   target="_blank"
                   rel="noreferrer"
@@ -254,8 +206,118 @@ export function About() {
 function Faq({ question, children }: { question: string; children: React.ReactNode }) {
   return (
     <div className="d-flex justify-content-around mb-5 faq-row">
-      <div className="text-start w-25">{question}</div>
-      <div className="text-start w-75 ms-5">{children}</div>
+      <div className="faq-question text-start w-25">{question}</div>
+      <div className="faq-answer text-start w-75 ms-5">{children}</div>
     </div>
+  );
+}
+
+// Marathons run over a weekend and the Event model has no end time, so we
+// treat one as "live" for ~3 days after its start before calling it past.
+const EVENT_LIVE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+const eventDateFmt = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+/** Answers "When is the next marathon?" from the active event rather than a
+ *  hardcoded date — upcoming events show the date + primary charity, a
+ *  currently-running event says so, and a past/absent event falls back to a
+ *  "follow us" prompt. */
+function NextMarathon({
+  event,
+  twitchChannel,
+}: {
+  event: EventModel | null | undefined;
+  twitchChannel: string;
+}) {
+  const startsAt = event ? new Date(event.start_time) : null;
+  const now = Date.now();
+  const upcoming = !!startsAt && startsAt.getTime() > now;
+  const live =
+    !!startsAt && !upcoming && now - startsAt.getTime() < EVENT_LIVE_WINDOW_MS;
+
+  if (!event || !startsAt || (!upcoming && !live)) {
+    return (
+      <>
+        We don't have a date locked in for the next marathon just yet. Follow us on{' '}
+        <a
+          className="charity-link"
+          href={`https://www.twitch.tv/${twitchChannel}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Twitch
+        </a>{' '}
+        or{' '}
+        <a
+          className="charity-link"
+          href="https://t.co/hFFRHgJE0l"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Discord
+        </a>{' '}
+        to be the first to know when the next one is announced!
+      </>
+    );
+  }
+
+  const primary =
+    event.event_charities.find((c) => c.is_primary) ?? event.event_charities[0];
+  const charityName =
+    primary?.charity_detail.short_name || primary?.charity_detail.name;
+  const charityLink = charityName && (
+    <>
+      {' '}
+      in aid of{' '}
+      <Link className="charity-link" to="/charity">
+        {charityName}
+      </Link>
+    </>
+  );
+  const dateStr = eventDateFmt.format(startsAt);
+
+  if (live) {
+    return (
+      <>
+        <strong>{event.name}</strong> is happening right now — we kicked off on{' '}
+        {dateStr}
+        {charityLink}.{' '}
+        <a
+          className="charity-link"
+          href={`https://www.twitch.tv/${twitchChannel}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Come and watch!
+        </a>
+      </>
+    );
+  }
+
+  return (
+    <>
+      Our next marathon, <strong>{event.name}</strong>, kicks off on {dateStr}
+      {charityLink}.
+      <p className="mt-2 mb-0">
+        <strong>Pro-tip:</strong> Add the event to your calendar:
+      </p>
+      <ul className="faq-link-list">
+        <li>
+          <a
+            className="charity-link"
+            href={`https://www.twitch.tv/${twitchChannel}/schedule`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Twitch Schedule
+          </a>
+        </li>
+      </ul>
+    </>
   );
 }

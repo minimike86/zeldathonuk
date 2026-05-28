@@ -1,4 +1,5 @@
-/* Ported from legacy/src/app/components/incentives/incentives.component.css */
+/* Ported from legacy/src/app/components/incentives/incentives.component.css,
+ * then uplifted for the React remaster — see Incentives.tsx. */
 
 .text-bloodmoon {
   background: linear-gradient(
@@ -41,4 +42,255 @@
   );
   opacity: 0.15;
   z-index: -1;
+}
+
+/* ── Page headings ──────────────────────────────────────────────────────
+ * Flat heading in the theme's heading font with a centred gradient accent
+ * rule, matching the donor-wall treatment on the Donations page. */
+.incentives-hero-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+  font-size: clamp(2rem, 5vw, 3rem);
+  color: var(--theme-text, #fff);
+  margin: 0;
+}
+
+.incentives-section-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  color: var(--theme-text, #fff);
+  margin-bottom: 0.75rem;
+}
+
+.incentives-section-title::after {
+  content: '';
+  display: block;
+  margin-top: 0.5rem;
+  width: 3.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary, #e71347),
+    var(--theme-secondary, #731c37)
+  );
+}
+
+/* ── Card grid ──────────────────────────────────────────────────────── */
+.incentive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 1.25rem;
+}
+
+.incentive-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--theme-primary, #e71347) 12%, transparent) 0%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #e71347) 35%, transparent);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.incentive-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 60%, transparent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.incentive-card--reached {
+  border-color: color-mix(in srgb, var(--theme-primary-bright, #da4471) 75%, transparent);
+}
+
+.incentive-card-media {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  filter: hue-rotate(var(--theme-image-hue-rotate, 0deg));
+}
+
+/* Prizes are studio shots that look best uncropped on a neutral mat. */
+.incentive-prize-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.incentive-prize-media img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.incentive-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.incentive-card-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.05rem;
+  line-height: 1.2;
+  color: var(--theme-text, #fff);
+  margin: 0;
+}
+
+.incentive-card-desc {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
+  margin: 0;
+}
+
+.incentive-inline-link {
+  color: var(--theme-link, #ffc107);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.incentive-inline-link:hover {
+  color: var(--theme-link-hover, #fff);
+  text-decoration: underline;
+}
+
+/* ── Status badges ──────────────────────────────────────────────────── */
+.incentive-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.incentive-badge--free {
+  background: color-mix(in srgb, var(--theme-secondary, #731c37) 35%, transparent);
+  border-color: color-mix(in srgb, var(--theme-secondary, #731c37) 60%, transparent);
+  color: #fff;
+}
+
+.incentive-badge--open {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--theme-line, rgba(255, 255, 255, 0.2));
+  color: var(--theme-text, #fff);
+}
+
+.incentive-badge--unlocked {
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 30%, transparent);
+  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 65%, transparent);
+  color: #fff;
+}
+
+/* ── Progress bar ───────────────────────────────────────────────────── */
+.incentive-progress {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+  overflow: hidden;
+}
+
+.incentive-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--pct, 0%);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471)
+  );
+  transition: width 0.4s ease;
+}
+
+.incentive-amounts {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.incentive-amount-current {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.1rem;
+  color: var(--theme-primary, #e71347);
+}
+
+.incentive-amount-goal {
+  font-size: 0.85rem;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
+}
+
+/* ── Bid-war options ────────────────────────────────────────────────── */
+.incentive-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.incentive-option {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+}
+
+.incentive-option::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--share, 0%);
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 28%, transparent);
+  transition: width 0.4s ease;
+  z-index: 0;
+}
+
+.incentive-option--leading::before {
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 45%, transparent);
+}
+
+.incentive-option-name,
+.incentive-option-pct {
+  position: relative;
+  z-index: 1;
+}
+
+.incentive-option-name {
+  font-weight: 600;
+  color: var(--theme-text, #fff);
+}
+
+.incentive-option-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
 }

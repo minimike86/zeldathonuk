@@ -47,6 +47,7 @@ const DEFAULT_BOTTOM: LaneConfig = {
     'incentives',
     'bid-war',
     'milestones',
+    'raffle',
     'total-raised',
     'charity-info',
     'local-time',
@@ -64,7 +65,7 @@ export const ALL_PANEL_IDS = [
   'pre-stream',
   // Ticker / bottom-lane affinity
   'schedule-next', 'donation-reel', 'incentives', 'bid-war', 'milestones',
-  'total-raised', 'charity-info', 'local-time',
+  'raffle', 'total-raised', 'charity-info', 'local-time',
 ] as const;
 export type PanelId = (typeof ALL_PANEL_IDS)[number];
 

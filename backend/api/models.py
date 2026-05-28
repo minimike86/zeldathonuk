@@ -1291,6 +1291,227 @@ class Milestone(models.Model):
         return self.reached_at is not None
 
 
+class RaffleDeliveryMethod(models.TextChoices):
+    """How a won prize is delivered to its winner — drives both the badge on
+    the public page and which contact detail the operator needs to collect
+    (postal address for physical, an account/handle/email for virtual)."""
+
+    PHYSICAL = 'physical', 'Physical (postal)'
+    EMAIL = 'email', 'Email'
+    TWITCH = 'twitch', 'Twitch whisper'
+    DISCORD = 'discord', 'Discord'
+    CODE = 'code', 'Unlock code / digital'
+    OTHER = 'other', 'Other'
+
+
+class RaffleConditionType(models.TextChoices):
+    """What defines a raffle's entry window. Auto types derive their window
+    from existing timestamps (event/schedule) so no cron is needed; MANUAL
+    relies on the operator stamping opened_at/closed_at via the viewset."""
+
+    MANUAL = 'manual', 'Manual (operator opens/closes)'
+    WHOLE_EVENT = 'whole_event', 'Whole event'
+    SCHEDULE_ENTRY = 'schedule_entry', 'While a schedule entry is playing'
+    DATE_RANGE = 'date_range', 'Between two dates/times'
+
+
+class RaffleStatus(models.TextChoices):
+    DRAFT = 'draft', 'Draft'
+    OPEN = 'open', 'Open'
+    CLOSED = 'closed', 'Closed'
+    DRAWN = 'drawn', 'Drawn'
+
+
+class Raffle(models.Model):
+    """A winnable prize plus the window during which donors are entered.
+
+    Entrants are not a stored table — they are derived from `Donation` rows
+    whose `donated_at` falls in the raffle's effective window and whose
+    `amount` clears `min_amount`. Draw odds are weighted by donation amount
+    (a £10 donation has 10× the chance of a £1 one). Drawing is triggered
+    manually by the operator; the window opens/closes automatically for the
+    non-manual condition types.
+    """
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='raffles')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    image_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Prize artwork. Absolute URL or site-relative path '
+                  '(e.g. /assets/img/prizes/foo.jpg).',
+    )
+    delivery_method = models.CharField(
+        max_length=20,
+        choices=RaffleDeliveryMethod.choices,
+        default=RaffleDeliveryMethod.PHYSICAL,
+    )
+    quantity = models.PositiveIntegerField(
+        default=1,
+        help_text='How many winners to draw for this prize.',
+    )
+    min_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0'),
+        help_text='Minimum donation to qualify as an entry. 0 = any donation.',
+    )
+    condition_type = models.CharField(
+        max_length=20,
+        choices=RaffleConditionType.choices,
+        default=RaffleConditionType.MANUAL,
+        help_text='What makes this prize available to win — drives the '
+                  'entry window.',
+    )
+    schedule_entry = models.ForeignKey(
+        ScheduleEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='raffles',
+        help_text='For condition_type=schedule_entry: entries are taken '
+                  'while this schedule entry is being played.',
+    )
+    window_start = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='For condition_type=date_range: window opens at this time.',
+    )
+    window_end = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='For condition_type=date_range: window closes at this time.',
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=RaffleStatus.choices,
+        default=RaffleStatus.DRAFT,
+    )
+    opened_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Stamped when a manual raffle is opened, and frozen as the '
+                  'window start once drawn.',
+    )
+    closed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Stamped when the raffle is closed or drawn — freezes the '
+                  'entry window so the draw is reproducible.',
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Show on the public /incentives page and the omnibar.',
+    )
+    order = models.PositiveIntegerField(default=0)
+    payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.get_status_display()})'
+
+    def effective_window(self, now=None):
+        """Return (start, end) for the entry window. `end` may be None when the
+        window is still open-ended. Derived from the condition type so the
+        auto types need no background job; once drawn we freeze to the stored
+        opened_at/closed_at."""
+        now = now or timezone.now()
+        if self.status == RaffleStatus.DRAWN:
+            return self.opened_at, self.closed_at
+        ct = self.condition_type
+        if ct == RaffleConditionType.WHOLE_EVENT:
+            end = None if self.event.is_active else self.closed_at
+            return self.event.start_time, end
+        if ct == RaffleConditionType.SCHEDULE_ENTRY and self.schedule_entry:
+            return self.schedule_entry.started_at, self.schedule_entry.finished_at
+        if ct == RaffleConditionType.DATE_RANGE:
+            return self.window_start, self.window_end
+        # MANUAL (and any auto type missing its anchor) → operator-stamped.
+        return self.opened_at, self.closed_at
+
+    def is_open(self, now=None) -> bool:
+        """True when the entry window is currently active and not yet drawn."""
+        now = now or timezone.now()
+        if self.status in (RaffleStatus.DRAFT, RaffleStatus.DRAWN, RaffleStatus.CLOSED):
+            return False
+        start, end = self.effective_window(now)
+        if start is None or start > now:
+            return False
+        if end is not None and now > end:
+            return False
+        return True
+
+    def qualifying_donations(self, now=None):
+        """Donation queryset eligible as entries given the effective window
+        (capped at `now`) and the minimum amount."""
+        now = now or timezone.now()
+        start, end = self.effective_window(now)
+        if start is None:
+            return Donation.objects.none()
+        upper = now if end is None else min(end, now)
+        return Donation.objects.filter(
+            event=self.event,
+            donated_at__gte=start,
+            donated_at__lte=upper,
+            amount__gte=self.min_amount,
+        )
+
+
+class RaffleWinner(models.Model):
+    """A drawn winner + the contact and fulfillment trail for getting the
+    prize to them. Contact details are PII and are intentionally NOT exposed
+    on the public RaffleSerializer (see serializers.py)."""
+
+    raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name='winners')
+    donation = models.ForeignKey(
+        Donation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='raffle_wins',
+        help_text='The winning entry. SET_NULL so deleting a donation keeps '
+                  'the winner row + its snapshot name.',
+    )
+    donor_name = models.CharField(
+        max_length=200,
+        help_text='Snapshot of the donor name at draw time.',
+    )
+    drawn_at = models.DateTimeField(auto_now_add=True)
+    contact_info = models.TextField(
+        blank=True,
+        help_text='PII — postal address (physical) or email / handle (virtual). '
+                  'Filled in by the operator after contacting the winner.',
+    )
+    delivery_code = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Unlock / redemption code for digital prizes.',
+    )
+    fulfillment_status = models.CharField(
+        max_length=12,
+        choices=[
+            ('pending', 'Pending contact'),
+            ('contacted', 'Contacted'),
+            ('sent', 'Sent / shipped'),
+            ('delivered', 'Delivered'),
+            ('forfeited', 'Forfeited / redraw'),
+        ],
+        default='pending',
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['raffle', 'drawn_at']
+
+    def __str__(self) -> str:
+        return f'{self.donor_name} → {self.raffle.name}'
+
+
 class CharitySlide(models.Model):
     """One slide in the omnibar's right-cluster charity rotation.
 

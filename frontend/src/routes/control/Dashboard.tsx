@@ -16,6 +16,7 @@ const sections = [
   { to: '/control/timer', label: 'Timer' },
   { to: '/control/items', label: 'Items' },
   { to: '/control/donations', label: 'Donations' },
+  { to: '/control/raffles', label: 'Raffles' },
   { to: '/control/audio', label: 'Music' },
   { to: '/control/brb', label: 'BRB' },
   { to: '/control/omnibar', label: 'Omnibar' },

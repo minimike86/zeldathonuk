@@ -1,7 +1,9 @@
 """DRF serializers for the API."""
 import uuid
+from decimal import Decimal
 
-from django.db.models import Max
+from django.db.models import Max, Sum
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -551,6 +553,63 @@ class MilestoneSerializer(serializers.ModelSerializer):
                   'celebration_message', 'reached_at', 'audio_url',
                   'order', 'is_reached', 'created_at']
         read_only_fields = ['id', 'reached_at', 'is_reached', 'created_at']
+
+
+class RaffleSerializer(serializers.ModelSerializer):
+    """Public-safe raffle view. Exposes derived entry stats + winner display
+    names but NEVER winner contact details — those live on RaffleWinner and
+    are served only via /api/raffle-winners/ (see the privacy note in the
+    raffle plan)."""
+
+    entrant_count = serializers.SerializerMethodField()
+    total_weight = serializers.SerializerMethodField()
+    is_open = serializers.SerializerMethodField()
+    winner_names = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Raffle
+        fields = ['id', 'event', 'name', 'description', 'image_url',
+                  'delivery_method', 'quantity', 'min_amount',
+                  'condition_type', 'schedule_entry',
+                  'window_start', 'window_end',
+                  'status', 'opened_at', 'closed_at',
+                  'is_active', 'order', 'payload',
+                  'entrant_count', 'total_weight', 'is_open', 'winner_names',
+                  'created_at', 'updated_at']
+        read_only_fields = ['id', 'opened_at', 'closed_at',
+                            'entrant_count', 'total_weight', 'is_open',
+                            'winner_names', 'created_at', 'updated_at']
+
+    def _now(self):
+        # Cache a single "now" in the serializer context so a list of N
+        # raffles shares one timestamp (and the window maths stays consistent).
+        if 'now' not in self.context:
+            self.context['now'] = timezone.now()
+        return self.context['now']
+
+    def get_entrant_count(self, obj) -> int:
+        return obj.qualifying_donations(self._now()).count()
+
+    def get_total_weight(self, obj) -> str:
+        agg = obj.qualifying_donations(self._now()).aggregate(s=Sum('amount'))
+        return str(agg['s'] or Decimal('0'))
+
+    def get_is_open(self, obj) -> bool:
+        return obj.is_open(self._now())
+
+    def get_winner_names(self, obj) -> list:
+        return [w.donor_name for w in obj.winners.all()]
+
+
+class RaffleWinnerSerializer(serializers.ModelSerializer):
+    """Winner + fulfillment record. Includes contact PII — keep this endpoint
+    behind the control-panel reverse-proxy gate."""
+
+    class Meta:
+        model = models.RaffleWinner
+        fields = ['id', 'raffle', 'donation', 'donor_name', 'drawn_at',
+                  'contact_info', 'delivery_code', 'fulfillment_status', 'notes']
+        read_only_fields = ['id', 'drawn_at']
 
 
 class CharitySlideSerializer(serializers.ModelSerializer):

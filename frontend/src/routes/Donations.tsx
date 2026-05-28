@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { DonationCards } from '@/components/DonationCards';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { CharityImpactTier, Donation } from '@/lib/obsApi';
+import { cleanForDisplay } from '@/lib/profanity';
 import './donations.css';
 
 /** ISO 4217 → display symbol for impact-tier amounts. Falls back to the
@@ -169,7 +170,11 @@ function DonationTile({
   donation: Donation;
   currency: string;
 }) {
-  const initial = (d.donor_name || 'A').charAt(0).toUpperCase();
+  // Donor names and messages are donor-supplied free text, so scrub them
+  // through the LDNOOBW filter before they hit the public donor wall.
+  const donorName = d.donor_name ? cleanForDisplay(d.donor_name) : '';
+  const initial = (donorName || 'A').charAt(0).toUpperCase();
+  const message = d.message ? cleanForDisplay(d.message) : '';
   const when = new Date(d.donated_at);
   return (
     <div className="col-12 col-md-6">
@@ -180,7 +185,7 @@ function DonationTile({
           </div>
           <div className="flex-grow-1" style={{ minWidth: 0 }}>
             <div className="text-light donation-tile-name">
-              {d.donor_name || 'Anonymous'}
+              {donorName || 'Anonymous'}
             </div>
             <div className="small text-white-50">
               {when.toLocaleDateString('en-GB', {
@@ -198,9 +203,9 @@ function DonationTile({
           </div>
         </div>
 
-        {d.message && (
+        {message && (
           <blockquote className="text-light small m-0 donation-tile-message">
-            {d.message}
+            {message}
           </blockquote>
         )}
       </div>

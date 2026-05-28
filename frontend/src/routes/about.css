@@ -12,6 +12,73 @@
   );
 }
 
+/* FAQ question — theme heading font with a short gradient accent rule,
+ * matching the section headings on the Donations / Charity pages. */
+.faq-question {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+  color: var(--theme-text, #fff);
+}
+
+.faq-question::after {
+  content: '';
+  display: block;
+  margin-top: 0.5rem;
+  width: 2.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary, #e71347),
+    var(--theme-secondary, #731c37)
+  );
+}
+
+.faq-answer {
+  line-height: 1.6;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
+}
+
+.faq-answer strong {
+  color: var(--theme-text, #fff);
+}
+
+/* Plain bullet lists (e.g. "ways to help") keep markers but get breathing
+ * room; link lists drop the markers and wrap as pill chips. */
+.faq-answer ul {
+  margin-bottom: 0;
+}
+
+.faq-link-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Marathon roll-call — label on the left, pill link on the right. */
+.faq-marathon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.faq-marathon-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 /* Carousel image — desaturated then re-tinted to the active theme via a
  * sepia + hue-rotate trick. The hue-rotate amount is theme-tunable via
  * --theme-image-hue-rotate (defaults to 0 = neutral sepia). */
@@ -82,11 +149,111 @@
   margin: 0;
   /* Match the wordmark's height so the baselines line up. */
   font-size: clamp(2rem, 4vw, 3em);
+  /* Match the /donations "Thank you to all our donors!" heading: theme
+   * heading font, solid theme text colour (not the .text-bloodmoon
+   * gradient wordmark). */
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  color: var(--theme-text, #fff);
 }
 
 .about-heading-logo {
   display: inline-block;
   height: clamp(2.4rem, 5.5vw, 4rem);
   width: auto;
-  filter: drop-shadow(0 4px 18px var(--theme-line, rgba(231, 19, 71, 0.35)));
+}
+
+/* Year badge floating over the press-photo carousel. */
+.about-carousel-year {
+  display: inline-block;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  color: #fff;
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 55%, rgba(0, 0, 0, 0.7));
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #e71347) 70%, transparent);
+}
+
+/* Constrain the stage so the prev/next arrows hug the image edges rather
+ * than the full page width. inline-block shrinks to the centred image;
+ * the parent's `text-center` keeps it centred. */
+.about-carousel-stage {
+  display: inline-block;
+}
+
+/* Prev / next carousel controls, centred over the image. */
+.about-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.25));
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.about-carousel-arrow:hover {
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 55%, rgba(0, 0, 0, 0.6));
+  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 70%, transparent);
+}
+
+.about-carousel-arrow--prev {
+  left: 0.5rem;
+}
+
+.about-carousel-arrow--next {
+  right: 0.5rem;
+}
+
+/* Carousel position dots — active dot widens and takes the theme accent. */
+.about-carousel-dot {
+  width: 24px;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: background 0.15s ease, width 0.15s ease;
+}
+
+.about-carousel-dot.is-active {
+  width: 36px;
+  background: var(--theme-primary, #e71347);
+}
+
+/* Pill-style links, mirroring `.charity-link` on the Charity page so the
+ * FAQ's external links read as tappable chips rather than raw underlined
+ * text. Hover border tracks the active theme's secondary accent. */
+.charity-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.15));
+  transition: border-color 0.15s ease, background 0.15s ease;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.charity-link:hover {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--theme-secondary, #439abe) 85%, transparent);
+  background: rgba(0, 0, 0, 0.5);
 }

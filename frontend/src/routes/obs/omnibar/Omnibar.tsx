@@ -44,6 +44,7 @@ import './panels/TotalRaisedPanel';
 import './panels/SchedulePanel';
 import './panels/IncentivesPanel';
 import './panels/MilestonesPanel';
+import './panels/RafflePanel';
 import './panels/BidWarPanel';
 import './panels/DonationReelPanel';
 import './panels/CharityInfoPanel';
@@ -562,7 +563,7 @@ function OmnibarInner() {
 }
 
 function Brand({ feed }: { feed: OmnibarFeed }) {
-  const logo = feed.theme?.logo_url || '/assets/img/Zeldathon-Logo-WW-white.svg';
+  const logo = feed.theme?.logo_url || '/assets/img/brand/logo/Zeldathon-Logo-WW-white.svg';
   return (
     <div className="ob-brand">
       <img src={logo} alt="" />
