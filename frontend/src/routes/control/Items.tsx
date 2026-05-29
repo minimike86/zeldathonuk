@@ -1,4 +1,23 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type CollisionDetection,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   obsApi,
   usePolledQuery,
@@ -7,6 +26,74 @@ import {
   type GameItemSet,
   type ItemSetKind,
 } from '@/lib/obsApi';
+
+// Drag collisions: a set-cluster drag only targets other clusters, an item
+// drag only targets other items — so the two don't interfere.
+const itemsCollision: CollisionDetection = (args) => {
+  const prefix = String(args.active.id).startsWith('setc:') ? 'setc:' : 'item:';
+  return closestCenter({
+    ...args,
+    droppableContainers: args.droppableContainers.filter((c) =>
+      String(c.id).startsWith(prefix),
+    ),
+  });
+};
+
+/** A draggable wrapper around an item tile — grip handle starts the drag so
+ *  clicking the tile still toggles collection. */
+function SortableTile({ id, children }: { id: string; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className="sortable-tile"
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 20 : undefined,
+      }}
+    >
+      <span className="drag-grip" title="Drag to reorder" {...attributes} {...listeners}>
+        ⠿
+      </span>
+      {children}
+    </div>
+  );
+}
+
+/** A draggable wrapper around a whole set cluster (drag via the grip). */
+function SortableCluster({
+  id,
+  kind,
+  children,
+}: {
+  id: string;
+  kind: ItemSetKind;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className="link-cluster"
+      data-kind={kind}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 15 : undefined,
+      }}
+    >
+      <span className="drag-grip cluster-grip" title="Drag to reorder set" {...attributes} {...listeners}>
+        ⠿
+      </span>
+      {children}
+    </div>
+  );
+}
 
 const CATEGORIES = [
   ['weapon', 'Weapon'],
@@ -32,6 +119,53 @@ export function ItemsControl() {
   const [err, setErr] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<GameItem | null>(null);
+  // Optimistic order overrides: a drag/reorder applies here immediately so the
+  // UI doesn't flash back to the server order before the persisted change is
+  // polled back. Each entry is dropped once the server confirms that value.
+  const [orderOverrides, setOrderOverrides] = useState<{
+    items: Record<number, number>;
+    sets: Record<number, number>;
+  }>({ items: {}, sets: {} });
+  // Optimistic group/category overrides — dragging an item to another section
+  // updates these immediately so it doesn't flash back before the poll lands.
+  const [fieldOverrides, setFieldOverrides] = useState<{
+    group: Record<number, string>;
+    category: Record<number, string>;
+  }>({ group: {}, category: {} });
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  // The item currently being dragged, rendered as a cursor-following ghost.
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // Clear overrides the server has caught up to (leave pending ones, so an
+  // in-flight poll with the old order can't revert the optimistic move).
+  useEffect(() => {
+    const se = cp?.schedule_entry_detail;
+    const gameItems = se?.game?.items ?? [];
+    const gameSets = se?.game?.item_sets ?? [];
+    setOrderOverrides((prev) => {
+      if (!Object.keys(prev.items).length && !Object.keys(prev.sets).length) return prev;
+      const items = { ...prev.items };
+      const sets = { ...prev.sets };
+      let changed = false;
+      for (const it of gameItems) if (items[it.id] === it.order) { delete items[it.id]; changed = true; }
+      for (const s of gameSets) if (sets[s.id] === s.order) { delete sets[s.id]; changed = true; }
+      return changed ? { items, sets } : prev;
+    });
+    setFieldOverrides((prev) => {
+      if (!Object.keys(prev.group).length && !Object.keys(prev.category).length) return prev;
+      const group = { ...prev.group };
+      const category = { ...prev.category };
+      let changed = false;
+      for (const it of gameItems) {
+        if (group[it.id] === it.group) { delete group[it.id]; changed = true; }
+        if (category[it.id] === it.category) { delete category[it.id]; changed = true; }
+      }
+      return changed ? { group, category } : prev;
+    });
+  }, [cp]);
 
   const entry = cp?.schedule_entry_detail ?? null;
 
@@ -62,7 +196,13 @@ export function ItemsControl() {
     );
   }
 
-  const items = game.items.slice().sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  // Effective order = optimistic override if present, else the server value.
+  const itemOrder = (i: GameItem) => orderOverrides.items[i.id] ?? i.order;
+  const setOrderOf = (s: GameItemSet) => orderOverrides.sets[s.id] ?? s.order;
+
+  const items = game.items
+    .slice()
+    .sort((a, b) => itemOrder(a) - itemOrder(b) || a.name.localeCompare(b.name));
   const collectedIds = new Set(entry.collected_item_ids);
   const collectedCounts = entry.collected_item_counts ?? {};
   const nextOrder = items.reduce((max, i) => Math.max(max, i.order), -1) + 1;
@@ -70,10 +210,12 @@ export function ItemsControl() {
   // Cluster items into sections: by their `group` label, falling back to the
   // category label when blank. Map insertion order follows item.order, so
   // groups appear in the order their first item was added/imported.
+  const effGroup = (i: GameItem) => fieldOverrides.group[i.id] ?? i.group;
+  const effCat = (i: GameItem) => fieldOverrides.category[i.id] ?? i.category;
   const groupLabel = (i: GameItem) =>
-    i.group.trim() ||
-    CATEGORIES.find(([v]) => v === i.category)?.[1] ||
-    i.category ||
+    effGroup(i).trim() ||
+    CATEGORIES.find(([v]) => v === effCat(i))?.[1] ||
+    effCat(i) ||
     'Other';
   const groups: { label: string; items: GameItem[] }[] = [];
   const byLabel = new Map<string, GameItem[]>();
@@ -94,7 +236,7 @@ export function ItemsControl() {
   // The game's item-set library, in display order — items cluster into these.
   const itemSets = (game.item_sets ?? [])
     .slice()
-    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+    .sort((a, b) => setOrderOf(a) - setOrderOf(b) || a.name.localeCompare(b.name));
   // Item name lookup, for naming "unlocks together with" partners on tiles.
   const itemNameById = new Map(items.map((i) => [i.id, i.name]));
 
@@ -186,57 +328,75 @@ export function ItemsControl() {
     }
   };
 
-  // Move one member of an ordered (upgrade/trade) set one slot earlier/later,
-  // then renumber the whole chain to a contiguous run so the arrow sequence
-  // reflects the new order. `members` is the cluster's current (sorted) list.
-  const moveInChain = async (members: GameItem[], index: number, dir: number) => {
+  // Renumber a reordered list to a contiguous run: set optimistic overrides so
+  // the UI updates instantly (no flash back to server order), then persist the
+  // rows that actually changed. Shared by the ◀▶ buttons and drag-drop.
+  const applyItemOrder = (reordered: GameItem[]) => {
+    const base = Math.min(...reordered.map((m) => m.order));
+    const overrides: Record<number, number> = {};
+    const ops: Promise<unknown>[] = [];
+    reordered.forEach((m, p) => {
+      overrides[m.id] = base + p;
+      if (m.order !== base + p) ops.push(obsApi.updateGameItem(m.id, { order: base + p }));
+    });
+    if (ops.length === 0) return;
+    setOrderOverrides((prev) => ({ ...prev, items: { ...prev.items, ...overrides } }));
+    void runOps(ops);
+  };
+
+  const applySetOrder = (reordered: GameItemSet[]) => {
+    const base = Math.min(...reordered.map((s) => s.order));
+    const overrides: Record<number, number> = {};
+    const ops: Promise<unknown>[] = [];
+    reordered.forEach((s, p) => {
+      overrides[s.id] = base + p;
+      if (s.order !== base + p) ops.push(obsApi.updateItemSet(s.id, { order: base + p }));
+    });
+    if (ops.length === 0) return;
+    setOrderOverrides((prev) => ({ ...prev, sets: { ...prev.sets, ...overrides } }));
+    void runOps(ops);
+  };
+
+  // Move an item into another section by setting its group/category to match
+  // the target section (optimistic, then persisted).
+  const applyFieldChange = (
+    itemId: number,
+    assign: { group?: string; category?: string },
+  ) => {
+    const patch: { group?: string; category?: string } = {};
+    if (assign.group !== undefined) patch.group = assign.group;
+    if (assign.category !== undefined) patch.category = assign.category;
+    if (Object.keys(patch).length === 0) return;
+    setFieldOverrides((prev) => ({
+      group:
+        assign.group !== undefined ? { ...prev.group, [itemId]: assign.group } : prev.group,
+      category:
+        assign.category !== undefined
+          ? { ...prev.category, [itemId]: assign.category }
+          : prev.category,
+    }));
+    void runOps([obsApi.updateGameItem(itemId, patch)]);
+  };
+
+  // Move one member of a cluster one slot earlier/later (◀▶ fallback).
+  const moveInChain = (members: GameItem[], index: number, dir: number) => {
     const target = index + dir;
     if (target < 0 || target >= members.length) return;
     const reordered = members.slice();
     const [moved] = reordered.splice(index, 1);
     reordered.splice(target, 0, moved);
-    const base = Math.min(...members.map((m) => m.order));
-    const ops = reordered
-      .map((m, p) => ({ m, p }))
-      .filter(({ m, p }) => m.order !== base + p)
-      .map(({ m, p }) => obsApi.updateGameItem(m.id, { order: base + p }));
-    if (ops.length === 0) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await Promise.all(ops);
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    applyItemOrder(reordered);
   };
 
-  // Reorder a set relative to the OTHER sets shown in the same section, then
-  // renumber GameItemSet.order across just those so the move is always visible
-  // (no global no-ops). `sectionSets` is the cluster list for one section.
-  const moveSet = async (sectionSets: GameItemSet[], set: GameItemSet, dir: number) => {
+  // Reorder a set relative to the other sets shown in the same section.
+  const moveSet = (sectionSets: GameItemSet[], set: GameItemSet, dir: number) => {
     const idx = sectionSets.findIndex((s) => s.id === set.id);
     const target = idx + dir;
     if (idx < 0 || target < 0 || target >= sectionSets.length) return;
     const reordered = sectionSets.slice();
     const [moved] = reordered.splice(idx, 1);
     reordered.splice(target, 0, moved);
-    const base = Math.min(...sectionSets.map((s) => s.order));
-    const ops = reordered
-      .map((s, p) => ({ s, p }))
-      .filter(({ s, p }) => s.order !== base + p)
-      .map(({ s, p }) => obsApi.updateItemSet(s.id, { order: base + p }));
-    if (ops.length === 0) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await Promise.all(ops);
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    applySetOrder(reordered);
   };
 
   // Clear every collected item for this run, then re-apply the game's
@@ -247,6 +407,21 @@ export function ItemsControl() {
     setErr(null);
     try {
       await obsApi.resetCollected(entry.id);
+      setRefreshTick((n) => n + 1);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Run a batch of persistence calls, surfacing errors and forcing a refresh.
+  const runOps = async (ops: Promise<unknown>[]) => {
+    if (ops.length === 0) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await Promise.all(ops);
       setRefreshTick((n) => n + 1);
     } catch (e) {
       setErr((e as Error).message);
@@ -362,6 +537,98 @@ export function ItemsControl() {
     );
   };
 
+  // What to set on an item to make it land in a given section: a real group
+  // section assigns that group; a category-fallback section clears group and
+  // sets the category.
+  const computeAssign = (label: string, secItems: GameItem[]): { group?: string; category?: string } => {
+    const catEntry = CATEGORIES.find(([, lbl]) => lbl === label);
+    const hasGroup = secItems.some((it) => effGroup(it).trim() !== '');
+    if (catEntry && !hasGroup) return { group: '', category: catEntry[0] };
+    return { group: label };
+  };
+
+  // Precomputed per-section model shared by the render + the drag handler.
+  const sections = groups.map((g, idx) => {
+    const setIds = new Set<number>();
+    g.items.forEach((i) => i.set_ids.forEach((id) => setIds.add(id)));
+    const sectionSets = itemSets.filter((s) => setIds.has(s.id));
+    const standalone = g.items.filter((i) => i.set_ids.length === 0);
+    const memberLists = new Map<string, GameItem[]>();
+    sectionSets.forEach((s) =>
+      memberLists.set(
+        `set:${s.id}`,
+        g.items
+          .filter((m) => m.set_ids.includes(s.id))
+          .sort((a, b) => itemOrder(a) - itemOrder(b) || a.name.localeCompare(b.name)),
+      ),
+    );
+    memberLists.set('standalone', standalone);
+    return {
+      idx,
+      label: g.label,
+      items: g.items,
+      sectionSets,
+      standalone,
+      memberLists,
+      assign: computeAssign(g.label, g.items),
+    };
+  });
+  const sectionIdxOfItem = new Map<number, number>();
+  sections.forEach((sec) => sec.items.forEach((it) => sectionIdxOfItem.set(it.id, sec.idx)));
+  const activeItem =
+    activeDragId && activeDragId.startsWith('item:')
+      ? items.find((i) => `item:${i.id}` === activeDragId) ?? null
+      : null;
+
+  // One handler for the whole grid: reorder clusters (within a section),
+  // reorder items (within a container), or — when dropped on an item in
+  // another section — recategorise the dragged item.
+  const onItemsDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const a = String(active.id);
+    const o = String(over.id);
+    if (a.startsWith('setc:')) {
+      if (!o.startsWith('setc:')) return;
+      const [, aSec, aSet] = a.split(':');
+      const [, oSec, oSet] = o.split(':');
+      if (aSec !== oSec) return; // clusters don't move across sections
+      const sec = sections[Number(aSec)];
+      if (!sec) return;
+      const from = sec.sectionSets.findIndex((s) => s.id === Number(aSet));
+      const to = sec.sectionSets.findIndex((s) => s.id === Number(oSet));
+      if (from < 0 || to < 0 || from === to) return;
+      applySetOrder(arrayMove(sec.sectionSets, from, to));
+      return;
+    }
+    if (a.startsWith('item:') && o.startsWith('item:')) {
+      const aid = Number(a.slice(5));
+      const oid = Number(o.slice(5));
+      const aSec = sectionIdxOfItem.get(aid);
+      const oSec = sectionIdxOfItem.get(oid);
+      if (aSec === undefined || oSec === undefined) return;
+      if (aSec !== oSec) {
+        // Cross-section drop → recategorise into the target section.
+        applyFieldChange(aid, sections[oSec].assign);
+        return;
+      }
+      // Same section: reorder within the same container only.
+      const sec = sections[aSec];
+      const keyOf = (id: number) => {
+        for (const [k, list] of sec.memberLists) if (list.some((m) => m.id === id)) return k;
+        return null;
+      };
+      const ca = keyOf(aid);
+      const co = keyOf(oid);
+      if (!ca || ca !== co) return;
+      const list = sec.memberLists.get(ca) ?? [];
+      const from = list.findIndex((m) => m.id === aid);
+      const to = list.findIndex((m) => m.id === oid);
+      if (from < 0 || to < 0 || from === to) return;
+      applyItemOrder(arrayMove(list, from, to));
+    }
+  };
+
   return (
     <div className="control-card">
       <header className="d-flex justify-content-between align-items-baseline">
@@ -433,77 +700,120 @@ export function ItemsControl() {
           <code>python manage.py import_zelda_items</code> to import a checklist.
         </p>
       ) : (
-        groups.map((g) => {
-          const got = g.items.filter((i) => collectedIds.has(i.id)).length;
-          // Sets that have at least one member in this section, in library
-          // order. An item in several sets shows in each of their clusters;
-          // items in no set render standalone after the clusters.
-          const sectionSetIds = new Set<number>();
-          g.items.forEach((i) => i.set_ids.forEach((id) => sectionSetIds.add(id)));
-          const sectionSets = itemSets.filter((s) => sectionSetIds.has(s.id));
-          const standalone = g.items.filter((i) => i.set_ids.length === 0);
-          return (
-            <section key={g.label} className="item-group">
-              <h3 className="item-group-head">
-                {g.label}{' '}
-                <span className="text-white-50">
-                  ({got}/{g.items.length})
-                </span>
-              </h3>
-              <div className="items-flow">
-                {sectionSets.map((set) => {
-                  const members = g.items
-                    .filter((m) => m.set_ids.includes(set.id))
-                    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
-                  const ordered = set.kind === 'upgrade' || set.kind === 'trade';
-                  const setIdx = sectionSets.findIndex((s) => s.id === set.id);
-                  return (
-                    <div key={`set:${set.id}`} className="link-cluster" data-kind={set.kind}>
-                      <SetClusterHead
-                        set={set}
-                        busy={busy}
-                        canMovePrev={setIdx > 0}
-                        canMoveNext={setIdx < sectionSets.length - 1}
-                        onMovePrev={() => moveSet(sectionSets, set, -1)}
-                        onMoveNext={() => moveSet(sectionSets, set, 1)}
-                        onRename={renameSet}
-                        onRemove={removeSet}
-                      />
-                      <div className="link-cluster-body">
-                        {members.map((m, idx) => (
-                          <Fragment key={m.id}>
-                            {ordered && idx > 0 && (
-                              <span className="link-arrow" aria-hidden>
-                                →
-                              </span>
-                            )}
-            {/* Reorder controls on every cluster (sets included) — the
-              * → arrows only render for ordered kinds, but members can be
-              * arranged in any cluster. */}
-                            {renderTile(m, {
-                              canPrev: idx > 0,
-                              canNext: idx < members.length - 1,
-                              onPrev: () => moveInChain(members, idx, -1),
-                              onNext: () => moveInChain(members, idx, 1),
-                            })}
-                          </Fragment>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-                {standalone.map((item, idx) =>
-                  renderTile(item, {
-                    canPrev: idx > 0,
-                    canNext: idx < standalone.length - 1,
-                    onPrev: () => moveInChain(standalone, idx, -1),
-                    onNext: () => moveInChain(standalone, idx, 1),
-                  }),
-                )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={itemsCollision}
+          onDragStart={(e) => setActiveDragId(String(e.active.id))}
+          onDragCancel={() => setActiveDragId(null)}
+          onDragEnd={(e) => {
+            setActiveDragId(null);
+            onItemsDragEnd(e);
+          }}
+        >
+          {sections.map((sec) => {
+            const got = sec.items.filter((i) => collectedIds.has(i.id)).length;
+            return (
+              <section key={sec.label} className="item-group">
+                <h3 className="item-group-head">
+                  {sec.label}{' '}
+                  <span className="text-white-50">
+                    ({got}/{sec.items.length})
+                  </span>
+                </h3>
+                <div className="items-flow">
+                  <SortableContext
+                    items={sec.sectionSets.map((s) => `setc:${sec.idx}:${s.id}`)}
+                    strategy={rectSortingStrategy}
+                  >
+                    {sec.sectionSets.map((set) => {
+                      const members = sec.memberLists.get(`set:${set.id}`) ?? [];
+                      const ordered = set.kind === 'upgrade' || set.kind === 'trade';
+                      const setIdx = sec.sectionSets.findIndex((s) => s.id === set.id);
+                      return (
+                        <SortableCluster
+                          key={set.id}
+                          id={`setc:${sec.idx}:${set.id}`}
+                          kind={set.kind}
+                        >
+                          <SetClusterHead
+                            set={set}
+                            busy={busy}
+                            canMovePrev={setIdx > 0}
+                            canMoveNext={setIdx < sec.sectionSets.length - 1}
+                            onMovePrev={() => moveSet(sec.sectionSets, set, -1)}
+                            onMoveNext={() => moveSet(sec.sectionSets, set, 1)}
+                            onRename={renameSet}
+                            onRemove={removeSet}
+                          />
+                          <div className="link-cluster-body">
+                            <SortableContext
+                              items={members.map((m) => `item:${m.id}`)}
+                              strategy={rectSortingStrategy}
+                            >
+                              {members.map((m, idx) => (
+                                <Fragment key={m.id}>
+                                  {ordered && idx > 0 && (
+                                    <span className="link-arrow" aria-hidden>
+                                      →
+                                    </span>
+                                  )}
+                                  <SortableTile id={`item:${m.id}`}>
+                                    {renderTile(m, {
+                                      canPrev: idx > 0,
+                                      canNext: idx < members.length - 1,
+                                      onPrev: () => moveInChain(members, idx, -1),
+                                      onNext: () => moveInChain(members, idx, 1),
+                                    })}
+                                  </SortableTile>
+                                </Fragment>
+                              ))}
+                            </SortableContext>
+                          </div>
+                        </SortableCluster>
+                      );
+                    })}
+                  </SortableContext>
+                  <SortableContext
+                    items={sec.standalone.map((m) => `item:${m.id}`)}
+                    strategy={rectSortingStrategy}
+                  >
+                    {sec.standalone.map((item, idx) => (
+                      <SortableTile key={item.id} id={`item:${item.id}`}>
+                        {renderTile(item, {
+                          canPrev: idx > 0,
+                          canNext: idx < sec.standalone.length - 1,
+                          onPrev: () => moveInChain(sec.standalone, idx, -1),
+                          onNext: () => moveInChain(sec.standalone, idx, 1),
+                        })}
+                      </SortableTile>
+                    ))}
+                  </SortableContext>
+                </div>
+              </section>
+            );
+          })}
+          <DragOverlay dropAnimation={null}>
+            {activeItem ? (
+              <div className="item-cell drag-overlay" style={{ width: 110 }}>
+                <div
+                  className="item-tile"
+                  data-collected={
+                    activeItem.countable
+                      ? (collectedCounts[String(activeItem.id)] ?? 0) > 0
+                      : collectedIds.has(activeItem.id)
+                  }
+                >
+                  {activeItem.image_url ? (
+                    <img src={activeItem.image_url} alt={activeItem.name} />
+                  ) : (
+                    <div className="item-placeholder">{activeItem.name.slice(0, 3)}</div>
+                  )}
+                  <div className="item-name">{activeItem.name}</div>
+                </div>
               </div>
-            </section>
-          );
-        })
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       <style>{`
@@ -530,9 +840,48 @@ export function ItemsControl() {
           width: 110px;
         }
         .link-cluster {
+          position: relative;
           border: 1px dashed rgba(255,255,255,0.25);
           border-radius: 8px;
           padding: 0.35rem 0.5rem 0.5rem;
+        }
+        .sortable-tile {
+          position: relative;
+        }
+        .drag-grip {
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          z-index: 4;
+          cursor: grab;
+          opacity: 0;
+          transition: opacity 0.15s;
+          font-size: 0.8rem;
+          line-height: 1;
+          padding: 1px 3px;
+          border-radius: 4px;
+          background: rgba(0,0,0,0.65);
+          color: #fff;
+          touch-action: none;
+        }
+        .drag-grip:active {
+          cursor: grabbing;
+        }
+        .sortable-tile:hover > .drag-grip,
+        .link-cluster:hover > .cluster-grip {
+          opacity: 1;
+        }
+        .cluster-grip {
+          top: 4px;
+          left: 4px;
+        }
+        .drag-overlay {
+          cursor: grabbing;
+          pointer-events: none;
+        }
+        .drag-overlay .item-tile {
+          box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+          transform: scale(1.04);
         }
         .link-cluster[data-kind="upgrade"] { border-color: rgba(127,180,255,0.55); }
         .link-cluster[data-kind="trade"] { border-color: rgba(255,200,120,0.55); }
