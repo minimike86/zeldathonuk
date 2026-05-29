@@ -211,6 +211,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 class TimerSerializer(serializers.ModelSerializer):
     is_running = serializers.BooleanField(read_only=True)
+    is_paused = serializers.BooleanField(read_only=True)
     total_seconds = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -223,6 +224,7 @@ class TimerSerializer(serializers.ModelSerializer):
             'accumulated_seconds',
             'ended_at',
             'is_running',
+            'is_paused',
             'total_seconds',
         ]
 
@@ -404,6 +406,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'setpiece_stage',
             'setpiece_started_at',
             'notes',
+            'timer_segment_ids',
             'timer',
             'collected_item_ids',
             'collected_item_counts',

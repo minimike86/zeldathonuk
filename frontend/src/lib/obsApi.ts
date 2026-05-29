@@ -224,6 +224,9 @@ export interface TimerRun {
   accumulated_seconds: number;
   ended_at: string | null;
   is_running: boolean;
+  /** Started at least once and currently paused (segment banked, clock held).
+   *  Mutually exclusive with is_running. */
+  is_paused: boolean;
   total_seconds: number;
 }
 
@@ -254,6 +257,10 @@ export interface ScheduleEntry {
   setpiece_stage: '' | 'imminent' | 'active';
   setpiece_started_at: string | null;
   notes: string;
+  /** Ordered GameObjective ids forming this run's LiveSplit route (the timer
+   *  splits). Empty = the timer falls back to all of the game's objectives in
+   *  their library order. */
+  timer_segment_ids: number[];
   timer: TimerRun | null;
   collected_item_ids: number[];
   /** {game_item_id: quantity} for collected items — the tally for countable
@@ -978,6 +985,8 @@ export const obsApi = {
     api<TimerRun>(`/api/schedule/${entryId}/reset_timer/`, { method: 'POST' }),
   stopTimer: (entryId: number) =>
     api<TimerRun>(`/api/schedule/${entryId}/stop_timer/`, { method: 'POST' }),
+  reopenTimer: (entryId: number) =>
+    api<TimerRun>(`/api/schedule/${entryId}/reopen_timer/`, { method: 'POST' }),
   toggleCollected: (entryId: number, itemId: number) =>
     api<{ collected: boolean }>(
       `/api/schedule/${entryId}/toggle_collected/`,
@@ -1083,7 +1092,12 @@ export const obsApi = {
     ).then(withObjectivesBroadcast),
   updateScheduleEntry: (
     entryId: number,
-    patch: Partial<Pick<ScheduleEntry, 'current_objective' | 'was_skipped' | 'notes' | 'is_completed'>>,
+    patch: Partial<
+      Pick<
+        ScheduleEntry,
+        'current_objective' | 'was_skipped' | 'notes' | 'is_completed' | 'timer_segment_ids'
+      >
+    >,
   ) =>
     api<ScheduleEntry>(`/api/schedule/${entryId}/`, {
       method: 'PATCH',

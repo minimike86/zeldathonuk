@@ -319,13 +319,11 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             return Response(
                 {'detail': 'Timer already running.'}, status=status.HTTP_400_BAD_REQUEST
             )
-        # Resuming from pause — bank the previously running segment.
-        if timer.started_at and timer.paused_at:
-            timer.accumulated_seconds += int(
-                (timer.paused_at - timer.started_at).total_seconds()
-            )
-            timer.paused_at = None
+        # Start or resume: just begin a fresh live segment. Pause already banked
+        # any prior segment into accumulated_seconds, so there is nothing to bank
+        # here — this is what keeps the clock from jumping on resume.
         timer.started_at = now
+        timer.paused_at = None
         timer.ended_at = None
         if not entry.started_at:
             entry.started_at = now
@@ -341,7 +339,15 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             return Response(
                 {'detail': 'Timer is not running.'}, status=status.HTTP_400_BAD_REQUEST
             )
-        timer.paused_at = timezone.now()
+        now = timezone.now()
+        # Bank the live segment NOW (don't defer it to resume), then hold the
+        # clock. total_seconds then reads accumulated_seconds while paused, so
+        # the display stays put instead of dropping to the stale value.
+        timer.accumulated_seconds += int(
+            (now - timer.started_at).total_seconds()
+        )
+        timer.started_at = None
+        timer.paused_at = now
         timer.save()
         return Response(serializers.TimerSerializer(timer).data)
 
@@ -354,6 +360,27 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         timer.ended_at = None
         timer.accumulated_seconds = 0
         timer.save()
+        # Clean slate: also reopen the entry so a previously-finished run can be
+        # restarted from 00:00:00.
+        entry.started_at = None
+        entry.finished_at = None
+        entry.is_completed = False
+        entry.save(update_fields=['started_at', 'finished_at', 'is_completed'])
+        return Response(serializers.TimerSerializer(timer).data)
+
+    @action(detail=True, methods=['post'])
+    def reopen_timer(self, request: Request, pk=None) -> Response:
+        """Undo a Finish: clear the completion flags but keep accumulated time
+        so the run can be resumed (Start picks up where it left off)."""
+        entry = self.get_object()
+        timer = getattr(entry, 'timer', None)
+        if not timer:
+            return Response({'detail': 'No timer.'}, status=status.HTTP_400_BAD_REQUEST)
+        timer.ended_at = None
+        timer.save(update_fields=['ended_at'])
+        entry.finished_at = None
+        entry.is_completed = False
+        entry.save(update_fields=['finished_at', 'is_completed'])
         return Response(serializers.TimerSerializer(timer).data)
 
     @action(detail=True, methods=['post'])

@@ -299,6 +299,13 @@ class ScheduleEntry(models.Model):
     )
     setpiece_started_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
+    timer_segment_ids = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Ordered GameObjective ids forming this run's LiveSplit "
+                  'route (the timer splits). Empty = fall back to all of the '
+                  "game's objectives in their library order.",
+    )
 
     class Meta:
         ordering = ['event', 'order']
@@ -344,7 +351,19 @@ class TimerRun(models.Model):
 
     @property
     def is_running(self) -> bool:
-        return self.started_at is not None and self.paused_at is None and self.ended_at is None
+        # A live segment is ticking. `pause_timer` banks the segment and clears
+        # `started_at`, so a paused run is NOT running.
+        return self.started_at is not None and self.ended_at is None
+
+    @property
+    def is_paused(self) -> bool:
+        # Started at least once and paused (segment banked, clock held), not
+        # yet finished. Distinct from idle (never started) and ended.
+        return (
+            self.paused_at is not None
+            and self.started_at is None
+            and self.ended_at is None
+        )
 
     @property
     def total_seconds(self) -> int:
