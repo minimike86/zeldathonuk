@@ -32,6 +32,7 @@ import { ControlLayout } from '@/routes/control/Dashboard';
 import { ScheduleControl } from '@/routes/control/Schedule';
 import { TimerControl } from '@/routes/control/Timer';
 import { ItemsControl } from '@/routes/control/Items';
+import { ObjectivesControl } from '@/routes/control/Objectives';
 import { DonationsControl } from '@/routes/control/Donations';
 import { BrbControl } from '@/routes/control/Brb';
 import { GamesControl } from '@/routes/control/Games';
@@ -90,6 +91,8 @@ export const router = createBrowserRouter([
       { path: 'schedule', element: <ScheduleControl /> },
       { path: 'timer', element: <TimerControl /> },
       { path: 'items', element: <ItemsControl /> },
+      { path: 'objectives', element: <ObjectivesControl /> },
+      { path: 'objective', element: <Navigate to="/control/objectives" replace /> },
       { path: 'donations', element: <DonationsControl /> },
       { path: 'brb', element: <BrbControl /> },
       { path: 'audio', element: <AudioControl /> },

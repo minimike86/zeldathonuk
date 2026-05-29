@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { GameObjective, ObjectiveStatus, ScheduleEntry } from '@/lib/obsApi';
@@ -315,23 +315,32 @@ function SplitsPanel({
       </div>
 
       <ol className="splits-list">
-        {route.map((o) => {
+        {route.map((o, i) => {
           const status = statusOf(o.id);
           const isActive = active?.id === o.id;
+          // Section header whenever the group changes down the route. Blank
+          // groups render no header (the splits just follow on).
+          const group = o.group.trim();
+          const prevGroup = i > 0 ? route[i - 1].group.trim() : '';
           return (
-            <li key={o.id} className="split-row" data-status={status} data-active={isActive}>
-              <span className="split-icon">
-                {o.image_url ? (
-                  <img src={o.image_url} alt="" />
-                ) : (
-                  <span className="split-placeholder">{o.name.slice(0, 2)}</span>
-                )}
-              </span>
-              <span className="split-name">{o.name}</span>
-              <span className="split-mark">
-                {status === 'obtained' ? '✓' : status === 'skipped' ? '⏭' : isActive ? '▶' : ''}
-              </span>
-            </li>
+            <Fragment key={o.id}>
+              {group && group !== prevGroup && (
+                <li className="split-group-head">{group}</li>
+              )}
+              <li className="split-row" data-status={status} data-active={isActive}>
+                <span className="split-icon">
+                  {o.image_url ? (
+                    <img src={o.image_url} alt="" />
+                  ) : (
+                    <span className="split-placeholder">{o.name.slice(0, 2)}</span>
+                  )}
+                </span>
+                <span className="split-name">{o.name}</span>
+                <span className="split-mark">
+                  {status === 'obtained' ? '✓' : status === 'skipped' ? '⏭' : isActive ? '▶' : ''}
+                </span>
+              </li>
+            </Fragment>
           );
         })}
       </ol>
@@ -374,6 +383,17 @@ function SplitsPanel({
           max-height: 22rem;
           overflow-y: auto;
         }
+        .split-group-head {
+          list-style: none;
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #ffcc00;
+          margin-top: 0.5rem;
+          padding: 0.1rem 0.2rem;
+          border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+        .split-group-head:first-child { margin-top: 0; }
         .split-row {
           display: flex;
           align-items: center;

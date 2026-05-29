@@ -10,6 +10,7 @@ const sections = [
   { to: '/control/events', label: 'Events' },
   { to: '/control/charities', label: 'Charities' },
   { to: '/control/games', label: 'Games' },
+  { to: '/control/objectives', label: 'Objectives' },
   { to: '/control/runners', label: 'Runners' },
   { to: '/control/schedule', label: 'Schedule' },
   // Live show

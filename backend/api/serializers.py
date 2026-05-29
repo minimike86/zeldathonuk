@@ -49,7 +49,8 @@ class GameItemSerializer(serializers.ModelSerializer):
 class GameObjectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.GameObjective
-        fields = ['id', 'game', 'name', 'image_url', 'category', 'order']
+        fields = ['id', 'game', 'name', 'image_url', 'category', 'group',
+                  'linked_item', 'order']
 
 
 class GameSerializer(serializers.ModelSerializer):

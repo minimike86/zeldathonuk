@@ -471,6 +471,40 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
                         frontier.append(member)
         return seen
 
+    def _sync_linked_objectives(self, entry) -> None:
+        """Mirror collected-item state into linked "item get" objectives:
+        obtained when the linked item is collected, outstanding when not.
+        Manually SKIPPED rows are left untouched. Called after any change to
+        this entry's collected items."""
+        if not entry.game_id:
+            return
+        collected_ids = set(
+            models.CollectedItem.objects.filter(
+                schedule_entry=entry
+            ).values_list('item_id', flat=True)
+        )
+        linked = models.GameObjective.objects.filter(
+            game_id=entry.game_id, linked_item__isnull=False
+        )
+        for obj in linked:
+            existing = models.ScheduleEntryObjective.objects.filter(
+                schedule_entry=entry, objective=obj
+            ).first()
+            if existing and existing.status == models.ObjectiveStatus.SKIPPED:
+                continue
+            if obj.linked_item_id in collected_ids:
+                if not existing or existing.status != models.ObjectiveStatus.OBTAINED:
+                    models.ScheduleEntryObjective.objects.update_or_create(
+                        schedule_entry=entry,
+                        objective=obj,
+                        defaults={
+                            'status': models.ObjectiveStatus.OBTAINED,
+                            'obtained_at': timezone.now(),
+                        },
+                    )
+            elif existing and existing.status == models.ObjectiveStatus.OBTAINED:
+                existing.delete()
+
     @action(detail=True, methods=['post'])
     def toggle_collected(self, request: Request, pk=None) -> Response:
         entry = self.get_object()
@@ -495,6 +529,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             models.CollectedItem.objects.filter(
                 schedule_entry=entry, item_id__in=ids
             ).delete()
+        self._sync_linked_objectives(entry)
         return Response({'collected': target, 'item_ids': sorted(ids)})
 
     @action(detail=True, methods=['post'])
@@ -527,6 +562,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             if existing:
                 existing.delete()
             self._cascade_unlocks(entry, item_id, collected=False)
+            self._sync_linked_objectives(entry)
             return Response({'collected': False, 'quantity': 0})
         if existing:
             existing.quantity = new_qty
@@ -537,6 +573,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             )
         if current == 0:
             self._cascade_unlocks(entry, item_id, collected=True)
+        self._sync_linked_objectives(entry)
         return Response({'collected': True, 'quantity': new_qty})
 
     @action(detail=True, methods=['post'])
@@ -554,6 +591,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
                 ids |= self._unlock_closure(starter)
         for iid in ids:
             models.CollectedItem.objects.create(schedule_entry=entry, item_id=iid)
+        self._sync_linked_objectives(entry)
         return Response({'collected_item_ids': sorted(ids)})
 
     @action(detail=True, methods=['post'])
@@ -583,12 +621,37 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             models.ScheduleEntryObjective.objects.filter(
                 schedule_entry=entry, objective_id=objective_id
             ).delete()
-            return Response({'objective_id': int(objective_id), 'status': 'outstanding'})
-        models.ScheduleEntryObjective.objects.update_or_create(
-            schedule_entry=entry,
-            objective_id=objective_id,
-            defaults={'status': new_status, 'obtained_at': timezone.now()},
+        else:
+            models.ScheduleEntryObjective.objects.update_or_create(
+                schedule_entry=entry,
+                objective_id=objective_id,
+                defaults={'status': new_status, 'obtained_at': timezone.now()},
+            )
+        # Reverse link for "item get" objectives: keep the linked item's
+        # collected state in lockstep (skipped leaves the item alone). Writes
+        # CollectedItem rows directly — no recursion with the collect actions.
+        objective = (
+            models.GameObjective.objects.filter(pk=objective_id)
+            .select_related('linked_item')
+            .first()
         )
+        if (
+            objective
+            and objective.linked_item_id
+            and new_status != models.ObjectiveStatus.SKIPPED
+        ):
+            collected = new_status == models.ObjectiveStatus.OBTAINED
+            ids = self._collect_cascade_ids(objective.linked_item, collected=collected)
+            if collected:
+                for iid in ids:
+                    models.CollectedItem.objects.get_or_create(
+                        schedule_entry=entry, item_id=iid
+                    )
+            else:
+                models.CollectedItem.objects.filter(
+                    schedule_entry=entry, item_id__in=ids
+                ).delete()
+            self._sync_linked_objectives(entry)
         return Response({'objective_id': int(objective_id), 'status': new_status})
 
     @action(detail=True, methods=['post'])

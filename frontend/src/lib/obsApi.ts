@@ -129,6 +129,14 @@ export interface GameObjective {
   name: string;
   image_url: string;
   category: string;
+  /** Optional run-section label used to cluster objectives in the library
+   *  editor and the timer splits (e.g. "Prologue", "Endgame"). Falls back to
+   *  category when blank. */
+  group: string;
+  /** For "item get" objectives: the GameItem id whose collection completes
+   *  this objective (kept in lockstep with the item's per-run collected
+   *  state). Null when the objective isn't tied to an item. */
+  linked_item: number | null;
   order: number;
 }
 
@@ -1065,6 +1073,8 @@ export const obsApi = {
     name: string;
     image_url?: string;
     category?: string;
+    group?: string;
+    linked_item?: number | null;
     order?: number;
   }) =>
     api<GameObjective>('/api/game-objectives/', { method: 'POST', body }).then(
@@ -1072,7 +1082,9 @@ export const obsApi = {
     ),
   updateObjective: (
     id: number,
-    patch: Partial<Pick<GameObjective, 'name' | 'image_url' | 'category' | 'order'>>,
+    patch: Partial<
+      Pick<GameObjective, 'name' | 'image_url' | 'category' | 'group' | 'linked_item' | 'order'>
+    >,
   ) =>
     api<GameObjective>(`/api/game-objectives/${id}/`, { method: 'PATCH', body: patch }).then(
       withObjectivesBroadcast,

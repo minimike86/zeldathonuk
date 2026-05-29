@@ -509,6 +509,24 @@ class GameObjective(models.Model):
         blank=True,
         help_text='e.g. "story", "side-quest", "100%", "boss".',
     )
+    group = models.CharField(
+        max_length=60,
+        blank=True,
+        help_text='Optional run-section label used to cluster objectives in the '
+                  'library editor and the timer splits (e.g. "Prologue", "The '
+                  'Dark World", "Endgame"). Falls back to category when blank.',
+    )
+    linked_item = models.ForeignKey(
+        GameItem,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='linked_objectives',
+        help_text='For "item get" objectives: the GameItem whose collection '
+                  'completes this objective. Collecting the item marks the '
+                  'objective obtained for the run, and marking the objective '
+                  'obtained collects the item (kept in lockstep per run).',
+    )
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
