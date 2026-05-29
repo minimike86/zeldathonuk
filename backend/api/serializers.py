@@ -20,11 +20,19 @@ class RunnerSerializer(serializers.ModelSerializer):
 class GameItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.GameItem
+        fields = ['id', 'game', 'name', 'image_url', 'category', 'group',
+                  'link_group', 'link_kind', 'countable', 'order']
+
+
+class GameObjectiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.GameObjective
         fields = ['id', 'game', 'name', 'image_url', 'category', 'order']
 
 
 class GameSerializer(serializers.ModelSerializer):
     items = GameItemSerializer(many=True, read_only=True)
+    objectives = GameObjectiveSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Game
@@ -39,8 +47,10 @@ class GameSerializer(serializers.ModelSerializer):
             'twitch_game_id',
             'hltb_id',
             'release_year',
+            'asset_slug',
             'omnibar_layout',
             'items',
+            'objectives',
         ]
 
 
@@ -252,10 +262,39 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
     effective_minutes = serializers.IntegerField(read_only=True)
     display_title = serializers.CharField(read_only=True)
     timer = TimerSerializer(read_only=True)
-    collected_item_ids = serializers.PrimaryKeyRelatedField(
-        many=True, read_only=True, source='collected_items'
-    )
+    collected_item_ids = serializers.SerializerMethodField()
+    collected_item_counts = serializers.SerializerMethodField()
+    obtained_objective_ids = serializers.SerializerMethodField()
+    skipped_objective_ids = serializers.SerializerMethodField()
     order = serializers.IntegerField(required=False)
+
+    def get_collected_item_ids(self, obj) -> list:
+        # Return the GameItem ids that have been collected (NOT the
+        # CollectedItem row pks) so the control grid / OBS panel can match
+        # them against game.items[].id. Iterates the prefetched rows.
+        return [ci.item_id for ci in obj.collected_items.all()]
+
+    def get_collected_item_counts(self, obj) -> dict:
+        # {game_item_id: quantity} for collected items — lets the control grid
+        # render the tally on countable items (keys, maps...). Keys are strings
+        # because JSON object keys are always strings.
+        return {str(ci.item_id): ci.quantity for ci in obj.collected_items.all()}
+
+    def get_obtained_objective_ids(self, obj) -> list:
+        # Iterate the prefetched statuses (no extra queries) and pull the
+        # objective ids that are obtained. Absence of a row = outstanding.
+        return [
+            s.objective_id
+            for s in obj.objective_statuses.all()
+            if s.status == models.ObjectiveStatus.OBTAINED
+        ]
+
+    def get_skipped_objective_ids(self, obj) -> list:
+        return [
+            s.objective_id
+            for s in obj.objective_statuses.all()
+            if s.status == models.ObjectiveStatus.SKIPPED
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -343,6 +382,9 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'notes',
             'timer',
             'collected_item_ids',
+            'collected_item_counts',
+            'obtained_objective_ids',
+            'skipped_objective_ids',
             'sound_triggers',
         ]
 

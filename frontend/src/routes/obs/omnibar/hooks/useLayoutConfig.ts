@@ -35,7 +35,10 @@ const DEFAULT_TOP: LaneConfig = {
   // (pre-event countdown, or the gap while the operator picks the
   // next game). Without a fallback like this, the top lane sits
   // blank pre-stream because every other panel returns null.
-  panels: ['current-game', 'playtime', 'objective', 'setpiece', 'items-collected', 'pre-stream'],
+  panels: [
+    'current-game', 'playtime', 'objective', 'objective-checklist', 'setpiece',
+    'items-collected', 'pre-stream',
+  ],
 };
 
 const DEFAULT_BOTTOM: LaneConfig = {
@@ -61,8 +64,8 @@ export const DEFAULT_LAYOUT: OmnibarLayoutConfig = {
 
 export const ALL_PANEL_IDS = [
   // Status / top-lane affinity
-  'current-game', 'playtime', 'objective', 'setpiece', 'items-collected',
-  'pre-stream',
+  'current-game', 'playtime', 'objective', 'objective-checklist', 'setpiece',
+  'items-collected', 'pre-stream',
   // Ticker / bottom-lane affinity
   'schedule-next', 'donation-reel', 'incentives', 'bid-war', 'milestones',
   'raffle', 'total-raised', 'charity-info', 'local-time',

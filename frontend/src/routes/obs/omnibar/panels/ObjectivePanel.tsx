@@ -1,3 +1,4 @@
+import { MarqueeOnOverflow } from './_shared/MarqueeOnOverflow';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 
@@ -6,6 +7,10 @@ import { registerPanel, type PanelProps } from './registry';
  * the active ScheduleEntry.current_objective field. Returns null when
  * the field is blank so the panel drops out of rotation entirely
  * instead of parking on an empty "objective: …" card.
+ *
+ * The objective + "in {game}" hint can overflow a narrow rail, so the
+ * body is wrapped in MarqueeOnOverflow — it scrolls only when measured
+ * to overflow (same treatment PreStreamPanel uses for upcoming titles).
  */
 interface Data {
   objective: string;
@@ -15,8 +20,14 @@ interface Data {
 function Panel({ data }: PanelProps<Data>) {
   return (
     <PanelRow tag="OBJECTIVE" arrow>
-      <span className="ob-text-strong">{data.objective}</span>
-      <span className="ob-text-muted">in {data.gameTitle}</span>
+      {/* Claim the remaining rail width so the marquee has a defined box to
+        * measure overflow against (mirrors PreStreamPanel). */}
+      <div style={{ flex: '1 1 0', minWidth: 0 }}>
+        <MarqueeOnOverflow>
+          <span className="ob-text-strong">{data.objective}</span>
+          <span className="ob-text-muted">in {data.gameTitle}</span>
+        </MarqueeOnOverflow>
+      </div>
     </PanelRow>
   );
 }

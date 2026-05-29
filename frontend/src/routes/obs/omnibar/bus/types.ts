@@ -1,6 +1,7 @@
 import type {
   Donation,
   ExternalEvent,
+  GameObjective,
   Incentive,
   Milestone,
   OmnibarOverride,
@@ -20,6 +21,7 @@ export type OmnibarBusEvent =
   | { kind: 'donation-arrived'; donation: Donation }
   | { kind: 'milestone-reached'; milestone: Milestone }
   | { kind: 'incentive-unlocked'; incentive: Incentive }
+  | { kind: 'objective-obtained'; objective: GameObjective }
   | { kind: 'playthrough-event'; event: PlaythroughEvent }
   | { kind: 'external-event'; event: ExternalEvent }
   | { kind: 'panel-complete'; panelId: string }

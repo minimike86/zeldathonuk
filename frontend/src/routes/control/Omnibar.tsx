@@ -13,8 +13,11 @@ import {
   type CharitySlide,
   type CharitySlideKind,
   type ExternalEvent,
+  type GameItemAsset,
+  type GameObjective,
   type Incentive,
   type Milestone,
+  type ObjectiveStatus,
   type OmnibarLane,
   type OmnibarOverride,
   type PlaythroughEvent,
@@ -2430,9 +2433,438 @@ function ObjectiveSection() {
               </small>
             )}
           </div>
+
+          <hr className="my-4" style={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+          <ObjectivesManager entry={entry} />
         </>
       )}
     </section>
+  );
+}
+
+const OBJECTIVE_CATEGORIES = [
+  ['story', 'Story'],
+  ['side-quest', 'Side quest'],
+  ['100%', '100%'],
+  ['boss', 'Boss'],
+  ['other', 'Other'],
+] as const;
+
+/** Per-game objective library + per-run status grid. Mirrors the items
+ *  checklist (`/control/items`): tiles are coloured when obtained, greyed when
+ *  outstanding, dimmed/struck when skipped. Clicking a tile toggles
+ *  obtained↔outstanding (the common action); a ⏭ hover-action toggles skipped;
+ *  ✎/✕ edit + delete the library definition. Typed objectives are saved to the
+ *  game's library for reuse. */
+function ObjectivesManager({ entry }: { entry: ScheduleEntry }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<GameObjective | null>(null);
+
+  const game = entry.game;
+  if (!game) {
+    return (
+      <p className="text-white-50 mb-0">
+        This schedule entry has no game attached, so it has no objective library.
+      </p>
+    );
+  }
+
+  const objectives = game.objectives
+    .slice()
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  const obtainedIds = new Set(entry.obtained_objective_ids);
+  const skippedIds = new Set(entry.skipped_objective_ids);
+  const nextOrder = objectives.reduce((max, o) => Math.max(max, o.order), -1) + 1;
+  const obtainedCount = objectives.filter((o) => obtainedIds.has(o.id)).length;
+  const activeCount = objectives.filter((o) => !skippedIds.has(o.id)).length;
+
+  const statusOf = (id: number): ObjectiveStatus =>
+    obtainedIds.has(id) ? 'obtained' : skippedIds.has(id) ? 'skipped' : 'outstanding';
+
+  const setStatus = async (objectiveId: number, status: ObjectiveStatus) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.setObjectiveStatus(entry.id, objectiveId, status);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (o: GameObjective) => {
+    if (!confirm(`Delete "${o.name}" from ${game.title}? This also clears it from any run.`)) {
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.deleteObjective(o.id);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Clone an objective server-side (all fields, unique "(copy)" name) and open
+  // the edit form on the copy so the operator can tweak it.
+  const duplicate = async (o: GameObjective) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const copy = await obsApi.duplicateObjective(o.id);
+      setAdding(false);
+      setEditing(copy);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div>
+      <header className="d-flex justify-content-between align-items-baseline">
+        <h3 className="m-0 fs-6">
+          Objectives — {game.title}{' '}
+          <span className="text-white-50">
+            ({obtainedCount} / {activeCount} obtained)
+          </span>
+        </h3>
+        {!adding && !editing && (
+          <button className="btn btn-bloodmoon btn-sm" onClick={() => setAdding(true)}>
+            + Add objective
+          </button>
+        )}
+      </header>
+      <p className="text-white-50 small mt-1 mb-2">
+        Shown on the omnibar's <code>objective-checklist</code> panel. Click a tile to
+        mark it obtained (fires a pickup celebration); use ⏭ to skip one that isn't
+        needed this run.
+      </p>
+
+      {(adding || editing) && (
+        <ObjectiveForm
+          gameId={game.id}
+          nextOrder={nextOrder}
+          initial={editing}
+          onCancel={() => {
+            setAdding(false);
+            setEditing(null);
+          }}
+          onDone={() => {
+            setAdding(false);
+            setEditing(null);
+          }}
+        />
+      )}
+
+      {err && <p className="text-danger small mt-2">{err}</p>}
+
+      {objectives.length === 0 ? (
+        <p className="text-white-50 small mt-2">
+          No objectives defined for this game yet — add one above.
+        </p>
+      ) : (
+        <div className="obj-grid">
+          {objectives.map((o) => {
+            const status = statusOf(o.id);
+            return (
+              <div key={o.id} className="obj-cell">
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    setStatus(o.id, status === 'obtained' ? 'outstanding' : 'obtained')
+                  }
+                  className="obj-tile"
+                  data-status={status}
+                  title={`${o.name} — click to ${status === 'obtained' ? 'clear' : 'mark obtained'}`}
+                >
+                  {o.image_url ? (
+                    <img src={o.image_url} alt={o.name} />
+                  ) : (
+                    <div className="obj-placeholder">{o.name.slice(0, 3)}</div>
+                  )}
+                  <div className="obj-name">{o.name}</div>
+                </button>
+                <div className="obj-actions">
+                  <button
+                    type="button"
+                    className="obj-action"
+                    title={status === 'skipped' ? 'Un-skip' : 'Skip this run'}
+                    disabled={busy}
+                    onClick={() =>
+                      setStatus(o.id, status === 'skipped' ? 'outstanding' : 'skipped')
+                    }
+                  >
+                    ⏭
+                  </button>
+                  <button
+                    type="button"
+                    className="obj-action"
+                    title="Edit objective"
+                    onClick={() => {
+                      setAdding(false);
+                      setEditing(o);
+                    }}
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
+                    className="obj-action"
+                    title="Duplicate objective"
+                    disabled={busy}
+                    onClick={() => duplicate(o)}
+                  >
+                    ⧉
+                  </button>
+                  <button
+                    type="button"
+                    className="obj-action"
+                    title="Delete objective"
+                    disabled={busy}
+                    onClick={() => remove(o)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <style>{`
+        .obj-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+        }
+        .obj-cell { position: relative; }
+        .obj-tile {
+          width: 100%;
+          background: rgba(0,0,0,0.3);
+          border: 2px solid rgba(255,255,255,0.1);
+          border-radius: 6px;
+          padding: 0.5rem;
+          color: #fff;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .obj-tile:hover { border-color: rgba(255,255,255,0.4); }
+        .obj-tile[data-status="obtained"] {
+          background: linear-gradient(45deg, rgba(20, 80, 30, 0.5), rgba(40, 120, 50, 0.5));
+          border-color: #7fff7f;
+          box-shadow: 0 0 12px rgba(127,255,127,0.3);
+        }
+        .obj-tile[data-status="outstanding"] {
+          opacity: 0.45;
+          filter: grayscale(80%);
+        }
+        .obj-tile[data-status="skipped"] {
+          opacity: 0.3;
+          border-style: dashed;
+        }
+        .obj-tile[data-status="skipped"] .obj-name {
+          text-decoration: line-through;
+        }
+        .obj-tile img, .obj-placeholder {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: contain;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Bungee', sans-serif;
+          background: rgba(255,255,255,0.05);
+          border-radius: 4px;
+        }
+        .obj-name { font-size: 0.75rem; text-align: center; margin-top: 0.25rem; line-height: 1.1; }
+        .obj-actions {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          display: flex;
+          gap: 2px;
+          opacity: 0;
+          transition: opacity 0.15s;
+        }
+        .obj-cell:hover .obj-actions { opacity: 1; }
+        .obj-action {
+          width: 22px;
+          height: 22px;
+          line-height: 1;
+          padding: 0;
+          border: none;
+          border-radius: 4px;
+          background: rgba(0,0,0,0.65);
+          color: #fff;
+          cursor: pointer;
+          font-size: 0.8rem;
+        }
+        .obj-action:hover { background: rgba(180,30,30,0.9); }
+        .obj-asset-picker {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+          gap: 0.35rem;
+          max-height: 220px;
+          overflow-y: auto;
+          padding: 0.4rem;
+          background: rgba(0,0,0,0.25);
+          border-radius: 6px;
+          margin-top: 0.25rem;
+        }
+        .obj-asset-swatch {
+          background: rgba(255,255,255,0.05);
+          border: 2px solid transparent;
+          border-radius: 4px;
+          padding: 2px;
+          cursor: pointer;
+        }
+        .obj-asset-swatch[data-selected="true"] { border-color: #7fff7f; }
+        .obj-asset-swatch img { width: 100%; aspect-ratio: 1; object-fit: contain; }
+      `}</style>
+    </div>
+  );
+}
+
+function ObjectiveForm({
+  gameId,
+  nextOrder,
+  initial,
+  onCancel,
+  onDone,
+}: {
+  gameId: number;
+  nextOrder: number;
+  initial: GameObjective | null;
+  onCancel: () => void;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [imageUrl, setImageUrl] = useState(initial?.image_url ?? '');
+  const [category, setCategory] = useState(initial?.category || 'story');
+  const [assets, setAssets] = useState<GameItemAsset[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    obsApi
+      .objectiveAssets(gameId)
+      .then((res) => {
+        if (!cancelled) setAssets(res.images);
+      })
+      .catch(() => {
+        /* picker is optional — the free-text URL field still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      if (initial) {
+        await obsApi.updateObjective(initial.id, {
+          name: name.trim(),
+          image_url: imageUrl.trim(),
+          category,
+        });
+      } else {
+        await obsApi.createObjective({
+          game: gameId,
+          name: name.trim(),
+          image_url: imageUrl.trim(),
+          category,
+          order: nextOrder,
+        });
+      }
+      onDone();
+    } catch (e2) {
+      setErr((e2 as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="mt-2 p-3" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8 }}>
+      <div className="d-flex gap-2 flex-wrap align-items-end">
+        <div style={{ minWidth: 200, flex: 1 }}>
+          <label className="d-block small text-white-50">Objective</label>
+          <input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Collect all heart pieces"
+            className="form-control form-control-sm"
+          />
+        </div>
+        <div style={{ minWidth: 260, flex: 1 }}>
+          <label className="d-block small text-white-50">Image URL (optional)</label>
+          <input
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="/assets/img/game-franchise/legend-of-zelda/…"
+            className="form-control form-control-sm"
+          />
+        </div>
+        <div>
+          <label className="d-block small text-white-50">Category</label>
+          <select
+            className="form-select form-select-sm"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {OBJECTIVE_CATEGORIES.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button type="submit" className="btn btn-bloodmoon btn-sm" disabled={busy}>
+          {initial ? 'Save' : 'Add objective'}
+        </button>
+        <button type="button" className="btn btn-outline-light btn-sm" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+
+      {err && <p className="text-danger small mt-2 mb-0">{err}</p>}
+
+      {assets.length > 0 && (
+        <div className="mt-2">
+          <label className="d-block small text-white-50">
+            Pick a bundled sprite ({assets.length} available)
+          </label>
+          <div className="obj-asset-picker">
+            {assets.map((a) => (
+              <button
+                type="button"
+                key={a.url}
+                className="obj-asset-swatch"
+                data-selected={a.url === imageUrl}
+                title={a.filename}
+                onClick={() => setImageUrl(a.url)}
+              >
+                <img src={a.url} alt={a.filename} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </form>
   );
 }
 

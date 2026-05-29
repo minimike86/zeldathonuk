@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.utils.html import format_html
 
-from . import audio, igdb, models, ocremix
+from . import audio, igdb, models, ocremix, zeldawiki
 
 
 @admin.register(models.Game)
@@ -19,7 +19,8 @@ class GameAdmin(admin.ModelAdmin):
     fields = ['title', 'platform', 'layout_type', 'default_play_minutes',
               'release_year', 'igdb_id', 'twitch_game_id', 'hltb_id',
               'box_art_url', 'box_art_preview']
-    actions = ['refresh_igdb_metadata', 'refresh_play_times', 'scrape_ocremix_remixes']
+    actions = ['refresh_igdb_metadata', 'refresh_play_times', 'scrape_ocremix_remixes',
+               'import_zelda_wiki_items']
 
     @admin.display(description='Cover')
     def box_art_thumb(self, obj):
@@ -159,6 +160,35 @@ class GameAdmin(admin.ModelAdmin):
             level=messages.SUCCESS,
         )
 
+    @admin.action(description='Import items from Zelda wiki for selected games')
+    def import_zelda_wiki_items(self, request, queryset):
+        """For each selected Game, pull its item checklist (names + sprite art)
+        from the Zelda wiki and upsert GameItem rows. Idempotent. Stores the
+        remote thumbnail URL (run the management command with --download to
+        pull sprites into the assets folder instead)."""
+        session = zeldawiki.make_session()
+        total_added = total_updated = 0
+        matched = 0
+        for game in queryset:
+            result = zeldawiki.import_for_game(session, game)
+            if result.added or result.updated:
+                matched += 1
+            total_added += result.added
+            total_updated += result.updated
+        if matched == 0:
+            self.message_user(
+                request,
+                'The Zelda wiki returned no matching item category for any selected game.',
+                level=messages.WARNING,
+            )
+            return
+        self.message_user(
+            request,
+            f'Imported items for {matched}/{queryset.count()} games — '
+            f'added {total_added}, updated {total_updated}.',
+            level=messages.SUCCESS,
+        )
+
 
 @admin.register(models.Runner)
 class RunnerAdmin(admin.ModelAdmin):
@@ -200,6 +230,19 @@ class GameItemAdmin(admin.ModelAdmin):
 class CollectedItemAdmin(admin.ModelAdmin):
     list_display = ['schedule_entry', 'item', 'collected_at']
     list_filter = ['schedule_entry__event']
+
+
+@admin.register(models.GameObjective)
+class GameObjectiveAdmin(admin.ModelAdmin):
+    list_display = ['game', 'name', 'category', 'order']
+    list_filter = ['game', 'category']
+    search_fields = ['name', 'game__title']
+
+
+@admin.register(models.ScheduleEntryObjective)
+class ScheduleEntryObjectiveAdmin(admin.ModelAdmin):
+    list_display = ['schedule_entry', 'objective', 'status', 'obtained_at']
+    list_filter = ['status', 'schedule_entry__event']
 
 
 @admin.register(models.DonationPlatformProfile)

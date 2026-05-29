@@ -1,6 +1,6 @@
 import { WaveText } from '@/components/WaveText';
 import { PanelRow } from './_shared/Row';
-import type { Incentive, Milestone } from '@/lib/obsApi';
+import type { GameObjective, Incentive, Milestone } from '@/lib/obsApi';
 
 /**
  * Full-bar takeover banner shown for the duration of a `celebrating`
@@ -42,6 +42,13 @@ export function CelebrationBanner({
   const view = parseReason(reason, currencySymbol);
   return (
     <PanelRow tag={view.tag} arrow flash>
+      {/* Optional sprite (e.g. the obtained objective's icon) sits before
+        * the text so viewers see WHAT was achieved at a glance. */}
+      {view.image && (
+        <span className="ob-item-icon" aria-hidden>
+          <img src={view.image} alt="" />
+        </span>
+      )}
       {/* Stacked headline + subhead so a long description doesn't run
         * off the right edge sitting beside the wave-text headline.
         * `.ob-celebrate-stack` is a flex-column inside the row body
@@ -67,6 +74,8 @@ interface BannerView {
   tag: string;
   headline: string;
   subhead: string;
+  /** Optional sprite shown left of the text (e.g. the obtained objective). */
+  image?: string;
 }
 
 function parseReason(reason: CelebrationReason, symbol: string): BannerView {
@@ -111,6 +120,17 @@ function parseReason(reason: CelebrationReason, symbol: string): BannerView {
         tag: 'MILESTONE!',
         headline: m.name || `${symbol}${m.threshold_amount} milestone`,
         subhead: m.celebration_message || `${symbol}${m.threshold_amount} raised`,
+      };
+    }
+  }
+  if (reason.kind === 'objective-obtained') {
+    const o = payload.objective as GameObjective | undefined;
+    if (o) {
+      return {
+        tag: 'OBJECTIVE COMPLETE!',
+        headline: o.name,
+        subhead: o.category ? prettyKind(o.category) : '',
+        image: o.image_url || undefined,
       };
     }
   }

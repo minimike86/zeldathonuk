@@ -39,6 +39,7 @@ import './panels/CurrentGamePanel';
 import './panels/PlaytimePanel';
 import './panels/PreStreamPanel';
 import './panels/ObjectivePanel';
+import './panels/ObjectiveChecklistPanel';
 import './panels/SetpiecePanel';
 import './panels/TotalRaisedPanel';
 import './panels/SchedulePanel';
@@ -326,6 +327,12 @@ function OmnibarInner() {
       holdMs: 0,
     });
   });
+  useBusSubscription('objective-obtained', (e) => {
+    enqueueCelebration({
+      reason: { kind: 'objective-obtained', payload: { objective: e.objective } },
+      holdMs: 0,
+    });
+  });
 
   // Override stream → urgent mode (or celebration, for the special
   // `schedule-entry-sound` kind). The highest-priority active override
@@ -455,6 +462,42 @@ function OmnibarInner() {
     feed.milestonesLoaded,
     emit,
   ]);
+
+  // Watch the currently-playing entry's obtained objectives and fire the
+  // pickup celebration when one newly flips obtained. Objectives are
+  // per-entry (unlike event-global incentives/milestones), so we reseed the
+  // tracking set whenever the currently-playing entry changes — that way
+  // switching games doesn't re-celebrate objectives obtained in a prior run,
+  // and a fresh mount on an in-progress run doesn't replay history. Un-
+  // obtaining (operator cleared it) drops the id so it can celebrate again.
+  const obtainedObjectiveIdsRef = useRef<Set<number>>(new Set());
+  const objectivesEntryIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    const entry = feed.currentlyPlaying?.schedule_entry_detail ?? null;
+    if (!entry) {
+      objectivesEntryIdRef.current = null;
+      obtainedObjectiveIdsRef.current = new Set();
+      return;
+    }
+    const obtained = new Set(entry.obtained_objective_ids ?? []);
+    if (objectivesEntryIdRef.current !== entry.id) {
+      // New (or first) entry — seed without emitting.
+      objectivesEntryIdRef.current = entry.id;
+      obtainedObjectiveIdsRef.current = obtained;
+      return;
+    }
+    const library = entry.game?.objectives ?? [];
+    for (const id of obtained) {
+      if (!obtainedObjectiveIdsRef.current.has(id)) {
+        obtainedObjectiveIdsRef.current.add(id);
+        const objective = library.find((o) => o.id === id);
+        if (objective) emit({ kind: 'objective-obtained', objective });
+      }
+    }
+    for (const id of [...obtainedObjectiveIdsRef.current]) {
+      if (!obtained.has(id)) obtainedObjectiveIdsRef.current.delete(id);
+    }
+  }, [feed.currentlyPlaying, emit]);
 
   const isUrgent = omnibarState.kind === 'urgent';
   const isCelebrating = omnibarState.kind === 'celebrating';

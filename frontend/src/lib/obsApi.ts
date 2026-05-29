@@ -7,6 +7,8 @@ import { api } from '@/lib/api';
 import { notifyCharitySlidesChanged } from '@/lib/charityBus';
 import { notifyEventChanged } from '@/lib/eventBus';
 import { notifyRafflesChanged } from '@/lib/raffleBus';
+import { notifyItemsChanged } from '@/lib/itemsBus';
+import { notifyObjectivesChanged } from '@/lib/objectiveBus';
 import { notifyThemeChanged } from '@/lib/themeBus';
 
 /** Pass-through `.then()` callback that fires a theme-changed broadcast
@@ -44,6 +46,22 @@ function withRaffleBroadcast<T>(value: T): T {
   return value;
 }
 
+/** As above, for GameItem definition mutations on /control/items — bumps
+ *  the omnibar's currently-playing poll so a newly-added item lands on the
+ *  ITEMS card in roughly one render frame. */
+function withItemsBroadcast<T>(value: T): T {
+  notifyItemsChanged();
+  return value;
+}
+
+/** As above, for GameObjective definition + per-run status mutations on
+ *  /control/omnibar#objective — bumps the omnibar's currently-playing poll so
+ *  the objective checklist + pickup celebration react in ~one render frame. */
+function withObjectivesBroadcast<T>(value: T): T {
+  notifyObjectivesChanged();
+  return value;
+}
+
 export type LayoutKey = '16x9' | '4x3' | '3ds' | 'ds-top' | 'ds-both' | 'fsa-split';
 
 export interface Game {
@@ -60,6 +78,7 @@ export interface Game {
    *  this game is the active playthrough; empty falls back to event. */
   omnibar_layout: Record<string, unknown>;
   items: GameItem[];
+  objectives: GameObjective[];
 }
 
 export interface GameItem {
@@ -68,7 +87,41 @@ export interface GameItem {
   name: string;
   image_url: string;
   category: string;
+  /** Optional section label used to cluster items on the control grid
+   *  (e.g. "Equipment", "Dungeon Items"). Falls back to category when blank. */
+  group: string;
+  /** Optional family name tying related items together within a section
+   *  (e.g. "Sword", "Masks", "Adult Trade"). Members render in one cluster. */
+  link_group: string;
+  /** How link_group members relate. Ordered kinds sequence by `order`. */
+  link_kind: '' | 'upgrade' | 'trade' | 'set';
+  /** When true, tracked as an up/down tally (keys, maps...) rather than a
+   *  single collected toggle. */
+  countable: boolean;
   order: number;
+}
+
+/** One entry in a game's objective library (separate from collectible
+ *  GameItems). Marked obtained/skipped per playthrough — see
+ *  `ScheduleEntry.obtained_objective_ids` / `skipped_objective_ids`. */
+export interface GameObjective {
+  id: number;
+  game: number;
+  name: string;
+  image_url: string;
+  category: string;
+  order: number;
+}
+
+/** Per-run status of a game objective. Absence from both id-lists on the
+ *  ScheduleEntry = outstanding (the default). */
+export type ObjectiveStatus = 'outstanding' | 'obtained' | 'skipped';
+
+/** One bundled item sprite available for a game, surfaced by the
+ *  /api/games/{id}/item_assets/ picker endpoint. */
+export interface GameItemAsset {
+  filename: string;
+  url: string;
 }
 
 export interface Runner {
@@ -184,6 +237,13 @@ export interface ScheduleEntry {
   notes: string;
   timer: TimerRun | null;
   collected_item_ids: number[];
+  /** {game_item_id: quantity} for collected items — the tally for countable
+   *  items (keys, maps...). Keyed by stringified id (JSON object keys). */
+  collected_item_counts: Record<string, number>;
+  /** GameObjective ids marked obtained / skipped this run. Anything in the
+   *  game's objective library but in neither list is outstanding. */
+  obtained_objective_ids: number[];
+  skipped_objective_ids: number[];
   /** Read-only nested. The omnibar feed doesn't act on these (the
    *  backend SSE evaluator fires triggers server-side); the control
    *  panel reads them to render the per-entry editor. */
@@ -904,6 +964,84 @@ export const obsApi = {
       `/api/schedule/${entryId}/toggle_collected/`,
       { method: 'POST', body: { item_id: itemId } },
     ),
+  adjustCollected: (entryId: number, itemId: number, delta: number) =>
+    api<{ collected: boolean; quantity: number }>(
+      `/api/schedule/${entryId}/adjust_collected/`,
+      { method: 'POST', body: { item_id: itemId, delta } },
+    ),
+
+  // Item definitions (the per-game checklist). Mutations broadcast via
+  // itemsBus so the omnibar's ITEMS card refreshes without a manual reload.
+  itemAssets: (gameId: number) =>
+    api<{ slug: string; images: GameItemAsset[] }>(`/api/games/${gameId}/item_assets/`),
+  createGameItem: (body: {
+    game: number;
+    name: string;
+    image_url?: string;
+    category?: string;
+    group?: string;
+    link_group?: string;
+    link_kind?: GameItem['link_kind'];
+    countable?: boolean;
+    order?: number;
+  }) =>
+    api<GameItem>('/api/game-items/', { method: 'POST', body }).then(withItemsBroadcast),
+  updateGameItem: (
+    id: number,
+    patch: Partial<
+      Pick<
+        GameItem,
+        'name' | 'image_url' | 'category' | 'group' | 'link_group' | 'link_kind' | 'countable' | 'order'
+      >
+    >,
+  ) =>
+    api<GameItem>(`/api/game-items/${id}/`, { method: 'PATCH', body: patch }).then(
+      withItemsBroadcast,
+    ),
+  deleteGameItem: (id: number) =>
+    api<void>(`/api/game-items/${id}/`, { method: 'DELETE' }).then(withItemsBroadcast),
+  duplicateGameItem: (id: number) =>
+    api<GameItem>(`/api/game-items/${id}/duplicate/`, { method: 'POST' }).then(
+      withItemsBroadcast,
+    ),
+
+  // Objectives: per-game library (definitions) + per-run status. Mutations
+  // broadcast via objectiveBus so the omnibar's objective checklist + pickup
+  // celebration react without waiting on the poll.
+  objectiveAssets: (gameId: number) =>
+    api<{ slug: string; images: GameItemAsset[] }>(
+      `/api/games/${gameId}/objective_assets/`,
+    ),
+  createObjective: (body: {
+    game: number;
+    name: string;
+    image_url?: string;
+    category?: string;
+    order?: number;
+  }) =>
+    api<GameObjective>('/api/game-objectives/', { method: 'POST', body }).then(
+      withObjectivesBroadcast,
+    ),
+  updateObjective: (
+    id: number,
+    patch: Partial<Pick<GameObjective, 'name' | 'image_url' | 'category' | 'order'>>,
+  ) =>
+    api<GameObjective>(`/api/game-objectives/${id}/`, { method: 'PATCH', body: patch }).then(
+      withObjectivesBroadcast,
+    ),
+  deleteObjective: (id: number) =>
+    api<void>(`/api/game-objectives/${id}/`, { method: 'DELETE' }).then(
+      withObjectivesBroadcast,
+    ),
+  duplicateObjective: (id: number) =>
+    api<GameObjective>(`/api/game-objectives/${id}/duplicate/`, { method: 'POST' }).then(
+      withObjectivesBroadcast,
+    ),
+  setObjectiveStatus: (entryId: number, objectiveId: number, status: ObjectiveStatus) =>
+    api<{ objective_id: number; status: ObjectiveStatus }>(
+      `/api/schedule/${entryId}/set_objective_status/`,
+      { method: 'POST', body: { objective_id: objectiveId, status } },
+    ).then(withObjectivesBroadcast),
   updateScheduleEntry: (
     entryId: number,
     patch: Partial<Pick<ScheduleEntry, 'current_objective' | 'was_skipped' | 'notes' | 'is_completed'>>,

@@ -53,6 +53,13 @@ class Game(models.Model):
         help_text='Twitch Helix game id — used to PATCH the channel category when this game starts.',
     )
     release_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    asset_slug = models.SlugField(
+        max_length=40,
+        blank=True,
+        help_text="Short asset-folder key under "
+                  "/assets/img/game-franchise/legend-of-zelda/<slug>/ (e.g. 'lttp'). "
+                  "Used to resolve the per-game item sprite folder.",
+    )
     omnibar_layout = models.JSONField(
         default=dict,
         blank=True,
@@ -347,6 +354,12 @@ class TimerRun(models.Model):
         return total
 
 
+class ItemLinkKind(models.TextChoices):
+    UPGRADE = 'upgrade', 'Upgrade chain'   # ordered: Master Sword → Lv2 → Lv3
+    TRADE = 'trade', 'Trade sequence'      # ordered: you swap one item for the next
+    SET = 'set', 'Related set'             # unordered family, e.g. the masks
+
+
 class GameItem(models.Model):
     """A collectible / progress milestone in a specific game (sword, song, heart piece...)."""
 
@@ -361,6 +374,34 @@ class GameItem(models.Model):
         max_length=40,
         blank=True,
         help_text='e.g. "weapon", "song", "heart-piece", "key-item"',
+    )
+    group = models.CharField(
+        max_length=60,
+        blank=True,
+        help_text='Optional section label used to cluster items on the control '
+                  'grid (e.g. "Equipment", "Dungeon Items", "Songs"). Imported '
+                  'from the wiki gallery caption; falls back to category when blank.',
+    )
+    link_group = models.CharField(
+        max_length=60,
+        blank=True,
+        help_text='Optional family name tying related items together within a '
+                  'section (e.g. "Sword", "Masks", "Adult Trade"). Items sharing '
+                  'a link_group render in one cluster.',
+    )
+    link_kind = models.CharField(
+        max_length=10,
+        blank=True,
+        choices=ItemLinkKind.choices,
+        help_text='How the link_group members relate: an ordered upgrade chain, '
+                  'an ordered trade sequence, or an unordered related set. Ordered '
+                  'kinds sequence by `order`.',
+    )
+    countable = models.BooleanField(
+        default=False,
+        help_text='If set, this item is tracked as a tally that can go up/down '
+                  '(e.g. Small Key, Map, Compass collected once per dungeon) '
+                  'instead of a single collected/not-collected toggle.',
     )
     order = models.PositiveIntegerField(default=0)
 
@@ -380,6 +421,12 @@ class CollectedItem(models.Model):
     )
     item = models.ForeignKey(GameItem, on_delete=models.CASCADE, related_name='collected_in')
     collected_at = models.DateTimeField(default=timezone.now)
+    quantity = models.PositiveIntegerField(
+        default=1,
+        help_text='How many collected. Always 1 for normal toggle items; '
+                  'for countable items (keys, maps...) this is the tally. '
+                  'A row is deleted when the tally drops to 0.',
+    )
 
     class Meta:
         ordering = ['-collected_at']
@@ -387,6 +434,70 @@ class CollectedItem(models.Model):
 
     def __str__(self) -> str:
         return f'{self.schedule_entry} → {self.item.name}'
+
+
+class GameObjective(models.Model):
+    """A run objective in a specific game (e.g. "Collect all heart pieces",
+    "Beat the game"). Per-game library curated by operators; marked
+    obtained / skipped per ScheduleEntry via ScheduleEntryObjective.
+
+    Distinct from GameItem/CollectedItem (collectibles) — objectives are
+    goal-oriented, surface in their own omnibar checklist, and fire a pickup
+    celebration when obtained."""
+
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='objectives')
+    name = models.CharField(max_length=160)
+    image_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Absolute URL or site-relative path to an objective sprite '
+                  '(e.g. /assets/img/game-franchise/legend-of-zelda/oot/items/Triforce.png).',
+    )
+    category = models.CharField(
+        max_length=40,
+        blank=True,
+        help_text='e.g. "story", "side-quest", "100%", "boss".',
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['game', 'order', 'name']
+        unique_together = [('game', 'name')]
+
+    def __str__(self) -> str:
+        return f'{self.game.title} — {self.name}'
+
+
+class ObjectiveStatus(models.TextChoices):
+    """Per-playthrough state of a GameObjective. Absence of a
+    ScheduleEntryObjective row means OUTSTANDING (the default)."""
+
+    OBTAINED = 'obtained', 'Obtained'
+    SKIPPED = 'skipped', 'Skipped (not needed this run)'
+
+
+class ScheduleEntryObjective(models.Model):
+    """Records the per-run status of a GameObjective during a ScheduleEntry.
+
+    No row = outstanding (mirrors CollectedItem's absence-is-default idea).
+    A row marks the objective either OBTAINED (fires the omnibar pickup
+    celebration) or SKIPPED (dropped from the live checklist count)."""
+
+    schedule_entry = models.ForeignKey(
+        ScheduleEntry, on_delete=models.CASCADE, related_name='objective_statuses'
+    )
+    objective = models.ForeignKey(
+        GameObjective, on_delete=models.CASCADE, related_name='entry_statuses'
+    )
+    status = models.CharField(max_length=12, choices=ObjectiveStatus.choices)
+    obtained_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-obtained_at']
+        unique_together = [('schedule_entry', 'objective')]
+
+    def __str__(self) -> str:
+        return f'{self.schedule_entry} → {self.objective.name} ({self.status})'
 
 
 class DonationPlatform(models.TextChoices):

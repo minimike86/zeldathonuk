@@ -13,6 +13,7 @@ import {
   type ThemeSettings,
 } from '@/lib/obsApi';
 import { onEventChanged } from '@/lib/eventBus';
+import { onItemsChanged } from '@/lib/itemsBus';
 import { onThemeChanged } from '@/lib/themeBus';
 import { derivePlaythroughPhase } from '../fsm/playthroughMachine';
 import type { PlaythroughPhase } from '../bus/types';
@@ -81,8 +82,13 @@ export function useOmnibarFeed(now: Date): OmnibarFeed {
   // wordmark logo + currency symbol land in roughly one render frame.
   const [themeBump, dispatchThemeBump] = useReducer((n: number) => n + 1, 0);
   useEffect(() => onThemeChanged(dispatchThemeBump), []);
+  // Same pattern for item definitions: /control/items broadcasts via
+  // itemsBus when an item is added/edited/removed, bumping the
+  // currently-playing poll so the ITEMS card reflects the new checklist.
+  const [itemsBump, dispatchItemsBump] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => onItemsChanged(dispatchItemsBump), []);
   const { data: event } = usePolledQuery(obsApi.activeEvent, POLL_EVENT_MS, [eventBump]);
-  const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, POLL_CURRENT_MS);
+  const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, POLL_CURRENT_MS, [itemsBump]);
   const { data: schedule } = usePolledQuery(
     () => (event ? obsApi.schedule(event.id) : Promise.resolve([])),
     POLL_SCHEDULE_MS,

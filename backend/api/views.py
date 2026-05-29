@@ -3,10 +3,11 @@ import random
 import secrets
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.db.models import Count, Sum
+from django.db.models import Count, Max, Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, parser_classes
@@ -26,6 +27,9 @@ ALLOWED_IMAGE_TYPES = {
     'image/svg+xml': 'svg',
 }
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+# Image extensions surfaced by the GameItem asset picker.
+IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'}
 
 # How long the auto-generated "raffle entries closed" omnibar banner stays up.
 RAFFLE_CLOSE_BANNER_SECONDS = 20
@@ -79,8 +83,115 @@ def upload_image(request: Request) -> Response:
 
 
 class GameViewSet(viewsets.ModelViewSet):
-    queryset = models.Game.objects.all().prefetch_related('items')
+    queryset = models.Game.objects.all().prefetch_related('items', 'objectives')
     serializer_class = serializers.GameSerializer
+
+    @action(detail=True, methods=['get'])
+    def item_assets(self, request: Request, pk=None) -> Response:
+        """List the item sprite files bundled for this game's asset folder.
+
+        Powers the image picker on /control/items so operators can attach a
+        bundled sprite to a new GameItem without typing a URL by hand. Reads
+        the frontend's static assets directory directly; returns site-relative
+        URLs in the same shape the seed command stores.
+        """
+        return Response(_bundled_item_images(self.get_object()))
+
+    @action(detail=True, methods=['get'])
+    def objective_assets(self, request: Request, pk=None) -> Response:
+        """Same bundled-sprite picker as `item_assets`, surfaced for the
+        objectives library on /control/omnibar#objective. Objectives reuse the
+        per-game item sprite folder."""
+        return Response(_bundled_item_images(self.get_object()))
+
+
+def _bundled_item_images(game) -> dict:
+    """Return ``{slug, images:[{filename,url}]}`` for a game's bundled item
+    sprite folder, or empty when the game has no asset slug / folder. Shared
+    by the item + objective image pickers."""
+    slug = game.asset_slug
+    if not slug:
+        return {'slug': '', 'images': []}
+    # BASE_DIR is the backend/ dir; the frontend is its sibling.
+    items_dir = (
+        settings.BASE_DIR.parent
+        / 'frontend' / 'public' / 'assets' / 'img'
+        / 'game-franchise' / 'legend-of-zelda' / slug / 'items'
+    )
+    images = []
+    if items_dir.is_dir():
+        base_url = f'/assets/img/game-franchise/legend-of-zelda/{slug}/items'
+        for path in sorted(items_dir.iterdir()):
+            if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES:
+                images.append(
+                    {'filename': path.name, 'url': f'{base_url}/{quote(path.name)}'}
+                )
+    return {'slug': slug, 'images': images}
+
+
+def _copy_name(model, game_id, source_name: str) -> str:
+    """Return a "<name> (copy)" that doesn't collide with the (game, name)
+    unique constraint, bumping to "(copy 2)", "(copy 3)"… as needed."""
+    base = f'{source_name} (copy)'
+    name = base
+    n = 2
+    while model.objects.filter(game_id=game_id, name=name).exists():
+        name = f'{base} {n}'
+        n += 1
+    return name
+
+
+class GameItemViewSet(viewsets.ModelViewSet):
+    queryset = models.GameItem.objects.all()
+    serializer_class = serializers.GameItemSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        game_id = self.request.query_params.get('game')
+        if game_id:
+            qs = qs.filter(game_id=game_id)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request: Request, pk=None) -> Response:
+        """Clone this item (all fields) under a unique "(copy)" name, ordered
+        last, so the operator can tweak the copy on /control/items rather than
+        re-entering everything. Returns the new item."""
+        src = self.get_object()
+        max_order = models.GameItem.objects.filter(game=src.game).aggregate(
+            m=Max('order'),
+        )['m']
+        src.pk = None
+        src.name = _copy_name(models.GameItem, src.game_id, src.name)
+        src.order = (max_order or 0) + 1
+        src.save()
+        return Response(self.get_serializer(src).data, status=status.HTTP_201_CREATED)
+
+
+class GameObjectiveViewSet(viewsets.ModelViewSet):
+    queryset = models.GameObjective.objects.all()
+    serializer_class = serializers.GameObjectiveSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        game_id = self.request.query_params.get('game')
+        if game_id:
+            qs = qs.filter(game_id=game_id)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request: Request, pk=None) -> Response:
+        """Clone this objective (all fields) under a unique "(copy)" name,
+        ordered last, so the operator can tweak the copy. Returns the new row."""
+        src = self.get_object()
+        max_order = models.GameObjective.objects.filter(game=src.game).aggregate(
+            m=Max('order'),
+        )['m']
+        src.pk = None
+        src.name = _copy_name(models.GameObjective, src.game_id, src.name)
+        src.order = (max_order or 0) + 1
+        src.save()
+        return Response(self.get_serializer(src).data, status=status.HTTP_201_CREATED)
 
 
 class RunnerViewSet(viewsets.ModelViewSet):
@@ -167,7 +278,10 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
     queryset = (
         models.ScheduleEntry.objects.all()
         .select_related('event', 'game', 'timer')
-        .prefetch_related('runners', 'game__items', 'collected_items')
+        .prefetch_related(
+            'runners', 'game__items', 'game__objectives',
+            'collected_items', 'objective_statuses',
+        )
     )
     serializer_class = serializers.ScheduleEntrySerializer
 
@@ -260,6 +374,79 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             return Response({'collected': False})
         models.CollectedItem.objects.create(schedule_entry=entry, item_id=item_id)
         return Response({'collected': True})
+
+    @action(detail=True, methods=['post'])
+    def adjust_collected(self, request: Request, pk=None) -> Response:
+        """Increment/decrement a countable item's tally (keys, maps...).
+
+        Body: {item_id, delta} where delta is usually +1 or -1. The row is
+        created on first increment and deleted when the tally hits 0, so
+        collected_item_ids stays in sync (qty is always >= 1 while present).
+        """
+        entry = self.get_object()
+        item_id = request.data.get('item_id')
+        if not item_id:
+            return Response(
+                {'detail': 'item_id required.'}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            delta = int(request.data.get('delta', 1))
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'delta must be an integer.'}, status=status.HTTP_400_BAD_REQUEST
+            )
+        existing = models.CollectedItem.objects.filter(
+            schedule_entry=entry, item_id=item_id
+        ).first()
+        current = existing.quantity if existing else 0
+        new_qty = current + delta
+        if new_qty <= 0:
+            if existing:
+                existing.delete()
+            return Response({'collected': False, 'quantity': 0})
+        if existing:
+            existing.quantity = new_qty
+            existing.save(update_fields=['quantity'])
+        else:
+            models.CollectedItem.objects.create(
+                schedule_entry=entry, item_id=item_id, quantity=new_qty
+            )
+        return Response({'collected': True, 'quantity': new_qty})
+
+    @action(detail=True, methods=['post'])
+    def set_objective_status(self, request: Request, pk=None) -> Response:
+        """Set a GameObjective's per-run status for this entry.
+
+        Body ``{objective_id, status}`` where status is one of
+        ``outstanding`` / ``obtained`` / ``skipped``. ``outstanding`` clears
+        any row (the default state); the others upsert a ScheduleEntryObjective.
+        Marking ``obtained`` stamps ``obtained_at`` so the omnibar can fire its
+        pickup celebration on the false→true transition (it polls the entry).
+        """
+        entry = self.get_object()
+        objective_id = request.data.get('objective_id')
+        new_status = request.data.get('status')
+        if not objective_id:
+            return Response(
+                {'detail': 'objective_id required.'}, status=status.HTTP_400_BAD_REQUEST
+            )
+        valid = {'outstanding', models.ObjectiveStatus.OBTAINED, models.ObjectiveStatus.SKIPPED}
+        if new_status not in valid:
+            return Response(
+                {'detail': f'status must be one of {sorted(valid)}.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if new_status == 'outstanding':
+            models.ScheduleEntryObjective.objects.filter(
+                schedule_entry=entry, objective_id=objective_id
+            ).delete()
+            return Response({'objective_id': int(objective_id), 'status': 'outstanding'})
+        models.ScheduleEntryObjective.objects.update_or_create(
+            schedule_entry=entry,
+            objective_id=objective_id,
+            defaults={'status': new_status, 'obtained_at': timezone.now()},
+        )
+        return Response({'objective_id': int(objective_id), 'status': new_status})
 
     @action(detail=True, methods=['post'])
     def setpiece(self, request: Request, pk=None) -> Response:
