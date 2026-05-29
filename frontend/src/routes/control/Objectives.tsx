@@ -1,4 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  closestCenter,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   obsApi,
   usePolledQuery,
@@ -10,6 +30,53 @@ import {
   type ScheduleEntry,
 } from '@/lib/obsApi';
 import { onObjectivesChanged } from '@/lib/objectiveBus';
+
+/** A drop-zone wrapper so a tile can be dropped into a section even when the
+ *  pointer is over empty space within it. */
+function DroppableContainer({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`drop-container${className ? ` ${className}` : ''}`}
+      data-over={isOver || undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** A draggable wrapper around an objective tile — a grip handle starts the drag
+ *  so clicking the tile itself still toggles status / opens the editor. */
+function SortableTile({ id, children }: { id: string; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className="sortable-tile"
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 20 : undefined,
+      }}
+    >
+      <span className="drag-grip" title="Drag to reorder" {...attributes} {...listeners}>
+        ⠿
+      </span>
+      {children}
+    </div>
+  );
+}
 
 /**
  * Objective library editor. Per-game objectives are the run milestones used as
@@ -23,10 +90,12 @@ import { onObjectivesChanged } from '@/lib/objectiveBus';
  */
 export function ObjectivesControl() {
   // Bumped after any edit (and on cross-tab bus pings) to force an immediate
-  // re-poll, so a change shows instantly instead of waiting up to 5s.
+  // re-poll of the *selected* game, so a change shows instantly.
   const [refreshTick, setRefreshTick] = useState(0);
   const bump = useCallback(() => setRefreshTick((t) => t + 1), []);
-  const { data: games } = usePolledQuery(obsApi.games, 5000, [refreshTick]);
+  // The picker list only needs id/title; it rarely changes and is heavy
+  // (whole catalog), so poll it slowly and NOT on every edit.
+  const { data: games } = usePolledQuery(obsApi.games, 30000);
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 5000, [refreshTick]);
   const liveEntry = cp?.schedule_entry_detail ?? null;
   const liveGameId = liveEntry?.game?.id ?? null;
@@ -45,7 +114,14 @@ export function ObjectivesControl() {
     else if (games && games.length) setSelectedId(games[0].id);
   }, [selectedId, liveGameId, games]);
 
-  const game = games?.find((g) => g.id === selectedId) ?? null;
+  // Only the *selected* game's detail is polled on edit — one game is ~30ms vs
+  // ~250ms+ for the whole catalog, so edits stay snappy regardless of catalog
+  // size.
+  const { data: game } = usePolledQuery(
+    () => (selectedId != null ? obsApi.game(selectedId) : Promise.resolve(null)),
+    15000,
+    [selectedId, refreshTick],
+  );
   // Per-run status marking only applies when the selected game is the live one.
   const entry = game && liveGameId === game.id ? liveEntry : null;
 
@@ -125,21 +201,67 @@ function ObjectiveLibrary({
   const [err, setErr] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<GameObjective | null>(null);
+  // Section label currently being renamed (+ its draft text).
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  // Optimistic overrides so a drag (reorder, or move to another section) shows
+  // instantly; each entry is dropped once the server reports that value.
+  const [orderOverrides, setOrderOverrides] = useState<Record<number, number>>({});
+  const [fieldOverrides, setFieldOverrides] = useState<{
+    group: Record<number, string>;
+    category: Record<number, string>;
+  }>({ group: {}, category: {} });
+  // Live working arrangement during a drag: containerKey -> ordered ids.
+  const [working, setWorking] = useState<Map<string, number[]> | null>(null);
+  const workingRef = useRef<Map<string, number[]> | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  // Clear overrides the server has caught up to (leave pending ones, so an
+  // in-flight poll with the old value can't revert the optimistic move).
+  useEffect(() => {
+    const objs = game.objectives;
+    setOrderOverrides((prev) => {
+      if (!Object.keys(prev).length) return prev;
+      const next = { ...prev };
+      let changed = false;
+      for (const o of objs) if (next[o.id] === o.order) { delete next[o.id]; changed = true; }
+      return changed ? next : prev;
+    });
+    setFieldOverrides((prev) => {
+      if (!Object.keys(prev.group).length && !Object.keys(prev.category).length) return prev;
+      const group = { ...prev.group };
+      const category = { ...prev.category };
+      let changed = false;
+      for (const o of objs) {
+        if (group[o.id] === o.group) { delete group[o.id]; changed = true; }
+        if (category[o.id] === o.category) { delete category[o.id]; changed = true; }
+      }
+      return changed ? { group, category } : prev;
+    });
+  }, [game]);
+
+  const objOrder = (o: GameObjective) => orderOverrides[o.id] ?? o.order;
+  const effGroup = (o: GameObjective) => fieldOverrides.group[o.id] ?? o.group;
+  const effCat = (o: GameObjective) => fieldOverrides.category[o.id] ?? o.category;
 
   const objectives = game.objectives
     .slice()
-    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+    .sort((a, b) => objOrder(a) - objOrder(b) || a.name.localeCompare(b.name));
   const obtainedIds = new Set(entry?.obtained_objective_ids ?? []);
   const skippedIds = new Set(entry?.skipped_objective_ids ?? []);
-  const nextOrder = objectives.reduce((max, o) => Math.max(max, o.order), -1) + 1;
+  const nextOrder = objectives.reduce((max, o) => Math.max(max, objOrder(o)), -1) + 1;
   const obtainedCount = objectives.filter((o) => obtainedIds.has(o.id)).length;
   const activeCount = objectives.filter((o) => !skippedIds.has(o.id)).length;
 
-  // Cluster into run-sections by `group`, falling back to the category label
-  // when blank. Insertion order follows objective order, so sections appear in
-  // the order their first objective does.
-  const groupLabel = (o: GameObjective) => o.group.trim() || categoryLabel(o.category);
-  const sections: { label: string; items: GameObjective[] }[] = [];
+  // Cluster into run-sections by effective `group`, falling back to the
+  // category label when blank. Insertion order follows objective order, so
+  // sections appear in the order their first objective does.
+  const groupLabel = (o: GameObjective) => effGroup(o).trim() || categoryLabel(effCat(o));
+  const sections: { idx: number; label: string; items: GameObjective[] }[] = [];
   const byLabel = new Map<string, GameObjective[]>();
   for (const o of objectives) {
     const key = groupLabel(o);
@@ -147,14 +269,39 @@ function ObjectiveLibrary({
     if (!bucket) {
       bucket = [];
       byLabel.set(key, bucket);
-      sections.push({ label: key, items: bucket });
+      sections.push({ idx: sections.length, label: key, items: bucket });
     }
     bucket.push(o);
   }
   // Distinct existing group names for the form's autocomplete.
   const existingGroups = Array.from(
-    new Set(objectives.map((o) => o.group.trim()).filter(Boolean)),
+    new Set(objectives.map((o) => effGroup(o).trim()).filter(Boolean)),
   );
+
+  // What to set on an objective to make it land in a given section: a real
+  // group section assigns that group; a category-fallback section clears the
+  // group and sets the category.
+  const computeAssign = (
+    label: string,
+    secItems: GameObjective[],
+  ): { group?: string; category?: string } => {
+    const catEntry = OBJECTIVE_CATEGORIES.find(([, lbl]) => lbl === label);
+    const hasGroup = secItems.some((o) => effGroup(o).trim() !== '');
+    if (catEntry && !hasGroup) return { group: '', category: catEntry[0] };
+    return { group: label };
+  };
+
+  const idToObj = new Map<number, GameObjective>(objectives.map((o) => [o.id, o]));
+  const activeObj =
+    activeDragId && activeDragId.startsWith('obj:')
+      ? idToObj.get(Number(activeDragId.slice(4))) ?? null
+      : null;
+
+  // Server-derived container -> ordered ids; `containers` is the working (drag)
+  // copy mid-drag, else this base arrangement.
+  const baseContainers = new Map<string, number[]>();
+  sections.forEach((sec) => baseContainers.set(`cont:${sec.idx}`, sec.items.map((o) => o.id)));
+  const containers = working ?? baseContainers;
 
   const statusOf = (id: number): ObjectiveStatus =>
     obtainedIds.has(id) ? 'obtained' : skippedIds.has(id) ? 'skipped' : 'outstanding';
@@ -204,6 +351,143 @@ function ObjectiveLibrary({
     } finally {
       setBusy(false);
     }
+  };
+
+  // Run persistence calls, surface errors, and refresh once they land.
+  const runOps = async (ops: Promise<unknown>[]) => {
+    if (ops.length === 0) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await Promise.all(ops);
+      onChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Renumber a reordered list to a contiguous run from its min order; optimistic
+  // override first, then persist only the rows that actually changed.
+  const applyObjectiveOrder = (reordered: GameObjective[]) => {
+    if (reordered.length === 0) return;
+    const base = Math.min(...reordered.map((o) => objOrder(o)));
+    const overrides: Record<number, number> = {};
+    const ops: Promise<unknown>[] = [];
+    reordered.forEach((o, p) => {
+      overrides[o.id] = base + p;
+      if (objOrder(o) !== base + p) ops.push(obsApi.updateObjective(o.id, { order: base + p }));
+    });
+    setOrderOverrides((prev) => ({ ...prev, ...overrides }));
+    if (ops.length) void runOps(ops);
+  };
+
+  // Move an objective into another section (optimistic, then persisted).
+  const applyFieldChange = (objId: number, assign: { group?: string; category?: string }) => {
+    const patch: { group?: string; category?: string } = {};
+    if (assign.group !== undefined) patch.group = assign.group;
+    if (assign.category !== undefined) patch.category = assign.category;
+    if (!Object.keys(patch).length) return;
+    setFieldOverrides((prev) => ({
+      group: assign.group !== undefined ? { ...prev.group, [objId]: assign.group } : prev.group,
+      category:
+        assign.category !== undefined
+          ? { ...prev.category, [objId]: assign.category }
+          : prev.category,
+    }));
+    void runOps([obsApi.updateObjective(objId, patch)]);
+  };
+
+  const onDragStart = (e: DragStartEvent) => {
+    setActiveDragId(String(e.active.id));
+    workingRef.current = null;
+    setWorking(null);
+  };
+
+  const onDragCancel = () => {
+    workingRef.current = null;
+    setWorking(null);
+    setActiveDragId(null);
+  };
+
+  // Live reparent while dragging, so the hovered section opens a gap.
+  const onDragOver = (e: DragOverEvent) => {
+    const a = String(e.active.id);
+    if (!e.over || !a.startsWith('obj:')) return;
+    const aid = Number(a.slice(4));
+    const o = String(e.over.id);
+    const prev = workingRef.current ?? baseContainers;
+    const w = new Map<string, number[]>();
+    prev.forEach((v, k) => w.set(k, v.slice()));
+    let aKey: string | null = null;
+    for (const [k, list] of w) if (list.includes(aid)) { aKey = k; break; }
+    if (!aKey) return;
+    let oKey: string | null = null;
+    let overIndex = -1;
+    if (o.startsWith('obj:')) {
+      const oid = Number(o.slice(4));
+      for (const [k, list] of w) {
+        const i = list.indexOf(oid);
+        if (i >= 0) { oKey = k; overIndex = i; break; }
+      }
+    } else if (o.startsWith('cont:')) {
+      oKey = o;
+      overIndex = w.get(o)?.length ?? 0;
+    }
+    if (!oKey) return;
+    const aList = w.get(aKey)!;
+    const from = aList.indexOf(aid);
+    if (aKey === oKey) {
+      const to = overIndex < 0 ? aList.length - 1 : overIndex;
+      if (from !== to) { aList.splice(from, 1); aList.splice(to, 0, aid); }
+    } else {
+      aList.splice(from, 1);
+      const oList = w.get(oKey)!;
+      oList.splice(overIndex < 0 ? oList.length : overIndex, 0, aid);
+    }
+    workingRef.current = w;
+    setWorking(w);
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const a = String(e.active.id);
+    const w = workingRef.current;
+    workingRef.current = null;
+    setWorking(null);
+    setActiveDragId(null);
+    if (!a.startsWith('obj:') || !w) return;
+    const aid = Number(a.slice(4));
+    let finalKey: string | null = null;
+    for (const [k, list] of w) if (list.includes(aid)) { finalKey = k; break; }
+    if (!finalKey) return;
+    const sec = sections[Number(finalKey.slice('cont:'.length))];
+    if (!sec) return;
+    const orderedItems = (w.get(finalKey) ?? [])
+      .map((id) => idToObj.get(id))
+      .filter((x): x is GameObjective => Boolean(x));
+    // Persist the final placement: section (group/category) then order within
+    // the target section.
+    applyFieldChange(aid, computeAssign(sec.label, sec.items));
+    applyObjectiveOrder(orderedItems);
+  };
+
+  // Rename a group section: set the new group name on every objective in it
+  // (optimistic, then persisted). Only offered for real group sections — not
+  // the category-fallback buckets.
+  const renameGroup = (sec: { label: string; items: GameObjective[] }, raw: string) => {
+    const name = raw.trim();
+    setRenaming(null);
+    if (!name || name === sec.label) return;
+    const overrides: Record<number, string> = {};
+    const ops: Promise<unknown>[] = [];
+    for (const o of sec.items) {
+      overrides[o.id] = name;
+      if (effGroup(o) !== name) ops.push(obsApi.updateObjective(o.id, { group: name }));
+    }
+    if (!ops.length) return;
+    setFieldOverrides((prev) => ({ ...prev, group: { ...prev.group, ...overrides } }));
+    void runOps(ops);
   };
 
   const renderTile = (o: GameObjective) => {
@@ -305,22 +589,40 @@ function ObjectiveLibrary({
       </p>
 
       {(adding || editing) && (
-        <ObjectiveForm
-          gameId={game.id}
-          nextOrder={nextOrder}
-          groups={existingGroups}
-          items={game.items}
-          initial={editing}
-          onCancel={() => {
-            setAdding(false);
-            setEditing(null);
-          }}
-          onDone={() => {
-            setAdding(false);
-            setEditing(null);
-            onChanged();
-          }}
-        />
+        <div className="obj-modal-backdrop">
+          <div className="obj-modal" role="dialog" aria-modal="true">
+            <div className="obj-modal-head">
+              <strong>{editing ? `Edit — ${editing.name}` : 'Add objective'}</strong>
+              <button
+                type="button"
+                className="obj-action"
+                title="Close"
+                onClick={() => {
+                  setAdding(false);
+                  setEditing(null);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <ObjectiveForm
+              gameId={game.id}
+              nextOrder={nextOrder}
+              groups={existingGroups}
+              items={game.items}
+              initial={editing}
+              onCancel={() => {
+                setAdding(false);
+                setEditing(null);
+              }}
+              onDone={() => {
+                setAdding(false);
+                setEditing(null);
+                onChanged();
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {err && <p className="text-danger small mt-2">{err}</p>}
@@ -330,18 +632,158 @@ function ObjectiveLibrary({
           No objectives defined for this game yet — add one above.
         </p>
       ) : (
-        sections.map((sec) => (
-          <section key={sec.label} className="obj-section">
-            <h4 className="obj-section-head">
-              {sec.label}
-              <span className="text-white-50"> · {sec.items.length}</span>
-            </h4>
-            <div className="obj-grid">{sec.items.map(renderTile)}</div>
-          </section>
-        ))
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragCancel={onDragCancel}
+          onDragEnd={handleDragEnd}
+        >
+          {sections.map((sec) => {
+            const ids = containers.get(`cont:${sec.idx}`) ?? [];
+            const tiles = ids
+              .map((id) => idToObj.get(id))
+              .filter((x): x is GameObjective => Boolean(x));
+            // A "real" group (renameable) vs a category-fallback bucket.
+            const isGroup = sec.items.some((o) => effGroup(o).trim() !== '');
+            return (
+              <section key={sec.idx} className="obj-section">
+                <h4 className="obj-section-head d-flex align-items-center gap-2">
+                  {renaming === sec.label ? (
+                    <>
+                      <input
+                        className="form-control form-control-sm"
+                        style={{ maxWidth: 220, textTransform: 'none' }}
+                        autoFocus
+                        value={renameDraft}
+                        onChange={(e) => setRenameDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') renameGroup(sec, renameDraft);
+                          else if (e.key === 'Escape') setRenaming(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-bloodmoon py-0"
+                        onClick={() => renameGroup(sec, renameDraft)}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-link text-white-50 py-0"
+                        onClick={() => setRenaming(null)}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span>{sec.label}</span>
+                      <span className="text-white-50"> · {tiles.length}</span>
+                      {isGroup && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-info py-0 px-1"
+                          title="Rename this group"
+                          onClick={() => {
+                            setRenameDraft(sec.label);
+                            setRenaming(sec.label);
+                          }}
+                        >
+                          ✎
+                        </button>
+                      )}
+                    </>
+                  )}
+                </h4>
+                <DroppableContainer id={`cont:${sec.idx}`} className="obj-grid">
+                  <SortableContext
+                    items={ids.map((id) => `obj:${id}`)}
+                    strategy={rectSortingStrategy}
+                  >
+                    {tiles.map((o) => (
+                      <SortableTile key={o.id} id={`obj:${o.id}`}>
+                        {renderTile(o)}
+                      </SortableTile>
+                    ))}
+                  </SortableContext>
+                </DroppableContainer>
+              </section>
+            );
+          })}
+          <DragOverlay dropAnimation={null}>
+            {activeObj ? (
+              <div className="obj-cell drag-overlay" style={{ width: 110 }}>
+                <div className="obj-tile" data-status={statusOf(activeObj.id)}>
+                  {activeObj.image_url ? (
+                    <img src={activeObj.image_url} alt={activeObj.name} />
+                  ) : (
+                    <div className="obj-placeholder">{activeObj.name.slice(0, 3)}</div>
+                  )}
+                  <div className="obj-name">
+                    {activeObj.linked_item ? '🔗 ' : ''}
+                    {activeObj.name}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       <style>{`
+        .obj-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 1050;
+          background: rgba(0,0,0,0.6);
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 5vh 1rem 2rem;
+          overflow-y: auto;
+        }
+        .obj-modal {
+          width: 100%;
+          max-width: min(720px, 94vw);
+          background: #15171c;
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 10px;
+          box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+        }
+        .obj-modal-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.6rem 0.9rem 0.5rem;
+          border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+        .obj-modal form { margin-top: 0 !important; }
+        .sortable-tile { position: relative; }
+        .drag-grip {
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          z-index: 4;
+          cursor: grab;
+          opacity: 0;
+          transition: opacity 0.15s;
+          font-size: 0.8rem;
+          line-height: 1;
+          padding: 1px 3px;
+          background: rgba(0,0,0,0.65);
+          border-radius: 4px;
+          color: #fff;
+        }
+        .drag-grip:active { cursor: grabbing; }
+        .sortable-tile:hover > .drag-grip { opacity: 1; }
+        .drop-container[data-over] {
+          outline: 2px dashed rgba(127,180,255,0.7);
+          outline-offset: 2px;
+          border-radius: 6px;
+        }
         .obj-section { margin-top: 0.75rem; }
         .obj-section-head {
           font-size: 0.8rem;

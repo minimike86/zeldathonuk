@@ -84,7 +84,10 @@ def upload_image(request: Request) -> Response:
 
 class GameViewSet(viewsets.ModelViewSet):
     queryset = models.Game.objects.all().prefetch_related(
-        'items', 'items__sets', 'objectives', 'item_sets',
+        # `items__unlocks_with` is required: GameItemSerializer emits
+        # unlocks_with_ids, so without it each item fires its own M2M query
+        # (a 500-item catalog turned /api/games/ into a ~3.5s N+1).
+        'items', 'items__sets', 'items__unlocks_with', 'objectives', 'item_sets',
     )
     serializer_class = serializers.GameSerializer
 

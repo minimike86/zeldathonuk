@@ -458,7 +458,10 @@ class GameItem(models.Model):
 
     class Meta:
         ordering = ['game', 'order', 'name']
-        unique_together = [('game', 'name')]
+        # Name need only be unique within a (game, group). Dungeon staples
+        # (Map, Compass, Big Key, Small Key) repeat across dungeons, separated
+        # by the group (e.g. "Eastern Palace" vs "Desert Palace").
+        unique_together = [('game', 'name', 'group')]
 
     def __str__(self) -> str:
         return f'{self.game.title} — {self.name}'
@@ -531,7 +534,10 @@ class GameObjective(models.Model):
 
     class Meta:
         ordering = ['game', 'order', 'name']
-        unique_together = [('game', 'name')]
+        # Name need only be unique within a (game, group) — the same objective
+        # name can appear in different run-sections (e.g. "Enter dungeon" in
+        # both "The Dark World" and "Endgame").
+        unique_together = [('game', 'name', 'group')]
 
     def __str__(self) -> str:
         return f'{self.game.title} — {self.name}'
