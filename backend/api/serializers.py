@@ -17,11 +17,33 @@ class RunnerSerializer(serializers.ModelSerializer):
         read_only_fields = ['profile_image_url']
 
 
+class GameItemSetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.GameItemSet
+        fields = ['id', 'game', 'name', 'kind', 'order']
+
+
 class GameItemSerializer(serializers.ModelSerializer):
+    # Writable M2M: the control form posts the set ids an item belongs to.
+    set_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=models.GameItemSet.objects.all(),
+        source='sets',
+        required=False,
+    )
+    # Writable symmetric M2M: items collected together (e.g. Bow + Quiver).
+    unlocks_with_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=models.GameItem.objects.all(),
+        source='unlocks_with',
+        required=False,
+    )
+
     class Meta:
         model = models.GameItem
         fields = ['id', 'game', 'name', 'image_url', 'category', 'group',
-                  'link_group', 'link_kind', 'countable', 'order']
+                  'set_ids', 'unlocks_with_ids', 'countable', 'starts_collected',
+                  'order']
 
 
 class GameObjectiveSerializer(serializers.ModelSerializer):
@@ -33,6 +55,7 @@ class GameObjectiveSerializer(serializers.ModelSerializer):
 class GameSerializer(serializers.ModelSerializer):
     items = GameItemSerializer(many=True, read_only=True)
     objectives = GameObjectiveSerializer(many=True, read_only=True)
+    item_sets = GameItemSetSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Game
@@ -51,6 +74,7 @@ class GameSerializer(serializers.ModelSerializer):
             'omnibar_layout',
             'items',
             'objectives',
+            'item_sets',
         ]
 
 

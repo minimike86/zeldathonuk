@@ -79,6 +79,22 @@ export interface Game {
   omnibar_layout: Record<string, unknown>;
   items: GameItem[];
   objectives: GameObjective[];
+  /** Per-game item-set library (families like "Medallions", "Magic Items"). */
+  item_sets: GameItemSet[];
+}
+
+/** How a set's members relate. Ordered kinds sequence by `order`. */
+export type ItemSetKind = 'upgrade' | 'trade' | 'set';
+
+/** A named family/cluster of items within a game. Items belong to zero or
+ *  more sets via `GameItem.set_ids`, so e.g. a medallion can sit in both
+ *  "Medallions" and "Magic Items". Rendered as one cluster per set. */
+export interface GameItemSet {
+  id: number;
+  game: number;
+  name: string;
+  kind: ItemSetKind;
+  order: number;
 }
 
 export interface GameItem {
@@ -90,14 +106,17 @@ export interface GameItem {
   /** Optional section label used to cluster items on the control grid
    *  (e.g. "Equipment", "Dungeon Items"). Falls back to category when blank. */
   group: string;
-  /** Optional family name tying related items together within a section
-   *  (e.g. "Sword", "Masks", "Adult Trade"). Members render in one cluster. */
-  link_group: string;
-  /** How link_group members relate. Ordered kinds sequence by `order`. */
-  link_kind: '' | 'upgrade' | 'trade' | 'set';
+  /** Sets this item belongs to (GameItemSet ids). An item can be in several
+   *  — it renders in each set's cluster. */
+  set_ids: number[];
   /** When true, tracked as an up/down tally (keys, maps...) rather than a
    *  single collected toggle. */
   countable: boolean;
+  /** Items collected at the same time as this one (e.g. Bow + Quiver).
+   *  Symmetric — collecting/clearing any member cascades to the rest. */
+  unlocks_with_ids: number[];
+  /** Player begins the game holding this item; re-applied by "Reset to start". */
+  starts_collected: boolean;
   order: number;
 }
 
@@ -969,6 +988,11 @@ export const obsApi = {
       `/api/schedule/${entryId}/adjust_collected/`,
       { method: 'POST', body: { item_id: itemId, delta } },
     ),
+  resetCollected: (entryId: number) =>
+    api<{ collected_item_ids: number[] }>(
+      `/api/schedule/${entryId}/reset_collected/`,
+      { method: 'POST' },
+    ),
 
   // Item definitions (the per-game checklist). Mutations broadcast via
   // itemsBus so the omnibar's ITEMS card refreshes without a manual reload.
@@ -980,9 +1004,10 @@ export const obsApi = {
     image_url?: string;
     category?: string;
     group?: string;
-    link_group?: string;
-    link_kind?: GameItem['link_kind'];
+    set_ids?: number[];
+    unlocks_with_ids?: number[];
     countable?: boolean;
+    starts_collected?: boolean;
     order?: number;
   }) =>
     api<GameItem>('/api/game-items/', { method: 'POST', body }).then(withItemsBroadcast),
@@ -991,7 +1016,7 @@ export const obsApi = {
     patch: Partial<
       Pick<
         GameItem,
-        'name' | 'image_url' | 'category' | 'group' | 'link_group' | 'link_kind' | 'countable' | 'order'
+        'name' | 'image_url' | 'category' | 'group' | 'set_ids' | 'unlocks_with_ids' | 'countable' | 'starts_collected' | 'order'
       >
     >,
   ) =>
@@ -1004,6 +1029,20 @@ export const obsApi = {
     api<GameItem>(`/api/game-items/${id}/duplicate/`, { method: 'POST' }).then(
       withItemsBroadcast,
     ),
+
+  // Item sets (per-game families like "Medallions"). Broadcast via itemsBus
+  // so the control grid + omnibar react without a manual reload.
+  createItemSet: (body: { game: number; name: string; kind?: ItemSetKind; order?: number }) =>
+    api<GameItemSet>('/api/game-item-sets/', { method: 'POST', body }).then(withItemsBroadcast),
+  updateItemSet: (
+    id: number,
+    patch: Partial<Pick<GameItemSet, 'name' | 'kind' | 'order'>>,
+  ) =>
+    api<GameItemSet>(`/api/game-item-sets/${id}/`, { method: 'PATCH', body: patch }).then(
+      withItemsBroadcast,
+    ),
+  deleteItemSet: (id: number) =>
+    api<void>(`/api/game-item-sets/${id}/`, { method: 'DELETE' }).then(withItemsBroadcast),
 
   // Objectives: per-game library (definitions) + per-run status. Mutations
   // broadcast via objectiveBus so the omnibar's objective checklist + pickup

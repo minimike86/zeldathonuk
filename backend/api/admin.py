@@ -219,11 +219,19 @@ class ScheduleEntryAdmin(admin.ModelAdmin):
     autocomplete_fields = ['game', 'runners']
 
 
+@admin.register(models.GameItemSet)
+class GameItemSetAdmin(admin.ModelAdmin):
+    list_display = ['game', 'name', 'kind', 'order']
+    list_filter = ['game', 'kind']
+    search_fields = ['name', 'game__title']
+
+
 @admin.register(models.GameItem)
 class GameItemAdmin(admin.ModelAdmin):
     list_display = ['game', 'name', 'category', 'order']
     list_filter = ['game', 'category']
     search_fields = ['name', 'game__title']
+    filter_horizontal = ['sets']
 
 
 @admin.register(models.CollectedItem)

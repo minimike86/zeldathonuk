@@ -15,6 +15,8 @@ interface Data {
   items: GameItem[];
   totalCount: number;
   collectedCount: number;
+  /** Tally per item id (for countable items like keys/maps). */
+  counts: Record<string, number>;
 }
 
 function Panel({ data }: PanelProps<Data>) {
@@ -28,6 +30,7 @@ function Panel({ data }: PanelProps<Data>) {
     return () => window.clearInterval(id);
   }, [data.items.length]);
   const item = data.items[idx] ?? data.items[0];
+  const count = data.counts[String(item.id)] ?? 0;
   return (
     <PanelRow tag="ITEMS">
       {item.image_url && (
@@ -39,6 +42,10 @@ function Panel({ data }: PanelProps<Data>) {
         </span>
       )}
       <span className="ob-text-strong">{item.name}</span>
+      {/* Countable items (keys, maps, …) show their running tally. */}
+      {item.countable && count > 0 && (
+        <span className="ob-text-strong">×{count}</span>
+      )}
       <span className="ob-text-muted">
         {data.collectedCount} / {data.totalCount} collected
       </span>
@@ -61,6 +68,7 @@ registerPanel<Data>({
       items: collectedItems,
       totalCount: all.length,
       collectedCount: collectedItems.length,
+      counts: entry.collected_item_counts ?? {},
     };
   },
   minDurationMs: 7000,

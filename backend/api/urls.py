@@ -6,6 +6,7 @@ from . import audio, dev_scenes, eventsub, sandbox, sse, twitch, views, webhooks
 router = DefaultRouter()
 router.register('games', views.GameViewSet)
 router.register('game-items', views.GameItemViewSet)
+router.register('game-item-sets', views.GameItemSetViewSet)
 router.register('game-objectives', views.GameObjectiveViewSet)
 router.register('runners', views.RunnerViewSet)
 router.register('events', views.EventViewSet)

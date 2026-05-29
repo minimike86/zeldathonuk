@@ -83,7 +83,9 @@ def upload_image(request: Request) -> Response:
 
 
 class GameViewSet(viewsets.ModelViewSet):
-    queryset = models.Game.objects.all().prefetch_related('items', 'objectives')
+    queryset = models.Game.objects.all().prefetch_related(
+        'items', 'items__sets', 'objectives', 'item_sets',
+    )
     serializer_class = serializers.GameSerializer
 
     @action(detail=True, methods=['get'])
@@ -154,10 +156,13 @@ class GameItemViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def duplicate(self, request: Request, pk=None) -> Response:
-        """Clone this item (all fields) under a unique "(copy)" name, ordered
-        last, so the operator can tweak the copy on /control/items rather than
-        re-entering everything. Returns the new item."""
+        """Clone this item (all fields, including set membership) under a
+        unique "(copy)" name, ordered last, so the operator can tweak the copy
+        on /control/items rather than re-entering everything."""
         src = self.get_object()
+        # Capture M2M before reassigning the pk (the in-memory manager rebinds
+        # to the new, empty row after save).
+        set_ids = list(src.sets.values_list('id', flat=True))
         max_order = models.GameItem.objects.filter(game=src.game).aggregate(
             m=Max('order'),
         )['m']
@@ -165,7 +170,20 @@ class GameItemViewSet(viewsets.ModelViewSet):
         src.name = _copy_name(models.GameItem, src.game_id, src.name)
         src.order = (max_order or 0) + 1
         src.save()
+        src.sets.set(set_ids)
         return Response(self.get_serializer(src).data, status=status.HTTP_201_CREATED)
+
+
+class GameItemSetViewSet(viewsets.ModelViewSet):
+    queryset = models.GameItemSet.objects.all()
+    serializer_class = serializers.GameItemSetSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        game_id = self.request.query_params.get('game')
+        if game_id:
+            qs = qs.filter(game_id=game_id)
+        return qs
 
 
 class GameObjectiveViewSet(viewsets.ModelViewSet):
@@ -279,8 +297,8 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         models.ScheduleEntry.objects.all()
         .select_related('event', 'game', 'timer')
         .prefetch_related(
-            'runners', 'game__items', 'game__objectives',
-            'collected_items', 'objective_statuses',
+            'runners', 'game__items', 'game__items__sets', 'game__item_sets',
+            'game__objectives', 'collected_items', 'objective_statuses',
         )
     )
     serializer_class = serializers.ScheduleEntrySerializer
@@ -358,6 +376,74 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         entry.save(update_fields=['finished_at', 'is_completed'])
         return Response(serializers.TimerSerializer(timer).data)
 
+    @staticmethod
+    def _unlock_closure(item) -> set:
+        """All GameItem ids collected together with `item` — a BFS over the
+        symmetric unlocks_with graph, including the item itself."""
+        seen = {item.id}
+        frontier = [item]
+        while frontier:
+            cur = frontier.pop()
+            for nb in cur.unlocks_with.all():
+                if nb.id not in seen:
+                    seen.add(nb.id)
+                    frontier.append(nb)
+        return seen
+
+    def _cascade_unlocks(self, entry, item_id, *, collected: bool) -> None:
+        """Apply a collected state to the item's tied companions (the trigger
+        item itself is handled by the caller)."""
+        item = models.GameItem.objects.filter(pk=item_id).first()
+        if not item:
+            return
+        tied = self._unlock_closure(item) - {item.id}
+        if not tied:
+            return
+        if collected:
+            for iid in tied:
+                models.CollectedItem.objects.get_or_create(schedule_entry=entry, item_id=iid)
+        else:
+            models.CollectedItem.objects.filter(
+                schedule_entry=entry, item_id__in=tied
+            ).delete()
+
+    def _collect_cascade_ids(self, item, *, collected: bool) -> set:
+        """Item ids whose collected state changes together with `item`.
+
+        Combines two relations and follows them *transitively* (a fixpoint),
+        so a chain of implications resolves fully — e.g. collecting Enhanced
+        Magic Power implies the base Magic Power Meter (upgrade tier), which in
+        turn implies the Spin Attack tied to it (unlocks_with):
+
+        - unlocks_with bundle: symmetric (e.g. Bow + Quiver), and
+        - upgrade-chain tiers: collecting a tier implies every lower tier (you
+          must have had them); clearing a tier clears every higher tier (you
+          can't hold Lv3 without Lv2).
+
+        Trade sequences are excluded — you swap the item away, so earlier
+        entries aren't implied.
+        """
+        seen = {item.id}
+        frontier = [item]
+        while frontier:
+            cur = frontier.pop()
+            # Symmetric bundle.
+            for nb in cur.unlocks_with.all():
+                if nb.id not in seen:
+                    seen.add(nb.id)
+                    frontier.append(nb)
+            # Upgrade tiers, relative to this node's own position in each chain.
+            for s in cur.sets.filter(kind=models.ItemLinkKind.UPGRADE):
+                for member in s.items.all():
+                    implied = (
+                        (collected and member.order <= cur.order)
+                        or (not collected and member.order >= cur.order)
+                    )
+                    if implied and member.id not in seen:
+                        seen.add(member.id)
+                        frontier.append(member)
+        return seen
+
     @action(detail=True, methods=['post'])
     def toggle_collected(self, request: Request, pk=None) -> Response:
         entry = self.get_object()
@@ -366,14 +452,23 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             return Response(
                 {'detail': 'item_id required.'}, status=status.HTTP_400_BAD_REQUEST
             )
-        existing = models.CollectedItem.objects.filter(
+        item = models.GameItem.objects.filter(pk=item_id).first()
+        if not item:
+            return Response({'detail': 'item not found.'}, status=status.HTTP_404_NOT_FOUND)
+        already = models.CollectedItem.objects.filter(
             schedule_entry=entry, item_id=item_id
-        ).first()
-        if existing:
-            existing.delete()
-            return Response({'collected': False})
-        models.CollectedItem.objects.create(schedule_entry=entry, item_id=item_id)
-        return Response({'collected': True})
+        ).exists()
+        target = not already
+        # Cascade to tied items (unlocks_with) and upgrade-chain tiers.
+        ids = self._collect_cascade_ids(item, collected=target)
+        if target:
+            for iid in ids:
+                models.CollectedItem.objects.get_or_create(schedule_entry=entry, item_id=iid)
+        else:
+            models.CollectedItem.objects.filter(
+                schedule_entry=entry, item_id__in=ids
+            ).delete()
+        return Response({'collected': target, 'item_ids': sorted(ids)})
 
     @action(detail=True, methods=['post'])
     def adjust_collected(self, request: Request, pk=None) -> Response:
@@ -382,6 +477,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         Body: {item_id, delta} where delta is usually +1 or -1. The row is
         created on first increment and deleted when the tally hits 0, so
         collected_item_ids stays in sync (qty is always >= 1 while present).
+        Crossing the 0 boundary cascades the collected state to tied items.
         """
         entry = self.get_object()
         item_id = request.data.get('item_id')
@@ -403,6 +499,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         if new_qty <= 0:
             if existing:
                 existing.delete()
+            self._cascade_unlocks(entry, item_id, collected=False)
             return Response({'collected': False, 'quantity': 0})
         if existing:
             existing.quantity = new_qty
@@ -411,7 +508,26 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             models.CollectedItem.objects.create(
                 schedule_entry=entry, item_id=item_id, quantity=new_qty
             )
+        if current == 0:
+            self._cascade_unlocks(entry, item_id, collected=True)
         return Response({'collected': True, 'quantity': new_qty})
+
+    @action(detail=True, methods=['post'])
+    def reset_collected(self, request: Request, pk=None) -> Response:
+        """Clear every collected item for this run, then re-collect the game's
+        starting items (and anything tied to them). Powers the "Reset to start"
+        button on /control/items."""
+        entry = self.get_object()
+        models.CollectedItem.objects.filter(schedule_entry=entry).delete()
+        ids: set = set()
+        if entry.game_id:
+            for starter in models.GameItem.objects.filter(
+                game_id=entry.game_id, starts_collected=True
+            ):
+                ids |= self._unlock_closure(starter)
+        for iid in ids:
+            models.CollectedItem.objects.create(schedule_entry=entry, item_id=iid)
+        return Response({'collected_item_ids': sorted(ids)})
 
     @action(detail=True, methods=['post'])
     def set_objective_status(self, request: Request, pk=None) -> Response:
@@ -629,9 +745,30 @@ class BrbTimerViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET', 'PUT'])
 def currently_playing(request: Request) -> Response:
-    cp = models.CurrentlyPlaying.get()
     if request.method == 'GET':
+        # Polled every 2-3s by the control grid + OBS sources. Prefetch the
+        # whole nested tree (game items + their sets/unlocks_with M2M,
+        # objectives, item-sets, plus the entry's collected/objective rows) so
+        # serializing ~70 items stays a handful of queries instead of N+1.
+        models.CurrentlyPlaying.get()  # ensure the singleton row exists
+        cp = (
+            models.CurrentlyPlaying.objects
+            .select_related('schedule_entry__game', 'schedule_entry__timer')
+            .prefetch_related(
+                'schedule_entry__runners',
+                'schedule_entry__collected_items',
+                'schedule_entry__objective_statuses',
+                'schedule_entry__sound_triggers',
+                'schedule_entry__game__items',
+                'schedule_entry__game__items__sets',
+                'schedule_entry__game__items__unlocks_with',
+                'schedule_entry__game__objectives',
+                'schedule_entry__game__item_sets',
+            )
+            .get(pk=1)
+        )
         return Response(serializers.CurrentlyPlayingSerializer(cp).data)
+    cp = models.CurrentlyPlaying.get()
     schedule_entry_id = request.data.get('schedule_entry')
     cp.schedule_entry_id = schedule_entry_id
     cp.save()

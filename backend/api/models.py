@@ -360,6 +360,33 @@ class ItemLinkKind(models.TextChoices):
     SET = 'set', 'Related set'             # unordered family, e.g. the masks
 
 
+class GameItemSet(models.Model):
+    """A named family/cluster of items within a game (e.g. "Medallions",
+    "Magic Items", "Masks"). Items belong to zero or more sets via the
+    GameItem.sets M2M, so e.g. the LttP medallions can sit in both the
+    "Medallions" and "Magic Items" sets. The control grid renders one cluster
+    per set; `kind` controls whether members sequence (upgrade/trade) or form
+    an unordered related set."""
+
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='item_sets')
+    name = models.CharField(max_length=60)
+    kind = models.CharField(
+        max_length=10,
+        default=ItemLinkKind.SET,
+        choices=ItemLinkKind.choices,
+        help_text='How members relate: an ordered upgrade chain, an ordered '
+                  'trade sequence, or an unordered related set.',
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['game', 'order', 'name']
+        unique_together = [('game', 'name')]
+
+    def __str__(self) -> str:
+        return f'{self.game.title} — {self.name}'
+
+
 class GameItem(models.Model):
     """A collectible / progress milestone in a specific game (sword, song, heart piece...)."""
 
@@ -382,26 +409,31 @@ class GameItem(models.Model):
                   'grid (e.g. "Equipment", "Dungeon Items", "Songs"). Imported '
                   'from the wiki gallery caption; falls back to category when blank.',
     )
-    link_group = models.CharField(
-        max_length=60,
+    sets = models.ManyToManyField(
+        GameItemSet,
+        related_name='items',
         blank=True,
-        help_text='Optional family name tying related items together within a '
-                  'section (e.g. "Sword", "Masks", "Adult Trade"). Items sharing '
-                  'a link_group render in one cluster.',
-    )
-    link_kind = models.CharField(
-        max_length=10,
-        blank=True,
-        choices=ItemLinkKind.choices,
-        help_text='How the link_group members relate: an ordered upgrade chain, '
-                  'an ordered trade sequence, or an unordered related set. Ordered '
-                  'kinds sequence by `order`.',
+        help_text='Families this item belongs to (e.g. a medallion is in both '
+                  '"Medallions" and "Magic Items"). Rendered as a cluster per set.',
     )
     countable = models.BooleanField(
         default=False,
         help_text='If set, this item is tracked as a tally that can go up/down '
                   '(e.g. Small Key, Map, Compass collected once per dungeon) '
                   'instead of a single collected/not-collected toggle.',
+    )
+    unlocks_with = models.ManyToManyField(
+        'self',
+        blank=True,
+        symmetrical=True,
+        help_text='Items collected at the same time as this one (e.g. Bow + '
+                  'Quiver). Collecting or clearing any member cascades to the '
+                  'rest of the connected group.',
+    )
+    starts_collected = models.BooleanField(
+        default=False,
+        help_text='Player begins the game already holding this item. Applied by '
+                  'the "Reset to start" action on /control/items.',
     )
     order = models.PositiveIntegerField(default=0)
 
