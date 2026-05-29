@@ -3,12 +3,13 @@ before the React control panel is fully built."""
 from django.conf import settings
 from django.contrib import admin, messages
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin, TabularInline
 
 from . import audio, igdb, models, ocremix, zeldawiki
 
 
 @admin.register(models.Game)
-class GameAdmin(admin.ModelAdmin):
+class GameAdmin(ModelAdmin):
     list_display = ['box_art_thumb', 'title', 'platform', 'layout_type',
                     'default_play_minutes', 'release_year',
                     'igdb_id', 'twitch_game_id', 'hltb_id']
@@ -191,13 +192,13 @@ class GameAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.Runner)
-class RunnerAdmin(admin.ModelAdmin):
+class RunnerAdmin(ModelAdmin):
     list_display = ['name', 'channel_url', 'is_streamer']
     search_fields = ['name']
 
 
 @admin.register(models.Event)
-class EventAdmin(admin.ModelAdmin):
+class EventAdmin(ModelAdmin):
     list_display = ['name', 'start_time', 'is_active', 'currency_symbol']
     list_filter = ['is_active']
     # Required so other admins (CharityAdmin / EventCharityAdmin) can
@@ -213,21 +214,21 @@ class EventAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.ScheduleEntry)
-class ScheduleEntryAdmin(admin.ModelAdmin):
+class ScheduleEntryAdmin(ModelAdmin):
     list_display = ['event', 'order', 'game', 'planned_minutes', 'is_completed', 'started_at']
     list_filter = ['event', 'is_completed']
     autocomplete_fields = ['game', 'runners']
 
 
 @admin.register(models.GameItemSet)
-class GameItemSetAdmin(admin.ModelAdmin):
+class GameItemSetAdmin(ModelAdmin):
     list_display = ['game', 'name', 'kind', 'order']
     list_filter = ['game', 'kind']
     search_fields = ['name', 'game__title']
 
 
 @admin.register(models.GameItem)
-class GameItemAdmin(admin.ModelAdmin):
+class GameItemAdmin(ModelAdmin):
     list_display = ['game', 'name', 'category', 'order']
     list_filter = ['game', 'category']
     search_fields = ['name', 'game__title']
@@ -235,26 +236,26 @@ class GameItemAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.CollectedItem)
-class CollectedItemAdmin(admin.ModelAdmin):
+class CollectedItemAdmin(ModelAdmin):
     list_display = ['schedule_entry', 'item', 'collected_at']
     list_filter = ['schedule_entry__event']
 
 
 @admin.register(models.GameObjective)
-class GameObjectiveAdmin(admin.ModelAdmin):
+class GameObjectiveAdmin(ModelAdmin):
     list_display = ['game', 'name', 'category', 'order']
     list_filter = ['game', 'category']
     search_fields = ['name', 'game__title']
 
 
 @admin.register(models.ScheduleEntryObjective)
-class ScheduleEntryObjectiveAdmin(admin.ModelAdmin):
+class ScheduleEntryObjectiveAdmin(ModelAdmin):
     list_display = ['schedule_entry', 'objective', 'status', 'obtained_at']
     list_filter = ['status', 'schedule_entry__event']
 
 
 @admin.register(models.DonationPlatformProfile)
-class DonationPlatformProfileAdmin(admin.ModelAdmin):
+class DonationPlatformProfileAdmin(ModelAdmin):
     """Per-platform settings (fees, Gift Aid, fee warning, min donation).
 
     Singleton-per-platform — DonationPage rows look these up by platform key,
@@ -285,7 +286,7 @@ class DonationPlatformProfileAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.DonationPage)
-class DonationPageAdmin(admin.ModelAdmin):
+class DonationPageAdmin(ModelAdmin):
     list_display = ['event', 'platform', 'label', 'url', 'is_primary', 'order']
     list_filter = ['event', 'platform']
     list_editable = ['is_primary', 'order']
@@ -294,7 +295,7 @@ class DonationPageAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.Donation)
-class DonationAdmin(admin.ModelAdmin):
+class DonationAdmin(ModelAdmin):
     list_display = ['donated_at', 'platform', 'donor_name', 'amount', 'currency', 'event']
     list_filter = ['platform', 'event', 'currency']
     search_fields = ['donor_name', 'external_id', 'message']
@@ -302,18 +303,18 @@ class DonationAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.BrbTimer)
-class BrbTimerAdmin(admin.ModelAdmin):
+class BrbTimerAdmin(ModelAdmin):
     list_display = ['target_time', 'message', 'is_active']
     list_filter = ['is_active']
 
 
 @admin.register(models.CurrentlyPlaying)
-class CurrentlyPlayingAdmin(admin.ModelAdmin):
+class CurrentlyPlayingAdmin(ModelAdmin):
     list_display = ['schedule_entry', 'updated_at']
 
 
 @admin.register(models.AudioTrack)
-class AudioTrackAdmin(admin.ModelAdmin):
+class AudioTrackAdmin(ModelAdmin):
     list_display = ['title', 'artist', 'game', 'ocr_id', 'enabled', 'order']
     list_filter = ['game', 'enabled']
     search_fields = ['title', 'artist', 'game', 'ocr_id']
@@ -345,12 +346,12 @@ class AudioTrackAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.NowPlayingAudio)
-class NowPlayingAudioAdmin(admin.ModelAdmin):
+class NowPlayingAudioAdmin(ModelAdmin):
     list_display = ['track', 'updated_at']
 
 
 @admin.register(models.ThemeSettings)
-class ThemeSettingsAdmin(admin.ModelAdmin):
+class ThemeSettingsAdmin(ModelAdmin):
     """Library of named themes. The row with `is_active=True` is what
     /api/theme/ returns, and toggling it in this admin demotes the rest
     on save (mirrors Event activation)."""
@@ -382,7 +383,7 @@ class ThemeSettingsAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.TwitchOAuthToken)
-class TwitchOAuthTokenAdmin(admin.ModelAdmin):
+class TwitchOAuthTokenAdmin(ModelAdmin):
     """Singleton row — Twitch user OAuth token + refresh metadata.
 
     The token is refreshed automatically when nearing expiry; this UI is mainly
@@ -415,7 +416,7 @@ class TwitchOAuthTokenAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.PlaythroughEvent)
-class PlaythroughEventAdmin(admin.ModelAdmin):
+class PlaythroughEventAdmin(ModelAdmin):
     list_display = ['kind', 'schedule_entry', 'created_at', 'expires_at']
     list_filter = ['kind']
     search_fields = ['kind', 'schedule_entry__title']
@@ -424,7 +425,7 @@ class PlaythroughEventAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.OmnibarOverride)
-class OmnibarOverrideAdmin(admin.ModelAdmin):
+class OmnibarOverrideAdmin(ModelAdmin):
     list_display = ['kind', 'target_lane', 'is_active', 'is_live',
                     'priority', 'starts_at', 'expires_at']
     list_filter = ['kind', 'target_lane', 'is_active']
@@ -433,7 +434,7 @@ class OmnibarOverrideAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.ExternalEvent)
-class ExternalEventAdmin(admin.ModelAdmin):
+class ExternalEventAdmin(ModelAdmin):
     list_display = ['source', 'kind', 'occurred_at', 'consumed_at']
     list_filter = ['source', 'kind']
     search_fields = ['source', 'kind']
@@ -441,7 +442,7 @@ class ExternalEventAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.Incentive)
-class IncentiveAdmin(admin.ModelAdmin):
+class IncentiveAdmin(ModelAdmin):
     list_display = ['name', 'event', 'current_amount', 'goal_amount',
                     'progress_pct', 'is_active', 'reached_at']
     list_filter = ['event', 'is_active']
@@ -450,14 +451,14 @@ class IncentiveAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.Milestone)
-class MilestoneAdmin(admin.ModelAdmin):
+class MilestoneAdmin(ModelAdmin):
     list_display = ['name', 'event', 'threshold_amount', 'reached_at']
     list_filter = ['event']
     search_fields = ['name']
     readonly_fields = ['is_reached', 'created_at']
 
 
-class RaffleWinnerInline(admin.TabularInline):
+class RaffleWinnerInline(TabularInline):
     model = models.RaffleWinner
     extra = 0
     fields = ['donor_name', 'donation', 'fulfillment_status',
@@ -466,7 +467,7 @@ class RaffleWinnerInline(admin.TabularInline):
 
 
 @admin.register(models.Raffle)
-class RaffleAdmin(admin.ModelAdmin):
+class RaffleAdmin(ModelAdmin):
     list_display = ['name', 'event', 'status', 'delivery_method',
                     'condition_type', 'quantity', 'is_active', 'order']
     list_filter = ['event', 'status', 'delivery_method', 'condition_type',
@@ -477,7 +478,7 @@ class RaffleAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.RaffleWinner)
-class RaffleWinnerAdmin(admin.ModelAdmin):
+class RaffleWinnerAdmin(ModelAdmin):
     list_display = ['donor_name', 'raffle', 'fulfillment_status', 'drawn_at']
     list_filter = ['fulfillment_status', 'raffle__event']
     search_fields = ['donor_name', 'contact_info', 'delivery_code']
@@ -485,7 +486,7 @@ class RaffleWinnerAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.CharitySlide)
-class CharitySlideAdmin(admin.ModelAdmin):
+class CharitySlideAdmin(ModelAdmin):
     list_display = ['kind', 'order', 'preview', 'is_active']
     list_filter = ['kind', 'is_active']
     search_fields = ['title', 'body', 'alt_text']
@@ -498,7 +499,7 @@ class CharitySlideAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.ChestAnnouncerSoundTrigger)
-class ChestAnnouncerSoundTriggerAdmin(admin.ModelAdmin):
+class ChestAnnouncerSoundTriggerAdmin(ModelAdmin):
     list_display = ['name', 'kind', 'match', 'game', 'priority', 'is_active']
     list_filter = ['kind', 'is_active']
     search_fields = ['name', 'match', 'sound_url']
@@ -506,7 +507,7 @@ class ChestAnnouncerSoundTriggerAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.ChestAnnouncerSettings)
-class ChestAnnouncerSettingsAdmin(admin.ModelAdmin):
+class ChestAnnouncerSettingsAdmin(ModelAdmin):
     """Singleton — one row (pk=1) created lazily via .get(). Hiding the
     "Add" button keeps the admin from offering to make a second row
     that the get-or-create logic would ignore anyway."""
@@ -524,38 +525,38 @@ class ChestAnnouncerSettingsAdmin(admin.ModelAdmin):
 # ── Charities ────────────────────────────────────────────────────────────
 
 
-class CharityWebsiteInline(admin.TabularInline):
+class CharityWebsiteInline(TabularInline):
     model = models.CharityWebsite
     extra = 1
     fields = ['label', 'url', 'order']
 
 
-class CharitySocialLinkInline(admin.TabularInline):
+class CharitySocialLinkInline(TabularInline):
     model = models.CharitySocialLink
     extra = 0
     fields = ['platform', 'url', 'handle', 'order']
 
 
-class CharityVideoInline(admin.TabularInline):
+class CharityVideoInline(TabularInline):
     model = models.CharityVideo
     extra = 0
     fields = ['title', 'url', 'thumbnail_url', 'order']
 
 
-class CharityImageInline(admin.TabularInline):
+class CharityImageInline(TabularInline):
     model = models.CharityImage
     extra = 0
     fields = ['image_url', 'alt_text', 'caption', 'order']
 
 
-class CharityImpactTierInline(admin.TabularInline):
+class CharityImpactTierInline(TabularInline):
     model = models.CharityImpactTier
     extra = 1
     fields = ['amount', 'currency', 'image_url', 'alt_text',
               'description', 'description_html', 'order']
 
 
-class EventCharityInline(admin.TabularInline):
+class EventCharityInline(TabularInline):
     """Surfaced both ways: on the Charity page (see EventCharityInline
     in EventAdmin below) and on the Event page so curators can attach
     beneficiaries from whichever side feels natural."""
@@ -566,7 +567,7 @@ class EventCharityInline(admin.TabularInline):
 
 
 @admin.register(models.Charity)
-class CharityAdmin(admin.ModelAdmin):
+class CharityAdmin(ModelAdmin):
     list_display = ['name', 'slug', 'short_name', 'is_active', 'order',
                     'charity_number']
     list_filter = ['is_active']
@@ -611,7 +612,7 @@ class CharityAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.EventCharity)
-class EventCharityAdmin(admin.ModelAdmin):
+class EventCharityAdmin(ModelAdmin):
     list_display = ['event', 'charity', 'is_primary', 'order', 'created_at']
     list_filter = ['is_primary', 'event']
     search_fields = ['event__name', 'charity__name', 'charity__slug']

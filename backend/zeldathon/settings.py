@@ -32,6 +32,7 @@ ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['localhost', '127.0.0.
 # Applications
 # ──────────────────────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
+    'unfold',  # must precede django.contrib.admin to override its templates
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +43,12 @@ INSTALLED_APPS = [
     'corsheaders',
     'api',
 ]
+
+# django-unfold admin theme branding.
+UNFOLD = {
+    'SITE_TITLE': 'Zeldathon Admin',
+    'SITE_HEADER': 'Zeldathon',
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
