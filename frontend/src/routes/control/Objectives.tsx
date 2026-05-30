@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   DndContext,
   DragOverlay,
@@ -104,15 +105,40 @@ export function ObjectivesControl() {
   // too (the bus never notifies the originating tab — `bump` covers local ones).
   useEffect(() => onObjectivesChanged(bump), [bump]);
 
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  // Optional `?game=<id>` deep-link, used by e.g. /control/schedule's
+  // objective-count link so picking the count from the schedule lands
+  // on that game directly. Takes precedence over the live-game default
+  // until the operator changes the picker; we strip it from the URL on
+  // first apply so subsequent navigation doesn't get stuck on the
+  // original target.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryGameId = (() => {
+    const raw = searchParams.get('game');
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  })();
+
+  const [selectedId, setSelectedId] = useState<number | null>(queryGameId);
 
   // Default to the live game once data lands; the operator can switch to any
-  // other game from the picker.
+  // other game from the picker. A `?game=<id>` query param wins over the
+  // live default — apply once, then drop the param.
   useEffect(() => {
+    if (queryGameId != null) {
+      setSelectedId(queryGameId);
+      // Strip the param after applying so future picker changes aren't
+      // overridden if the user reloads / shares the cleaned-up URL.
+      const next = new URLSearchParams(searchParams);
+      next.delete('game');
+      setSearchParams(next, { replace: true });
+      return;
+    }
     if (selectedId != null) return;
     if (liveGameId != null) setSelectedId(liveGameId);
     else if (games && games.length) setSelectedId(games[0].id);
-  }, [selectedId, liveGameId, games]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryGameId, selectedId, liveGameId, games]);
 
   // Only the *selected* game's detail is polled on edit — one game is ~30ms vs
   // ~250ms+ for the whole catalog, so edits stay snappy regardless of catalog

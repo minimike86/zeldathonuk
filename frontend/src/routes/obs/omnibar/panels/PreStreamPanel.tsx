@@ -1,6 +1,37 @@
-import { MarqueeOnOverflow } from './_shared/MarqueeOnOverflow';
+import { useEffect, useState } from 'react';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
+
+/** Card choreography — the .ob-upcoming-card keyframes do all three
+ *  phases (enter from below → dwell → exit upward) in a single
+ *  animation, and CARD_CYCLE_MS is the JS-side interval that
+ *  remounts the next card. A brief gap (`CARD_GAP_MS`) sits between
+ *  the previous card's exit completing and the next card's enter
+ *  starting, so transitions don't feel like a crossfade. */
+const CARD_ANIM_MS = 5500;
+const CARD_GAP_MS = 220;
+const CARD_CYCLE_MS = CARD_ANIM_MS + CARD_GAP_MS;
+
+/** One card's worth of data per upcoming game — pre-projected by
+ *  `selectData` so the render path stays cheap (no JSX-side reaches
+ *  into ScheduleEntry / Game). */
+interface UpcomingCard {
+  /** Stable id for React keys + uniqueness across remounts. */
+  id: number;
+  /** Position in the lineup, 1-indexed (1 = "Up first"). */
+  position: number;
+  /** Game title — falls back to entry.title when display_title is blank. */
+  title: string;
+  /** Estimated playtime in minutes — used by `formatDuration` below. */
+  minutes: number;
+  /** Console / handheld badge, e.g. "SNES", "Switch". Empty when the
+   *  entry isn't bound to a Game (shouldn't happen for game slots but
+   *  guarded for safety). */
+  platform: string;
+  /** Box-art URL, may be empty — the card renders a platform-coloured
+   *  placeholder block in that case so the layout stays consistent. */
+  boxArtUrl: string;
+}
 
 /**
  * Top-lane fallback shown when nothing else has activity to report —
@@ -24,16 +55,29 @@ import { registerPanel, type PanelProps } from './registry';
  */
 
 interface Data {
-  eventName: string;
   /** Seconds until event.start_time, positive only. Null = stream is
    *  past its start; the panel renders the "setting up" copy
    *  instead of a countdown. */
   secondsUntilStart: number | null;
-  /** Titles of every still-upcoming top-level game entry, in play
-   *  order. Rendered in the marquee as "First game: A · B · C …" so
-   *  viewers landing pre-stream see the whole lineup scroll past. */
-  upcomingTitles: string[];
+  /** Every still-upcoming top-level game entry, in play order. Each
+   *  card surfaces cover art + title + position + estimated play time
+   *  + platform badge so the marquee carries real lineup detail
+   *  instead of a bare title strip. */
+  upcoming: UpcomingCard[];
 }
+
+// Each d/h/m/s column gets its own theme colour so the countdown reads as a
+// little palette that recolours per theme, instead of a flat white. Each pulls
+// from a different slot of the theme's accent/primary/secondary set, with a
+// fallback chain ending in a fixed default so an unset var never blanks a
+// digit. Unit labels use a translucent mix of their column's colour.
+const UNIT_COLOR: Record<'d' | 'h' | 'm' | 's', string> = {
+  h: 'var(--obs-accent, var(--theme-primary-bright, #3848a5))',
+  d: 'var(--theme-accent-1, var(--theme-primary, #3d7d3d))',
+  m: 'var(--theme-accent-2, var(--theme-secondary, #ddc24d))',
+  s: 'var(--theme-accent-3, var(--theme-primary-bright, #b1322c))',
+};
+const unitMuted = (color: string) => `color-mix(in srgb, ${color} 60%, transparent)`;
 
 function Panel({ data }: PanelProps<Data>) {
   const countdownParts = data.secondsUntilStart != null
@@ -45,10 +89,10 @@ function Panel({ data }: PanelProps<Data>) {
         * the · separator. These never marquee — only the trailing
         * game-name title scrolls when it can't fit, so the countdown
         * stays anchored where viewers expect to read it. */}
-      <span className="ob-text-strong">{data.eventName}</span>
+      <span className="ob-text-strong">Starts in</span>
       {countdownParts ? (
         <span className="ob-text-muted" style={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.6rem' }}>
-          <span>in</span>
+          <span>:</span>
           <span
             // 8-bit pixel mono ("Press Start 2P") so the countdown
             // reads like an old-school Zelda menu timer. The font's
@@ -67,52 +111,32 @@ function Panel({ data }: PanelProps<Data>) {
               transform: 'translateY(0.15em)',
             }}
           >
-            {countdownParts.map((part, i) => (
-              <span key={part.unit}>
-                <span style={{ color: '#fff' }}>{part.value}</span>
-                <span style={{ color: 'rgba(255, 255, 255, 0.55)' }}>
-                  {part.unit}
+            {countdownParts.map((part, i) => {
+              const color = UNIT_COLOR[part.unit];
+              return (
+                <span key={part.unit}>
+                  <span style={{ color }}>{part.value}</span>
+                  <span style={{ color: unitMuted(color) }}>{part.unit}</span>
+                  {i < countdownParts.length - 1 ? ' ' : ''}
                 </span>
-                {i < countdownParts.length - 1 ? ' ' : ''}
-              </span>
-            ))}
+              );
+            })}
           </span>
         </span>
       ) : (
         <span className="ob-text-muted">setting up next game…</span>
       )}
-      {data.upcomingTitles.length > 0 && (
+      {data.upcoming.length > 0 && (
         <>
           <span className="ob-text-muted">·</span>
-          {/* The full upcoming-games lineup marquees as a single
-            * labelled list: "First game: A · B · C · D · …". The
-            * "First game:" prefix anchors the meaning so viewers know
-            * what the scrolling names represent; subsequent titles
-            * follow separated by bullets and cycle continuously as
-            * the marquee loops. The wrapper claims the remaining flex
-            * space so the marquee's overflow detection has a defined
-            * width to compare against. */}
+          {/* One upcoming card visible at a time — the panel cycles
+            * the visible index every CARD_DWELL_MS so each game gets
+            * the full body width (titles, durations, art read
+            * cleanly). The wrapper claims the remaining flex space
+            * so the card can fill it; a keyed remount on each
+            * transition triggers a fade-in animation in CSS. */}
           <div style={{ flex: '1 1 0', minWidth: 0 }}>
-            <MarqueeOnOverflow>
-              {data.upcomingTitles.map((title, i) => (
-                <span
-                  key={`${i}-${title}`}
-                  style={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.85rem' }}
-                >
-                  {/* First slot gets the explicit "First game:"
-                    * anchor; subsequent slots get an ordinal prefix
-                    * (2nd, 3rd, 4th…) so each scrolling title is
-                    * paired with its play-order. */}
-                  <span className="ob-text-muted">
-                    {i === 0 ? 'First game:' : `${ordinal(i + 1)}:`}
-                  </span>
-                  <span className="ob-text-strong">{title}</span>
-                  {i < data.upcomingTitles.length - 1 && (
-                    <span className="ob-text-muted">·</span>
-                  )}
-                </span>
-              ))}
-            </MarqueeOnOverflow>
+            <UpcomingCarousel cards={data.upcoming} />
           </div>
         </>
       )}
@@ -120,18 +144,120 @@ function Panel({ data }: PanelProps<Data>) {
   );
 }
 
-/** English ordinal suffix for the marquee's game-number prefixes —
- *  "2nd", "3rd", "4th"… "21st", "22nd"… etc. The teens always take
- *  "th" regardless of their final digit. */
-function ordinal(n: number): string {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
-  }
+/**
+ * Cycles through the upcoming-game cards one at a time. Each card
+ * gets the full body width so titles + durations are legible (the
+ * previous marquee shrank everything to fit). Advances on a fixed
+ * interval; a keyed remount on the visible card triggers the CSS
+ * fade-in animation. Resets to 0 when the lineup changes (e.g. the
+ * operator adds / removes an entry) so the cycle never points at a
+ * stale id.
+ */
+function UpcomingCarousel({ cards }: { cards: UpcomingCard[] }) {
+  const [index, setIndex] = useState(0);
+  // Stable key for the lineup — if the order or membership changes,
+  // resetting the index drops back to the first card so the cycle
+  // doesn't land on a gone-missing entry.
+  const lineupKey = cards.map((c) => c.id).join('|');
+  useEffect(() => {
+    setIndex(0);
+  }, [lineupKey]);
+  useEffect(() => {
+    if (cards.length <= 1) return;
+    const t = window.setInterval(() => {
+      setIndex((i) => (i + 1) % cards.length);
+    }, CARD_CYCLE_MS);
+    return () => window.clearInterval(t);
+  }, [cards.length]);
+  const safeIndex = Math.min(index, cards.length - 1);
+  const card = cards[safeIndex];
+  if (!card) return null;
+  return (
+    <UpcomingGameCard
+      // `card.id` in the key forces a remount on every cycle, so the
+      // CSS choreography (enter from below → dwell → exit upward)
+      // replays cleanly per advance.
+      key={`upcoming-${card.id}-${safeIndex}`}
+      card={card}
+      isFirst={safeIndex === 0}
+      // Single-card lineups switch to a static enter-only animation
+      // so the lone game doesn't slide off-screen after one cycle.
+      isStatic={cards.length <= 1}
+    />
+  );
+}
+
+/**
+ * One upcoming-game card rendered inside the pre-stream marquee.
+ *
+ * Layout (horizontal, fits within the 48px half-lane):
+ *
+ *   ┌──────┬─────────────────────────────────┐
+ *   │ cov  │ #N · Up first        SNES       │
+ *   │ ART  │ Game Title (clipped if long)    │
+ *   │      │ ⏱ 1h 20m                        │
+ *   └──────┴─────────────────────────────────┘
+ *
+ * The "Up first" eyebrow on the leading card replaces the ordinal
+ * tag so viewers immediately see which game opens the run. Subsequent
+ * cards just show #N. Cover art falls back to a platform initial
+ * tile when `boxArtUrl` is empty.
+ */
+function UpcomingGameCard({
+  card,
+  isFirst,
+  isStatic,
+}: {
+  card: UpcomingCard;
+  isFirst: boolean;
+  isStatic: boolean;
+}) {
+  return (
+    <span
+      className={`ob-upcoming-card${isStatic ? ' ob-upcoming-card--static' : ''}`}
+    >
+      {card.boxArtUrl ? (
+        <span className="ob-upcoming-card-art" aria-hidden>
+          <img src={card.boxArtUrl} alt="" />
+        </span>
+      ) : (
+        <span
+          className="ob-upcoming-card-art ob-upcoming-card-art--placeholder"
+          aria-hidden
+        >
+          {card.platform.slice(0, 2) || '?'}
+        </span>
+      )}
+      <span className="ob-upcoming-card-body">
+        <span className="ob-upcoming-card-eyebrow">
+          <span className="ob-upcoming-card-position">#{card.position}</span>
+          {isFirst && <span className="ob-upcoming-card-up-first">Up first</span>}
+          {card.platform && (
+            <span className="ob-upcoming-card-platform">{card.platform}</span>
+          )}
+        </span>
+        <span className="ob-upcoming-card-title">{card.title}</span>
+      </span>
+      <span className="ob-upcoming-card-duration">
+        <span className="ob-upcoming-card-duration-label">Time to beat</span>
+        <span className="ob-upcoming-card-duration-value">
+          {formatDuration(card.minutes)}
+        </span>
+      </span>
+    </span>
+  );
+}
+
+/** Format an integer minutes count as "1h 20m" / "45m" / "—" — same
+ *  shape as the public schedule page uses for game durations so the
+ *  pre-stream marquee reads consistently with elsewhere. */
+function formatDuration(minutes: number): string {
+  if (!minutes || minutes < 1) return '—';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours <= 0) return `${mins}m`;
+  if (mins <= 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
 }
 
 /** Returns the countdown as `{value, unit}` segments so the caller
@@ -193,21 +319,29 @@ registerPanel<Data>({
 
     // Every still-pending top-level game slot, in play order. Skips
     // break slots and child entries so the marquee lineup reads as
-    // "what's coming up gameplay-wise". The first becomes the
-    // "First game:" anchor; the rest cycle past via the marquee loop.
-    const upcomingTitles = feed.schedule
+    // "what's coming up gameplay-wise". Each entry is projected into
+    // an `UpcomingCard` so the render path doesn't need to reach into
+    // ScheduleEntry / Game shapes — and so the per-frame work the
+    // marquee does (measuring, repeating) is cheap.
+    const upcoming: UpcomingCard[] = feed.schedule
       .filter(
         (e) =>
           e.parent_entry == null && e.slot_type === 'game' && !e.is_completed,
       )
       .sort((a, b) => a.order - b.order)
-      .map((e) => e.display_title || e.title)
-      .filter((t) => t.length > 0);
+      .map((e, idx) => ({
+        id: e.id,
+        position: idx + 1,
+        title: e.display_title || e.title,
+        minutes: e.effective_minutes,
+        platform: e.game?.platform ?? '',
+        boxArtUrl: e.game?.box_art_url ?? '',
+      }))
+      .filter((c) => c.title.length > 0);
 
     return {
-      eventName: feed.event.name,
       secondsUntilStart,
-      upcomingTitles,
+      upcoming,
     };
   },
   // Long-ish minimum so the countdown updates feel calm rather than

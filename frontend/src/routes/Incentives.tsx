@@ -12,6 +12,7 @@ import type {
   RaffleDeliveryMethodKey,
 } from '@/lib/obsApi';
 import { DonateButton } from '@/components/donations/DonateButton';
+import { useAccentDeck } from '@/lib/accentDeck';
 import './incentives.css';
 
 /** A bid-war option parsed off an incentive's `payload.options`. */
@@ -146,6 +147,11 @@ export function Incentives() {
     freebieCard(twitchChannel),
     ...(incentives ?? []).map(toCard),
   ];
+  // Per-card shuffled accents — every incentive + raffle tile picks
+  // one of the four theme colours so the grid surfaces the full PAL
+  // palette rather than uniform brand cards.
+  const incentiveAccents = useAccentDeck(cards.length);
+  const raffleAccents = useAccentDeck(raffles?.length ?? 0);
 
   return (
     <div className="container p-3 min-vh-100 text-white">
@@ -175,8 +181,13 @@ export function Incentives() {
             nudges the bar — when it fills, the incentive unlocks live.
           </p>
           <div className="incentive-grid">
-            {cards.map((card) => (
-              <IncentiveCardView key={card.key} card={card} symbol={symbol} />
+            {cards.map((card, i) => (
+              <IncentiveCardView
+                key={card.key}
+                card={card}
+                symbol={symbol}
+                accent={incentiveAccents[i]}
+              />
             ))}
           </div>
         </section>
@@ -192,7 +203,7 @@ export function Incentives() {
             <p className="text-white-50">No raffles are running right now — check back soon!</p>
           ) : (
             <div className="incentive-grid">
-              {(raffles ?? []).map((raffle) => (
+              {(raffles ?? []).map((raffle, i) => (
                 <RaffleCardView
                   key={raffle.id}
                   raffle={raffle}
@@ -200,6 +211,7 @@ export function Incentives() {
                   donationPages={donationPages}
                   liveEntryId={liveEntryId}
                   liveGameTitle={liveGameTitle}
+                  accent={raffleAccents[i]}
                 />
               ))}
             </div>
@@ -213,12 +225,23 @@ export function Incentives() {
 const currencyFmt = (symbol: string, value: number) =>
   `${symbol}${value.toFixed(2).replace(/\.00$/, '')}`;
 
-function IncentiveCardView({ card, symbol }: { card: IncentiveCard; symbol: string }) {
+function IncentiveCardView({
+  card,
+  symbol,
+  accent,
+}: {
+  card: IncentiveCard;
+  symbol: string;
+  accent?: number;
+}) {
   const reached = card.badge.tone === 'unlocked';
   const hasGoal = typeof card.goal === 'number' && card.goal > 0;
   const pct = Math.min(100, Math.max(0, card.pct ?? 0));
   return (
-    <article className={`incentive-card${reached ? ' incentive-card--reached' : ''}`}>
+    <article
+      className={`incentive-card${reached ? ' incentive-card--reached' : ''}`}
+      data-accent={accent}
+    >
       {card.imageUrl && (
         <img className="incentive-card-media" src={card.imageUrl} alt={card.name} />
       )}
@@ -271,6 +294,10 @@ function IncentiveCardView({ card, symbol }: { card: IncentiveCard; symbol: stri
 function BidWarOptions({ options }: { options: BidWarOption[] }) {
   const total = options.reduce((sum, o) => sum + o.votes, 0);
   const ranked = [...options].sort((a, b) => b.votes - a.votes);
+  // Per-option shuffled accents — each bid-war row in the list paints
+  // a different theme colour for its fill bar so the head-to-head
+  // contest reads as a four-colour stack.
+  const optAccents = useAccentDeck(ranked.length);
   return (
     <div className="incentive-options">
       {ranked.map((o, idx) => {
@@ -280,6 +307,7 @@ function BidWarOptions({ options }: { options: BidWarOption[] }) {
             key={o.id}
             className={`incentive-option${idx === 0 && total > 0 ? ' incentive-option--leading' : ''}`}
             style={{ ['--share' as string]: `${share}%` }}
+            data-accent={optAccents[idx]}
           >
             <span className="incentive-option-name">{o.name}</span>
             <span className="incentive-option-pct">{Math.round(share)}%</span>
@@ -296,12 +324,14 @@ function RaffleCardView({
   donationPages,
   liveEntryId,
   liveGameTitle,
+  accent,
 }: {
   raffle: Raffle;
   symbol: string;
   donationPages: DonationPage[];
   liveEntryId: number | null;
   liveGameTitle: string;
+  accent?: number;
 }) {
   const drawn = raffle.status === 'drawn';
   const pot = parseFloat(raffle.total_weight) || 0;
@@ -323,6 +353,7 @@ function RaffleCardView({
       className={`incentive-card${drawn ? ' incentive-card--reached' : ''}${
         liveByGame ? ' incentive-card--live' : ''
       }`}
+      data-accent={accent}
     >
       {raffle.image_url && (
         <div className="incentive-prize-media">

@@ -1,5 +1,6 @@
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
+import { useAccentDeck } from '@/lib/accentDeck';
 import type { Incentive } from '@/lib/obsApi';
 
 /**
@@ -29,6 +30,11 @@ interface Data {
 
 function Panel({ data }: PanelProps<Data>) {
   const leader = data.options[data.leadingIdx] ?? data.options[0];
+  // Per-bar shuffled accents — each option in the head-to-head paints
+  // a different theme colour for its bar so the contest reads as the
+  // full PAL palette on multi-colour themes (single-accent themes
+  // still get variety via the deck's fallback chain).
+  const barAccents = useAccentDeck(data.options.length);
   // Label decision tree:
   //   - top vote is £0 → nobody's bid yet; "Tied for 1st" reads as
   //     misleading certainty about a non-contest. Show a neutral
@@ -58,6 +64,7 @@ function Panel({ data }: PanelProps<Data>) {
               key={o.id}
               className={`ob-bidwar-bar${i === data.leadingIdx ? ' is-leading' : ''}`}
               data-name={o.name}
+              data-accent={barAccents[i]}
               style={{ ['--pct' as string]: `${pct}%` } as React.CSSProperties}
             >
               <span className="ob-bidwar-bar-label">{o.name}</span>

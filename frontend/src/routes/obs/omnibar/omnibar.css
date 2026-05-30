@@ -29,39 +29,140 @@
    * vertical base wash) so it looks like a solid lit object instead of
    * an animated stripe. `color-mix` keeps the highlights wired to the
    * active theme accent so a theme swap still propagates correctly. */
-  --ob-bloodmoon:
+  /* Per-section tint resolution.
+   *
+   *   --ob-section-X-from / --ob-section-X-to are the two stops every
+   *   pill mesh below reads. Each section's theme overrides resolve
+   *   via this fallback chain:
+   *     1. omnibar_<section>_from / _to (per-section gradient stops)
+   *     2. omnibar_tag_color (deprecated single-colour fallback)
+   *     3. --obs-accent / --obs-accent-bright (per-game accent)
+   *     4. baked-in bloodmoon defaults
+   *
+   *   That means a theme can opt into per-section colours
+   *   incrementally — e.g. set the brand pair only and the lane tags
+   *   still inherit the per-game accent. */
+  --ob-section-brand-from: var(--theme-omnibar-brand-from, var(--theme-omnibar-tag, var(--obs-accent-bright, #da4471)));
+  --ob-section-brand-to:   var(--theme-omnibar-brand-to,   var(--theme-omnibar-tag, var(--obs-accent,        #e71347)));
+  --ob-section-top-from:   var(--theme-omnibar-top-tag-from,    var(--theme-omnibar-tag, var(--obs-accent-bright, #da4471)));
+  --ob-section-top-to:     var(--theme-omnibar-top-tag-to,      var(--theme-omnibar-tag, var(--obs-accent,        #e71347)));
+  --ob-section-bottom-from:var(--theme-omnibar-bottom-tag-from, var(--theme-omnibar-tag, var(--obs-accent-bright, #da4471)));
+  --ob-section-bottom-to:  var(--theme-omnibar-bottom-tag-to,   var(--theme-omnibar-tag, var(--obs-accent,        #e71347)));
+  --ob-section-total-from: var(--theme-omnibar-total-from,      var(--theme-omnibar-tag, var(--obs-accent-bright, #da4471)));
+  --ob-section-total-to:   var(--theme-omnibar-total-to,        var(--theme-omnibar-tag, var(--obs-accent,        #e71347)));
+  /* Celebration mesh — same recipe but a separate var stack so the
+   * celebration takeover can have its own colour scheme.
+   *   1. omnibar_celebration_tag_from / _to (gradient pair)
+   *   2. omnibar_celebration_tag (deprecated single-colour fallback)
+   *   3. brand mesh fallback via --ob-section-brand-* (existing chain)
+   */
+  --ob-section-celebration-from: var(--theme-omnibar-celebration-tag-from,
+                                     var(--theme-omnibar-celebration-tag,
+                                         var(--ob-section-brand-from)));
+  --ob-section-celebration-to:   var(--theme-omnibar-celebration-tag-to,
+                                     var(--theme-omnibar-celebration-tag,
+                                         var(--ob-section-brand-to)));
+
+  /* Mesh builders — each section gets its own variant of the lit-pill
+   * gradient (top sheen + bottom shoulder + linear wash). Tag pills
+   * paint these via the lane-scoped rules further below; the brand
+   * pill + total cluster bind their variant directly. */
+  --ob-bloodmoon-brand:
     radial-gradient(
       ellipse 90% 140% at 15% -25%,
-      color-mix(in srgb, var(--obs-accent-bright, #da4471) 70%, #fff 35%) 0%,
-      color-mix(in srgb, var(--obs-accent-bright, #da4471) 70%, #fff 0%) 45%,
+      color-mix(in srgb, var(--ob-section-brand-from) 70%, #fff 35%) 0%,
+      color-mix(in srgb, var(--ob-section-brand-from) 70%, #fff 0%) 45%,
       transparent 70%
     ),
     radial-gradient(
       ellipse 120% 180% at 100% 110%,
-      color-mix(in srgb, var(--obs-accent, #e71347) 88%, #000 15%) 0%,
+      color-mix(in srgb, var(--ob-section-brand-to) 88%, #000 15%) 0%,
       transparent 65%
     ),
-    linear-gradient(
-      180deg,
-      var(--obs-accent-bright, #da4471) 0%,
-      var(--obs-accent, #e71347) 100%
-    );
+    linear-gradient(180deg, var(--ob-section-brand-from) 0%, var(--ob-section-brand-to) 100%);
+  --ob-bloodmoon-top:
+    radial-gradient(
+      ellipse 90% 140% at 15% -25%,
+      color-mix(in srgb, var(--ob-section-top-from) 70%, #fff 35%) 0%,
+      color-mix(in srgb, var(--ob-section-top-from) 70%, #fff 0%) 45%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 120% 180% at 100% 110%,
+      color-mix(in srgb, var(--ob-section-top-to) 88%, #000 15%) 0%,
+      transparent 65%
+    ),
+    linear-gradient(180deg, var(--ob-section-top-from) 0%, var(--ob-section-top-to) 100%);
+  --ob-bloodmoon-bottom:
+    radial-gradient(
+      ellipse 90% 140% at 15% -25%,
+      color-mix(in srgb, var(--ob-section-bottom-from) 70%, #fff 35%) 0%,
+      color-mix(in srgb, var(--ob-section-bottom-from) 70%, #fff 0%) 45%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 120% 180% at 100% 110%,
+      color-mix(in srgb, var(--ob-section-bottom-to) 88%, #000 15%) 0%,
+      transparent 65%
+    ),
+    linear-gradient(180deg, var(--ob-section-bottom-from) 0%, var(--ob-section-bottom-to) 100%);
+  --ob-bloodmoon-total:
+    radial-gradient(
+      ellipse 90% 140% at 15% -25%,
+      color-mix(in srgb, var(--ob-section-total-from) 70%, #fff 35%) 0%,
+      color-mix(in srgb, var(--ob-section-total-from) 70%, #fff 0%) 45%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 120% 180% at 100% 110%,
+      color-mix(in srgb, var(--ob-section-total-to) 88%, #000 15%) 0%,
+      transparent 65%
+    ),
+    linear-gradient(180deg, var(--ob-section-total-from) 0%, var(--ob-section-total-to) 100%);
+  --ob-bloodmoon-celebration:
+    radial-gradient(
+      ellipse 90% 140% at 15% -25%,
+      color-mix(in srgb, var(--ob-section-celebration-from) 70%, #fff 35%) 0%,
+      color-mix(in srgb, var(--ob-section-celebration-from) 70%, #fff 0%) 45%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 120% 180% at 100% 110%,
+      color-mix(in srgb, var(--ob-section-celebration-to) 88%, #000 15%) 0%,
+      transparent 65%
+    ),
+    linear-gradient(180deg, var(--ob-section-celebration-from) 0%, var(--ob-section-celebration-to) 100%);
+  /* Backward-compat alias — kept so any not-yet-migrated rule that
+   * still reads --ob-bloodmoon paints with the brand mesh. New rules
+   * should pick the right per-section variant directly. */
+  --ob-bloodmoon: var(--ob-bloodmoon-brand);
   --ob-font: var(--theme-font-heading, 'Bungee', sans-serif);
   width: var(--obs-stage-width, 1920px);
   height: var(--ob-height);
   /* Two-layer background: a soft horizontal accent vignette on top
    * of the neutral steel base, so the centre of the bar lifts toward
    * the active theme accent without competing with panel content.
-   * The accent tint is colour-mixed from --obs-accent so a theme
-   * swap re-shades the bar without separate maintenance. */
+   *
+   * Vignette colour now reads --ob-section-top-from (the resolved
+   * top-tag gradient stop), so changing the top lane gradient updates
+   * the bar's accent halo in lockstep with the tag pill. Falls back
+   * through the same chain as the section vars: top-tag → omnibar-tag
+   * → per-game obs-accent.
+   *
+   * Theme override: when a theme sets --theme-omnibar-lane-bg, that
+   * solid colour replaces the steel gradient (the vignette layer
+   * still tints it). That lets bright themes (SNES, Game Boy) match
+   * their page surface in the broadcast layer. */
   background:
     radial-gradient(
       ellipse 90% 200% at 50% 50%,
-      color-mix(in srgb, var(--obs-accent, #e71347) 18%, transparent) 0%,
+      color-mix(in srgb, var(--ob-section-top-from) 18%, transparent) 0%,
       transparent 70%
     ),
-    linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #41454b 100%);
-  border-top: 1px solid var(--obs-accent, #e71347);
+    var(--theme-omnibar-lane-bg, linear-gradient(0deg, #2a2c30 0%, #3a3e44 60%, #41454b 100%));
+  /* Top border tracks the top-lane gradient — chase the tag colour
+   * with the bar's outer rule so they read as one piece of chrome. */
+  border-top: 1px solid var(--ob-section-top-from);
   display: flex;
   align-items: stretch;
   color: var(--theme-text, #fff);
@@ -76,7 +177,11 @@
 .omnibar--v2 .ob-brand {
   width: 220px;
   flex-shrink: 0;
-  background: var(--ob-bloodmoon);
+  background: var(--ob-bloodmoon-brand);
+  /* Brand-specific text override (only matters for the brand pill's
+   * own labels / fallback text — the logo image itself doesn't read
+   * this). Falls back to the lane default. */
+  color: var(--theme-omnibar-brand-text, var(--theme-text, #fff));
   /* Two-lane mode: twin chevrons on the right edge, each centred on
    * one lane (25% = top lane centre, 75% = bottom lane centre) so the
    * tag pill notches in each lane dovetail with their own chevron.
@@ -160,7 +265,66 @@
 }
 
 .omnibar--v2 .ob-lane--top {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  /* Inter-lane divider — themes can tint this via
+   * --theme-omnibar-ticker (falls back to primary_bright via
+   * applyTheme) so multi-colour themes get a visible accent stripe
+   * here. color-mix keeps it gentle; raw accent would be too loud. */
+  border-bottom: 1px solid color-mix(
+    in srgb,
+    var(--theme-omnibar-ticker, rgba(255, 255, 255, 0.08)) 40%,
+    transparent
+  );
+}
+
+/* Per-lane tag mesh — each panel's tag pill paints its lane's
+ * per-section gradient so a theme can give top vs bottom lanes their
+ * own colour (e.g. SNES: blue top tag for game state, yellow bottom
+ * tag for donation / charity / schedule).
+ *
+ * The lane root takes a BODY text colour (`...-lane-text`) so the
+ * panel content inside the lane (`.ob-text-strong`, `.ob-text-muted`,
+ * etc.) reads against whatever lane background the theme has chosen.
+ *
+ * The tag pill takes its OWN text colour (`...-tag-text`) — the pill
+ * sits on the gradient, not the lane background, so it often needs a
+ * different contrast register (e.g. a dark lane body but white text
+ * on a bright tag pill).
+ *
+ * Fallback chain: tag-text → lane-text → --theme-text. */
+.omnibar--v2 .ob-lane--top {
+  color: var(--theme-omnibar-top-lane-text, var(--theme-text, #fff));
+}
+.omnibar--v2 .ob-lane--bottom {
+  color: var(--theme-omnibar-bottom-lane-text, var(--theme-text, #fff));
+}
+.omnibar--v2 .ob-lane--top .ob-tag {
+  background: var(--ob-bloodmoon-top);
+  color: var(--theme-omnibar-top-tag-text,
+                var(--theme-omnibar-top-lane-text,
+                    var(--theme-text, #fff)));
+}
+.omnibar--v2 .ob-lane--bottom .ob-tag {
+  background: var(--ob-bloodmoon-bottom);
+  color: var(--theme-omnibar-bottom-tag-text,
+                var(--theme-omnibar-bottom-lane-text,
+                    var(--theme-text, #fff)));
+}
+/* Fullbar takeovers collapse the two lanes into one, so the tag
+ * defaults to the brand mesh (matches the chevron join visually). */
+.omnibar--v2 .ob-fullbar .ob-tag {
+  background: var(--ob-bloodmoon-brand);
+  color: var(--theme-omnibar-brand-text, var(--theme-text, #fff));
+}
+/* Celebration takeovers (.ob-fullbar--celebrate) get their own
+ * default tag mesh so the gold-flash mood reads as distinct from
+ * an urgent takeover. Theme overrides (gradient pair or deprecated
+ * single colour) bubble through --ob-section-celebration-from/to
+ * into --ob-bloodmoon-celebration. Inline `background` set by the
+ * trigger payload (CelebrationBanner's `tagStyle` → applied to the
+ * <span class="ob-tag">) wins over this via inline-style
+ * specificity. */
+.omnibar--v2 .ob-fullbar--celebrate .ob-tag {
+  background: var(--ob-bloodmoon-celebration);
 }
 
 /* Full-bar takeover — used when an urgent override targets `both`.
@@ -253,17 +417,26 @@
   position: absolute;
   inset: 0 0 0 calc(-1 * var(--ob-chevron));
   pointer-events: none;
-  /* Top-anchored linear gold — densest at the top edge, fading to
+  /* Top-anchored linear flash — densest at the top edge, fading to
    * transparent quickly so only the upper portion of the bar gets
    * tinted. Stops are concentrated near the top (0-50%) and the
    * bottom half stays clean, so the tag pill + headline don't sit
-   * in a flat gold wash. Alpha kept low; the box-shadow on
-   * .mood--celebrate adds a second, even lighter pass. */
+   * in a flat colour wash. Alpha kept low; the box-shadow on
+   * .mood--celebrate adds a second, even lighter pass.
+   *
+   * Resolved colour comes from (highest precedence first):
+   *   1. --ob-celebrate-flash-color (per-fire inline style set on
+   *      .ob-fullbar--celebrate from the trigger payload)
+   *   2. --theme-omnibar-celebration-flash (theme default)
+   *   3. #ffd23a (baked-in gold)
+   * color-mix maps the resolved hue to the same 22% / 8% / 0% alpha
+   * stops so the lit-from-above shape stays consistent across colour
+   * swaps. */
   background: linear-gradient(
     180deg,
-    rgba(255, 210, 58, 0.22) 0%,
-    rgba(255, 210, 58, 0.08) 30%,
-    rgba(255, 210, 58, 0) 55%
+    color-mix(in srgb, var(--ob-celebrate-flash-color, var(--theme-omnibar-celebration-flash, #ffd23a)) 22%, transparent) 0%,
+    color-mix(in srgb, var(--ob-celebrate-flash-color, var(--theme-omnibar-celebration-flash, #ffd23a)) 8%, transparent) 30%,
+    transparent 55%
   );
   animation:
     ob-celebrate-flash-down 800ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both,
@@ -406,9 +579,12 @@
 .omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-headline {
   /* Slightly bigger than the urgent banner's strong text and
    * colour-shifted toward warm gold so the achievement reads
-   * differently from an "urgent" alert. */
+   * differently from an "urgent" alert.
+   * Theme override: --theme-omnibar-celebration-heading. Per-fire
+   * override via the trigger payload (CelebrationBanner passes it
+   * inline) wins via inline-style specificity. */
   font-size: 1.65rem;
-  color: #ffe69b;
+  color: var(--theme-omnibar-celebration-heading, #ffe69b);
   line-height: 1.1;
   text-shadow:
     0 1px 0 rgba(0, 0, 0, 0.55),
@@ -419,7 +595,16 @@
   font-family: 'Open Sans', sans-serif;
   font-size: 0.95rem;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.92);
+  /* Theme override (--theme-omnibar-celebration-sub) wins; otherwise
+   * inherits the lane / fullbar text colour so a per-lane override
+   * (omnibar_top_lane_text / omnibar_bottom_lane_text) carries
+   * through. The 92% mix preserves the "subhead is softer than the
+   * headline" register on dark themes. Per-fire payload override is
+   * applied inline by CelebrationBanner and wins both. */
+  color: var(
+    --theme-omnibar-celebration-sub,
+    color-mix(in srgb, currentColor 92%, transparent)
+  );
   line-height: 1.2;
   /* Allow the description to wrap if it's long — the row body's
    * default white-space: nowrap is overridden here so an incentive's
@@ -696,6 +881,22 @@
   padding-left: 1rem;
 }
 
+/* Charity-info panel marquee — share the row with the charity logo:
+ * flex-fill the remaining width (overriding .ob-marquee's width:100%)
+ * and allow shrinking so MarqueeText measures a real, bounded width
+ * and only scrolls when the copy actually overflows. */
+.omnibar--v2 .ob-row-body .ob-charity-info-marquee {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  /* Keep the compact muted size/spacing (from .ob-text-muted) but render at
+   * full opacity — the charity body is primary copy, so it should match the
+   * top lane's strong text rather than reading washed-out at 72% alpha. This
+   * rule (3 classes) outweighs .ob-text-muted (2 classes), so only the colour
+   * is overridden. */
+  color: inherit;
+}
+
 .omnibar--v2 .ob-row-body > * {
   opacity: 0;
   animation: ob-body-reveal var(--ob-body-reveal-ms) var(--ob-enter-ease)
@@ -719,7 +920,9 @@
   height: 100%;
   margin-left: calc(-1 * var(--ob-chevron));
   padding: 0 1rem 0 calc(var(--ob-chevron) + 0.5rem);
-  background: var(--ob-bloodmoon);
+  /* Default tag mesh = brand mesh; lane-scoped rules below override
+   * to the top/bottom variants so each lane carries its own gradient. */
+  background: var(--ob-bloodmoon-brand);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--ob-chevron) 50%);
   color: #fff;
   font-family: var(--ob-font);
@@ -779,7 +982,11 @@
 
 .omnibar--v2 .ob-text-strong {
   font-family: var(--ob-font);
-  color: #fff;
+  /* Inherits the per-lane colour from its containing .ob-lane--*
+   * (set above), which itself falls back to --theme-text. Themes that
+   * want a per-lane text colour set it via
+   * omnibar_top_tag_text / omnibar_bottom_tag_text. */
+  color: inherit;
   font-size: 1.2rem;
   letter-spacing: 0.02em;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
@@ -787,7 +994,10 @@
 
 .omnibar--v2 .ob-text-muted {
   font-family: var(--ob-font);
-  color: rgba(255, 255, 255, 0.72);
+  /* Muted variant: 72% alpha of the inherited per-lane text colour
+   * via color-mix, so a lane-text override stays consistent across
+   * strong/muted reads. */
+  color: color-mix(in srgb, currentColor 72%, transparent);
   font-size: 0.9rem;
   letter-spacing: 0.05em;
 }
@@ -796,13 +1006,17 @@
   display: inline-flex;
   align-items: center;
   padding: 0.16rem 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  /* Border + fill mix off the inherited lane text colour so a dark
+   * lane gets a dark-edge chip and a light lane gets a light-edge
+   * chip. Same alpha as the original white values, just driven by
+   * currentColor so the rule tracks the lane override. */
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, currentColor 8%, transparent);
   font-family: var(--ob-font);
   font-size: 0.78rem;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.92);
+  color: color-mix(in srgb, currentColor 92%, transparent);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -918,19 +1132,24 @@
    * rather than a flat coloured rectangle. The old 90° horizontal
    * sweep ran across the bar in the same direction as the bar grew,
    * which is the dominant "linear-swipe" feel the omnibar had too
-   * much of. Going vertical breaks that monoaxis read. */
+   * much of. Going vertical breaks that monoaxis read.
+   *
+   * Per-bar accent: the React parent assigns data-accent so each bar
+   * resolves --btn-tint to a different theme colour. The bidwar
+   * stack now reads as the four-colour PAL palette rather than every
+   * bar painting the same per-game accent. */
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--obs-accent-bright, #da4471) 75%, #fff 40%) 0%,
-      var(--obs-accent-bright, #da4471) 22%,
-      var(--obs-accent, #e71347) 78%,
-      color-mix(in srgb, var(--obs-accent, #e71347) 80%, #000 25%) 100%
+      color-mix(in srgb, var(--btn-tint, var(--obs-accent-bright, #da4471)) 75%, #fff 40%) 0%,
+      var(--btn-tint, var(--obs-accent-bright, #da4471)) 22%,
+      color-mix(in srgb, var(--btn-tint, var(--obs-accent, #e71347)) 88%, #000 8%) 78%,
+      color-mix(in srgb, var(--btn-tint, var(--obs-accent, #e71347)) 80%, #000 25%) 100%
     );
   border-radius: 3px;
   /* Inner glow at the leading right edge so the fill looks like it's
    * currently rising. Subtle (8% alpha) to avoid being noisy. */
-  box-shadow: inset -2px 0 0 0 color-mix(in srgb, var(--obs-accent-bright, #da4471) 100%, #fff 60%);
+  box-shadow: inset -2px 0 0 0 color-mix(in srgb, var(--btn-tint, var(--obs-accent-bright, #da4471)) 100%, #fff 60%);
   opacity: 0.5;
   transition: width 600ms ease;
 }
@@ -940,8 +1159,15 @@
 }
 
 .omnibar--v2 .ob-bidwar-bar.is-leading {
-  border-color: #ffd23a;
-  box-shadow: 0 0 0 1px rgba(255, 210, 58, 0.4);
+  /* "Currently winning" highlight — themes that opt into accent_1
+   * (success register) get their own win-colour; the default gold
+   * still drives bloodmoon + the other single-accent themes. */
+  border-color: var(--theme-accent-1, #ffd23a);
+  box-shadow: 0 0 0 1px color-mix(
+    in srgb,
+    var(--theme-accent-1, #ffd23a) 40%,
+    transparent
+  );
 }
 
 .omnibar--v2 .ob-bidwar-bar-label,
@@ -961,7 +1187,9 @@
 }
 
 .omnibar--v2 .ob-bidwar-bar-amount {
-  color: #ffd23a;
+  /* Amount text — themed via accent_1 so it tracks the win register
+   * (gold by default, green on SNES, etc.). */
+  color: var(--theme-accent-1, #ffd23a);
   font-size: 0.72rem;
 }
 
@@ -987,14 +1215,17 @@
 .omnibar--v2 .ob-live-headline .wave-text {
   font-family: var(--ob-font);
   font-size: 1.15rem;
-  color: #fff;
+  /* Inherits bottom-lane text colour. */
+  color: inherit;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 }
 
 .omnibar--v2 .ob-live-amount {
   font-family: var(--ob-font);
   font-size: 1.2rem;
-  color: #ffd23a;
+  /* Money-on-screen — themed via accent_1 so themes opting into the
+   * accent palette get their own "incoming donation" colour. */
+  color: var(--theme-accent-1, #ffd23a);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
   font-variant-numeric: tabular-nums;
   animation: ob-amount-pop var(--ob-flash-ms) ease-out var(--ob-enter-ms) both;
@@ -1010,7 +1241,8 @@
   font-family: 'Open Sans', sans-serif;
   font-size: 0.88rem;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.85);
+  /* Soft message body — 85% of the inherited lane colour. */
+  color: color-mix(in srgb, currentColor 85%, transparent);
   letter-spacing: 0.01em;
 }
 
@@ -1021,7 +1253,11 @@
   align-items: center;
   gap: 1rem;
   padding: 0 1rem 0 1.25rem;
-  background: var(--ob-bloodmoon);
+  background: var(--ob-bloodmoon-total);
+  /* Currency + amount + supporting copy inside the right cluster read
+   * this; bright totals (e.g. SNES yellow) need a dark text colour to
+   * stay legible. Falls back to --theme-text. */
+  color: var(--theme-omnibar-total-text, var(--theme-text, #fff));
   /* Wider to fit total + charity cluster side-by-side without
    * either feeling cramped. */
   min-width: 420px;
@@ -1222,14 +1458,18 @@
 .omnibar--v2 .ob-total-currency {
   font-family: var(--ob-font);
   font-size: 1.2rem;
-  color: #fff;
+  /* Inherits .ob-total's per-theme text colour
+   * (omnibar_total_text → --theme-text fallback) so a bright total
+   * background gets readable dark figures. */
+  color: inherit;
   line-height: 1;
 }
 
 .omnibar--v2 .ob-total-amount {
   font-family: var(--ob-font);
   font-size: 2.1rem;
-  color: #fff;
+  /* Inherits .ob-total's per-theme text colour — see above. */
+  color: inherit;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
@@ -1324,7 +1564,9 @@
 .omnibar--v2 .ob-charity-blurb-body {
   font-family: 'Open Sans', sans-serif;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.92);
+  /* Inherits bottom-lane text colour (charity panel sits there).
+   * 92% mix retains the soft register. */
+  color: color-mix(in srgb, currentColor 92%, transparent);
   line-height: 1.2;
   white-space: normal;
   display: -webkit-box;
@@ -1387,13 +1629,14 @@
   min-width: 1.6rem;
   height: 1.4rem;
   padding: 0 0.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  /* Border + fill + text all derive from the inherited lane colour. */
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, currentColor 8%, transparent);
   font-family: var(--ob-font);
   font-size: 0.78rem;
   letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.85);
+  color: color-mix(in srgb, currentColor 85%, transparent);
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -1406,7 +1649,8 @@
 .omnibar--v2 .ob-donor-name {
   font-family: var(--ob-font);
   font-size: 1.05rem;
-  color: #fff;
+  /* Inherits bottom-lane text colour. */
+  color: inherit;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
   white-space: nowrap;
   overflow: hidden;
@@ -1435,7 +1679,9 @@
   font-family: 'Open Sans', sans-serif;
   font-style: italic;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.78);
+  /* 78% mix of the inherited lane colour — quieter than the name
+   * + amount above it. */
+  color: color-mix(in srgb, currentColor 78%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1447,13 +1693,16 @@
   display: inline-flex;
   align-items: center;
   padding: 0.1rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* Border + text derive from inherited lane colour; background
+   * stays a slight dark wash to keep the pill readable on either
+   * dark or light lanes. */
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.22);
   font-family: var(--ob-font);
   font-size: 0.72rem;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.7);
+  color: color-mix(in srgb, currentColor 70%, transparent);
   white-space: nowrap;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -1525,12 +1774,12 @@
    * lead-in feels of a piece with the milestone name + amount chips,
    * not like a plain Open-Sans paragraph fragment dropped into the
    * row. Slightly muted weight + colour so the URL still wins
-   * attention. */
+   * attention. 78% of the inherited lane colour. */
   font-family: var(--ob-font);
   font-weight: 400;
   font-size: 0.9rem;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.78);
+  color: color-mix(in srgb, currentColor 78%, transparent);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
   white-space: nowrap;
 }
@@ -1543,4 +1792,211 @@
   letter-spacing: 0.04em;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
   padding: 0 0.15rem;
+}
+
+/* ── Pre-stream upcoming-game card ────────────────────────────────────
+ *
+ * Each card is a horizontal flex strip sized to fit the omnibar's
+ * 48px half-lane — cover art on the left, a 3-row text stack on the
+ * right (eyebrow with position + platform, title, runtime). The
+ * marquee duplicates these so the cards loop horizontally across the
+ * lane; per-card data is fully self-contained so duplication doesn't
+ * desync (no animations driven by index).
+ *
+ * Colours: borders + chips mix off the inherited lane text colour
+ * (currentColor) so a per-lane override (omnibar_top_lane_text)
+ * tints them automatically. Width is fixed (260px) so all cards have
+ * the same footprint regardless of title length — long titles clip
+ * with ellipsis rather than stretching the card.
+ */
+.omnibar--v2 .ob-upcoming-card {
+  display: flex;
+  align-items: stretch;
+  gap: 0.7rem;
+  /* Cards sit just inside the half-lane height with a hair of padding
+   * so the borders don't kiss the divider stripe. */
+  height: calc(var(--ob-lane-h) - 6px);
+  /* Fill the available body width — the carousel shows one card at a
+   * time, so each card gets the full lane to read in instead of
+   * shrinking to fit a marquee strip. */
+  width: 100%;
+  padding: 2px 0.85rem 2px 2px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  overflow: hidden;
+  /* Three-phase choreography in one keyframe — the parent remounts
+   * the card on every cycle (keyed on card.id), so this replays per
+   * advance without the panel needing JS-side transition state.
+   * Timing breakdown over CARD_ANIM_MS (5500ms):
+   *
+   *     0%  → invisible, 100% below baseline
+   *     8%  ( ~440ms) → settled in (enter complete)
+   *    87%  (~4785ms) → still dwelling
+   *   100%  (5500ms)  → above baseline, invisible (exit complete)
+   *
+   * Then JS waits CARD_GAP_MS (~220ms) before remounting the next
+   * card, so the lane is briefly empty between exits + enters
+   * rather than crossfading. */
+  animation: ob-upcoming-card-cycle 5500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Single-card lineups — the carousel doesn't tick, so the lone
+ * card should enter once and hold visible forever. Swap to a
+ * static keyframe that stops at the settled state. */
+.omnibar--v2 .ob-upcoming-card.ob-upcoming-card--static {
+  animation: ob-upcoming-card-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ob-upcoming-card-cycle {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  8% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  87% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes ob-upcoming-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.omnibar--v2 .ob-upcoming-card-art {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--ob-lane-h) - 10px);
+  height: 100%;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+}
+.omnibar--v2 .ob-upcoming-card-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* No-art fallback — a platform initial tile so the layout doesn't
+ * collapse when a game's box_art_url is empty. */
+.omnibar--v2 .ob-upcoming-card-art--placeholder {
+  font-family: var(--ob-font);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.omnibar--v2 .ob-upcoming-card-body {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.05rem;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.omnibar--v2 .ob-upcoming-card-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--ob-font);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: color-mix(in srgb, currentColor 72%, transparent);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.omnibar--v2 .ob-upcoming-card-position {
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Up first" flag on the leading card — uses accent_1 (success
+ * register) when the theme provides one, falling back to primary
+ * so single-accent themes still surface it. */
+.omnibar--v2 .ob-upcoming-card-up-first {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--theme-accent-1, var(--theme-primary, currentColor)) 32%,
+    transparent
+  );
+  color: var(--theme-accent-1, var(--theme-primary, currentColor));
+}
+
+/* Platform chip — sits flush right against the title so the badge
+ * reads as metadata for the card rather than separate UI. */
+.omnibar--v2 .ob-upcoming-card-platform {
+  margin-left: auto;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  font-size: 0.58rem;
+}
+
+.omnibar--v2 .ob-upcoming-card-title {
+  font-family: var(--ob-font);
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  /* Single-line clip with ellipsis as a safety net for very long
+   * names — the card now spans the full body width so most titles
+   * sit comfortably without truncation. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Time-to-beat block, right column. Two-row stack with a tiny
+ * uppercase eyebrow + a chunky pixel-mono value, so the meta info
+ * reads as a labelled stat rather than an icon-plus-number tag. */
+.omnibar--v2 .ob-upcoming-card-duration {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  padding-left: 0.4rem;
+  border-left: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.omnibar--v2 .ob-upcoming-card-duration-label {
+  font-family: var(--ob-font);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+}
+
+.omnibar--v2 .ob-upcoming-card-duration-value {
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: color-mix(in srgb, currentColor 92%, transparent);
+  white-space: nowrap;
 }

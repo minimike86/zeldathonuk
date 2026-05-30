@@ -3,6 +3,7 @@ import { DonationCards } from '@/components/DonationCards';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { CharityImpactTier, Donation } from '@/lib/obsApi';
 import { cleanForDisplay } from '@/lib/profanity';
+import { useAccentDeck } from '@/lib/accentDeck';
 import './donations.css';
 
 /** ISO 4217 → display symbol for impact-tier amounts. Falls back to the
@@ -51,6 +52,12 @@ export function Donations() {
   const impactTiers = primaryCharity?.impact_tiers ?? [];
   const charityName =
     primaryCharity?.short_name || primaryCharity?.name || 'The charity';
+  // Per-tile shuffled accents — donor cards + impact-tier rows each
+  // pick a different theme accent so the page reads as a four-colour
+  // grid rather than uniform brand-coloured cards. Length follows the
+  // count so the deck never under-allocates.
+  const donationAccents = useAccentDeck(donations?.length ?? 0);
+  const tierAccents = useAccentDeck(impactTiers.length);
 
   return (
     <div className="d-flex flex-row min-vh-100">
@@ -77,8 +84,13 @@ export function Donations() {
               </div>
 
               <div className="row g-3">
-                {donations!.map((d) => (
-                  <DonationTile key={d.id} donation={d} currency={currency} />
+                {donations!.map((d, i) => (
+                  <DonationTile
+                    key={d.id}
+                    donation={d}
+                    currency={currency}
+                    accent={donationAccents[i]}
+                  />
                 ))}
               </div>
 
@@ -123,8 +135,8 @@ export function Donations() {
               </div>
               <table className="table text-white small mb-0">
                 <tbody>
-                  {impactTiers.map((tier) => (
-                    <tr key={tier.id}>
+                  {impactTiers.map((tier, i) => (
+                    <tr key={tier.id} data-accent={tierAccents[i]}>
                       <td style={{ verticalAlign: 'middle' }}>
                         <div className="donation-benefit-amount">
                           {fmtTierAmount(tier)}
@@ -174,9 +186,11 @@ function obfuscateName(name: string): string {
 function DonationTile({
   donation: d,
   currency,
+  accent,
 }: {
   donation: Donation;
   currency: string;
+  accent?: number;
 }) {
   // Operator moderation takes priority over the automatic LDNOOBW scrub:
   // a donation muted for an inappropriate name has the name obfuscated,
@@ -200,7 +214,7 @@ function DonationTile({
   const when = new Date(d.donated_at);
   return (
     <div className="col-12 col-md-6">
-      <div className="donation-tile">
+      <div className="donation-tile" data-accent={accent}>
         <div className="d-flex align-items-center gap-3">
           <div aria-hidden className="donation-tile-avatar">
             {initial}

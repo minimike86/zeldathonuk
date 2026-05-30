@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFloppyDisk,
@@ -174,7 +175,7 @@ export function ScheduleControl() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [showBreaks, setShowBreaks] = useState(true);
+  const [showBreaks, setShowBreaks] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [pushingTwitch, setPushingTwitch] = useState(false);
   const [twitchMsg, setTwitchMsg] = useState<string | null>(null);
@@ -223,6 +224,25 @@ export function ScheduleControl() {
     setErr(null);
     try {
       await api(`/api/schedule/${entryId}/`, { method: 'DELETE' });
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Clear a game's DONE flag — `reopen_timer` clears is_completed +
+  // finished_at while keeping accumulated timer seconds intact, so a
+  // mistaken Finish is one click away from being undone. Surfaced in
+  // the entry's Edit panel rather than as a row action so the action
+  // sits with the rest of the entry's settings. For a full clock wipe
+  // the operator can hit Reset on the timer afterwards.
+  const clearCompleted = async (entryId: number) => {
+    if (!confirm('Mark this entry as not completed? It moves back to queued; the timer reading is preserved.')) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.reopenTimer(entryId);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -468,6 +488,7 @@ export function ScheduleControl() {
                           entry={entry}
                           onCancel={() => setEditingId(null)}
                           onSaved={() => setEditingId(null)}
+                          onClearCompleted={clearCompleted}
                         />
                       </td>
                     </tr>,
@@ -662,9 +683,25 @@ function SortableRow({
               {entry.display_title}
             </strong>
             <div className="small text-white-50">
-              {entry.game
-                ? `${entry.game.platform} · ${entry.game.layout_type}`
-                : slotTypeLabel(entry.slot_type)}
+              {entry.game ? (
+                <>
+                  {entry.game.platform} · {entry.game.layout_type}
+                  {entry.game.objectives.length > 0 && (
+                    <>
+                      {' '}·{' '}
+                      <Link
+                        to={`/control/objectives?game=${entry.game.id}`}
+                        className="text-info"
+                        title="Open this game's objective library"
+                      >
+                        {entry.game.objectives.length} objective{entry.game.objectives.length === 1 ? '' : 's'}
+                      </Link>
+                    </>
+                  )}
+                </>
+              ) : (
+                slotTypeLabel(entry.slot_type)
+              )}
               {nestDroppable.isOver && (
                 <span className="text-warning ms-2">↳ Drop to nest here</span>
               )}
@@ -920,6 +957,7 @@ function EntryForm({
   entry,
   onCancel,
   onSaved,
+  onClearCompleted,
 }: {
   event: EventModel;
   games: Game[];
@@ -929,6 +967,10 @@ function EntryForm({
   entry?: ScheduleEntry;
   onCancel: () => void;
   onSaved: () => void;
+  // Optional — only the top-level game-row EntryForm wires this in.
+  // Child (break) EntryForms never need it since breaks don't carry
+  // a completion flag.
+  onClearCompleted?: (id: number) => void;
 }) {
   const isEdit = entry !== undefined;
   const [slotType, setSlotType] = useState<SlotType>(entry?.slot_type ?? 'game');
@@ -1303,8 +1345,23 @@ function EntryForm({
         </div>
       )}
 
-      <div className="d-flex gap-2 mt-4">
-        <button type="submit" className="btn btn-bloodmoon" disabled={busy}>
+      <div className="d-flex gap-2 mt-4 flex-wrap">
+        {isEdit && entry && entry.is_completed && onClearCompleted && (
+          <button
+            type="button"
+            className="btn btn-outline-warning"
+            disabled={busy}
+            onClick={() => onClearCompleted(entry.id)}
+            title="Clear the DONE flag so this entry returns to queued. The timer reading is preserved."
+          >
+            Mark as not completed
+          </button>
+        )}
+        <button
+          type="submit"
+          className="btn btn-bloodmoon ms-auto"
+          disabled={busy}
+        >
           {busy ? 'Saving…' : isEdit ? 'Update' : 'Add to schedule'}
         </button>
         <button type="button" className="btn btn-outline-light" onClick={onCancel}>

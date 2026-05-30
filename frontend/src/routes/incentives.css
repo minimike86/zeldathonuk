@@ -93,18 +93,23 @@
   text-align: left;
   border-radius: 14px;
   overflow: hidden;
+  /* Per-card accent (data-accent → --btn-tint). Background + border
+   * both mix the per-card colour with the legacy translucent black so
+   * the four-card row paints four distinct hues on multi-colour themes
+   * while single-accent themes keep their classic look via the
+   * fallback chain. */
   background: linear-gradient(
     160deg,
-    color-mix(in srgb, var(--theme-primary, #e71347) 12%, transparent) 0%,
+    color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 12%, transparent) 0%,
     rgba(0, 0, 0, 0.4) 100%
   );
-  border: 1px solid color-mix(in srgb, var(--theme-primary, #e71347) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 35%, transparent);
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .incentive-card:hover {
   transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 60%, transparent);
+  border-color: color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 60%, transparent);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
@@ -450,13 +455,16 @@
   position: absolute;
   inset: 0;
   width: var(--share, 0%);
-  background: color-mix(in srgb, var(--theme-primary, #e71347) 28%, transparent);
+  /* Per-option accent fill — each bid-war row's bar paints its own
+   * theme colour so a head-to-head contest reads as a four-colour
+   * stack rather than identical bars. */
+  background: color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 28%, transparent);
   transition: width 0.4s ease;
   z-index: 0;
 }
 
 .incentive-option--leading::before {
-  background: color-mix(in srgb, var(--theme-primary, #e71347) 45%, transparent);
+  background: color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 45%, transparent);
 }
 
 .incentive-option-name,

@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExternalLinkAlt, faStar, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { useAccentDeck } from '@/lib/accentDeck';
 import './history.css';
 
 type TimelineEvent = {
@@ -158,6 +159,11 @@ function yearsSince2011() {
 }
 
 export function History() {
+  // Per-event shuffled accents — each historical event card paints
+  // one of the four theme colours so the timeline reads as a
+  // multi-colour ribbon down the page rather than every card sharing
+  // the brand primary.
+  const eventAccents = useAccentDeck(events.length);
   return (
     <div className="container p-3 min-vh-100 text-white text-center">
       <div className="my-3">
@@ -185,7 +191,11 @@ export function History() {
             // active theme.
             const isCurrent = i === 0;
             return (
-            <li key={ev.status} className={`zth-timeline-item ${i % 2 ? 'right' : 'left'}`}>
+            <li
+              key={ev.status}
+              className={`zth-timeline-item ${i % 2 ? 'right' : 'left'}`}
+              data-accent={eventAccents[i]}
+            >
               <span
                 className={`zth-timeline-marker ${isCurrent ? 'is-current' : 'is-past'}`}
               >

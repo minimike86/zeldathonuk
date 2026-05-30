@@ -275,6 +275,46 @@ export function ThemeControl() {
   );
 }
 
+/**
+ * Compact Save / Revert footer rendered at the bottom of every editor
+ * card. The themes page is long enough that the header's Save sits
+ * off-screen once you scroll into the omnibar / accent cards; this
+ * keeps the action one click away no matter which card you're in.
+ * Disabled until the draft is dirty so non-dirty cards don't show
+ * actionable-looking buttons that wouldn't do anything.
+ */
+function CardSaveBar({
+  dirty,
+  busy,
+  onSave,
+  onRevert,
+}: {
+  dirty: boolean;
+  busy: boolean;
+  onSave: () => void;
+  onRevert: () => void;
+}) {
+  return (
+    <div className="d-flex justify-content-end align-items-center gap-2 mt-3 pt-3 border-top border-secondary border-opacity-25">
+      {dirty && <span className="small text-warning me-2">Unsaved changes</span>}
+      <button
+        className="btn btn-sm btn-outline-light"
+        disabled={!dirty || busy}
+        onClick={onRevert}
+      >
+        Revert
+      </button>
+      <button
+        className="btn btn-sm btn-bloodmoon"
+        disabled={!dirty || busy}
+        onClick={onSave}
+      >
+        {busy ? 'Saving…' : 'Save'}
+      </button>
+    </div>
+  );
+}
+
 function ThemeEditor({
   draft,
   set,
@@ -296,6 +336,9 @@ function ThemeEditor({
   onRevert: () => void;
   onActivate: () => void;
 }) {
+  const saveBar = (
+    <CardSaveBar dirty={dirty} busy={busy} onSave={onSave} onRevert={onRevert} />
+  );
   return (
     <>
       <div className="control-card">
@@ -372,6 +415,144 @@ function ThemeEditor({
           <ColorField label="Muted text" value={draft.text_muted} onChange={(v) => set('text_muted', v)} />
           <ColorField label="Lines / borders" value={draft.line_color} onChange={(v) => set('line_color', v)} />
         </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Accents</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          Multi-colour palettes use these three slots to drive status badges,
+          KPI underlines, and the omnibar ticker accent. Blank fields fall
+          back to primary_bright / primary / secondary.
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Accent 1 (success)" value={draft.accent_1} onChange={(v) => set('accent_1', v)} />
+          <ColorField label="Accent 2 (warning)" value={draft.accent_2} onChange={(v) => set('accent_2', v)} />
+          <ColorField label="Accent 3 (danger)" value={draft.accent_3} onChange={(v) => set('accent_3', v)} />
+        </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Card surfaces</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          The fill behind every <code>.control-card</code> and omnibar slot.
+          Dark themes can leave the default semi-transparent black; bright
+          themes (SNES, Game Boy) should set a solid light surface +
+          matching dark text so cards stay readable.
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Surface fill" value={draft.surface_color} onChange={(v) => set('surface_color', v)} />
+          <ColorField label="Surface text" value={draft.surface_text_color} onChange={(v) => set('surface_text_color', v)} />
+          <ColorField label="Surface border" value={draft.surface_border_color} onChange={(v) => set('surface_border_color', v)} />
+        </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Omnibar — lane + ticker</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          The omnibar normally inherits the per-game accent set by the
+          playthrough state. Setting any field below overrides that to
+          lock the broadcast layer to this theme regardless of which
+          game is live. Per-section gradients live in the cards below;
+          this card controls the lane fill + divider stripe + the
+          legacy global tag colour (which acts as a fallback default
+          for any section gradient you leave blank).
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Lane background" value={draft.omnibar_lane_bg} onChange={(v) => set('omnibar_lane_bg', v)} />
+          <ColorField label="Global tag fallback" value={draft.omnibar_tag_color} onChange={(v) => set('omnibar_tag_color', v)} />
+          <ColorField label="Ticker accent" value={draft.omnibar_ticker_accent} onChange={(v) => set('omnibar_ticker_accent', v)} />
+        </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Omnibar — logo / brand pill</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          Two-stop gradient (top → bottom) on the left chevron pill that
+          carries the event logo. Blank stops fall back to the global
+          tag fallback above.
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Brand — from" value={draft.omnibar_brand_from} onChange={(v) => set('omnibar_brand_from', v)} />
+          <ColorField label="Brand — to" value={draft.omnibar_brand_to} onChange={(v) => set('omnibar_brand_to', v)} />
+          <ColorField label="Brand — text" value={draft.omnibar_brand_text} onChange={(v) => set('omnibar_brand_text', v)} />
+        </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Omnibar — top lane tag pill</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          Two-stop gradient on every panel tag pill in the top lane
+          (current-game, objective, items-collected, setpiece, etc.).
+          Blank stops fall back to the global tag fallback.
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Top tag — from" value={draft.omnibar_top_tag_from} onChange={(v) => set('omnibar_top_tag_from', v)} />
+          <ColorField label="Top tag — to" value={draft.omnibar_top_tag_to} onChange={(v) => set('omnibar_top_tag_to', v)} />
+          <ColorField label="Top tag — text (on pill)" value={draft.omnibar_top_tag_text} onChange={(v) => set('omnibar_top_tag_text', v)} />
+          <ColorField label="Top lane — body text" value={draft.omnibar_top_lane_text} onChange={(v) => set('omnibar_top_lane_text', v)} />
+        </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Omnibar — bottom lane tag pill</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          Two-stop gradient on every panel tag pill in the bottom lane
+          (donation reel, charity info, schedule, milestones, etc.).
+          Lets you give donation/charity content its own colour distinct
+          from the top lane's game-state content. Blank stops fall back
+          to the global tag fallback.
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Bottom tag — from" value={draft.omnibar_bottom_tag_from} onChange={(v) => set('omnibar_bottom_tag_from', v)} />
+          <ColorField label="Bottom tag — to" value={draft.omnibar_bottom_tag_to} onChange={(v) => set('omnibar_bottom_tag_to', v)} />
+          <ColorField label="Bottom tag — text (on pill)" value={draft.omnibar_bottom_tag_text} onChange={(v) => set('omnibar_bottom_tag_text', v)} />
+          <ColorField label="Bottom lane — body text" value={draft.omnibar_bottom_lane_text} onChange={(v) => set('omnibar_bottom_lane_text', v)} />
+        </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Omnibar — total raised / charity cluster</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          Two-stop gradient on the right-hand cluster (running total
+          amount + beneficiary logos). The donation/charity right-side
+          chrome you probably want to brand distinctly from the lanes.
+          Blank stops fall back to the global tag fallback.
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Total — from" value={draft.omnibar_total_from} onChange={(v) => set('omnibar_total_from', v)} />
+          <ColorField label="Total — to" value={draft.omnibar_total_to} onChange={(v) => set('omnibar_total_to', v)} />
+          <ColorField label="Total — text" value={draft.omnibar_total_text} onChange={(v) => set('omnibar_total_text', v)} />
+        </div>
+        {saveBar}
+      </div>
+
+      <div className="control-card">
+        <h2>Omnibar — celebration takeover</h2>
+        <p className="text-white-50 small mb-3 mt-1">
+          Defaults for the full-bar takeover that fires when an incentive
+          is unlocked, a milestone is reached, or a schedule-entry sound
+          trigger plays. Individual triggers can still override per-fire
+          via the payload (<code>tag_color_from</code> +{' '}
+          <code>tag_color_to</code>, <code>heading_color</code>,{' '}
+          <code>sub_color</code>, <code>flash_color</code> on the
+          schedule-entry sound trigger).
+          Blank fields fall back to the baked-in gold-flash mood.
+        </p>
+        <div className="row g-3 mt-2">
+          <ColorField label="Celebration — tag from" value={draft.omnibar_celebration_tag_from} onChange={(v) => set('omnibar_celebration_tag_from', v)} />
+          <ColorField label="Celebration — tag to" value={draft.omnibar_celebration_tag_to} onChange={(v) => set('omnibar_celebration_tag_to', v)} />
+          <ColorField label="Celebration — headline" value={draft.omnibar_celebration_heading} onChange={(v) => set('omnibar_celebration_heading', v)} />
+          <ColorField label="Celebration — subhead" value={draft.omnibar_celebration_sub} onChange={(v) => set('omnibar_celebration_sub', v)} />
+          <ColorField label="Celebration — flash" value={draft.omnibar_celebration_flash} onChange={(v) => set('omnibar_celebration_flash', v)} />
+        </div>
+        {saveBar}
       </div>
 
       <div className="control-card">
@@ -381,6 +562,7 @@ function ThemeEditor({
           <LogoPickerField label="Logo URL (small / compact)" value={draft.logo_small_url} onChange={(v) => set('logo_small_url', v)} placeholder="/assets/img/your-mark.svg" />
           <TextField label="Favicon URL" value={draft.favicon_url} onChange={(v) => set('favicon_url', v)} placeholder="/assets/img/favicon.png" preview="image" />
         </div>
+        {saveBar}
       </div>
 
       <div className="control-card">
@@ -389,6 +571,7 @@ function ThemeEditor({
           <TextField label="Background video URL" value={draft.background_video_url} onChange={(v) => set('background_video_url', v)} placeholder="https://…/loop.mp4" preview="video" />
           <TextField label="Background image URL" value={draft.background_image_url} onChange={(v) => set('background_image_url', v)} placeholder="https://…/bg.jpg" preview="image" />
         </div>
+        {saveBar}
       </div>
 
       <div className="control-card">
@@ -444,6 +627,7 @@ function ThemeEditor({
             onChange={(v) => set('link_hover_color', v)}
           />
         </div>
+        {saveBar}
       </div>
 
       <div className="control-card">
@@ -452,6 +636,7 @@ function ThemeEditor({
           <TextField label="Heading font-family" value={draft.heading_font} onChange={(v) => set('heading_font', v)} placeholder="'Bungee', sans-serif" />
           <TextField label="Body font-family" value={draft.body_font} onChange={(v) => set('body_font', v)} placeholder="'Open Sans', sans-serif" />
         </div>
+        {saveBar}
       </div>
     </>
   );

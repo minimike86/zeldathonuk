@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { WaveText } from '@/components/WaveText';
 import { PanelRow } from './_shared/Row';
 import type { GameObjective, Incentive, Milestone } from '@/lib/obsApi';
@@ -40,8 +41,28 @@ export function CelebrationBanner({
   currencySymbol: string;
 }) {
   const view = parseReason(reason, currencySymbol);
+  // Per-fire colour overrides — schedule-entry-sound triggers (and any
+  // future kind that wants to colour-code its banner) can ship these
+  // alongside their tag/message/subhead on the payload. Inline styles
+  // win over the theme defaults set on :root, which in turn win over
+  // the baked-in gold-flash mood. Empty payload → all defaults.
+  const colours = readColourOverrides(reason);
+  // Tag pill background: a gradient pair wins, then a single colour,
+  // otherwise leave the CSS default (theme mesh or baked-in brand).
+  const tagStyle: CSSProperties | undefined =
+    colours.tagFrom && colours.tagTo
+      ? { background: buildCelebrationTagMesh(colours.tagFrom, colours.tagTo) }
+      : colours.tag
+        ? { background: colours.tag }
+        : undefined;
+  const headlineStyle: CSSProperties | undefined = colours.heading
+    ? { color: colours.heading }
+    : undefined;
+  const subStyle: CSSProperties | undefined = colours.sub
+    ? { color: colours.sub }
+    : undefined;
   return (
-    <PanelRow tag={view.tag} arrow flash>
+    <PanelRow tag={view.tag} arrow flash tagStyle={tagStyle}>
       {/* Optional sprite (e.g. the obtained objective's icon) sits before
         * the text so viewers see WHAT was achieved at a glance. */}
       {view.image && (
@@ -54,7 +75,7 @@ export function CelebrationBanner({
         * `.ob-celebrate-stack` is a flex-column inside the row body
         * with the headline on top and the subhead wrapping below. */}
       <span className="ob-celebrate-stack">
-        <span className="ob-text-strong ob-celebrate-headline">
+        <span className="ob-text-strong ob-celebrate-headline" style={headlineStyle}>
           {/* startDelayMs matches the subhead wipe-in delay in
             * omnibar.css (.ob-celebrate-sub) so headline characters
             * drop in WHILE the subhead wipes in from the left. Both
@@ -63,10 +84,64 @@ export function CelebrationBanner({
           <WaveText text={view.headline} staggerMs={32} startDelayMs={2500} />
         </span>
         {view.subhead && (
-          <span className="ob-text-muted ob-celebrate-sub">{view.subhead}</span>
+          <span className="ob-text-muted ob-celebrate-sub" style={subStyle}>
+            {view.subhead}
+          </span>
         )}
       </span>
     </PanelRow>
+  );
+}
+
+/** Pull colour overrides off the trigger payload. All optional —
+ *  the empty result lets the theme defaults / baked-in mood drive
+ *  the look.
+ *
+ *  Tag pill: a `tag_color_from` + `tag_color_to` pair gets rendered
+ *  as the full lit-pill gradient mesh; a lone `tag_color` paints as
+ *  a single solid background. Mixing only one of from/to is treated
+ *  as no gradient (falls back to single `tag_color` if set, else
+ *  CSS default). */
+function readColourOverrides(reason: CelebrationReason): {
+  tag?: string;
+  tagFrom?: string;
+  tagTo?: string;
+  heading?: string;
+  sub?: string;
+} {
+  const payload = (reason.payload ?? {}) as Record<string, unknown>;
+  const pick = (key: string): string | undefined => {
+    const v = payload[key];
+    return typeof v === 'string' && v.trim() ? v.trim() : undefined;
+  };
+  return {
+    tag: pick('tag_color'),
+    tagFrom: pick('tag_color_from'),
+    tagTo: pick('tag_color_to'),
+    heading: pick('heading_color'),
+    sub: pick('sub_color'),
+  };
+}
+
+/** Build the lit-pill mesh background string (top sheen + bottom
+ *  shoulder + linear wash) from a from / to colour pair. Mirrors the
+ *  `--ob-bloodmoon-*` recipe in omnibar.css so an inline-styled
+ *  per-fire tag pill reads as the same family of UI element as the
+ *  themeable section pills. */
+function buildCelebrationTagMesh(from: string, to: string): string {
+  return (
+    `radial-gradient(` +
+      `ellipse 90% 140% at 15% -25%,` +
+      `color-mix(in srgb, ${from} 70%, #fff 35%) 0%,` +
+      `color-mix(in srgb, ${from} 70%, #fff 0%) 45%,` +
+      `transparent 70%` +
+    `),` +
+    `radial-gradient(` +
+      `ellipse 120% 180% at 100% 110%,` +
+      `color-mix(in srgb, ${to} 88%, #000 15%) 0%,` +
+      `transparent 65%` +
+    `),` +
+    `linear-gradient(180deg, ${from} 0%, ${to} 100%)`
   );
 }
 

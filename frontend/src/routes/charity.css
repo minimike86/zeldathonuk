@@ -477,8 +477,19 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.85rem 0.9rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Per-tile accent (data-accent on this element → --btn-tint). The
+   * fallback chain keeps the legacy translucent black for themes
+   * without explicit accents — only multi-colour themes shift. */
+  background: color-mix(
+    in srgb,
+    var(--btn-tint, transparent) 12%,
+    rgba(0, 0, 0, 0.3)
+  );
+  border: 1px solid color-mix(
+    in srgb,
+    var(--btn-tint, transparent) 45%,
+    rgba(255, 255, 255, 0.1)
+  );
   border-radius: 10px;
   text-align: center;
   align-items: center;
@@ -488,7 +499,9 @@
   font-family: 'Bungee', sans-serif;
   font-size: 1.45rem;
   letter-spacing: 0.02em;
-  color: #fff;
+  /* Amount font tints to the parent tile's accent so all four PAL
+   * colours show up across a row of tiers. */
+  color: var(--btn-tint, #fff);
 }
 
 .charity-impact-img {

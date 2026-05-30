@@ -8,6 +8,7 @@ import {
   INITIAL,
   omnibarReducer,
   type CelebrationReason,
+  type OmnibarState,
 } from './fsm/omnibarMachine';
 import { useOmnibarFeed, type OmnibarFeed } from './hooks/useOmnibarFeed';
 import { useOverrideStream } from './hooks/useOverrideStream';
@@ -510,6 +511,11 @@ function OmnibarInner() {
 
   const isUrgent = omnibarState.kind === 'urgent';
   const isCelebrating = omnibarState.kind === 'celebrating';
+  // Pulled here (not inline in the JSX) so the conditional spread on
+  // the wrapper's style stays a single expression — the helper returns
+  // null when not celebrating or when the trigger payload has no
+  // `flash_color`, in which case the CSS fallback chain takes over.
+  const celebrateFlashColor = readCelebrateFlashColor(omnibarState);
 
   // Where the urgent banner lands. Each override carries its own
   // `target_lane` so operators can put announcements in the status
@@ -643,6 +649,15 @@ function OmnibarInner() {
               // longer than the default 6.2s choreography. 0 for
               // milestone / incentive celebrations.
               ['--ob-celebrate-hold-ms' as string]: `${celebrateHoldMs}ms`,
+              // Per-fire flash colour override — the trigger payload can
+              // ship a `flash_color` field which then drives the top-
+              // anchored flash gradient via `--ob-celebrate-flash-color`
+              // in omnibar.css. The helper returns null when unset, in
+              // which case the CSS fallback chain (theme default →
+              // baked-in gold) wins.
+              ...(celebrateFlashColor && {
+                ['--ob-celebrate-flash-color' as string]: celebrateFlashColor,
+              }),
             } as React.CSSProperties}
           >
             {/* Soft gold flash overlay — a real DOM element (rather
@@ -740,6 +755,17 @@ function readSplashColorMode(layout: unknown): SplashColorMode {
   const mode = (splash as { color_mode?: unknown }).color_mode;
   if (mode === 'gold' || mode === 'rainbow' || mode === 'theme') return mode;
   return 'theme';
+}
+
+/** Pull `flash_color` off a celebrating omnibar state's reason payload.
+ *  Used to set --ob-celebrate-flash-color on the celebration wrapper so
+ *  a schedule-entry sound trigger can override the gold flash colour
+ *  per-fire. Returns null when not celebrating or no payload value. */
+function readCelebrateFlashColor(state: OmnibarState): string | null {
+  if (state.kind !== 'celebrating') return null;
+  const payload = (state.reason.payload ?? {}) as Record<string, unknown>;
+  const v = payload.flash_color;
+  return typeof v === 'string' && v.trim() ? v.trim() : null;
 }
 
 // Upper bound on tween duration. The hook scales the actual run-

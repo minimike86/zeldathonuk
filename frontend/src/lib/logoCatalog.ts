@@ -18,6 +18,12 @@ export interface LogoOption {
 const FOLDER = '/assets/img/brand/logo/';
 
 const FILES: string[] = [
+  'Zeldathon-2026-Pixel-GameBoy-transparent.svg',
+  'Zeldathon-2026-Pixel-GameBoyPocket-transparent.svg',
+  'Zeldathon-2026-Pixel-GameBoyPocket.svg',
+  'Zeldathon-2026-Pixel.svg',
+  'Zeldathon-2026-Retro80s.svg',
+  'Zeldathon-2026-SNES.svg',
   'Zeldathon-2026-Sheikah.svg',
   'Zeldathon-2026-StainedGlass.svg',
   'Zeldathon-2026-White.svg',

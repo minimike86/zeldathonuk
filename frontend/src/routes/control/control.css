@@ -57,20 +57,35 @@
 }
 
 .control-card {
-  background: linear-gradient(135deg, rgba(43, 27, 37, 0.6), rgba(76, 19, 36, 0.6));
-  border: 1px solid rgba(185, 39, 83, 0.5);
+  /* Theme-driven surface — defaults preserve the previous bloodmoon
+   * card look on dark themes (semi-transparent black) while bright
+   * themes (SNES, Game Boy) get to override with a solid light fill
+   * via theme.surface_color. */
+  background: var(--theme-surface, linear-gradient(135deg, rgba(43, 27, 37, 0.6), rgba(76, 19, 36, 0.6)));
+  border: 1px solid var(--theme-surface-border, var(--theme-line, rgba(185, 39, 83, 0.5)));
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  color: var(--theme-surface-text, var(--theme-text, #fff));
 }
 
 .control-card h2 {
   margin-top: 0;
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  /* Heading runs through the three accents (which fall back to the
+   * primary palette when unset), so bloodmoon still gradients red→pink
+   * while SNES PAL gradients blue→red→yellow etc. */
+  background: linear-gradient(
+    45deg,
+    var(--theme-accent-2, var(--theme-primary, #e71347)),
+    var(--theme-accent-1, var(--theme-primary-bright, #da4471)),
+    var(--theme-accent-3, var(--theme-secondary, #e7364b)),
+    var(--theme-accent-1, var(--theme-primary-bright, #da4471)),
+    var(--theme-accent-2, var(--theme-primary, #e71347))
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-family: 'Bungee', sans-serif;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
   text-transform: uppercase;
   font-size: 1.5rem;
 }
@@ -539,6 +554,19 @@
 
 .theme-editor .control-card {
   margin-bottom: 0;
+}
+
+/* /control/theme card headings stay plain white so the colour gradient
+ * used elsewhere doesn't conflict with the swatches being edited below
+ * (every accent change on the active theme would otherwise repaint
+ * each card's title, which makes the heading flicker as you drag
+ * around the colour pickers). Override the global .control-card h2
+ * gradient with a flat fill scoped to the whole theme shell (covers
+ * both the rail's "Themes" header and every editor card). */
+.theme-shell .control-card h2 {
+  background: none;
+  -webkit-text-fill-color: #fff;
+  color: #fff;
 }
 
 .schedule-form {

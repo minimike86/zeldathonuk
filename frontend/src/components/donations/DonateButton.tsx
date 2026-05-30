@@ -14,6 +14,7 @@ export function DonateButton({
   className,
   size = 'sm',
   label = 'Donate',
+  accent,
   children,
 }: {
   pages: DonationPage[];
@@ -21,6 +22,14 @@ export function DonateButton({
   className?: string;
   size?: 'sm' | 'lg';
   label?: string;
+  /**
+   * Optional data-accent index (0–3) to opt into the four-colour
+   * accent cycling defined in index.css. Caller usually pulls this
+   * from `useAccentDeck`. Omit on solo donate buttons (e.g. the
+   * navbar's standalone Donate) so they keep the theme's standard
+   * button gradient.
+   */
+  accent?: number;
   /**
    * Render-as-children — when supplied, the children replace the default
    * Bungee `Donate` button content. The outer element stays a real
@@ -45,6 +54,7 @@ export function DonateButton({
         type="button"
         className={buttonClass}
         style={buttonStyle}
+        data-accent={accent}
         onClick={() => setOpen(true)}
       >
         {children ?? label}

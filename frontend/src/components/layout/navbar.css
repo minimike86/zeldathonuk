@@ -36,17 +36,30 @@
   text-shadow: 1px 1px 2px black;
 }
 
+/* Per-item accent — each nav <li> carries data-accent="0|1|2|3"
+ * (Navbar.tsx assigns via useAccentDeck). The shared --btn-tint var
+ * (defined in index.css) resolves to one of the four theme colours,
+ * so each item paints a different hue on hover + drives its icon
+ * colour with the matching accent. Without a data-accent attribute
+ * the original bloodmoon look survives via the fallback. */
 .nav-item-bloodmoon:hover {
   background:
-    linear-gradient(180deg, var(--theme-primary, #b92753), hsla(0, 0%, 100%, 0)),
-    var(--theme-primary, #b92753) !important;
+    linear-gradient(180deg, var(--btn-tint, var(--theme-primary, #b92753)), hsla(0, 0%, 100%, 0)),
+    var(--btn-tint, var(--theme-primary, #b92753)) !important;
 }
 
 .nav-icon-bloodmoon {
-  color: var(--theme-secondary, #731c37);
+  color: var(--btn-tint, var(--theme-secondary, #731c37));
+  /* Subtle stroke makes the icon read against either light surfaces
+   * (SNES grey navbar) or dark ones (bloodmoon). The shadow uses the
+   * inverse of the surface text colour so it self-balances. */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 
 .nav-item-bloodmoon:hover .nav-icon-bloodmoon {
+  /* On hover the cell paints the accent colour as its background — flip
+   * the icon to a dark stamp so it reads on top regardless of which
+   * accent is showing. */
   color: #111421 !important;
 }
 

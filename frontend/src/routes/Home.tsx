@@ -4,6 +4,7 @@ import { DonateButton } from '@/components/donations/DonateButton';
 import { WaveText } from '@/components/WaveText';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { DonationPage, EventCharityLink, ScheduleEntry } from '@/lib/obsApi';
+import { useAccentDeck } from '@/lib/accentDeck';
 import './home.css';
 
 // Pass every plausible parent so Twitch's iframe security check passes
@@ -33,6 +34,12 @@ function useInnerWidth() {
 
 export function Home() {
   const innerWidth = useInnerWidth();
+  // Shuffled-per-mount accent deck. Each CTA on the page reads one of
+  // the four theme colours (primary + accent_1/2/3) so the page reads
+  // as a full multi-colour palette rather than every button being the
+  // same hue. Length covers every concrete button below; unused slots
+  // are harmless. Reshuffles on hard refresh, stable while navigating.
+  const homeAccents = useAccentDeck(6);
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
   const donationPages = event?.donation_pages ?? [];
   const twitchChannel = event?.twitch_channel || 'zeldathonuk';
@@ -238,6 +245,7 @@ export function Home() {
                       </div>
                       <a
                         className="btn btn-bloodmoon"
+                        data-accent={homeAccents[0]}
                         style={{
                           padding: '0.1rem 1.25rem',
                           fontSize: '0.95rem',
@@ -302,6 +310,7 @@ export function Home() {
                   <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
                     <a
                       className="btn btn-sm btn-bloodmoon p-2 px-5"
+                      data-accent={homeAccents[1]}
                       title="Follow Us On Twitch"
                       href={`https://www.twitch.tv/${twitchChannel}`}
                       target="_blank"
@@ -342,6 +351,7 @@ export function Home() {
                   <div className="mt-2" style={{ fontFamily: "'Bungee', cursive" }}>
                     <Link
                       className="btn btn-sm btn-bloodmoon p-2 px-5"
+                      data-accent={homeAccents[2]}
                       title="Check The Schedule"
                       to="/schedule"
                     >
@@ -449,6 +459,12 @@ function BenefittingCard({
     charity.slug === 'specialeffect' ? 'btn-specialeffect' : 'btn-bloodmoon';
   const blurb =
     charity.mission_statement?.trim() || 'No mission statement yet.';
+  // Per-card shuffled accents — each charity card paints its Help +
+  // Donate buttons in two different theme colours so a multi-card row
+  // shows the full SNES PAL palette across the page rather than
+  // repeating the brand primary on every CTA. SpecialEffect keeps its
+  // bespoke blue/orange (its own colours), so it ignores data-accent.
+  const cardAccents = useAccentDeck(2);
 
   return (
     <div className="benefitting-card">
@@ -474,6 +490,7 @@ function BenefittingCard({
             {helpUrl && (
               <button
                 className={`btn ${ctaClass}`}
+                data-accent={cardAccents[0]}
                 onClick={() => openExternal(helpUrl)}
               >
                 {helpLabel}
@@ -490,10 +507,12 @@ function BenefittingCard({
                 currencySymbol={currencySymbol}
                 className="p-2 px-5"
                 label={donateLabel}
+                accent={cardAccents[1]}
               />
             ) : donateUrl ? (
               <button
                 className="btn btn-sm btn-bloodmoon p-2 px-5"
+                data-accent={cardAccents[1]}
                 style={{ fontFamily: "'Bungee', cursive" }}
                 title={donateTooltip}
                 onClick={() => openExternal(donateUrl)}

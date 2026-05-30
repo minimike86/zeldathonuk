@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { EventModel, ScheduleEntry } from '@/lib/obsApi';
+import { useAccentDeck } from '@/lib/accentDeck';
 import './schedule.css';
 
 interface SlotMeta {
@@ -139,6 +140,11 @@ export function Schedule() {
   const completed = games.filter((s) => s.entry.is_completed).length;
   const eventEnd =
     slots.length > 0 ? slots[slots.length - 1].end : null;
+  // One shuffled deck for every slot card across the whole page —
+  // tracking a global index across day groups so e.g. day 1 → 2 doesn't
+  // restart the cycle and accidentally put two same-colour cards next
+  // to each other at the day boundary.
+  const cardAccents = useAccentDeck(slots.length);
 
   return (
     <div className="schedule-page">
@@ -163,15 +169,23 @@ export function Schedule() {
                 <div className="schedule-day-date">{day.dateLabel}</div>
               </header>
               <div className="schedule-day-slots">
-                {day.slots.map(({ slot, isGhost }) => (
-                  <GameCard
-                    key={`${slot.entry.id}-${isGhost ? 'ghost' : 'live'}`}
-                    slot={slot}
-                    isPlaying={!isGhost && currentEntryId === slot.entry.id}
-                    isGhost={isGhost}
-                    twitchChannel={event?.twitch_channel || 'zeldathonuk'}
-                  />
-                ))}
+                {day.slots.map(({ slot, isGhost }) => {
+                  // Globally-positioned index so the deck stays in sync
+                  // across day groups (slots is the flat ordered list).
+                  const globalIdx = slots.findIndex(
+                    (s) => s.entry.id === slot.entry.id,
+                  );
+                  return (
+                    <GameCard
+                      key={`${slot.entry.id}-${isGhost ? 'ghost' : 'live'}`}
+                      slot={slot}
+                      isPlaying={!isGhost && currentEntryId === slot.entry.id}
+                      isGhost={isGhost}
+                      twitchChannel={event?.twitch_channel || 'zeldathonuk'}
+                      accent={cardAccents[globalIdx]}
+                    />
+                  );
+                })}
               </div>
             </section>
           ))}
@@ -261,11 +275,13 @@ function GameCard({
   isPlaying,
   isGhost,
   twitchChannel,
+  accent,
 }: {
   slot: Slot;
   isPlaying: boolean;
   isGhost: boolean;
   twitchChannel: string;
+  accent?: number;
 }) {
   const { entry, start, end, children } = slot;
   const isCompleted = entry.is_completed;
@@ -293,6 +309,7 @@ function GameCard({
   return (
     <article
       className={cardClass}
+      data-accent={accent}
       style={
         game?.box_art_url
           ? {

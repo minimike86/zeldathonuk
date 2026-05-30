@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onThemeChanged } from '@/lib/themeBus';
+import { useAccentDeck } from '@/lib/accentDeck';
 import './navbar.css';
 
 const DEFAULT_LOGO = '/assets/img/brand/logo/Zeldathon-Logo-2026-Gold-Flash.svg';
@@ -87,6 +88,11 @@ export function Navbar() {
   const { data: theme } = usePolledQuery(obsApi.themeSettings, 3000, [themeBump]);
   const donationPages = event?.donation_pages ?? [];
   const logoSrc = theme?.logo_url || DEFAULT_LOGO;
+  // Per-mount shuffled deck — each nav item picks one of the four
+  // theme accents (primary + accent_1/2/3) so the bar shows off the
+  // whole palette rather than painting all seven items the same
+  // colour. Re-rolls on page refresh, stays stable while navigating.
+  const navAccents = useAccentDeck(navItems.length);
 
   return (
     <nav className="navbar navbar-expand-lg">
@@ -166,8 +172,12 @@ export function Navbar() {
         <div className="d-flex flex-fill justify-content-around">
           <div className="d-flex flex-shrink-0 justify-content-center mx-2">
             <ul className="navbar-nav">
-              {navItems.map((item) => (
-                <li key={item.to} className="nav-item nav-item-bloodmoon">
+              {navItems.map((item, i) => (
+                <li
+                  key={item.to}
+                  className="nav-item nav-item-bloodmoon"
+                  data-accent={navAccents[i]}
+                >
                   <NavLink
                     to={item.to}
                     end={item.to === '/'}

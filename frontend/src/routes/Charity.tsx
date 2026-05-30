@@ -27,6 +27,8 @@ import type {
   SocialPlatformKey,
 } from '@/lib/obsApi';
 import { DonateButton } from '@/components/donations/DonateButton';
+import { useAccentDeck } from '@/lib/accentDeck';
+import { formatTierAmount } from '@/lib/currency';
 import './charity.css';
 
 /** Brand icon + display label per supported social platform. Keys match
@@ -51,20 +53,6 @@ const SOCIAL_META: Record<
   patreon: { icon: faPatreon, label: 'Patreon' },
   other: { icon: faLink, label: 'Link' },
 };
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  GBP: '£',
-  USD: '$',
-  EUR: '€',
-  JPY: '¥',
-};
-
-function formatTierAmount(amount: string, currency: string): string {
-  const n = Number(amount);
-  const display = Number.isFinite(n) ? Math.round(n).toString() : amount;
-  const symbol = CURRENCY_SYMBOLS[currency];
-  return symbol ? `${symbol}${display}` : `${currency} ${display}`;
-}
 
 /** Extract a YouTube video id from any of the URL flavours YouTube
  *  emits (watch?v=, youtu.be/, embed/, shorts/). Returns null when the
@@ -378,6 +366,10 @@ function CharityLinks({ charity }: { charity: Charity }) {
 
 function ImpactTiers({ charity }: { charity: Charity }) {
   const tiers = [...charity.impact_tiers].sort((a, b) => a.order - b.order);
+  // Per-tier shuffled accents — every "what could your donation do?"
+  // tile picks one of the four theme colours so the grid reads as the
+  // full PAL palette rather than a uniform brand-coloured row.
+  const tierAccents = useAccentDeck(tiers.length);
   return (
     <section className="charity-impact">
       <header className="charity-section-header">
@@ -386,8 +378,12 @@ function ImpactTiers({ charity }: { charity: Charity }) {
         </span>
       </header>
       <div className="charity-impact-grid">
-        {tiers.map((t) => (
-          <div key={t.id} className="charity-impact-tier">
+        {tiers.map((t, i) => (
+          <div
+            key={t.id}
+            className="charity-impact-tier"
+            data-accent={tierAccents[i]}
+          >
             <div className="charity-impact-amount">
               {formatTierAmount(t.amount, t.currency)}
             </div>

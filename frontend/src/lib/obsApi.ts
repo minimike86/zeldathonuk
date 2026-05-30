@@ -396,6 +396,59 @@ export interface ThemeSettings {
   image_hue_rotate: number;
   link_color: string;
   link_hover_color: string;
+  /** Multi-colour accents — empty strings fall back at apply-time:
+   *  accent_1 → primary_bright, accent_2 → primary, accent_3 → secondary. */
+  accent_1: string;
+  accent_2: string;
+  accent_3: string;
+  /** Card/panel surface — solid fill for cards on bright themes. Empty
+   *  surface_text_color / surface_border_color fall back to text_color
+   *  / line_color at apply-time. */
+  surface_color: string;
+  surface_text_color: string;
+  surface_border_color: string;
+  /** Omnibar-specific overrides. Empty values let the existing
+   *  --obs-accent (per-game) / steel-gradient defaults keep driving. */
+  omnibar_lane_bg: string;
+  /** [Deprecated] Single tag colour — kept as the fallback default
+   *  for the per-section gradient fields below when those are blank. */
+  omnibar_tag_color: string;
+  omnibar_ticker_accent: string;
+  /** Per-section gradient stops (from = top stop, to = bottom stop,
+   *  rendered with a 180° angle). Each section falls back to
+   *  omnibar_tag_color → --obs-accent when its pair is blank, so a
+   *  theme can opt in incrementally. */
+  omnibar_brand_from: string;
+  omnibar_brand_to: string;
+  omnibar_brand_text: string;
+  omnibar_top_tag_from: string;
+  omnibar_top_tag_to: string;
+  omnibar_top_tag_text: string;
+  /** Text colour for the top-lane body content (panel text rendered
+   *  to the right of the tag pill). Distinct from the tag pill text
+   *  because the body sits on the lane background, not the gradient. */
+  omnibar_top_lane_text: string;
+  omnibar_bottom_tag_from: string;
+  omnibar_bottom_tag_to: string;
+  omnibar_bottom_tag_text: string;
+  omnibar_bottom_lane_text: string;
+  omnibar_total_from: string;
+  omnibar_total_to: string;
+  omnibar_total_text: string;
+  /** Default colours for the full-bar celebration takeover banner.
+   *  Individual triggers can override per-fire via the payload
+   *  (payload.tag_color / heading_color / sub_color). Blanks fall
+   *  back to the baked-in gold-flash mood. */
+  /** Deprecated single-colour fallback for the celebration tag pill.
+   *  Used only when both gradient stops below are blank. */
+  omnibar_celebration_tag: string;
+  /** Celebration tag pill gradient stops (top → bottom, 180°). Blank
+   *  falls back through omnibar_celebration_tag → brand mesh. */
+  omnibar_celebration_tag_from: string;
+  omnibar_celebration_tag_to: string;
+  omnibar_celebration_heading: string;
+  omnibar_celebration_sub: string;
+  omnibar_celebration_flash: string;
   heading_font: string;
   body_font: string;
   updated_at: string;
@@ -744,6 +797,9 @@ export interface Charity {
   short_name: string;
   charity_number: string;
   mission_statement: string;
+  /** One-line condensed mission for tight spaces (the omnibar charity
+   *  ticker). Falls back to mission_statement when blank. */
+  mission_tagline: string;
   logo_url: string;
   /** Tight-crop variant of the square logo for compact UI. Consumers
    *  should fall back to `logo_url` when this is empty. */

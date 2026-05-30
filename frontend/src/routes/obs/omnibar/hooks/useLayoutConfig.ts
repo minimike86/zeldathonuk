@@ -245,7 +245,11 @@ function pickLane(lanes: RawLane[], id: 'top' | 'bottom'): LaneConfig | null {
         (p): p is string => typeof p === 'string' && KNOWN_IDS.has(p),
       )
     : [];
-  if (panels.length === 0) return null;
+  // An explicitly-saved lane with no panels is a deliberate "clear
+  // this lane" — collapse to the pre-stream fallback rather than
+  // returning null (which would let the resolver fall through to
+  // DEFAULT_TOP / DEFAULT_BOTTOM and resurrect the standard panels).
+  if (panels.length === 0) return { id, mode, panels: ['pre-stream'] };
   // `lane.intervalMs` is intentionally ignored — rotation cadence
   // is now driven by per-panel transitions config (dwell + delays).
   return { id, mode, panels };

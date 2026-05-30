@@ -202,7 +202,26 @@
 
 .schedule-card:hover {
   transform: translateY(-2px);
-  border-color: var(--theme-primary, rgba(231, 19, 71, 0.4));
+  border-color: var(--btn-tint, var(--theme-primary, rgba(231, 19, 71, 0.4)));
+}
+
+/* Per-card accent stripe — when the card has a data-accent attribute
+ * (set by the parent loop via `useAccentDeck`), paint a 4px stripe
+ * down the left edge in that accent colour. Multi-colour themes
+ * (SNES PAL) now show a four-colour bar of card stripes along the
+ * schedule timeline; single-accent themes still get variety from
+ * the deck's cycle through primary / primary_bright / secondary. */
+.schedule-card[data-accent] {
+  box-shadow: inset 4px 0 0 0 var(--btn-tint);
+}
+.schedule-card.is-live[data-accent] {
+  /* When the card is also live the accent stripe still shows, but the
+   * pulsing border is the dominant signal — keep the stripe at full
+   * intensity so it doesn't compete with the pulse. */
+  box-shadow:
+    inset 4px 0 0 0 var(--btn-tint),
+    0 0 0 1px var(--theme-line, rgba(231, 19, 71, 0.5)),
+    0 0 32px var(--theme-line, rgba(231, 19, 71, 0.45));
 }
 
 .schedule-card.is-live {

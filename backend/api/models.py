@@ -1177,6 +1177,232 @@ class ThemeSettings(models.Model):
         help_text='Inline anchor hover colour (--theme-link-hover).',
     )
 
+    # ── Multi-colour accents ────────────────────────────────────────────
+    # Three additional named accent slots beyond primary/secondary so
+    # multi-colour palettes (e.g. SNES PAL: green/red/yellow + blue
+    # primary) can drive status badges, KPI underlines, omnibar tag
+    # accents etc. without competing with the brand primary.
+    accent_1 = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='Optional accent #1 (--theme-accent-1). Used for the success/'
+                  'positive register on badges and decorative stripes. Blank '
+                  'falls back to primary_bright at runtime.',
+    )
+    accent_2 = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='Optional accent #2 (--theme-accent-2). Used for the warning/'
+                  'caution register. Blank falls back to primary.',
+    )
+    accent_3 = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='Optional accent #3 (--theme-accent-3). Used for the danger/'
+                  'attention register. Blank falls back to secondary.',
+    )
+
+    # ── Card / surface trio ─────────────────────────────────────────────
+    # A "surface" is any card, panel, or omnibar slot that sits on top
+    # of the page background. Themes with bright page backgrounds (SNES,
+    # GameBoy) want explicit surface fills so cards don't disappear; the
+    # darker baked-in `rgba(0,0,0,0.35)` previously applied to every
+    # .control-card is now a defaultable theme value.
+    surface_color = models.CharField(
+        max_length=40, default='rgba(0, 0, 0, 0.35)',
+        help_text='Card/panel fill (--theme-surface). Bright themes can set '
+                  'a solid light value here; the default semi-transparent '
+                  'black preserves the bloodmoon look on dark themes.',
+    )
+    surface_text_color = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='Text colour on surface (--theme-surface-text). Blank '
+                  'falls back to text_color, which is correct for dark '
+                  'surfaces; bright surfaces should set a dark value here.',
+    )
+    surface_border_color = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='Card/panel edge colour (--theme-surface-border). Blank '
+                  'falls back to line_color.',
+    )
+
+    # ── Omnibar-specific ────────────────────────────────────────────────
+    # The omnibar lane background, tag pill colour, and ticker accent
+    # have until now been driven by --obs-accent (set per-game by the
+    # playthrough state machine). These fields let a theme override
+    # those defaults so the omnibar reads as the theme rather than the
+    # game when no game is live, and so multi-colour themes get to
+    # surface their accents in the broadcast layer too.
+    omnibar_lane_bg = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='Solid fill for the omnibar lane (--theme-omnibar-lane-bg). '
+                  'Blank keeps the baked-in steel gradient. Useful for bright '
+                  'themes that want the bar to match the page.',
+    )
+    omnibar_tag_color = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='[Deprecated] Global tag-pill / brand cluster accent — '
+                  'used as the fallback default for the per-section gradient '
+                  'fields below when those are blank. Prefer setting '
+                  'omnibar_brand_from / top_tag_from / etc. for full '
+                  'control. Blank lets --obs-accent (the per-game accent) '
+                  'drive everything.',
+    )
+    omnibar_ticker_accent = models.CharField(
+        max_length=40, default='',
+        blank=True,
+        help_text='Ticker / divider accent on the bottom lane '
+                  '(--theme-omnibar-ticker). Blank falls back to '
+                  'primary_bright.',
+    )
+    # ── Per-section omnibar gradients ───────────────────────────────────
+    # Four named sections each take a two-stop gradient (from → to,
+    # 180° top-down). Blank fields fall back through omnibar_tag_color
+    # → --obs-accent so a theme can opt into per-section colours
+    # incrementally. Default angle is 180° (top sheen → bottom
+    # shoulder) so the lit-object look of the omnibar pills is
+    # preserved across themes.
+    omnibar_brand_from = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Top stop of the left-side logo / brand-pill gradient '
+                  '(--theme-omnibar-brand-from).',
+    )
+    omnibar_brand_to = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Bottom stop of the left-side logo / brand-pill gradient '
+                  '(--theme-omnibar-brand-to).',
+    )
+    omnibar_top_tag_from = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Top stop of the top-lane tag pill gradient '
+                  '(--theme-omnibar-top-tag-from). Drives every panel in '
+                  'the top lane.',
+    )
+    omnibar_top_tag_to = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Bottom stop of the top-lane tag pill gradient '
+                  '(--theme-omnibar-top-tag-to).',
+    )
+    omnibar_bottom_tag_from = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Top stop of the bottom-lane tag pill gradient '
+                  '(--theme-omnibar-bottom-tag-from). Drives every panel '
+                  'in the bottom lane (donation reel, charity info, '
+                  'schedule, etc.).',
+    )
+    omnibar_bottom_tag_to = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Bottom stop of the bottom-lane tag pill gradient '
+                  '(--theme-omnibar-bottom-tag-to).',
+    )
+    omnibar_total_from = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Top stop of the right-side total-raised / charity '
+                  'cluster gradient (--theme-omnibar-total-from).',
+    )
+    omnibar_total_to = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Bottom stop of the right-side total-raised / charity '
+                  'cluster gradient (--theme-omnibar-total-to).',
+    )
+    # ── Per-section omnibar text colours ────────────────────────────────
+    # Each gradient section also takes a text colour so the content on
+    # top of the gradient (tag pill label, body strong, body muted)
+    # stays readable. Blank falls back to --theme-text (the legacy
+    # omnibar text colour, currently white) so existing themes don't
+    # change look until they opt in.
+    omnibar_brand_text = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Text colour on the left-side logo / brand pill '
+                  '(--theme-omnibar-brand-text). Blank falls back to text_color.',
+    )
+    omnibar_top_tag_text = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Text colour for the TOP-LANE TAG PILL ONLY '
+                  '(--theme-omnibar-top-tag-text). The pill sits on the '
+                  'gradient so the contrast register often differs from '
+                  'the body content behind it. Blank falls back to '
+                  'omnibar_top_lane_text → text_color.',
+    )
+    omnibar_top_lane_text = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Text colour for the TOP-LANE BODY content '
+                  '(--theme-omnibar-top-lane-text). Drives '
+                  '.ob-text-strong / .ob-text-muted inside the top lane, '
+                  'i.e. the panel content sitting to the right of the tag. '
+                  'Blank falls back to text_color.',
+    )
+    omnibar_bottom_tag_text = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Text colour for the BOTTOM-LANE TAG PILL ONLY '
+                  '(--theme-omnibar-bottom-tag-text). Blank falls back to '
+                  'omnibar_bottom_lane_text → text_color.',
+    )
+    omnibar_bottom_lane_text = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Text colour for the BOTTOM-LANE BODY content '
+                  '(--theme-omnibar-bottom-lane-text). Drives the panel '
+                  'content sitting to the right of the bottom tag. Blank '
+                  'falls back to text_color.',
+    )
+    omnibar_total_text = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Text colour inside the right-side total-raised / charity '
+                  'cluster — currency + amount + supporting copy '
+                  '(--theme-omnibar-total-text). Blank falls back to text_color.',
+    )
+    # ── Celebration takeover defaults ──────────────────────────────────
+    # The full-bar celebration banner (CelebrationBanner) renders a
+    # gold-flash mood by default. These fields let a theme override
+    # the tag pill / headline / subhead colours for the BANNER's
+    # default look. Individual triggers can still override per-fire
+    # via the payload (see CelebrationBanner — payload.tag_color,
+    # payload.heading_color, payload.sub_color).
+    omnibar_celebration_tag = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='[Deprecated] Single-colour default for the celebration '
+                  'tag pill — kept as the fallback for omnibar_celebration_'
+                  'tag_from/_to when those are blank. Prefer setting the '
+                  'gradient pair below.',
+    )
+    omnibar_celebration_tag_from = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Top stop of the celebration tag pill gradient '
+                  '(--theme-omnibar-celebration-tag-from). Blank falls back '
+                  'to omnibar_celebration_tag → brand mesh.',
+    )
+    omnibar_celebration_tag_to = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Bottom stop of the celebration tag pill gradient '
+                  '(--theme-omnibar-celebration-tag-to). Blank falls back '
+                  'to omnibar_celebration_tag → brand mesh.',
+    )
+    omnibar_celebration_heading = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Default celebration headline colour '
+                  '(--theme-omnibar-celebration-heading). Blank falls '
+                  'back to the original warm-gold (#ffe69b).',
+    )
+    omnibar_celebration_sub = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Default celebration subhead colour '
+                  '(--theme-omnibar-celebration-sub). Blank inherits from '
+                  'the surrounding lane / fullbar text colour.',
+    )
+    omnibar_celebration_flash = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Default top-anchored flash overlay colour during a '
+                  'celebration takeover '
+                  '(--theme-omnibar-celebration-flash). The CSS gradient '
+                  'mixes this colour with transparent at three alpha '
+                  'stops, so any solid hex / rgb value works. Blank '
+                  'falls back to the baked-in gold (#ffd23a).',
+    )
+
     # ── Fonts (optional overrides) ──────────────────────────────────────
     heading_font = models.CharField(
         max_length=80, default="'Bungee', sans-serif",
@@ -2167,6 +2393,14 @@ class Charity(models.Model):
         help_text='Short paragraph summarising what the charity does. '
                   'Surfaced on the public /charity page and on the '
                   '/donations side panel.',
+    )
+    mission_tagline = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text='One-line condensed mission for tight spaces — the omnibar '
+                  'charity ticker uses this so the long mission_statement '
+                  "doesn't scroll forever. Falls back to mission_statement "
+                  'when blank.',
     )
 
     # ── Branding ────────────────────────────────────────────────────

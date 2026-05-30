@@ -125,8 +125,17 @@
  * primary, every historical marker uses the muted secondary so the
  * latest event stands out. */
 .zth-timeline-marker.is-current {
+  /* Latest event = brand primary regardless of the per-item accent —
+   * it's the star marker, deliberately distinct from the historical
+   * cards behind it. */
   background: var(--theme-primary, #e71347);
   animation: zth-marker-pulse 2.4s ease-out infinite;
+}
+
+/* Past markers honour the per-item shuffled accent so the timeline
+ * dots show off the four-colour palette down the page. */
+.zth-timeline-item[data-accent] .zth-timeline-marker.is-past {
+  background: var(--btn-tint);
 }
 
 @keyframes zth-marker-pulse {
@@ -182,15 +191,17 @@
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-/* Accent strip across the top of each card, tying it to the timeline spine. */
+/* Accent strip across the top of each card, tying it to the timeline
+ * spine. Now driven by the per-item accent so the strip's colour
+ * follows the deck → multi-colour bar of stripes down the page. */
 .zth-timeline-card::before {
   content: '';
   display: block;
   height: 3px;
   background: linear-gradient(
     90deg,
-    var(--theme-primary, #e71347),
-    var(--theme-secondary, #731c37)
+    var(--btn-tint, var(--theme-primary, #e71347)),
+    color-mix(in srgb, var(--btn-tint, var(--theme-secondary, #731c37)) 60%, #000)
   );
 }
 

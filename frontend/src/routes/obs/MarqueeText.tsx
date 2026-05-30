@@ -23,6 +23,7 @@ export function MarqueeText({
   pxPerSecond = 110,
   minHoldMs = 400,
   startDelayMs = 0,
+  enterFrom = 'right',
   onComplete,
   className,
 }: {
@@ -32,6 +33,15 @@ export function MarqueeText({
   /** Wait this long before starting the scroll. The onComplete timer is
    *  also extended by the same amount so viewers see the whole message. */
   startDelayMs?: number;
+  /** Where the scroll begins:
+   *  - 'right' (default): text enters from the container's right edge —
+   *    a continuous ticker feel (donation reel etc.).
+   *  - 'start': text begins flush-left (its beginning already visible)
+   *    and scrolls off to the left, so it doesn't traverse empty
+   *    container space before the message appears. Use when the lane has
+   *    a fixed left element (e.g. a charity logo) the text should sit
+   *    next to. */
+  enterFrom?: 'right' | 'start';
   onComplete?: () => void;
   className?: string;
 }) {
@@ -57,15 +67,20 @@ export function MarqueeText({
         setAnimation(null);
         return;
       }
-      const distance = cw + tw;
+      // 'right' enters from the right edge (start at +cw); 'start' begins
+      // flush-left (start at 0) so the message is next to the lane's left
+      // element instead of scrolling in across empty space. Both end fully
+      // off the left (-tw); travel = startPx + tw, so the px/s rate holds.
+      const startPx = enterFrom === 'start' ? 0 : cw;
+      const distance = startPx + tw;
       const durationMs = (distance / pxPerSecond) * 1000;
-      setAnimation({ durationMs, startPx: cw, endPx: -tw });
+      setAnimation({ durationMs, startPx, endPx: -tw });
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, [pxPerSecond, children]);
+  }, [pxPerSecond, children, enterFrom]);
 
   // Fire onComplete after the marquee animation finishes (with a tiny
   // breathing pause) or — when no marquee is needed — after the static

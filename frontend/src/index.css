@@ -208,6 +208,49 @@ a.link-warning {
   cursor: not-allowed;
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+ * Per-element accent cycling — any element marked
+ *   data-accent="0|1|2|3"
+ * inherits a single colour from the theme's four-colour cluster (primary
+ * + accent_1/2/3). The deck assigner (see `useAccentDeck` in
+ * frontend/src/lib/accentDeck.ts) shuffles indices per mount so the
+ * homepage's row of buttons and the navbar's seven items each show off
+ * the full palette without two adjacent elements sharing a colour.
+ *
+ * `--btn-tint` is the resolved colour. Elements that want to consume
+ * it (e.g. `.btn-bloodmoon[data-accent]`) read `--btn-tint`; the
+ * data-accent rules below resolve it to the right CSS var per index.
+ * Themes without explicit accent_1/2/3 get sensible fallbacks via the
+ * applyTheme bridge so the deck still cycles, just with a duller
+ * single-hue palette.
+ * ──────────────────────────────────────────────────────────────────────── */
+[data-accent="0"] { --btn-tint: var(--theme-primary, #e71347); }
+[data-accent="1"] { --btn-tint: var(--theme-accent-1, var(--theme-primary-bright, #da4471)); }
+[data-accent="2"] { --btn-tint: var(--theme-accent-2, var(--theme-primary, #e71347)); }
+[data-accent="3"] { --btn-tint: var(--theme-accent-3, var(--theme-secondary, #731c37)); }
+
+/* Bloodmoon button variant: when data-accent is set, the gradient
+ * recolours to a single-hue based on the resolved --btn-tint instead
+ * of the default button_from → button_to. Same lighting (top sheen,
+ * bottom shoulder) so the buttons read as one family with each face
+ * picking a different SNES colour. */
+.btn-bloodmoon[data-accent] {
+  background: linear-gradient(
+    var(--theme-button-angle, 180deg),
+    color-mix(in srgb, var(--btn-tint) 88%, #fff 12%) 0%,
+    color-mix(in srgb, var(--btn-tint) 92%, #000 8%) 100%
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--btn-tint) 50%,
+    var(--theme-button-border, rgba(255, 255, 255, 0.4))
+  );
+}
+.btn-bloodmoon[data-accent]:hover,
+.btn-bloodmoon[data-accent]:focus-visible {
+  border-color: color-mix(in srgb, var(--btn-tint) 85%, #fff 15%);
+}
+
 /* Optional video background — rendered by <ThemeProvider> when the theme
  * defines `background_video_url`. Sits behind every other element. */
 .theme-bg-video {
@@ -219,4 +262,107 @@ a.link-warning {
   opacity: 0.35;
   z-index: -1;
   pointer-events: none;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Theme accents — override Bootstrap's success / warning / danger
+ * registers so multi-colour themes get to drive every status badge,
+ * outline button, and contextual text colour. The bridge in
+ * ThemeProvider supplies sensible fallbacks (primary_bright / primary
+ * / secondary) when a theme doesn't explicitly set the accent slots,
+ * so existing single-accent themes keep their current look while a
+ * theme that DOES set them (SNES PAL → green / yellow / red) gets
+ * those colours surfaced across the whole control panel.
+ *
+ * Bootstrap classes targeted here are the ones already in use across
+ * /control/* and the omnibar — see badge/btn-outline usage in
+ * Schedule.tsx, Timer.tsx, Audio.tsx etc.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+.badge.bg-success {
+  background-color: var(--theme-accent-1, #198754) !important;
+  color: #fff;
+}
+.badge.bg-warning {
+  background-color: var(--theme-accent-2, #ffc107) !important;
+  /* Bootstrap pairs warning with dark text; preserve that since
+   * yellow/amber accents read better with a dark label. */
+  color: #1a1a1a !important;
+}
+.badge.bg-danger {
+  background-color: var(--theme-accent-3, #dc3545) !important;
+  color: #fff;
+}
+
+/* Outline button accents — border + text colour swap to the matching
+ * accent at rest, then flood-fill on hover so the press affordance is
+ * unambiguous. */
+.btn-outline-success {
+  color: var(--theme-accent-1, #198754);
+  border-color: var(--theme-accent-1, #198754);
+}
+.btn-outline-success:hover,
+.btn-outline-success:focus-visible {
+  background-color: var(--theme-accent-1, #198754);
+  border-color: var(--theme-accent-1, #198754);
+  color: #fff;
+}
+.btn-outline-warning {
+  color: var(--theme-accent-2, #ffc107);
+  border-color: var(--theme-accent-2, #ffc107);
+}
+.btn-outline-warning:hover,
+.btn-outline-warning:focus-visible {
+  background-color: var(--theme-accent-2, #ffc107);
+  border-color: var(--theme-accent-2, #ffc107);
+  color: #1a1a1a;
+}
+.btn-outline-danger {
+  color: var(--theme-accent-3, #dc3545);
+  border-color: var(--theme-accent-3, #dc3545);
+}
+.btn-outline-danger:hover,
+.btn-outline-danger:focus-visible {
+  background-color: var(--theme-accent-3, #dc3545);
+  border-color: var(--theme-accent-3, #dc3545);
+  color: #fff;
+}
+
+/* btn-outline-light — Bootstrap's neutral outline button, used for
+ * secondary actions across /control/*. The default white-on-white was
+ * invisible on bright themes (SNES, Game Boy). Anchor to the surface
+ * text colour so the button reads against whatever card surface it's
+ * sitting in. */
+.btn-outline-light {
+  color: var(--theme-surface-text, var(--theme-text, #fff));
+  border-color: color-mix(
+    in srgb,
+    var(--theme-surface-text, var(--theme-text, #fff)) 55%,
+    transparent
+  );
+}
+.btn-outline-light:hover,
+.btn-outline-light:focus-visible {
+  color: var(--theme-button-text, #fff);
+  background-color: var(--theme-surface-text, var(--theme-text, #fff));
+  border-color: var(--theme-surface-text, var(--theme-text, #fff));
+}
+
+/* Contextual text utilities — same accent triad applied to inline
+ * status copy ("Unsaved changes", error toasts, success confirmation
+ * lines etc.) so the page reads consistently. */
+.text-success { color: var(--theme-accent-1, #198754) !important; }
+.text-warning { color: var(--theme-accent-2, #ffc107) !important; }
+.text-danger  { color: var(--theme-accent-3, #dc3545) !important; }
+
+/* Inline anchors — already themed via --theme-link but the default
+ * Bootstrap `a` colour wins in places where no other rule scopes the
+ * link. Hard-codes the accents so e.g. control-card body copy honours
+ * the theme. */
+a {
+  color: var(--theme-link, #ffc2e0);
+}
+a:hover,
+a:focus-visible {
+  color: var(--theme-link-hover, #fff);
 }

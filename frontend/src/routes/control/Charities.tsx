@@ -400,6 +400,7 @@ function CharityForm({
   const [shortName, setShortName] = useState(charity?.short_name ?? '');
   const [charityNumber, setCharityNumber] = useState(charity?.charity_number ?? '');
   const [mission, setMission] = useState(charity?.mission_statement ?? '');
+  const [missionTagline, setMissionTagline] = useState(charity?.mission_tagline ?? '');
   const [logoUrl, setLogoUrl] = useState(charity?.logo_url ?? '');
   const [logoThumbnailUrl, setLogoThumbnailUrl] = useState(
     charity?.logo_thumbnail_url ?? '',
@@ -453,6 +454,7 @@ function CharityForm({
         short_name: shortName.trim(),
         charity_number: charityNumber.trim(),
         mission_statement: mission.trim(),
+        mission_tagline: missionTagline.trim(),
         logo_url: logoUrl.trim(),
         logo_thumbnail_url: logoThumbnailUrl.trim(),
         banner_url: bannerUrl.trim(),
@@ -623,6 +625,20 @@ function CharityForm({
           className="form-control form-control-sm"
           rows={3}
           placeholder="Short paragraph used on /charity and /donations."
+        />
+      </div>
+
+      <div className="mt-3">
+        <label className="d-block small text-white-50">
+          Mission tagline{' '}
+          <span className="text-white-50">— one-liner for the omnibar ticker</span>
+        </label>
+        <input
+          value={missionTagline}
+          onChange={(e) => setMissionTagline(e.target.value)}
+          className="form-control form-control-sm"
+          maxLength={160}
+          placeholder="e.g. Helping disabled gamers play. Falls back to the mission above when blank."
         />
       </div>
 

@@ -83,8 +83,34 @@ class Command(BaseCommand):
                     it.get('group', ''), it.get('image', ''),
                 )
 
+            # A re-release/remake can clone another game's objectives straight
+            # from the DB via `copy_from` (works for hand-built games like
+            # ALttP too), then append its own extra chapters.
+            chapters = []
+            src_title = spec.get('copy_from')
+            if src_title:
+                src = models.Game.objects.filter(title=src_title).first()
+                if not src:
+                    self.stdout.write(self.style.WARNING(
+                        f'  ! copy_from source {src_title!r} not found — nothing copied'))
+                else:
+                    from collections import OrderedDict
+                    buckets: OrderedDict = OrderedDict()
+                    for so in src.objectives.order_by('order', 'name'):
+                        buckets.setdefault(so.group, []).append(so)
+                    for grp, sobjs in buckets.items():
+                        chapters.append({'group': grp, 'objectives': [
+                            {
+                                'name': so.name,
+                                'category': so.category,
+                                **({'item': so.linked_item.name} if so.linked_item_id else {}),
+                            }
+                            for so in sobjs
+                        ]})
+            chapters += spec.get('chapters', [])
+
             obj_order = 0
-            for chapter in spec['chapters']:
+            for chapter in chapters:
                 grp = chapter['group']
                 for o in chapter['objectives']:
                     cat = o.get('category', 'story')

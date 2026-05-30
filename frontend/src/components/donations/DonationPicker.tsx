@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { DonationPage } from '@/lib/obsApi';
+import { useAccentDeck } from '@/lib/accentDeck';
 import { PLATFORM_META } from './platforms';
 
 /**
@@ -29,6 +30,14 @@ export function DonationPicker({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // Per-row shuffled accents — each donation platform tile inside
+  // the modal picks a different theme colour so the picker reads as
+  // the full PAL palette rather than uniform brand-coloured rows.
+  // Hook must run unconditionally per rules-of-hooks, so it sits
+  // above the early-return below. The deck re-rolls whenever the
+  // modal closes + reopens (Home unmounts/remounts this component).
+  const rowAccents = useAccentDeck(pages.length);
 
   if (!open || pages.length === 0) return null;
 
@@ -95,6 +104,7 @@ export function DonationPicker({
               page={page}
               isFirst={idx === 0}
               currencySymbol={currencySymbol}
+              accent={rowAccents[idx]}
             />
           ))}
         </div>
@@ -108,10 +118,12 @@ function DonationRow({
   page,
   isFirst,
   currencySymbol,
+  accent,
 }: {
   page: DonationPage;
   isFirst: boolean;
   currencySymbol: string;
+  accent?: number;
 }) {
   const meta = PLATFORM_META[page.platform];
   // Always show the platform's display_label (controlled by the
@@ -126,13 +138,17 @@ function DonationRow({
   return (
     <div
       className="p-3 rounded-3"
+      data-accent={accent}
       style={{
+        // Background + border tint via `--btn-tint` so each row picks
+        // a different theme accent. Emphasised (primary platform) gets
+        // a stronger mix so it still leads the eye.
         background: emphasised
-          ? 'var(--theme-line, rgba(231, 19, 71, 0.12))'
-          : 'rgba(255, 255, 255, 0.04)',
+          ? 'color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 18%, transparent)'
+          : 'color-mix(in srgb, var(--btn-tint, transparent) 8%, rgba(255, 255, 255, 0.04))',
         border: emphasised
-          ? '1px solid var(--theme-primary, rgba(231, 19, 71, 0.55))'
-          : '1px solid rgba(255, 255, 255, 0.1)',
+          ? '1px solid color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 60%, transparent)'
+          : '1px solid color-mix(in srgb, var(--btn-tint, transparent) 40%, rgba(255, 255, 255, 0.1))',
       }}
     >
       <div className="d-flex align-items-start gap-3 flex-wrap">
@@ -200,6 +216,7 @@ function DonationRow({
           target="_blank"
           rel="noopener noreferrer"
           className="btn btn-bloodmoon"
+          data-accent={accent}
           style={{ fontFamily: "'Bungee', cursive" }}
         >
           Donate
