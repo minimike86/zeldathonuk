@@ -355,6 +355,22 @@ a.link-warning {
 .text-warning { color: var(--theme-accent-2, #ffc107) !important; }
 .text-danger  { color: var(--theme-accent-3, #dc3545) !important; }
 
+/* Anchors wearing .text-warning across the control panel were never
+ * really "warning" colour — they were being repurposed because the
+ * bloodmoon palette happened to make yellow links readable on dark
+ * cards. Anchors now resolve to --theme-link (the proper themed
+ * link colour) so SNES / Game Boy / Wind Waker get their own link
+ * tone instead of a hardcoded amber that clashes with their palette.
+ * Status `<span>`s / `<div>`s wearing .text-warning still resolve to
+ * the warning register above. */
+a.text-warning {
+  color: var(--theme-link, var(--theme-primary-bright, #ffc2e0)) !important;
+}
+a.text-warning:hover,
+a.text-warning:focus-visible {
+  color: var(--theme-link-hover, #fff) !important;
+}
+
 /* Bootstrap white-text utilities — used HEAVILY across the control
  * panel (~300+ occurrences) and elsewhere as "primary body copy on a
  * dark surface". Anchor them to --theme-text so a light theme's dark

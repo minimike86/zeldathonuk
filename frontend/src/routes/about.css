@@ -61,22 +61,170 @@
   gap: 0.5rem;
 }
 
-/* Marathon roll-call — label on the left, pill link on the right. */
-.faq-marathon-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+/* ── Sister marathons section ──────────────────────────────────────
+ *
+ * Replaces the old `.faq-marathon-list` (label + small pill link)
+ * with a card grid: each tile is a clickable link with a country
+ * flag, marathon name, country, host label, and a corner arrow.
+ *
+ * Theme-aware:
+ *   • Eyebrow heading + hover border use --theme-primary, so the
+ *     register changes per theme (bloodmoon red, SNES blue, Wind
+ *     Waker coral, etc.).
+ *   • Card body text uses --theme-text so dark themes get white,
+ *     light themes get dark.
+ *   • Background colour-mix keeps cards visibly distinct from the
+ *     surrounding bg-bloodmoon FAQ wash on every theme.
+ */
+.sister-marathons {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--theme-text, #fff) 6%, transparent);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-text, #fff) 14%,
+    transparent
+  );
 }
 
-.faq-marathon-list li {
+.sister-marathons-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.sister-marathons-eyebrow {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  color: var(--theme-primary-bright, var(--theme-primary, #e71347));
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 18%,
+    transparent
+  );
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 55%,
+    transparent
+  );
+}
+
+.sister-marathons-blurb {
+  margin: 0.75rem auto 0;
+  max-width: 38rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+}
+
+.sister-marathons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.sister-marathon-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-decoration: none;
+  color: var(--theme-text, #fff);
+  transition: transform 0.18s ease, border-color 0.18s ease,
+    background 0.18s ease, box-shadow 0.18s ease;
+  text-align: left;
+}
+
+.sister-marathon-card:hover,
+.sister-marathon-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 75%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 14%,
+    rgba(0, 0, 0, 0.32)
+  );
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  color: var(--theme-text, #fff);
+}
+
+.sister-marathon-flag {
+  font-size: 1.85rem;
+  line-height: 1;
+  /* Slight drop-shadow so flag glyphs sit cleanly against any
+   * theme background tint underneath. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  flex-shrink: 0;
+}
+
+.sister-marathon-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sister-marathon-name {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 0.95rem;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.sister-marathon-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sister-marathon-country {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.sister-marathon-sep {
+  opacity: 0.6;
+}
+
+.sister-marathon-host {
+  font-family: 'VT323', monospace;
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.sister-marathon-arrow {
+  font-size: 1.05rem;
+  line-height: 1;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.sister-marathon-card:hover .sister-marathon-arrow,
+.sister-marathon-card:focus-visible .sister-marathon-arrow {
+  opacity: 1;
+  transform: translate(2px, -2px);
 }
 
 /* Carousel image — desaturated then re-tinted to the active theme via a

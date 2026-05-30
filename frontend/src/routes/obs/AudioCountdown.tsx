@@ -225,33 +225,63 @@ export function AudioCountdown() {
     };
   }, [current]);
 
-  // Detect OBS browser source (it sets a custom UA) and treat it as a gesture.
+  // Detect a broadcaster browser-source UA and treat it as a gesture so
+  // production overlays auto-play without a manual click. Each app sets
+  // its own marker in the User-Agent:
+  //   • OBS Studio        → "OBS/<ver>"
+  //   • Streamlabs Desktop → "slobs/<ver>"
+  //   • XSplit Broadcaster → "XSplit/<ver>" or "XSP/<ver>"
+  //   • vMix              → "vMix/<ver>"
+  // Match any of them so the visualiser starts unattended in whichever
+  // tool the streamer is using. Browsers (Chrome/Firefox/Safari) still
+  // fall through to the click-to-start gate so we don't bypass the
+  // autoplay policy when an operator opens the overlay for QA.
   useEffect(() => {
-    if (/OBS\//i.test(navigator.userAgent)) {
+    if (/OBS\/|slobs\/|XSplit\/|XSP\/|vMix\//i.test(navigator.userAgent)) {
       setStarted(true);
     }
   }, []);
 
+  // AudioContext + analyser bring-up. Runs whenever `started` flips
+  // true, regardless of how it was triggered:
+  //   • Manual click → handleStart()
+  //   • Broadcaster auto-start (OBS / Streamlabs / XSplit / vMix)
+  // Previously this lived inline in handleStart, which meant the
+  // broadcaster path set `started=true` but skipped the analyser
+  // setup — audio played fine, but the RAF loop saw `analyser === null`
+  // and fell back to the synthetic sine wave instead of reacting to
+  // the real audio. Wiring it from a `started`-effect keeps both
+  // paths consistent.
+  useEffect(() => {
+    if (!started) return;
+    if (audioCtxRef.current) return; // one-shot
+    const audio = audioRef.current;
+    if (!audio) return;
+    const AC =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    const ctx = new AC();
+    const source = ctx.createMediaElementSource(audio);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    analyser.connect(ctx.destination);
+    audioCtxRef.current = ctx;
+    analyserRef.current = analyser;
+    sourceNodeRef.current = source;
+    dataRef.current = new Uint8Array(analyser.frequencyBinCount);
+    void ctx.resume();
+  }, [started]);
+
   const handleStart = () => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (!audioCtxRef.current) {
-      const AC =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      const ctx = new AC();
-      const source = ctx.createMediaElementSource(audio);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyser.connect(ctx.destination);
-      audioCtxRef.current = ctx;
-      analyserRef.current = analyser;
-      sourceNodeRef.current = source;
-      dataRef.current = new Uint8Array(analyser.frequencyBinCount);
-    }
-    void audioCtxRef.current.resume();
+    // The AudioContext effect above handles setup once `started` is
+    // true; here we just preserve the gesture intent by kicking off
+    // play() directly (the canplay handoff in the [started, current]
+    // effect would also catch it, but starting straight away gives the
+    // most responsive feel for a click).
     void audio.play().catch(() => {});
     setStarted(true);
   };
@@ -480,7 +510,16 @@ export function AudioCountdown() {
         </div>
       )}
       <canvas ref={canvasRef} width={1920} height={300} className="ac-visualiser" />
-      <audio ref={audioRef} src={current?.url} crossOrigin="anonymous" autoPlay />
+      {/*
+        Deliberately no `autoPlay` here. The component gates playback on
+        the `started` flag (toggled by `handleStart` after a click, or by
+        the OBS-UA detection effect) and the `[started, current]` effect
+        above wires up the canplay → play() handoff with the AudioContext
+        resume. Adding `autoPlay` would race those gates and start the
+        track before the user gesture (or before AudioContext is
+        resumed), which is the bug we're avoiding.
+       */}
+      <audio ref={audioRef} src={current?.url} crossOrigin="anonymous" />
       {!started && (
         <button
           type="button"

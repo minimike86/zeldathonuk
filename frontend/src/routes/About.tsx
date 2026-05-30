@@ -18,29 +18,52 @@ const urls = [
   'https://www.bournemouthecho.co.uk/news/17444417.zeldathonuk-play-legend-zelda-specialeffect/',
 ];
 
-/** Sister Zelda marathons around the world, surfaced in the FAQ. */
+/** Sister Zelda marathons around the world, surfaced in the FAQ. The
+ *  `flag` is a Unicode regional-indicator pair so it renders as the
+ *  country flag emoji on platforms that support the glyphs. */
 const WORLDWIDE_MARATHONS = [
-  { name: 'Zeldathon', country: 'USA', label: 'zeldathon.com', href: 'https://zeldathon.com/' },
+  {
+    name: 'Zeldathon',
+    country: 'USA',
+    flag: '🇺🇸',
+    label: 'zeldathon.com',
+    href: 'https://zeldathon.com/',
+  },
   {
     name: 'Zelda Dungeon',
     country: 'USA',
+    flag: '🇺🇸',
     label: 'zeldadungeon.net',
     href: 'https://www.zeldadungeon.net/category/zelda-dungeon-marathon/',
   },
   {
     name: 'Zelda Speed Runs',
     country: 'USA',
+    flag: '🇺🇸',
     label: 'zeldaspeedruns.com',
     href: 'https://www.zeldaspeedruns.com/',
   },
-  { name: 'Rupeethon', country: 'USA', label: 'rupeethon.org', href: 'http://rupeethon.org/' },
+  {
+    name: 'Rupeethon',
+    country: 'USA',
+    flag: '🇺🇸',
+    label: 'rupeethon.org',
+    href: 'http://rupeethon.org/',
+  },
   {
     name: 'Hyrule Hustlers',
     country: 'USA',
+    flag: '🇺🇸',
     label: 'twitter.com/hyrulehustlers',
     href: 'https://twitter.com/hyrulehustlers',
   },
-  { name: 'Zeldathon', country: 'France', label: 'zeldathon.fr', href: 'https://zeldathon.fr/' },
+  {
+    name: 'Zeldathon',
+    country: 'France',
+    flag: '🇫🇷',
+    label: 'zeldathon.fr',
+    href: 'https://zeldathon.fr/',
+  },
 ];
 
 export function About() {
@@ -129,32 +152,46 @@ export function About() {
                 Zeldathon is a group of Zelda fans, artists, musicians, streamers, and
                 all-around good people coming together to have fun and raise money for
                 charity!
-                <div className="card bg-bloodmoon mt-4">
-                  <div className="card-body" style={{ fontSize: '0.7em' }}>
-                    <p className="mb-0 text-white-50">
-                      We're based in the United Kingdom. There are other Zelda Marathons
-                      run world-wide! Please check out these wonderful people as well:
+                <section className="sister-marathons">
+                  <header className="sister-marathons-header">
+                    <span className="sister-marathons-eyebrow">Sister marathons</span>
+                    <p className="sister-marathons-blurb">
+                      We're based in the United Kingdom{' '}
+                      <span aria-hidden>🇬🇧</span> — but there are Zelda
+                      marathons run all around the world. Please check out
+                      these wonderful people too:
                     </p>
-                    <ul className="faq-marathon-list mt-3">
-                      {WORLDWIDE_MARATHONS.map((m) => (
-                        <li key={m.href}>
-                          <span>
-                            {m.name}{' '}
-                            <span className="text-white-50">({m.country})</span>
+                  </header>
+                  <div className="sister-marathons-grid">
+                    {WORLDWIDE_MARATHONS.map((m) => (
+                      <a
+                        key={m.href}
+                        className="sister-marathon-card"
+                        href={m.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={`${m.name} (${m.country}) — ${m.label}`}
+                      >
+                        <span className="sister-marathon-flag" aria-hidden>
+                          {m.flag}
+                        </span>
+                        <span className="sister-marathon-body">
+                          <span className="sister-marathon-name">{m.name}</span>
+                          <span className="sister-marathon-meta">
+                            <span className="sister-marathon-country">
+                              {m.country}
+                            </span>
+                            <span aria-hidden className="sister-marathon-sep">·</span>
+                            <span className="sister-marathon-host">{m.label}</span>
                           </span>
-                          <a
-                            className="charity-link"
-                            href={m.href}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {m.label}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                        </span>
+                        <span className="sister-marathon-arrow" aria-hidden>
+                          ↗
+                        </span>
+                      </a>
+                    ))}
                   </div>
-                </div>
+                </section>
               </Faq>
 
               <Faq question="When is the next marathon?">

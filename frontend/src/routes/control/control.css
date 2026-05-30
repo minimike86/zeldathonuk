@@ -216,6 +216,28 @@
     transparent
   );
   color: rgba(255, 255, 255, 0.92);
+  /* Operator cards are guaranteed dark by the rule above, so scope
+   * the theme text vars back to white-based inside. Without this the
+   * global Bootstrap utility overrides (text-white / text-white-50 /
+   * text-muted) resolve via --theme-text which is DARK on light
+   * themes (SNES, Game Boy) — producing dark text on dark cards.
+   * Forcing the vars white inside the card keeps every utility
+   * readable regardless of the active theme. */
+  --theme-text: #fff;
+  --theme-text-muted: rgba(255, 255, 255, 0.7);
+  /* Same logic for the surface text var which other rules cascade
+   * through. */
+  --theme-surface-text: #fff;
+}
+
+/* And the same scope on the operator shell itself so any text living
+ * OUTSIDE a card (e.g. .control-header h1, .control-nav-link copy)
+ * also stays white-readable on bright themes. Children inside cards
+ * still pick up the var override above; this catches the chrome. */
+.control-shell {
+  --theme-text: #fff;
+  --theme-text-muted: rgba(255, 255, 255, 0.7);
+  --theme-surface-text: #fff;
 }
 
 .control-card h2 {
@@ -416,13 +438,18 @@
   50% { background: rgba(255, 210, 58, 0.22); }
 }
 
+/* "Now reading" + mute-reason pips — flipped to a SOLID accent fill
+ * with a dark stamp inside so the chip reads as a proper coloured
+ * tag instead of low-contrast accent-on-accent. Theme-driven via
+ * accent_2 (warning register) so bloodmoon stays in the red family,
+ * SNES PAL goes yellow, Wind Waker coral, etc. */
 .donation-now-reading-pip {
   display: inline-block;
   margin-left: 0.5rem;
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.55rem;
   border-radius: 999px;
-  background: rgba(255, 210, 58, 0.2);
-  color: #ffd23a;
+  background: var(--theme-accent-2, #ffd23a);
+  color: #1a1a1a;
   font-family: 'Bungee', sans-serif;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
@@ -437,12 +464,13 @@
 .donation-mute-reason-pip {
   display: inline-block;
   margin-left: 0.5rem;
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.55rem;
   border-radius: 999px;
-  background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
+  background: var(--theme-accent-2, #ffc107);
+  color: #1a1a1a;
   font-family: 'Open Sans', sans-serif;
   font-size: 0.75rem;
+  font-weight: 600;
   font-style: normal;
   text-decoration: none;
   letter-spacing: 0.02em;
@@ -461,10 +489,14 @@
   cursor: pointer;
 }
 
+/* Muted-state select — solid accent-2 fill so the muted row stands
+ * out as "this is suppressed" rather than blending into the normal
+ * yellow-tint-on-dark register. Dark text against the bright fill
+ * keeps contrast > AA on every theme. */
 .donation-mute-select.is-muted {
-  background-color: rgba(255, 193, 7, 0.18);
-  border-color: rgba(255, 193, 7, 0.45);
-  color: #ffc107;
+  background-color: var(--theme-accent-2, #ffc107);
+  border-color: color-mix(in srgb, var(--theme-accent-2, #ffc107) 80%, #000);
+  color: #1a1a1a;
   font-weight: 600;
 }
 
