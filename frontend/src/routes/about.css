@@ -117,21 +117,6 @@
   z-index: 1;
 }
 
-/* Scoped to the About FAQ's world-marathons card: force a real dark
- * surface + scope --theme-text back to white inside, so the
- * text-white-50 utilities (which the global override otherwise maps
- * to dark on light themes) and the .charity-link chips inside this
- * specific card always read as white on a dark wash. Out-of-scope
- * bg-bloodmoon usages (Donations / Home / Incentives) keep their
- * own page-specific treatments. */
-.faq-answer .bg-bloodmoon {
-  background-color: rgba(0, 0, 0, 0.32);
-  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
-  border-radius: 8px;
-  --theme-text: #fff;
-  --theme-text-muted: rgba(255, 255, 255, 0.65);
-}
-
 .bg-bloodmoon::before {
   display: inline-block;
   position: absolute;
@@ -272,24 +257,22 @@
 /* Pill-style links, mirroring `.charity-link` on the Charity page so the
  * FAQ's external links read as tappable chips rather than raw underlined
  * text. Hover border tracks the active theme's secondary accent. */
+/* Chip styling mirrors /charity's `.charity-link` verbatim so the
+ * About FAQ's marathon list reads as the same UI element. The chips
+ * float on top of the (now transparent) bg-bloodmoon wrapper so
+ * they sit against the page background — same condition as the
+ * /charity page — which gives consistent contrast on both dark and
+ * light themes without needing a per-page tint dance. */
 .charity-link {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.35rem 0.7rem;
+  padding: 0.45rem 0.85rem;
   border-radius: 999px;
   text-decoration: none;
   color: #fff;
-  /* Stronger dark wash so the chip stays readable when the page
-   * background is light (SNES, Game Boy). At 0.3 the chip diluted
-   * into the light page and white text dropped below WCAG AA; at
-   * 0.55 the chip is a solid mid-dark surface on every theme. */
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid color-mix(
-    in srgb,
-    var(--theme-text, #fff) 25%,
-    transparent
-  );
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   transition: border-color 0.15s ease, background 0.15s ease;
   font-size: 0.85rem;
   line-height: 1;
@@ -297,6 +280,6 @@
 
 .charity-link:hover {
   color: #fff;
-  border-color: color-mix(in srgb, var(--theme-secondary, #439abe) 85%, transparent);
-  background: rgba(0, 0, 0, 0.68);
+  border-color: rgba(67, 154, 190, 0.85);
+  background: rgba(0, 0, 0, 0.5);
 }
