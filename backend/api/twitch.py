@@ -213,6 +213,60 @@ def _app_auth_headers() -> dict[str, str]:
     }
 
 
+def list_eventsub_subscriptions() -> list[dict]:
+    """All EventSub subscriptions for this app (app-token call). Paginates."""
+    out: list[dict] = []
+    cursor = None
+    while True:
+        params = {'after': cursor} if cursor else {}
+        resp = requests.get(
+            f'{HELIX}/eventsub/subscriptions',
+            headers=_app_auth_headers(), params=params, timeout=15,
+        )
+        if resp.status_code == 401:
+            resp = requests.get(
+                f'{HELIX}/eventsub/subscriptions',
+                headers={**_app_auth_headers(),
+                         'Authorization': f'Bearer {get_app_access_token(force_refresh=True)}'},
+                params=params, timeout=15,
+            )
+        if not resp.ok:
+            raise TwitchAuthError(
+                f'List EventSub subs failed ({resp.status_code}): {resp.text}'
+            )
+        body = resp.json()
+        out.extend(body.get('data', []) or [])
+        cursor = (body.get('pagination') or {}).get('cursor')
+        if not cursor:
+            return out
+
+
+def create_eventsub_subscription(
+    sub_type: str, version: str, condition: dict, callback: str, secret: str,
+) -> requests.Response:
+    """Register one webhook EventSub subscription (app-token call)."""
+    headers = {**_app_auth_headers(), 'Content-Type': 'application/json'}
+    return requests.post(
+        f'{HELIX}/eventsub/subscriptions',
+        headers=headers,
+        json={
+            'type': sub_type,
+            'version': version,
+            'condition': condition,
+            'transport': {'method': 'webhook', 'callback': callback, 'secret': secret},
+        },
+        timeout=15,
+    )
+
+
+def delete_eventsub_subscription(sub_id: str) -> requests.Response:
+    """Delete one EventSub subscription by id (app-token call)."""
+    return requests.delete(
+        f'{HELIX}/eventsub/subscriptions',
+        headers=_app_auth_headers(), params={'id': sub_id}, timeout=15,
+    )
+
+
 def fetch_user_profile(login: str) -> dict | None:
     """Look up a Twitch user by login. Returns the Helix user dict or None.
 

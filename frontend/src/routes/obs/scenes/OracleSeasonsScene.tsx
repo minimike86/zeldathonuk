@@ -222,7 +222,7 @@ export function OracleSeasonsScene() {
       {/* Maku Tree (Seasons, elder male) — supplied by project owner */}
       <img
         className="oos-maku"
-        src="/assets/img/maku-tree-seasons.png"
+        src="/assets/img/game-franchise/legend-of-zelda/oos/audio-scene/maku-tree-seasons.png"
         alt=""
       />
 
@@ -230,7 +230,7 @@ export function OracleSeasonsScene() {
         * the right of the pedestal as the hero foreground figure. */}
       <img
         className="oos-link"
-        src="/assets/img/link-rod-seasons.png"
+        src="/assets/img/game-franchise/legend-of-zelda/oos/audio-scene/link-rod-seasons.png"
         alt=""
       />
 
@@ -238,7 +238,7 @@ export function OracleSeasonsScene() {
         * Floats on the left of the scene with a gentle dance bob. */}
       <img
         className="oos-din"
-        src="/assets/img/din-seasons.png"
+        src="/assets/img/game-franchise/legend-of-zelda/oos/audio-scene/din-seasons.png"
         alt=""
       />
 

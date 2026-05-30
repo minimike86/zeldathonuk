@@ -541,7 +541,7 @@ export function TotkDepthsScene() {
       {/* Silver Lynel patrolling the cavern floor. Walks right→left, pivots
        * (scaleX squeeze through 0), then walks left→right; small walking
        * bob layered via a custom prop so it stacks with the patrol flip. */}
-      <img className="totk-depths-lynel" src="/assets/img/botw-white-lynel.png" alt="" />
+      <img className="totk-depths-lynel" src="/assets/img/game-franchise/legend-of-zelda/botw/audio-scene/botw-white-lynel.png" alt="" />
 
       {/* Foreground rock ledge */}
       <svg className="totk-depths-foreground" viewBox="0 0 1200 200" preserveAspectRatio="none">

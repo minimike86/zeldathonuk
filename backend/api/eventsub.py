@@ -31,6 +31,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime, timezone as dt_timezone
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.conf import settings
 from django.utils import timezone
@@ -129,6 +130,13 @@ def eventsub_webhook(request: Request) -> Response:
 
     occurred_at = _parse_iso(body.get('occurred_at')) or timezone.now()
 
+    # Twitch Charity donations are funnelled into the normal donation pipeline
+    # (totals / milestones / donation reel) rather than an omnibar takeover —
+    # they become a Donation row, not an ExternalEvent.
+    if sub_type == 'channel.charity_campaign.donate':
+        _ingest_charity_donation(event, occurred_at)
+        return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
+
     payload = dict(event)
     payload['_msg_id'] = msg_id
     payload['_subscription'] = {
@@ -144,6 +152,49 @@ def eventsub_webhook(request: Request) -> Response:
         occurred_at=occurred_at,
     )
     return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
+
+
+def _ingest_charity_donation(event: dict, occurred_at) -> bool:
+    """Create a Donation from a channel.charity_campaign.donate event so Twitch
+    Charity money counts toward the same total / milestones / donation reel as
+    every other platform — no separate omnibar moment. Deduped by
+    (platform, external_id) via the model's unique_together. Returns False when
+    there's no active event to attach the donation to."""
+    active = models.Event.objects.filter(is_active=True).first()
+    if not active:
+        return False
+    amount_obj = event.get('amount') or {}
+    try:
+        value = int(amount_obj.get('value', 0))
+        places = int(amount_obj.get('decimal_places', 2))
+    except (TypeError, ValueError):
+        return False
+    if value <= 0:
+        return False
+    # Twitch sends the amount in minor units (value=1234, decimal_places=2 →
+    # 12.34). Quantise to the Donation field's 2dp.
+    amount = (Decimal(value) / (Decimal(10) ** places)).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP,
+    )
+    currency = (amount_obj.get('currency') or 'GBP')[:3].upper()
+    donor = (event.get('user_name') or '').strip() or 'Anonymous'
+    # Prefer Twitch's stable donation id for dedupe; fall back to a composite so
+    # retries of an id-less event don't pile up.
+    ext_id = str(event.get('id') or '').strip() or (
+        f"{event.get('campaign_id', '')}:{event.get('user_id', '')}:{value}"
+    )
+    models.Donation.objects.get_or_create(
+        platform=models.DonationPlatform.TWITCH_CHARITY,
+        external_id=ext_id,
+        defaults={
+            'event': active,
+            'donor_name': donor,
+            'amount': amount,
+            'currency': currency,
+            'donated_at': occurred_at,
+        },
+    )
+    return True
 
 
 def _normalise_kind(twitch_type: str) -> str:

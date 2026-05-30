@@ -39,10 +39,10 @@ export function OracleAgesScene() {
         </g>
       </svg>
 
-      {/* Oracle of Ages Maku Tree � image supplied by project owner. */}
+      {/* Oracle of Ages Maku Tree — image supplied by project owner. */}
       <img
         className="ooa-maku"
-        src="/assets/img/maku-tree-ages.png"
+        src="/assets/img/game-franchise/legend-of-zelda/ooa/audio-scene/maku-tree-ages.png"
         alt=""
       />
 
@@ -80,14 +80,14 @@ export function OracleAgesScene() {
       {/* Nayru, the Oracle of Ages — image supplied by project owner. */}
       <img
         className="ooa-nayru"
-        src="/assets/img/nayru-harp-ages.png"
+        src="/assets/img/game-franchise/legend-of-zelda/ooa/audio-scene/nayru-harp-ages.png"
         alt=""
       />
 
       {/* Link playing the Harp of Ages — image supplied by project owner. */}
       <img
         className="ooa-harp"
-        src="/assets/img/link-harp-ages.png"
+        src="/assets/img/game-franchise/legend-of-zelda/ooa/audio-scene/link-harp-ages.png"
         alt=""
       />
 

@@ -161,6 +161,12 @@ TWITCH_CLIENT_SECRET = env('TWITCH_CLIENT_SECRET', default='')
 TWITCH_ACCESS_TOKEN = env('TWITCH_ACCESS_TOKEN', default='')
 TWITCH_REFRESH_TOKEN = env('TWITCH_REFRESH_TOKEN', default='')
 TWITCH_BROADCASTER_ID = env('TWITCH_BROADCASTER_ID', default='')
+# EventSub (webhook) — shared HMAC secret Twitch signs deliveries with (10-100
+# chars) and the PUBLIC https URL of the /api/twitch/eventsub/ endpoint. Both
+# are needed by `manage.py twitch_eventsub` to register subscriptions; the
+# secret is also what eventsub.py verifies incoming signatures against.
+TWITCH_EVENTSUB_SECRET = env('TWITCH_EVENTSUB_SECRET', default='')
+TWITCH_EVENTSUB_CALLBACK_URL = env('TWITCH_EVENTSUB_CALLBACK_URL', default='')
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Production hardening

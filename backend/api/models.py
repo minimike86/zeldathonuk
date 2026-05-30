@@ -1006,7 +1006,9 @@ class TwitchOAuthToken(models.Model):
         null=True, blank=True,
         help_text='UTC instant the access_token stops working. Null = unknown (env-seeded).',
     )
-    scopes = models.CharField(max_length=400, blank=True)
+    # TextField (not a capped CharField): the granted-scope list can be long —
+    # the full feature set is 600+ chars — and it's purely informational.
+    scopes = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

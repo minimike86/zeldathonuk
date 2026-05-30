@@ -461,7 +461,7 @@ export function AudioCountdown() {
             </span>
             {liveBreak.entry.display_title}
           </div>
-          <div className="ac-clock">{formatDhms(breakRemaining)}</div>
+          <div className="ac-clock"><DhmsClock seconds={breakRemaining} /></div>
           <div className="ac-sub">until we're back</div>
           <div className="ac-up-next">
             <span className="ac-up-next-label">Resuming</span>
@@ -471,7 +471,7 @@ export function AudioCountdown() {
       ) : eventStarted && currentEntry ? (
         <>
           <div className="ac-now-game">{currentEntry.display_title}</div>
-          <div className="ac-clock">{formatDhms(currentRemaining)}</div>
+          <div className="ac-clock"><DhmsClock seconds={currentRemaining} /></div>
           <div className="ac-sub">remaining on this game</div>
           {nextEntry && (
             <div className="ac-up-next">
@@ -487,7 +487,7 @@ export function AudioCountdown() {
         </>
       ) : (
         <>
-          <div className="ac-clock">{formatDhms(remaining)}</div>
+          <div className="ac-clock"><DhmsClock seconds={remaining} /></div>
           <div className="ac-sub">until stream start</div>
         </>
       )}
@@ -558,16 +558,80 @@ function paintBar(
   ctx.globalAlpha = 1;
 }
 
-function formatDhms(totalSeconds: number): string {
-  const d = Math.floor(totalSeconds / 86400);
-  const h = Math.floor((totalSeconds % 86400) / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
+/**
+ * Per-unit colour scheme mirrored from PreStreamPanel — each d/h/m/s
+ * column takes a different theme slot so the countdown reads as a
+ * little palette rather than a flat white digit run. Each entry falls
+ * through `obs-accent → theme-*` so an unset CSS var never blanks the
+ * column. The countdown's NUMBERS stay white; only the unit-letter
+ * suffixes pick up these tints.
+ */
+const AC_UNIT_COLOR: Record<'d' | 'h' | 'm' | 's', string> = {
+  h: 'var(--obs-accent, var(--theme-primary-bright, #3848a5))',
+  d: 'var(--theme-accent-1, var(--theme-primary, #3d7d3d))',
+  m: 'var(--theme-accent-2, var(--theme-secondary, #ddc24d))',
+  s: 'var(--theme-accent-3, var(--theme-primary-bright, #b1322c))',
+};
+
+interface DhmsPart {
+  value: string;
+  unit: 'd' | 'h' | 'm' | 's';
+}
+
+/**
+ * Always-suffix form of dhms, used so the per-unit colour scheme
+ * above is visible regardless of how much time remains. Days drop
+ * out of the result when they're zero (no "0d" prefix) but hours,
+ * minutes, and seconds are always present so the layout doesn't
+ * jump when a day rolls over.
+ */
+function dhmsParts(totalSeconds: number): DhmsPart[] {
+  const sec = Math.max(0, Math.floor(totalSeconds));
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const hh = String(h).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
   const ss = String(s).padStart(2, '0');
   if (d > 0) {
-    return `${d}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${ss}s`;
+    return [
+      { value: String(d), unit: 'd' },
+      { value: hh, unit: 'h' },
+      { value: mm, unit: 'm' },
+      { value: ss, unit: 's' },
+    ];
   }
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${ss}`;
+  return [
+    { value: hh, unit: 'h' },
+    { value: mm, unit: 'm' },
+    { value: ss, unit: 's' },
+  ];
+}
+
+/**
+ * Pre-stream countdown clock renderer — keeps the numbers white and
+ * tints each suffix (`d` / `h` / `m` / `s`) via AC_UNIT_COLOR so the
+ * countdown reads as a multi-colour stat strip without the digits
+ * themselves changing colour.
+ */
+function DhmsClock({ seconds }: { seconds: number }) {
+  const parts = dhmsParts(seconds);
+  return (
+    <>
+      {parts.map((p, i) => (
+        <span key={p.unit}>
+          <span style={{ color: '#fff' }}>{p.value}</span>
+          <span style={{ color: AC_UNIT_COLOR[p.unit] }}>{p.unit}</span>
+          {/* Flipped comparison + parens so the SWC JSX parser can't
+            * mistake `<parts` for the start of a `<parts>` tag — using
+            * `<` directly here tokenised as JSX and ran the file off
+            * the cliff. */}
+          {i === parts.length - 1 ? '' : ' '}
+        </span>
+      ))}
+    </>
+  );
 }
 
 function cleanGameName(raw: string): string {

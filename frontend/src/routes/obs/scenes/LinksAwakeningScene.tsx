@@ -47,7 +47,7 @@ export function LinksAwakeningScene() {
         * right-to-left across the sky (outer div) while the inner image
         * bobs and tilts gently to suggest turbulent air. */}
       <div className="la-windfish">
-        <img className="la-windfish-inner" src="/assets/img/windfish-la.png" alt="" />
+        <img className="la-windfish-inner" src="/assets/img/game-franchise/legend-of-zelda/la/audio-scene/windfish-la.png" alt="" />
       </div>
 
       {/* Mount Tamaranch with the Wind Fish's egg on top */}
