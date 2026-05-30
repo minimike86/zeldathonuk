@@ -328,9 +328,18 @@ function OmnibarInner() {
     });
   });
   useBusSubscription('objective-obtained', (e) => {
+    // Objective names are often long. The headline waves in at
+    // 2500 + i*WAVE_STAGGER_MS (CelebrationBanner) and the stack wipes out at
+    // 4200ms + hold; without extra hold a long name is still dropping in when
+    // it exits. Extend the dwell so the last character is legible (+ a beat to
+    // read) before the wipe-out. Short names (≲22 chars) need no extra hold.
+    const WAVE_STAGGER_MS = 32; // keep in sync with CelebrationBanner's WaveText
+    const len = (e.objective.name ?? '').length;
+    const lastCharLegibleMs = 2830 + Math.max(0, len - 1) * WAVE_STAGGER_MS;
+    const holdMs = Math.min(4000, Math.max(0, lastCharLegibleMs + 700 - 4200));
     enqueueCelebration({
       reason: { kind: 'objective-obtained', payload: { objective: e.objective } },
-      holdMs: 0,
+      holdMs,
     });
   });
 

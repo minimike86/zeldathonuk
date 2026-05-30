@@ -129,7 +129,7 @@ function parseReason(reason: CelebrationReason, symbol: string): BannerView {
       return {
         tag: 'OBJECTIVE COMPLETE!',
         headline: o.name,
-        subhead: o.category ? prettyKind(o.category) : '',
+        subhead: objectiveSubhead(o.category),
         image: o.image_url || undefined,
       };
     }
@@ -186,6 +186,20 @@ function readBidWarOptions(incentive: Incentive): {
     .sort((a, b) => b.votes - a.votes);
   if (options.length < 2) return null;
   return { options };
+}
+
+/** Livelier flavour line under the objective headline, keyed by category.
+ *  Unknown categories fall back to the Title-Cased category, blank to ''. */
+function objectiveSubhead(category: string): string {
+  const FLAVOUR: Record<string, string> = {
+    'item-get': 'Got the goods! ⚔️',
+    boss: 'Boss defeated!',
+    dungeon: 'Dungeon conquered!',
+    story: 'The story advances…',
+    'side-quest': 'Side quest done!',
+    '100%': 'Completionist!',
+  };
+  return FLAVOUR[category] ?? (category ? prettyKind(category) : '');
 }
 
 function prettyKind(kind: string): string {
