@@ -1825,6 +1825,12 @@
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   background: color-mix(in srgb, currentColor 6%, transparent);
   overflow: hidden;
+  /* Position-relative anchors the absolutely-positioned art overlay
+   * (.ob-upcoming-card--with-art) inside the card; isolation gives
+   * us a fresh stacking context so the overlay's z-index doesn't
+   * leak into adjacent lane content. */
+  position: relative;
+  isolation: isolate;
   /* Three-phase choreography in one keyframe — the parent remounts
    * the card on every cycle (keyed on card.id), so this replays per
    * advance without the panel needing JS-side transition state.
@@ -1839,6 +1845,48 @@
    * card, so the lane is briefly empty between exits + enters
    * rather than crossfading. */
   animation: ob-upcoming-card-cycle 5500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Cover-art background variant — when the game has a box-art URL,
+ * the inline `--ob-upcoming-card-art` custom property carries it.
+ * We paint the art as a `cover` background BEHIND the card content
+ * (via a ::before layer), then mix the lane background colour over
+ * the top at high opacity so:
+ *
+ *   • On a DARK lane (bloodmoon, default): the overlay is the dark
+ *     fallback (~#2a2c30) so cards stay dark with white text on top
+ *     and the art bleeds through as decoration.
+ *   • On a LIGHT lane (SNES PAL, where omnibar_lane_bg is set to
+ *     the grey controller body): the overlay is that bright grey,
+ *     so dark per-lane text reads cleanly on a light surface.
+ *
+ * The gradient is denser on the left (where the thumbnail + title
+ * sit) and tapers right, giving a subtle "fade into art" feel
+ * without losing contrast on the duration column. */
+.omnibar--v2 .ob-upcoming-card--with-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      105deg,
+      color-mix(in srgb, var(--theme-omnibar-lane-bg, #2a2c30) 92%, transparent) 0%,
+      color-mix(in srgb, var(--theme-omnibar-lane-bg, #2a2c30) 82%, transparent) 55%,
+      color-mix(in srgb, var(--theme-omnibar-lane-bg, #2a2c30) 72%, transparent) 100%
+    ),
+    var(--ob-upcoming-card-art);
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Lift every interactive / readable child above the ::before art
+ * layer. Children stay in source order; the art only ever bleeds
+ * through the gradient gaps, never over the title or stats. */
+.omnibar--v2 .ob-upcoming-card--with-art > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Single-card lineups — the carousel doesn't tick, so the lone

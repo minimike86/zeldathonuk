@@ -383,6 +383,10 @@ export interface ThemeSettings {
   line_color: string;
   logo_url: string;
   logo_small_url: string;
+  /** Wordmark shown specifically inside the omnibar brand pill —
+   *  lets the broadcast layer carry a different mark from the site
+   *  hero. Blank falls back to logo_url. */
+  omnibar_logo_url: string;
   favicon_url: string;
   background_video_url: string;
   background_image_url: string;
@@ -862,10 +866,16 @@ export const obsApi = {
   game: (id: number) => api<Game>(`/api/games/${id}/`),
   events: () => api<EventModel[]>('/api/events/'),
   activeEvent: () => api<EventModel | null>('/api/events/active/'),
-  schedule: (eventId?: number) =>
-    api<ScheduleEntry[]>(
-      eventId ? `/api/schedule/?event=${eventId}` : '/api/schedule/',
-    ),
+  /** Schedule entries for an event. `compact` returns the light list shape
+   *  (no nested game items/objectives, no per-run collectible data) — much
+   *  smaller/faster, for list views like the public /schedule and up-next. */
+  schedule: (eventId?: number, opts?: { compact?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (eventId) qs.set('event', String(eventId));
+    if (opts?.compact) qs.set('compact', '1');
+    const tail = qs.toString();
+    return api<ScheduleEntry[]>(`/api/schedule/${tail ? `?${tail}` : ''}`);
+  },
   scheduleEntry: (id: number) => api<ScheduleEntry>(`/api/schedule/${id}/`),
   currentlyPlaying: () => api<CurrentlyPlaying>('/api/currently-playing/'),
   // TTS replay — POST `{donation_id}` to ask /obs/tts to re-announce a

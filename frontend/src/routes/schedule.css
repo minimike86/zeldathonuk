@@ -1,11 +1,27 @@
 /* ──────────────────────────────────────────────────────────────────────────
  * Public Stream Schedule — hero header + day-grouped vertical card stack.
- * Each game card uses its box art as a blurred backdrop so the page reads
- * like a bloodmoon press kit rather than a spreadsheet.
+ *
+ * Theme-driven and mode-agnostic. Two kinds of surface:
+ *   • "media" zones (hero with a banner, game cards over box art) keep a dark
+ *     scrim + light foreground in BOTH light and dark themes — text on imagery
+ *     always reads against a dark wash.
+ *   • "plain" zones (breaks, empty states, chrome) follow the theme: text via
+ *     --theme-text, subtle fills via color-mix(--theme-text …) so they invert
+ *     between light and dark themes.
+ *
+ * The four theme accents (primary + accent-1/2/3, resolved to --btn-tint by the
+ * [data-accent] rules in index.css) drive KPI values, day-header weekdays, and
+ * each card's start-time + left stripe.
  * ────────────────────────────────────────────────────────────────────── */
 
 .schedule-page {
-  color: #fff;
+  color: var(--theme-text, #fff);
+  /* Mode-agnostic helpers derived from the theme text colour so a tint reads
+   * as a light wash on dark themes and a dark wash on light themes. */
+  --sch-muted: var(--theme-text-muted, color-mix(in srgb, var(--theme-text, #fff) 62%, transparent));
+  --sch-surface: var(--theme-surface, color-mix(in srgb, var(--theme-text, #fff) 7%, transparent));
+  --sch-surface-strong: var(--theme-surface, color-mix(in srgb, var(--theme-text, #fff) 12%, transparent));
+  --sch-border: var(--theme-surface-border, color-mix(in srgb, var(--theme-text, #fff) 16%, transparent));
 }
 
 /* ── Hero ────────────────────────────────────────────────────────────── */
@@ -18,6 +34,20 @@
   background-repeat: no-repeat;
   border-bottom: var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.4));
   overflow: hidden;
+  /* Plain hero (no banner): foreground follows the theme. */
+  --hero-fg: var(--theme-text, #fff);
+  --hero-muted: var(--sch-muted);
+  --hero-surface: var(--sch-surface);
+  --hero-border: var(--sch-border);
+}
+
+/* Media hero (banner image present): dark scrim → force a light foreground
+ * regardless of theme mode so the title/dates/KPIs read on the imagery. */
+.schedule-hero--media {
+  --hero-fg: #fff;
+  --hero-muted: rgba(255, 255, 255, 0.72);
+  --hero-surface: rgba(0, 0, 0, 0.42);
+  --hero-border: rgba(255, 255, 255, 0.18);
 }
 
 .schedule-hero::after {
@@ -54,16 +84,15 @@
   background: linear-gradient(
     45deg,
     var(--theme-primary, #e71347),
-    var(--theme-primary-bright, #da4471),
-    var(--theme-secondary, #731c37),
-    var(--theme-primary-bright, #da4471),
+    var(--theme-accent-1, var(--theme-primary-bright, #da4471)),
+    var(--theme-accent-3, var(--theme-secondary, #731c37)),
+    var(--theme-accent-2, var(--theme-primary, #e71347)),
     var(--theme-primary, #e71347)
   );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 4px 30px var(--theme-line, rgba(231, 19, 71, 0.45));
-  /* Stack the wordmark on top of the remaining title text. */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -71,8 +100,7 @@
   gap: 0.4rem;
 }
 
-/* Wordmark SVG that replaces the "ZeldathonUK" substring — sits on its own
- * row above the rest of the title. */
+/* Wordmark SVG that replaces the "ZeldathonUK" substring. */
 .schedule-hero-logo-inline {
   display: block;
   height: clamp(2.6rem, 6vw, 5rem);
@@ -85,18 +113,16 @@
   display: block;
   font-size: 0.55em;
   line-height: 1.1;
-  /* Opt out of the parent title's clipped gradient — render as flat
-   * theme text so the sub-line stays legible. */
   background: none;
-  -webkit-text-fill-color: var(--theme-text, #fff);
-  color: var(--theme-text, #fff);
+  -webkit-text-fill-color: var(--hero-fg, #fff);
+  color: var(--hero-fg, #fff);
 }
 
 .schedule-hero-dates {
   margin-top: 1rem;
   font-family: 'VT323', monospace;
   font-size: clamp(1.05rem, 1.6vw, 1.4rem);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--hero-muted);
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
@@ -105,8 +131,29 @@
 }
 
 .schedule-hero-dash {
-  color: var(--theme-text, #fff);
+  color: var(--hero-fg, #fff);
   font-size: 1.2em;
+}
+
+/* Follow CTA — sits between the event dates and the KPI strip, with
+ * a Bungee + amber border treatment that matches the homepage Twitch
+ * follow button so viewers recognise the same affordance on both
+ * pages. The button itself is .btn-bloodmoon so it picks up whatever
+ * accent the active theme has wired into the primary button gradient. */
+.schedule-hero-cta {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+}
+
+.schedule-hero-cta .btn-bloodmoon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 1.5rem;
+  font-family: 'Bungee', cursive;
+  letter-spacing: 0.04em;
+  font-size: 1rem;
 }
 
 .schedule-hero-kpis {
@@ -120,8 +167,8 @@
 .schedule-hero-kpi {
   min-width: 140px;
   padding: 0.85rem 1.25rem;
-  background: rgba(0, 0, 0, 0.45);
-  border: var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.45));
+  background: var(--hero-surface);
+  border: var(--theme-divider-thickness, 1px) solid var(--hero-border);
   border-radius: 10px;
   backdrop-filter: blur(4px);
 }
@@ -130,7 +177,8 @@
   font-family: 'Bungee', sans-serif;
   font-size: 1.6rem;
   line-height: 1;
-  color: var(--theme-secondary, #731c37);
+  /* Per-KPI accent via [data-accent] → --btn-tint. */
+  color: var(--btn-tint, var(--theme-accent-1, var(--theme-secondary, #731c37)));
 }
 
 .schedule-hero-kpi-label {
@@ -138,7 +186,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--hero-muted);
 }
 
 /* ── Timeline ────────────────────────────────────────────────────────── */
@@ -160,20 +208,20 @@
   padding: 0.85rem 1rem;
   margin: 0 -1rem 1rem;
   background: var(--theme-bg-to, #0b0408);
-  border-bottom: var(--theme-divider-thickness, 1px) solid var(--theme-line, rgba(231, 19, 71, 0.45));
-  /* Subtle inner glow so the header reads as a slab, not a flat strip. */
-  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.85);
+  border-bottom: var(--theme-divider-thickness, 1px) solid var(--btn-tint, var(--theme-line, rgba(231, 19, 71, 0.45)));
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--theme-text, #000) 24%, transparent);
 }
 
 .schedule-day-weekday {
   font-family: 'Bungee', sans-serif;
   font-size: clamp(1.4rem, 2.4vw, 2rem);
-  color: var(--theme-secondary, #731c37);
+  /* Per-day accent via [data-accent] → --btn-tint. */
+  color: var(--btn-tint, var(--theme-secondary, #731c37));
   letter-spacing: 0.05em;
 }
 
 .schedule-day-date {
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--sch-muted);
   font-size: 0.95rem;
 }
 
@@ -191,13 +239,30 @@
   align-items: center;
   gap: 1.25rem;
   padding: 1rem 1.25rem;
-  background-color: color-mix(in srgb, var(--theme-bg-to, #1a0a10) 70%, var(--theme-bg-from, #4c1324) 30%);
   background-size: cover;
   background-position: center;
-  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   overflow: hidden;
   transition: transform 0.18s ease, border-color 0.18s ease;
+  /* Default = media (game cards sit on a dark box-art scrim) → light fg. */
+  --card-fg: #fff;
+  --card-muted: rgba(255, 255, 255, 0.62);
+  --card-surface: rgba(255, 255, 255, 0.1);
+  --card-strong: rgba(255, 255, 255, 0.14);
+  --card-border: rgba(255, 255, 255, 0.16);
+  background-color: color-mix(in srgb, var(--theme-bg-to, #1a0a10) 72%, var(--theme-bg-from, #4c1324) 28%);
+  border: 1px solid var(--card-border);
+}
+
+/* Plain card (a break slot with no box art) → follow the theme so it inverts
+ * with light / dark mode instead of forcing a dark surface + white text. */
+.schedule-card--plain {
+  --card-fg: var(--theme-text, #fff);
+  --card-muted: var(--sch-muted);
+  --card-surface: var(--sch-surface);
+  --card-strong: var(--sch-surface-strong);
+  --card-border: var(--sch-border);
+  background-color: var(--theme-surface, color-mix(in srgb, var(--theme-bg-to, #1a0a10) 80%, var(--theme-bg-from, #4c1324) 20%));
 }
 
 .schedule-card:hover {
@@ -205,19 +270,11 @@
   border-color: var(--btn-tint, var(--theme-primary, rgba(231, 19, 71, 0.4)));
 }
 
-/* Per-card accent stripe — when the card has a data-accent attribute
- * (set by the parent loop via `useAccentDeck`), paint a 4px stripe
- * down the left edge in that accent colour. Multi-colour themes
- * (SNES PAL) now show a four-colour bar of card stripes along the
- * schedule timeline; single-accent themes still get variety from
- * the deck's cycle through primary / primary_bright / secondary. */
+/* Per-card accent stripe down the left edge in the deck colour. */
 .schedule-card[data-accent] {
   box-shadow: inset 4px 0 0 0 var(--btn-tint);
 }
 .schedule-card.is-live[data-accent] {
-  /* When the card is also live the accent stripe still shows, but the
-   * pulsing border is the dominant signal — keep the stripe at full
-   * intensity so it doesn't compete with the pulse. */
   box-shadow:
     inset 4px 0 0 0 var(--btn-tint),
     0 0 0 1px var(--theme-line, rgba(231, 19, 71, 0.5)),
@@ -245,14 +302,12 @@
   }
 }
 
-/* Ghost card — placeholder shown on the slot's original day after a live
- * overnight slot has migrated into the current day. Muted, dashed border,
- * no animation. */
+/* Ghost card — placeholder after a live overnight slot migrated into today. */
 .schedule-card.is-ghost {
   opacity: 0.55;
   filter: saturate(0.5);
   border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--sch-border);
   box-shadow: none;
   animation: none;
 }
@@ -266,11 +321,9 @@
 }
 
 .schedule-pill--ghost {
-  /* Muted, secondary-tinted pill so ghost entries read as "still in
-   * play but elsewhere" without competing with the live primary. */
-  background: color-mix(in srgb, var(--theme-secondary, #731c37) 18%, transparent);
-  border-color: color-mix(in srgb, var(--theme-secondary, #731c37) 45%, transparent);
-  color: color-mix(in srgb, var(--theme-secondary, #731c37) 35%, #fff);
+  background: color-mix(in srgb, var(--theme-secondary, #731c37) 22%, transparent);
+  border-color: color-mix(in srgb, var(--theme-secondary, #731c37) 50%, transparent);
+  color: color-mix(in srgb, var(--theme-secondary, #731c37) 35%, var(--card-fg, #fff));
 }
 
 .schedule-card.is-completed {
@@ -292,11 +345,12 @@
   font-size: clamp(1.5rem, 2.4vw, 2.1rem);
   line-height: 1;
   letter-spacing: 0.02em;
+  /* Recolour to the card's accent so the time, stripe and (for live cards)
+   * the glow all share one hue. Clipped gradient lightens toward the tint. */
   background: linear-gradient(
     45deg,
-    var(--theme-primary, #e71347),
-    var(--theme-primary-bright, #da4471),
-    var(--theme-primary, #e7364b)
+    var(--btn-tint, var(--theme-primary, #e71347)),
+    color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 65%, #fff 35%)
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -306,15 +360,13 @@
 .schedule-card-time-end {
   margin-top: 0.35rem;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--card-muted);
   letter-spacing: 0.05em;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
 }
 
-/* Moon glyph beside the end time when the slot crosses midnight. Gentle
- * tilt + glow so it reads as "this is a marker, not a typo". */
 .schedule-moon {
   display: inline-block;
   font-size: 1.1em;
@@ -333,18 +385,14 @@
   font-family: 'VT323', monospace;
   font-size: 0.85rem;
   letter-spacing: 0.06em;
-  color: rgba(218, 200, 130, 0.85);
+  color: color-mix(in srgb, #dac882 70%, var(--card-fg, #fff));
   text-transform: lowercase;
 }
 
 .schedule-pill--overnight {
-  /* Picks up the theme's secondary colour so the "ends after midnight"
-   * pill ties into the palette instead of being a hardcoded twilight
-   * blue. The lighter foreground keeps contrast against the tinted
-   * background regardless of which palette is active. */
   background: color-mix(in srgb, var(--theme-secondary, #62182f) 22%, transparent);
-  border-color: color-mix(in srgb, var(--theme-secondary, #62182f) 55%, transparent);
-  color: color-mix(in srgb, var(--theme-secondary, #62182f) 30%, #fff);
+  border-color: color-mix(in srgb, var(--theme-secondary, #62182f) 50%, transparent);
+  color: color-mix(in srgb, var(--theme-secondary, #62182f) 30%, var(--card-fg, #fff));
 }
 
 .schedule-card-art {
@@ -352,15 +400,15 @@
   height: 146px;
   object-fit: cover;
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--theme-text, #000) 30%, transparent);
 }
 
 .schedule-card-art--break {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--theme-line, rgba(231, 19, 71, 0.12));
-  border: 1px dashed var(--theme-line, rgba(231, 19, 71, 0.55));
+  background: color-mix(in srgb, var(--btn-tint, var(--theme-line, #e71347)) 14%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--btn-tint, var(--theme-line, #e71347)) 55%, transparent);
   font-size: 2.4rem;
 }
 
@@ -381,34 +429,34 @@
   gap: 0.35em;
   padding: 0.15rem 0.65rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  color: var(--card-fg);
   font-size: 0.78rem;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .schedule-pill--duration {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--card-strong);
 }
 
 .schedule-pill--done {
-  background: rgba(40, 167, 69, 0.18);
-  border-color: rgba(40, 167, 69, 0.55);
-  color: #b9e7c5;
+  background: color-mix(in srgb, #28a745 20%, transparent);
+  border-color: color-mix(in srgb, #28a745 55%, transparent);
+  color: color-mix(in srgb, #28a745 45%, var(--card-fg, #fff));
 }
 
 .schedule-pill--live {
   background: var(--theme-line, rgba(231, 19, 71, 0.25));
   border-color: var(--theme-primary, rgba(231, 19, 71, 0.85));
-  color: #ffd2dd;
+  color: color-mix(in srgb, var(--theme-primary, #e71347) 35%, #fff);
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .schedule-pill--live:hover {
-  color: #ffe7ec;
+  color: #fff;
 }
 
 .schedule-live-dot {
@@ -421,14 +469,8 @@
 }
 
 @keyframes schedule-live-pulse {
-  0%, 100% {
-    transform: scale(0.8);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
+  0%, 100% { transform: scale(0.8); opacity: 0.7; }
+  50%      { transform: scale(1.2); opacity: 1; }
 }
 
 .schedule-card-title {
@@ -437,13 +479,15 @@
   line-height: 1.15;
   letter-spacing: 0.02em;
   margin: 0 0 0.5rem;
-  color: #fff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  color: var(--card-fg);
+  /* Shadow only adds depth on media cards (light text on imagery); on a plain
+   * light card the theme-text mix keeps it from muddying the type. */
+  text-shadow: 0 2px 12px color-mix(in srgb, var(--theme-text, #000) 18%, transparent);
 }
 
 .schedule-card-year {
   margin-left: 0.5rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--card-muted);
   font-family: 'VT323', monospace;
   font-size: 1rem;
   letter-spacing: 0.05em;
@@ -460,10 +504,10 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.15rem 0.65rem 0.15rem 0.2rem;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--card-fg);
   font-size: 0.8rem;
   text-decoration: none;
 }
@@ -476,13 +520,13 @@
 }
 
 .schedule-runner--linked {
-  border-color: var(--theme-line, rgba(231, 19, 71, 0.55));
-  background: var(--theme-line, rgba(231, 19, 71, 0.12));
+  border-color: color-mix(in srgb, var(--btn-tint, var(--theme-line, #e71347)) 55%, transparent);
+  background: color-mix(in srgb, var(--btn-tint, var(--theme-line, #e71347)) 14%, transparent);
 }
 
 .schedule-runner--linked:hover {
-  background: var(--theme-line, rgba(231, 19, 71, 0.25));
-  color: #fff;
+  background: color-mix(in srgb, var(--btn-tint, var(--theme-line, #e71347)) 26%, transparent);
+  color: var(--card-fg);
 }
 
 /* ── Live break banner inside the live card ─────────────────────────── */
@@ -491,11 +535,15 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.85rem;
-  background: rgba(255, 193, 7, 0.18);
-  border: 1px solid rgba(255, 193, 7, 0.6);
+  background: color-mix(in srgb, #ffc107 18%, transparent);
+  border: 1px solid color-mix(in srgb, #ffc107 60%, transparent);
   border-radius: 12px;
-  color: #ffe69b;
+  color: color-mix(in srgb, #ffc107 42%, var(--card-fg, #fff));
   animation: schedule-break-pulse 2.4s ease-in-out infinite;
+}
+
+.schedule-break-banner .schedule-break-sub {
+  color: var(--card-muted);
 }
 
 .schedule-break-icon {
@@ -504,12 +552,13 @@
 }
 
 @keyframes schedule-break-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+  50%      { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+}
+
+/* Empty / no-event copy — follows the theme so it reads in light mode. */
+.schedule-empty {
+  color: var(--sch-muted);
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────── */
@@ -530,9 +579,7 @@
   }
 }
 
-/* Compatibility shim: legacy `.text-bloodmoon` / `.bg-bloodmoon` selectors
- * are referenced from other routes. Keep them defined so nothing breaks
- * when a stray class lands on this page. */
+/* Compatibility shim: legacy `.text-bloodmoon` referenced from other routes. */
 .text-bloodmoon {
   background: linear-gradient(
     45deg,

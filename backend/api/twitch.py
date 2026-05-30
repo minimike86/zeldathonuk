@@ -9,7 +9,12 @@ Requires:
                         in TwitchOAuthToken once first used.
 - TWITCH_REFRESH_TOKEN  (refresh_token returned alongside the access token by the
                         Twitch CLI) — bootstrap only; rotated and persisted.
-- TWITCH_BROADCASTER_ID (your channel's numeric Twitch user id)
+
+Optional:
+- TWITCH_BROADCASTER_ID (your channel's numeric Twitch user id). Usually NOT
+                        needed — it's auto-resolved from the user token, since
+                        schedule management uses the broadcaster's own token.
+                        Set only to force a specific id.
 
 Get tokens via Twitch CLI: `twitch token -u -s channel:manage:schedule`
 """
@@ -121,6 +126,28 @@ def _request(method: str, url: str, **kwargs) -> requests.Response:
 
 def _broadcaster_id() -> str:
     return getattr(settings, 'TWITCH_BROADCASTER_ID', '')
+
+
+def resolve_broadcaster_id() -> str:
+    """The numeric Twitch user id of the channel we manage.
+
+    Prefers the explicit TWITCH_BROADCASTER_ID override when set; otherwise
+    resolves it from the user OAuth token — managing a channel's schedule
+    requires that channel's own token, so a Helix Get-Users call with no
+    id/login returns the authenticated user, whose id IS the broadcaster id.
+    Returns '' when it can't be determined (no/invalid token).
+    """
+    explicit = _broadcaster_id()
+    if explicit:
+        return explicit
+    try:
+        resp = _request('GET', f'{HELIX}/users')
+    except (TwitchAuthError, requests.RequestException):
+        return ''
+    if not resp.ok:
+        return ''
+    data = resp.json().get('data') or []
+    return data[0].get('id', '') if data else ''
 
 
 _TWITCH_LOGIN_RE = re.compile(r'^[a-zA-Z0-9_]{1,25}$')
@@ -277,15 +304,19 @@ def stream_status(request: Request) -> Response:
 @api_view(['POST'])
 def push_schedule(_request: Request) -> Response:
     """Replace the Twitch channel schedule with the active event's lineup."""
-    if not _broadcaster_id():
-        return Response(
-            {'error': 'TWITCH_BROADCASTER_ID required'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    # Token first — gives a clear "no token configured" message rather than the
+    # (now auto-resolved) broadcaster id being the apparent blocker.
     try:
         get_user_access_token()
     except TwitchAuthError as exc:
         return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    bid = resolve_broadcaster_id()
+    if not bid:
+        return Response(
+            {'error': 'Could not resolve broadcaster id from the Twitch token.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     event = models.Event.objects.filter(is_active=True).first()
     if not event:
@@ -297,7 +328,6 @@ def push_schedule(_request: Request) -> Response:
     if not entries:
         return Response({'error': 'no schedule entries'}, status=400)
 
-    bid = _broadcaster_id()
     base = f'{HELIX}/schedule/segment?broadcaster_id={bid}'
 
     # 1) Pull existing scheduled segments and delete them (idempotency).
@@ -312,20 +342,23 @@ def push_schedule(_request: Request) -> Response:
                 _request('DELETE', f'{base}&id={seg_id}')
                 deleted += 1
 
-    # 2) Post each schedule entry as a new segment.
+    # 2) Post each GAME entry as a new segment. Break/start/end slots have no
+    #    game — skip them as segments, but still advance the cursor over their
+    #    duration so the following game's start time accounts for the gap.
     cursor = event.start_time
     created = []
     for entry in entries:
         duration_min = entry.effective_minutes
-        body = {
-            'start_time': cursor.isoformat().replace('+00:00', 'Z'),
-            'timezone': 'Europe/London',
-            'duration': str(duration_min),
-            'title': entry.game.title,
-        }
-        resp = _request('POST', base, json=body)
-        if resp.ok:
-            created.append(entry.id)
+        if entry.game is not None:
+            body = {
+                'start_time': cursor.isoformat().replace('+00:00', 'Z'),
+                'timezone': 'Europe/London',
+                'duration': str(duration_min),
+                'title': entry.game.title,
+            }
+            resp = _request('POST', base, json=body)
+            if resp.ok:
+                created.append(entry.id)
         cursor = cursor + timedelta(minutes=duration_min)
 
     return Response(

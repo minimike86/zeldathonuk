@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { EventModel, ScheduleEntry } from '@/lib/obsApi';
 import { useAccentDeck } from '@/lib/accentDeck';
@@ -55,7 +57,10 @@ function parseDayKey(key: string): number {
 export function Schedule() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 30_000);
   const { data: schedule } = usePolledQuery(
-    () => (event ? obsApi.schedule(event.id) : Promise.resolve([] as ScheduleEntry[])),
+    () =>
+      event
+        ? obsApi.schedule(event.id, { compact: true })
+        : Promise.resolve([] as ScheduleEntry[]),
     10_000,
     [event?.id],
   );
@@ -157,14 +162,16 @@ export function Schedule() {
       />
 
       {slots.length === 0 ? (
-        <div className="container py-5 text-center text-white-50">
+        <div className="container py-5 text-center schedule-empty">
           <p>The line-up will appear here as soon as it's locked in.</p>
         </div>
       ) : (
         <div className="container schedule-timeline py-4">
-          {days.map((day) => (
+          {days.map((day, dayIdx) => (
             <section key={day.dayKey} className="schedule-day">
-              <header className="schedule-day-header">
+              {/* Each day's header takes a rotating accent so the weekday
+                * + underline cycle through the four theme colours. */}
+              <header className="schedule-day-header" data-accent={dayIdx % 4}>
                 <div className="schedule-day-weekday">{day.dayLabel}</div>
                 <div className="schedule-day-date">{day.dateLabel}</div>
               </header>
@@ -215,7 +222,7 @@ function ScheduleHero({
 
   return (
     <header
-      className="schedule-hero"
+      className={`schedule-hero${banner ? ' schedule-hero--media' : ''}`}
       style={
         banner
           ? {
@@ -239,20 +246,41 @@ function ScheduleHero({
           </div>
         )}
         {!event && (
-          <p className="text-white-50 mt-3">
+          <p className="schedule-empty mt-3">
             No event scheduled — check back closer to the next stream.
           </p>
         )}
+        {event?.twitch_channel && (
+          // Follow CTA — anchored under the dates so it sits at the
+          // top of the hero where it'll catch viewers who land
+          // pre-stream. Mirrors the Bungee + amber-bordered style of
+          // the homepage Follow button so both pages share the same
+          // recognisable CTA shape.
+          <div className="schedule-hero-cta">
+            <a
+              className="btn btn-bloodmoon"
+              href={`https://www.twitch.tv/${event.twitch_channel}`}
+              target="_blank"
+              rel="noreferrer"
+              title={`Follow ${event.twitch_channel} on Twitch`}
+            >
+              <FontAwesomeIcon icon={faTwitch} aria-hidden />
+              <span>Follow on Twitch</span>
+            </a>
+          </div>
+        )}
         {event && (
           <div className="schedule-hero-kpis">
-            <HeroKpi label="Games" value={String(totalGames)} />
+            <HeroKpi label="Games" value={String(totalGames)} accent={1} />
             <HeroKpi
               label="Play time"
               value={fmtDuration(totalPlayMinutes)}
+              accent={2}
             />
             <HeroKpi
               label="Progress"
               value={`${completedGames} / ${totalGames}`}
+              accent={3}
             />
           </div>
         )}
@@ -261,9 +289,17 @@ function ScheduleHero({
   );
 }
 
-function HeroKpi({ label, value }: { label: string; value: string }) {
+function HeroKpi({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: number;
+}) {
   return (
-    <div className="schedule-hero-kpi">
+    <div className="schedule-hero-kpi" data-accent={accent}>
       <div className="schedule-hero-kpi-value">{value}</div>
       <div className="schedule-hero-kpi-label">{label}</div>
     </div>
@@ -299,6 +335,9 @@ function GameCard({
 
   const cardClass = [
     'schedule-card',
+    // Media cards (box art backdrop) keep a dark scrim + light text in both
+    // modes; plain cards (breaks) follow the theme so they invert in light mode.
+    game?.box_art_url ? 'schedule-card--media' : 'schedule-card--plain',
     isPlaying ? 'is-live' : '',
     isCompleted ? 'is-completed' : '',
     isGhost ? 'is-ghost' : '',
@@ -444,7 +483,7 @@ function GameCard({
                   BREAK_META[liveBreak.entry.slot_type]?.label ?? 'break'
                 ).toLowerCase()}
               </strong>
-              <div className="small text-white-50">
+              <div className="small schedule-break-sub">
                 Back at <strong>{fmtTime(liveBreak.end)}</strong> (
                 {fmtDuration(liveBreak.entry.effective_minutes)})
               </div>

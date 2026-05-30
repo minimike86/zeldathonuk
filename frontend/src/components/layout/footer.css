@@ -12,7 +12,6 @@
 .footer-text {
   font-weight: 500;
   color: var(--theme-text, white) !important;
-  text-shadow: 1px 1px 2px black;
   font-size: x-small;
   text-decoration: none;
 }

@@ -1113,6 +1113,16 @@ class ThemeSettings(models.Model):
         help_text='Compact mark used in tight spaces (omnibar pill). '
                   'Absolute URL or site-relative path.',
     )
+    omnibar_logo_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Wordmark shown specifically inside the omnibar brand '
+                  'pill. Lets the broadcast layer carry a different mark '
+                  'from the site hero (e.g. a white-on-coloured variant '
+                  'tuned to whichever brand-pill gradient the theme uses). '
+                  'Blank falls back to logo_url. Absolute URL or '
+                  'site-relative path (e.g. /assets/img/foo.svg).',
+    )
     favicon_url = models.CharField(
         max_length=500,
         blank=True,

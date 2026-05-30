@@ -125,11 +125,15 @@ export function ImageDropzone({
       />
       <div className="mt-2">
         <input
-          type="url"
+          // `type="text"`, NOT `type="url"`: media paths are stored as
+          // CharFields so they accept site-relative paths (/assets/foo.svg)
+          // as well as absolute URLs. The browser's url validation rejects
+          // anything without an http(s):// scheme, which blocked /assets paths.
+          type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="form-control form-control-sm"
-          placeholder="…or paste a URL"
+          placeholder="…or paste a URL or /assets path"
         />
       </div>
       {err && <div className="text-danger small mt-1">{err}</div>}

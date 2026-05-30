@@ -212,10 +212,22 @@ function UpcomingGameCard({
   isFirst: boolean;
   isStatic: boolean;
 }) {
+  // Card-level background painting:
+  //   - When the game has cover art, we paint it as a `cover` background
+  //     image with a lane-tinted overlay (see .ob-upcoming-card--with-art
+  //     in omnibar.css). The URL is passed via a custom property so the
+  //     CSS rule can layer the overlay above it.
+  //   - When there's no art, the modifier class is omitted and the card
+  //     falls back to its solid currentColor wash.
+  const className =
+    'ob-upcoming-card' +
+    (isStatic ? ' ob-upcoming-card--static' : '') +
+    (card.boxArtUrl ? ' ob-upcoming-card--with-art' : '');
+  const cardStyle = card.boxArtUrl
+    ? ({ ['--ob-upcoming-card-art' as string]: `url(${card.boxArtUrl})` } as React.CSSProperties)
+    : undefined;
   return (
-    <span
-      className={`ob-upcoming-card${isStatic ? ' ob-upcoming-card--static' : ''}`}
-    >
+    <span className={className} style={cardStyle}>
       {card.boxArtUrl ? (
         <span className="ob-upcoming-card-art" aria-hidden>
           <img src={card.boxArtUrl} alt="" />

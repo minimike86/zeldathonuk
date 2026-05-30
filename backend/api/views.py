@@ -300,14 +300,37 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         models.ScheduleEntry.objects.all()
         .select_related('event', 'game', 'timer')
         .prefetch_related(
-            'runners', 'game__items', 'game__items__sets', 'game__item_sets',
+            # game__items__unlocks_with is required: GameItemSerializer emits
+            # unlocks_with_ids, so without it every item fires its own M2M query
+            # (same N+1 that made /api/schedule/ ~3.5s on a full schedule).
+            'runners', 'game__items', 'game__items__sets',
+            'game__items__unlocks_with', 'game__item_sets',
             'game__objectives', 'collected_items', 'objective_statuses',
         )
     )
     serializer_class = serializers.ScheduleEntrySerializer
 
+    def _is_compact(self) -> bool:
+        # Opt-in light list (public /schedule, up-next): drops the heavy nested
+        # game items/objectives that only the currently-playing entry needs.
+        return self.action == 'list' and bool(self.request.query_params.get('compact'))
+
+    def get_serializer_class(self):
+        if self._is_compact():
+            return serializers.ScheduleEntryLightSerializer
+        return serializers.ScheduleEntrySerializer
+
     def get_queryset(self):
-        qs = super().get_queryset()
+        if self._is_compact():
+            # Skip the collectible/objective prefetches entirely — the light
+            # serializer doesn't touch them.
+            qs = (
+                models.ScheduleEntry.objects.all()
+                .select_related('game')
+                .prefetch_related('runners')
+            )
+        else:
+            qs = super().get_queryset()
         event_id = self.request.query_params.get('event')
         if event_id:
             qs = qs.filter(event_id=event_id)

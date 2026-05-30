@@ -705,7 +705,14 @@ function OmnibarInner() {
 }
 
 function Brand({ feed }: { feed: OmnibarFeed }) {
-  const logo = feed.theme?.logo_url || '/assets/img/brand/logo/Zeldathon-Logo-WW-white.svg';
+  // omnibar_logo_url lets the broadcast layer carry a different mark
+  // from the site hero (e.g. a wordmark variant tuned to whichever
+  // brand-pill gradient the theme uses). Falls back to the global
+  // logo_url, then the bundled SVG so the pill is never bare.
+  const logo =
+    feed.theme?.omnibar_logo_url ||
+    feed.theme?.logo_url ||
+    '/assets/img/brand/logo/Zeldathon-Logo-WW-white.svg';
   return (
     <div className="ob-brand">
       <img src={logo} alt="" />

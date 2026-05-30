@@ -35,7 +35,17 @@ export function ControlLayout() {
     <div className="control-shell">
       <ThemeProvider renderBackgroundMedia />
       <header className="control-header">
-        <h1>Control Panel</h1>
+        {/* Title row carries the page heading next to an "Operator"
+          * hazard pill so the privileged-access register is visible
+          * the moment you land — the matching amber stripe sits along
+          * the very top edge of the header (see .control-header
+          * background in control.css). */}
+        <div className="control-header-row">
+          <h1>Control Panel</h1>
+          <span className="control-operator-pill" aria-label="Operator access">
+            Operator
+          </span>
+        </div>
         <nav>
           {sections.map((s) => (
             <NavLink

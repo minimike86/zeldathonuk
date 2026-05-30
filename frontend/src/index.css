@@ -355,6 +355,21 @@ a.link-warning {
 .text-warning { color: var(--theme-accent-2, #ffc107) !important; }
 .text-danger  { color: var(--theme-accent-3, #dc3545) !important; }
 
+/* Bootstrap white-text utilities — used HEAVILY across the control
+ * panel (~300+ occurrences) and elsewhere as "primary body copy on a
+ * dark surface". Anchor them to --theme-text so a light theme's dark
+ * text colour still resolves to readable on bright surfaces. The
+ * operator panel forces a dark card surface (see control.css) so
+ * white still wins there; this rule benefits the public site cards
+ * (charity, donations, schedule, etc.). */
+.text-white       { color: var(--theme-text, #fff) !important; }
+.text-white-50    { color: color-mix(in srgb, var(--theme-text, #fff) 50%, transparent) !important; }
+.text-white-75    { color: color-mix(in srgb, var(--theme-text, #fff) 75%, transparent) !important; }
+.text-light       { color: var(--theme-text, #fff) !important; }
+/* Bootstrap text-muted is grey by default; remap to the theme's
+ * muted register so it stays readable on light surfaces. */
+.text-muted       { color: var(--theme-text-muted, rgba(255, 255, 255, 0.6)) !important; }
+
 /* Inline anchors — already themed via --theme-link but the default
  * Bootstrap `a` colour wins in places where no other rule scopes the
  * link. Hard-codes the accents so e.g. control-card body copy honours

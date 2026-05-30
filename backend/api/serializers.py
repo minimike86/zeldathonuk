@@ -79,6 +79,20 @@ class GameSerializer(serializers.ModelSerializer):
         ]
 
 
+class GameLightSerializer(serializers.ModelSerializer):
+    """Game without the heavy nested items / objectives / item-sets — for list
+    views (schedule, up-next) that only need title + box art + metadata. Keeps
+    the schedule list payload small and avoids serialising hundreds of
+    collectibles no list consumer reads."""
+
+    class Meta:
+        model = models.Game
+        fields = [
+            'id', 'title', 'platform', 'layout_type', 'default_play_minutes',
+            'box_art_url', 'release_year', 'asset_slug',
+        ]
+
+
 class DonationPlatformProfileSerializer(serializers.ModelSerializer):
     platform_label = serializers.CharField(source='get_platform_display', read_only=True)
 
@@ -417,6 +431,27 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
         ]
 
 
+class ScheduleEntryLightSerializer(serializers.ModelSerializer):
+    """Compact schedule entry for list views (public /schedule, up-next). Uses
+    GameLightSerializer and drops the per-run collectible/objective/timer/sound
+    payloads that only the single currently-playing entry needs — so a 60-slot
+    schedule is a few KB instead of hundreds."""
+
+    game = GameLightSerializer(read_only=True)
+    runners = RunnerSerializer(many=True, read_only=True)
+    effective_minutes = serializers.IntegerField(read_only=True)
+    display_title = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = models.ScheduleEntry
+        fields = [
+            'id', 'event', 'slot_type', 'title', 'display_title', 'game',
+            'parent_entry', 'start_offset_minutes', 'runners', 'order',
+            'planned_minutes', 'effective_minutes', 'started_at', 'finished_at',
+            'is_completed', 'was_skipped', 'current_objective',
+        ]
+
+
 class CollectedItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CollectedItem
@@ -558,7 +593,7 @@ class ThemeSettingsSerializer(serializers.ModelSerializer):
             'background_from', 'background_to', 'background_gradient_angle',
             'navbar_tint_color',
             'text_color', 'text_muted', 'line_color',
-            'logo_url', 'logo_small_url', 'favicon_url',
+            'logo_url', 'logo_small_url', 'omnibar_logo_url', 'favicon_url',
             'background_video_url', 'background_image_url',
             'button_gradient_from', 'button_gradient_to', 'button_gradient_angle',
             'button_text_color', 'button_border_color',

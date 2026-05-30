@@ -204,9 +204,7 @@ export function ThemeControl() {
               >
                 <div
                   className="theme-list-swatch"
-                  style={{
-                    background: `linear-gradient(135deg, ${t.primary} 0%, ${t.primary_bright} 50%, ${t.secondary} 100%)`,
-                  }}
+                  style={{ background: swatchGradient(t) }}
                   aria-hidden
                 />
                 <div className="theme-list-name">
@@ -272,6 +270,35 @@ export function ThemeControl() {
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * Build the rail's per-theme swatch background. Cycles through every
+ * accent slot the theme exposes so the swatch previews the FULL
+ * palette at a glance — primary + primary_bright + secondary plus
+ * the optional accent_1/2/3 trio.
+ *
+ * Empty accent slots fall back to the same chain the apply-time
+ * bridge uses (accent_1 → primary_bright, accent_2 → primary,
+ * accent_3 → secondary), so single-accent themes (Bloodmoon,
+ * Wind Waker, etc.) still produce a clean gradient instead of
+ * blank stops. Order interleaves the named accents with brand
+ * colours so multi-colour themes (SNES PAL) show all four PAL
+ * face-button colours in the strip.
+ */
+function swatchGradient(t: ThemeSettings): string {
+  const accent1 = t.accent_1 || t.primary_bright;
+  const accent2 = t.accent_2 || t.primary;
+  const accent3 = t.accent_3 || t.secondary;
+  return (
+    'linear-gradient(135deg, ' +
+    `${t.primary} 0%, ` +
+    `${accent1} 20%, ` +
+    `${accent2} 40%, ` +
+    `${accent3} 60%, ` +
+    `${t.primary_bright} 80%, ` +
+    `${t.secondary} 100%)`
   );
 }
 
@@ -560,6 +587,7 @@ function ThemeEditor({
         <div className="row g-3 mt-2">
           <LogoPickerField label="Logo URL (wordmark)" value={draft.logo_url} onChange={(v) => set('logo_url', v)} placeholder="/assets/img/your-logo.svg" />
           <LogoPickerField label="Logo URL (small / compact)" value={draft.logo_small_url} onChange={(v) => set('logo_small_url', v)} placeholder="/assets/img/your-mark.svg" />
+          <LogoPickerField label="Logo URL (omnibar pill)" value={draft.omnibar_logo_url} onChange={(v) => set('omnibar_logo_url', v)} placeholder="Blank = use site wordmark" />
           <TextField label="Favicon URL" value={draft.favicon_url} onChange={(v) => set('favicon_url', v)} placeholder="/assets/img/favicon.png" preview="image" />
         </div>
         {saveBar}

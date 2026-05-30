@@ -117,6 +117,21 @@
   z-index: 1;
 }
 
+/* Scoped to the About FAQ's world-marathons card: force a real dark
+ * surface + scope --theme-text back to white inside, so the
+ * text-white-50 utilities (which the global override otherwise maps
+ * to dark on light themes) and the .charity-link chips inside this
+ * specific card always read as white on a dark wash. Out-of-scope
+ * bg-bloodmoon usages (Donations / Home / Incentives) keep their
+ * own page-specific treatments. */
+.faq-answer .bg-bloodmoon {
+  background-color: rgba(0, 0, 0, 0.32);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  --theme-text: #fff;
+  --theme-text-muted: rgba(255, 255, 255, 0.65);
+}
+
 .bg-bloodmoon::before {
   display: inline-block;
   position: absolute;
@@ -182,7 +197,15 @@
   display: inline-block;
 }
 
-/* Prev / next carousel controls, centred over the image. */
+/* Prev / next carousel controls, centred over the image.
+ *
+ * Background mixes the theme's bg-from with a dark wash so the
+ * button body is always darker than the surrounding page:
+ *   • Dark theme (bloodmoon): deep red mixed with black → very dark.
+ *   • Light theme (SNES grey): light grey mixed with 55% black →
+ *     medium-dark wash that still reads against a light page.
+ * The chevron itself stays white because the body is now reliably
+ * dark on every theme. */
 .about-carousel-arrow {
   position: absolute;
   top: 50%;
@@ -195,8 +218,16 @@
   height: 40px;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.25));
-  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-text, #fff) 25%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--theme-bg-from, #000) 45%,
+    rgba(0, 0, 0, 0.55)
+  );
   color: #fff;
   font-size: 1.1rem;
   line-height: 1;
@@ -217,14 +248,18 @@
   right: 0.5rem;
 }
 
-/* Carousel position dots — active dot widens and takes the theme accent. */
+/* Carousel position dots — active dot widens and takes the theme
+ * accent. Inactive dots use the muted text colour at 45% so they
+ * stay visible against both dark (white-text) and light (dark-text)
+ * themes. The previous fixed white-translucent dots disappeared on
+ * SNES / Game Boy. */
 .about-carousel-dot {
   width: 24px;
   height: 4px;
   border: 0;
   border-radius: 999px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.35);
+  background: color-mix(in srgb, var(--theme-text, #fff) 45%, transparent);
   cursor: pointer;
   transition: background 0.15s ease, width 0.15s ease;
 }
@@ -245,8 +280,16 @@
   border-radius: 999px;
   text-decoration: none;
   color: #fff;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.15));
+  /* Stronger dark wash so the chip stays readable when the page
+   * background is light (SNES, Game Boy). At 0.3 the chip diluted
+   * into the light page and white text dropped below WCAG AA; at
+   * 0.55 the chip is a solid mid-dark surface on every theme. */
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-text, #fff) 25%,
+    transparent
+  );
   transition: border-color 0.15s ease, background 0.15s ease;
   font-size: 0.85rem;
   line-height: 1;
@@ -255,5 +298,5 @@
 .charity-link:hover {
   color: #fff;
   border-color: color-mix(in srgb, var(--theme-secondary, #439abe) 85%, transparent);
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.68);
 }

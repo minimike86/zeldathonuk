@@ -502,6 +502,19 @@
   /* Amount font tints to the parent tile's accent so all four PAL
    * colours show up across a row of tiers. */
   color: var(--btn-tint, #fff);
+  /* Halo stroke against the tile fill — `--theme-bg-from` is the
+   * page background colour, which is dark on dark themes and light
+   * on light themes. Painting the stroke in that colour naturally
+   * inverts based on the active theme: bright accent text gets a
+   * dark halo on bloodmoon / Wind Waker, dark accent text gets a
+   * light halo on SNES / Game Boy. Solves the green-on-green and
+   * yellow-on-yellow low-contrast issue without forcing a single
+   * hard-coded outline colour. */
+  text-shadow:
+    -1px -1px 0 var(--theme-bg-from, #4c1324),
+     1px -1px 0 var(--theme-bg-from, #4c1324),
+    -1px  1px 0 var(--theme-bg-from, #4c1324),
+     1px  1px 0 var(--theme-bg-from, #4c1324);
 }
 
 .charity-impact-img {

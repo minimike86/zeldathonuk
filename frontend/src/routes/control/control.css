@@ -1,26 +1,118 @@
+/* /control shell — the operator surface.
+ *
+ * Two design goals here, working together:
+ *   1. Honour the active site theme so a SNES / Game Boy / Wind Waker
+ *      operator session reads as that theme's colour world, not the
+ *      hardcoded bloodmoon palette this used to ship.
+ *   2. Make it visually obvious that this IS the admin / operator
+ *      area — a privileged access surface, not the public site.
+ *      That register stays constant across themes via the amber/black
+ *      hazard stripe across the top of the header + the "Operator"
+ *      pill next to the page title.
+ *
+ * The background colour-mixes each theme bg stop with ~28% black so
+ * the operator panel always reads a touch darker / heavier than the
+ * matching public theme — same palette, lower brightness, "back of
+ * house" feel.
+ */
 .control-shell {
   display: flex;
   flex-direction: column;
   height: 100%;
-  color: #fff;
-  background: #4c1324;
+  color: var(--theme-text, #fff);
+  background: linear-gradient(
+    var(--theme-bg-angle, 180deg),
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 72%, #000),
+    color-mix(in srgb, var(--theme-bg-to, #1a0a10) 80%, #000)
+  );
 }
 
 .control-header {
-  background: linear-gradient(180deg, #2b1b25, hsla(0, 0%, 100%, 0)), #4c1324;
-  border-bottom: 1px solid #bb225e;
-  padding: 1rem 1.5rem;
+  /* Layered background, top → bottom:
+   *   1. Hazard stripe (amber + near-black) painted as a 4px-tall
+   *      band along the top edge — the privileged-access cue. Sits
+   *      above the theme tint so it survives any palette swap.
+   *   2. Theme navbar tint over the top stop of the page bg, fading
+   *      into transparency — matches the public navbar treatment so
+   *      operators recognise the chrome.
+   *   3. Theme bg-from at the bottom of the layer stack so the band
+   *      reads as a single piece of chrome instead of letting the
+   *      page bg show through. */
+  background:
+    repeating-linear-gradient(
+      45deg,
+      #d4a017 0 10px,
+      #1a1a1a 10px 20px
+    ) top / 100% 4px no-repeat,
+    linear-gradient(180deg, var(--theme-navbar-tint, #2b1b25), hsla(0, 0%, 100%, 0)),
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 80%, #000);
+  border-bottom: 1px solid var(--theme-primary, #bb225e);
+  /* Extra top padding so the page title doesn't kiss the hazard
+   * stripe; standard bottom padding for the nav row beneath. */
+  padding: 1.25rem 1.5rem 1rem;
+}
+
+/* Title + Operator pill share a flex row so the pill anchors next
+ * to "Control Panel" rather than wrapping to its own line. */
+.control-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.5rem;
 }
 
 .control-header h1 {
-  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-family: 'Bungee', sans-serif;
+  /* Flat white to match the card h2 rule — no shimmery gradient on
+   * the page title. The Operator pill carries the colour accent. */
+  color: #fff;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
   text-transform: uppercase;
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 2rem;
+}
+
+/* "Operator" hazard pill — same amber as the hazard stripe so the
+ * two read as one warning system. Constant across themes; this is
+ * privileged-access signage, not theme chrome. */
+.control-operator-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem 0.15rem;
+  border-radius: 999px;
+  background: rgba(212, 160, 23, 0.18);
+  color: #f0c64a;
+  border: 1px solid rgba(212, 160, 23, 0.55);
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The pill's leading dot — pulses gently so the warning register
+ * reads "live system" rather than passive label. */
+.control-operator-pill::before {
+  content: '';
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #f0c64a;
+  box-shadow: 0 0 6px rgba(240, 198, 74, 0.85);
+  animation: control-operator-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes control-operator-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control-operator-pill::before {
+    animation: none;
+  }
 }
 
 .control-header nav {
@@ -39,14 +131,29 @@
 }
 
 .control-nav-link:hover {
-  background: rgba(185, 39, 83, 0.3);
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #b92753) 30%,
+    transparent
+  );
   color: #fff;
 }
 
 .control-nav-link.active {
-  background: linear-gradient(45deg, #b92753, #731c37, #62182f);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  /* Active section painted in the theme's primary gradient so
+   * operators land on the same colour world as the public site —
+   * just shifted darker (the .control-shell background tint). */
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #b92753),
+    var(--theme-secondary, #731c37)
+  );
+  color: var(--theme-button-text, #fff);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-primary-bright, rgba(255, 255, 255, 0.6)) 60%,
+    transparent
+  );
 }
 
 .control-main {
@@ -60,7 +167,9 @@
   /* Theme-driven surface — defaults preserve the previous bloodmoon
    * card look on dark themes (semi-transparent black) while bright
    * themes (SNES, Game Boy) get to override with a solid light fill
-   * via theme.surface_color. */
+   * via theme.surface_color. This rule applies outside the operator
+   * area (e.g. embedded previews on the public site). Inside
+   * .control-shell the operator scope overrides this — see below. */
   background: var(--theme-surface, linear-gradient(135deg, rgba(43, 27, 37, 0.6), rgba(76, 19, 36, 0.6)));
   border: 1px solid var(--theme-surface-border, var(--theme-line, rgba(185, 39, 83, 0.5)));
   border-radius: 8px;
@@ -69,22 +178,54 @@
   color: var(--theme-surface-text, var(--theme-text, #fff));
 }
 
+/* ── Operator-area card override ───────────────────────────────────
+ *
+ * The control panel intentionally diverges from the public theme
+ * here: cards always paint in the THEME'S DEEP REGISTER (mix the
+ * bg-from / bg-to stops with ~55-65% black) regardless of whether
+ * the theme has opted into a bright surface for the public site.
+ *
+ * Why force this:
+ *
+ *   1. Accessibility — bright themes (SNES, Game Boy) ship light
+ *      surface_color values for their public cards, but the operator
+ *      panel has 300+ Bootstrap `text-white*` / hardcoded white-on-
+ *      dark assumptions baked across 17 control files. A light
+ *      operator card breaks all of them at once. Holding the surface
+ *      dark fixes the entire control-panel contrast register without
+ *      refactoring every TSX.
+ *
+ *   2. Privileged-access cue — the operator chrome should feel
+ *      heavier / darker than the public view it's branding. Dark
+ *      theme-tinted cards under the amber hazard stripe sell that
+ *      "back of house" signal regardless of which theme is active.
+ *
+ * The theme palette still bleeds through via the bg-from gradient
+ * stops and the primary-tinted border, so SNES still reads as SNES
+ * (deep blue/purple chrome), Game Boy still reads as Game Boy etc.
+ * — they just don't go fully light. */
+.control-shell .control-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 45%, rgba(0, 0, 0, 0.65)),
+    color-mix(in srgb, var(--theme-bg-to, #1a0a10) 55%, rgba(0, 0, 0, 0.75))
+  );
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-primary, #b92753) 35%,
+    transparent
+  );
+  color: rgba(255, 255, 255, 0.92);
+}
+
 .control-card h2 {
   margin-top: 0;
-  /* Heading runs through the three accents (which fall back to the
-   * primary palette when unset), so bloodmoon still gradients red→pink
-   * while SNES PAL gradients blue→red→yellow etc. */
-  background: linear-gradient(
-    45deg,
-    var(--theme-accent-2, var(--theme-primary, #e71347)),
-    var(--theme-accent-1, var(--theme-primary-bright, #da4471)),
-    var(--theme-accent-3, var(--theme-secondary, #e7364b)),
-    var(--theme-accent-1, var(--theme-primary-bright, #da4471)),
-    var(--theme-accent-2, var(--theme-primary, #e71347))
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* Flat white headings across the entire /control surface — the
+   * previous accent gradient (background-clip: text trick) read as
+   * shimmery / chromatic-aberration noise on most palettes, which
+   * made longer titles hard to skim. Single solid colour keeps every
+   * card heading scannable regardless of which theme is active. */
+  color: #fff;
   font-family: var(--theme-font-heading, 'Bungee', sans-serif);
   text-transform: uppercase;
   font-size: 1.5rem;
@@ -94,7 +235,11 @@
   background: rgba(0, 0, 0, 0.4);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #ffc2e0;
+  /* Theme-aware inline-code chip. Falls back through
+   * primary_bright → bloodmoon pink so existing themes are unchanged
+   * but multi-colour themes (SNES PAL etc.) tint the chip with their
+   * own accent. */
+  color: var(--theme-primary-bright, #ffc2e0);
 }
 
 /* index.css hides every scrollbar globally (`::-webkit-scrollbar{display:none}`)
@@ -134,8 +279,15 @@
 }
 
 .control-table th {
-  background: rgba(185, 39, 83, 0.3);
-  font-family: 'Bungee', sans-serif;
+  /* Theme-tinted header band — 30% of the primary mixed with the
+   * dark card surface. Bloodmoon resolves to the original rose-pink
+   * wash; SNES blue, Wind Waker sail-red, etc. all carry through. */
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #b92753) 30%,
+    transparent
+  );
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
   font-size: 0.85rem;
   text-transform: uppercase;
 }
@@ -483,12 +635,26 @@
 }
 
 .theme-list-item.is-selected {
-  border-color: rgba(231, 19, 71, 0.55);
-  background: rgba(231, 19, 71, 0.12);
+  /* Selected highlight follows the live theme's primary so the
+   * selection state still reads as "this is the one" on every
+   * palette, not just bloodmoon's red. */
+  border-color: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 55%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 12%,
+    transparent
+  );
 }
 
 .theme-list-item.is-active {
-  outline: 1px solid rgba(255, 193, 7, 0.55);
+  /* Outline stays amber to match the operator-area "active /
+   * privileged" register (matches the .control-operator-pill
+   * amber + the header hazard stripe). */
+  outline: 1px solid rgba(212, 160, 23, 0.6);
 }
 
 .theme-list-button {
@@ -556,18 +722,6 @@
   margin-bottom: 0;
 }
 
-/* /control/theme card headings stay plain white so the colour gradient
- * used elsewhere doesn't conflict with the swatches being edited below
- * (every accent change on the active theme would otherwise repaint
- * each card's title, which makes the heading flicker as you drag
- * around the colour pickers). Override the global .control-card h2
- * gradient with a flat fill scoped to the whole theme shell (covers
- * both the rail's "Themes" header and every editor card). */
-.theme-shell .control-card h2 {
-  background: none;
-  -webkit-text-fill-color: #fff;
-  color: #fff;
-}
 
 .schedule-form {
   background: rgba(0, 0, 0, 0.25);
