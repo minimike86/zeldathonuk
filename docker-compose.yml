@@ -29,7 +29,10 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-zeldathon}:${POSTGRES_PASSWORD:-zeldathon}@postgres:5432/${POSTGRES_DB:-zeldathon}
       DJANGO_DEBUG: "1"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
+      # Public host(s) included so Cloudflare-tunnelled requests (Twitch
+      # EventSub verification hits /api/twitch/eventsub/ with this Host) aren't
+      # rejected with a 400 DisallowedHost.
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend,zeldathon.co.uk,www.zeldathon.co.uk,api.zeldathon.co.uk"
       CORS_ALLOWED_ORIGINS: "http://localhost:5173"
     ports:
       - "8000:8000"

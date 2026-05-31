@@ -34,6 +34,7 @@ from datetime import datetime, timezone as dt_timezone
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.conf import settings
+from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
@@ -101,11 +102,14 @@ def eventsub_webhook(request: Request) -> Response:
     msg_type = request.META.get(_meta_key(HEADER_MSG_TYPE), '')
     body = request.data if isinstance(request.data, dict) else {}
 
-    # 1. Verification challenge — echo back.
+    # 1. Verification challenge — echo the raw challenge string back. Must be a
+    # plain HttpResponse, NOT a DRF Response: the only configured renderer is
+    # JSONRenderer, which would wrap the string in quotes ("abc") and Twitch's
+    # exact-match check on the challenge would then fail.
     if msg_type == MSG_VERIFICATION:
-        return Response(
+        return HttpResponse(
             body.get('challenge', ''),
-            status=status.HTTP_200_OK,
+            status=200,
             content_type='text/plain',
         )
 

@@ -26,7 +26,7 @@ elif DEBUG:
 else:
     raise ImproperlyConfigured('DJANGO_SECRET_KEY is required when DEBUG is False')
 
-ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'zeldathon.co.uk', 'www.zeldathon.co.uk'])
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Applications
