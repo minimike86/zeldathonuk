@@ -108,21 +108,34 @@ def scrape_game(
     processed — used by the admin action to stream feedback and by the
     management command to print to stdout.
     """
-    r = session.get(f'https://ocremix.org/game/{game_id}', timeout=20)
+    base = session.get(f'https://ocremix.org/game/{game_id}', timeout=20)
     result = ScrapeResult(game_id=game_id, game_title=f'game-{game_id}')
-    if not r.ok:
+    if not base.ok:
         return result
 
-    m = re.search(r'<title>Game:\s*([^<|]+)', r.text)
+    m = re.search(r'<title>Game:\s*([^<|]+)', base.text)
     raw_title = m.group(1).strip() if m else f'game-{game_id}'
     result.game_title = raw_title.split('[')[0].strip() or raw_title
 
+    # The bare game page lists only the first 25 remixes, and its ?page=N
+    # pagination is ignored upstream — so popular games (Ocarina of Time has
+    # 119) were silently capped at 25. The slugged /remixes subpath returns the
+    # full listing on one page. `base.url` is the redirect target
+    # (…/game/67/legend-of-zelda-ocarina-of-time-n64); append /remixes to it.
+    # Requesting /game/<id>/remixes WITHOUT the slug just 302s back to the
+    # capped base page, hence resolving the slug from the redirect first.
+    listing = session.get(base.url.rstrip('/') + '/remixes', timeout=20)
+    page = listing.text if listing.ok else base.text
+
+    # The "class=main" anchor markup has drifted, so the primary pattern often
+    # finds nothing; the bare /remix/OCR\d+ fallback reliably yields every id on
+    # the page (the real title + MP3 come from each remix's detail page below).
     pairs = re.findall(
         r'href="/remix/(OCR\d+)"\s+class="main"[^>]*>([^<]+)</a>',
-        r.text,
+        page,
     )
     if not pairs:
-        ocr_ids = sorted(set(re.findall(r'/remix/(OCR\d+)', r.text)))
+        ocr_ids = sorted(set(re.findall(r'/remix/(OCR\d+)', page)))
         pairs = [(rid, rid) for rid in ocr_ids]
 
     seen: list[tuple[str, str]] = []
