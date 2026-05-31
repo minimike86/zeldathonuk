@@ -1,4 +1,4 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { DonkeyKongCountry2Scene } from './DonkeyKongCountry2Scene';
 import { DonkeyKongCountry3Scene } from './DonkeyKongCountry3Scene';
 import { DonkeyKongCountryScene } from './DonkeyKongCountryScene';
@@ -6,12 +6,12 @@ import { DonkeyKongScene } from './DonkeyKongScene';
 
 /**
  * Donkey Kong franchise theme entries. Spread into the `THEMES` array in
- * zelda-themes.ts. Most-specific `match` substrings MUST come first — themeFor
+ * game-themes.ts. Most-specific `match` substrings MUST come first — themeFor
  * returns the first substring hit, so the numbered Country entries are listed
  * ahead of bare 'donkey kong country', which precedes the 'donkey kong'
  * arcade fallback.
  */
-export const dkThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const dkThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'donkey kong country 2',
     theme: {

@@ -1,5 +1,5 @@
 /* All colour stops are driven by CSS custom properties set on .ac-stage from
- * the per-game theme picker in zelda-themes.ts. The defaults below match
+ * the per-game theme picker in game-themes.ts. The defaults below match
  * the bloodmoon scheme so the page still looks like the rest of the site
  * when no track is loaded. */
 .ac-stage {

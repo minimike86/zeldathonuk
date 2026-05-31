@@ -1,4 +1,4 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { MegaManXScene } from './MegaManXScene';
 import { MegaMan9Scene } from './MegaMan9Scene';
 import { MegaMan3Scene } from './MegaMan3Scene';
@@ -7,11 +7,11 @@ import { MegaManScene } from './MegaManScene';
 
 /**
  * Mega Man franchise theme entries. Spread into the `THEMES` array in
- * zelda-themes.ts. Most-specific `match` substrings MUST come first — themeFor
+ * game-themes.ts. Most-specific `match` substrings MUST come first — themeFor
  * returns the first substring hit, so 'mega man x' / 'mega man 9' / 'mega man 3'
  * / 'mega man 2' are listed ahead of the bare 'mega man' fallback (covers 1/4/5).
  */
-export const megamanThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const megamanThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'mega man x',
     theme: {

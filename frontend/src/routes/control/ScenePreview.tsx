@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { themeToCssVars, type ZeldaTheme } from '../obs/zelda-themes';
+import { themeToCssVars, type GameTheme } from '../obs/game-themes';
 import '../obs/scenes/scenes.css';
 
 const STAGE_W = 1920;
@@ -21,7 +21,7 @@ export function ScenePreview({
   width = 320,
 }: {
   Scene: ComponentType;
-  theme: ZeldaTheme;
+  theme: GameTheme;
   width?: number;
 }) {
   const height = Math.round((width * STAGE_H) / STAGE_W);

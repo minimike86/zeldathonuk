@@ -1,4 +1,4 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { SymphonyScene } from './SymphonyScene';
 import { SuperCv4Scene } from './SuperCv4Scene';
 import { Castlevania3Scene } from './Castlevania3Scene';
@@ -7,11 +7,11 @@ import { CastlevaniaScene } from './CastlevaniaScene';
 
 /**
  * Castlevania franchise theme entries. Spread into the `THEMES` array in
- * zelda-themes.ts. themeFor returns the FIRST substring hit, so the most
+ * game-themes.ts. themeFor returns the FIRST substring hit, so the most
  * specific `match` strings MUST come first. Note 'castlevania iii' contains
  * 'castlevania ii', which contains 'castlevania' — hence the descending order.
  */
-export const castlevaniaThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const castlevaniaThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'symphony of the night',
     theme: {

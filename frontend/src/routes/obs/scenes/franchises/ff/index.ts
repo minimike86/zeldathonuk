@@ -1,4 +1,4 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { Ff8Scene } from './Ff8Scene';
 import { Ff7Scene } from './Ff7Scene';
 import { Ff6Scene } from './Ff6Scene';
@@ -10,7 +10,7 @@ import { FfScene } from './FfScene';
 
 /**
  * Final Fantasy franchise theme entries for the audio-countdown visualiser.
- * Spread into the `THEMES` array in zelda-themes.ts.
+ * Spread into the `THEMES` array in game-themes.ts.
  *
  * ORDER IS LOAD-BEARING — `themeFor` returns the first substring hit, so the
  * most-specific match MUST come first. Roman numerals nest: "final fantasy vi"
@@ -18,7 +18,7 @@ import { FfScene } from './FfScene';
  * prefix of everything, so it is listed dead last as the I/II/Adventure
  * fallback. Sequence: VIII → VII → VI → IX → V → IV → X → (bare).
  */
-export const ffThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const ffThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'final fantasy viii',
     theme: {

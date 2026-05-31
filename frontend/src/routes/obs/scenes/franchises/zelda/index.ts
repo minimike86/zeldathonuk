@@ -1,80 +1,38 @@
 /**
- * Per-game visual themes for the /obs/audio-countdown overlay.
+ * Zelda franchise scene themes for the /obs/audio-countdown visualiser — one
+ * franchise module among many under scenes/franchises/, aggregated into the
+ * THEMES cascade by ../../../game-themes. Match is fuzzy (substring), ordered
+ * most-specific-first.
  *
- * Each theme has CSS variables (background, primary, secondary, glow) plus an
- * optional `scenes` array of React components — one is picked at random when
- * the theme activates, so games with more than one canonical setting can show
- * variety (Breath of the Wild has both Hyrule-at-sunset and Death Mountain;
- * future games can add forests, dungeons, etc).
- *
- * Match is fuzzy — longest substring matched first.
+ * NOTE: the dev-only scene-unregister tool (backend/api/dev_scenes.py) rewrites
+ * this file's `import { XScene } from '../../XScene'` lines and `scenes:` arrays
+ * — keep that import shape intact.
  */
-import type { ComponentType, CSSProperties } from 'react';
-import { WindWakerScene } from './scenes/WindWakerScene';
-import { OcarinaScene } from './scenes/OcarinaScene';
-import { MajorasMaskScene } from './scenes/MajorasMaskScene';
-import { BotwScene } from './scenes/BotwScene';
-import { BotwDeathMountainScene } from './scenes/BotwDeathMountainScene';
-import { TotkScene } from './scenes/TotkScene';
-import { TotkDepthsScene } from './scenes/TotkDepthsScene';
-import { SkywardScene } from './scenes/SkywardScene';
-import { TwilightCastleScene } from './scenes/TwilightCastleScene';
-import { TwilightWolfMidnaScene } from './scenes/TwilightWolfMidnaScene';
-import { AlttpScene } from './scenes/AlttpScene';
-import { NesScene } from './scenes/NesScene';
-import { Zelda2Scene } from './scenes/Zelda2Scene';
-import { OracleAgesScene } from './scenes/OracleAgesScene';
-import { OracleSeasonsScene } from './scenes/OracleSeasonsScene';
-import { AlbwScene } from './scenes/AlbwScene';
-import { PhantomHourglassScene } from './scenes/PhantomHourglassScene';
-import { FourSwordsAdventuresScene } from './scenes/FourSwordsAdventuresScene';
-import { SpiritTracksScene } from './scenes/SpiritTracksScene';
-import { MinishCapScene } from './scenes/MinishCapScene';
-import { LinksAwakeningScene } from './scenes/LinksAwakeningScene';
-import './scenes/scenes.css';
+import type { GameTheme } from '../../../game-themes';
+import { WindWakerScene } from '../../WindWakerScene';
+import { OcarinaScene } from '../../OcarinaScene';
+import { MajorasMaskScene } from '../../MajorasMaskScene';
+import { BotwScene } from '../../BotwScene';
+import { BotwDeathMountainScene } from '../../BotwDeathMountainScene';
+import { TotkScene } from '../../TotkScene';
+import { TotkDepthsScene } from '../../TotkDepthsScene';
+import { SkywardScene } from '../../SkywardScene';
+import { TwilightCastleScene } from '../../TwilightCastleScene';
+import { TwilightWolfMidnaScene } from '../../TwilightWolfMidnaScene';
+import { AlttpScene } from '../../AlttpScene';
+import { NesScene } from '../../NesScene';
+import { Zelda2Scene } from '../../Zelda2Scene';
+import { OracleAgesScene } from '../../OracleAgesScene';
+import { OracleSeasonsScene } from '../../OracleSeasonsScene';
+import { AlbwScene } from '../../AlbwScene';
+import { PhantomHourglassScene } from '../../PhantomHourglassScene';
+import { FourSwordsAdventuresScene } from '../../FourSwordsAdventuresScene';
+import { SpiritTracksScene } from '../../SpiritTracksScene';
+import { MinishCapScene } from '../../MinishCapScene';
+import { LinksAwakeningScene } from '../../LinksAwakeningScene';
+import '../../scenes.css';
 
-// Non-Zelda franchise themes live in self-contained modules under
-// scenes/franchises/<franchise>/ (scene components + co-located CSS + an
-// exported theme-entry array). They are spread into THEMES below. Keeping them
-// in separate modules lets multiple authors add franchises without touching
-// this file's THEMES body or the shared scenes.css.
-import { ducktalesThemes } from './scenes/franchises/ducktales';
-import { ffThemes } from './scenes/franchises/ff';
-import { chronoThemes } from './scenes/franchises/chrono';
-import { megamanThemes } from './scenes/franchises/megaman';
-import { sonicThemes } from './scenes/franchises/sonic';
-import { marioThemes } from './scenes/franchises/mario';
-import { dkThemes } from './scenes/franchises/dk';
-import { metroidThemes } from './scenes/franchises/metroid';
-import { castlevaniaThemes } from './scenes/franchises/castlevania';
-import { streetfighterThemes } from './scenes/franchises/streetfighter';
-import { earthboundThemes } from './scenes/franchises/earthbound';
-import { miscThemes } from './scenes/franchises/misc';
-
-export interface ZeldaTheme {
-  /** Display label, used by the now-playing card. */
-  label: string;
-  bgFrom: string;
-  bgTo: string;
-  primary: string;
-  secondary: string;
-  tertiary?: string;
-  glow: string;
-  /** One or more scene components — one picked at random when this theme activates. */
-  scenes?: ComponentType[];
-}
-
-export const DEFAULT_THEME: ZeldaTheme = {
-  label: 'Bloodmoon',
-  bgFrom: '#4c1324',
-  bgTo: '#1a0a10',
-  primary: '#e71347',
-  secondary: '#62182f',
-  tertiary: '#da4471',
-  glow: 'rgba(231, 19, 71, 0.8)',
-};
-
-const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
+export const zeldaThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'tears of the kingdom',
     theme: {
@@ -335,39 +293,4 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       scenes: [NesScene],
     },
   },
-  // ── Non-Zelda franchises (spread from scenes/franchises/*). Matches are
-  // disjoint from the Zelda block above, so order between blocks is irrelevant;
-  // each franchise module orders its own matches most-specific-first. ──
-  ...ffThemes,
-  ...chronoThemes,
-  ...megamanThemes,
-  ...sonicThemes,
-  ...marioThemes,
-  ...dkThemes,
-  ...metroidThemes,
-  ...castlevaniaThemes,
-  ...streetfighterThemes,
-  ...earthboundThemes,
-  ...ducktalesThemes,
-  ...miscThemes,
 ];
-
-export function themeFor(gameName: string | undefined | null): ZeldaTheme {
-  if (!gameName) return DEFAULT_THEME;
-  const normalised = gameName.toLowerCase();
-  for (const { match, theme } of THEMES) {
-    if (normalised.includes(match)) return theme;
-  }
-  return DEFAULT_THEME;
-}
-
-export function themeToCssVars(theme: ZeldaTheme): CSSProperties {
-  return {
-    ['--ac-bg-from' as string]: theme.bgFrom,
-    ['--ac-bg-to' as string]: theme.bgTo,
-    ['--ac-primary' as string]: theme.primary,
-    ['--ac-secondary' as string]: theme.secondary,
-    ['--ac-tertiary' as string]: theme.tertiary ?? theme.primary,
-    ['--ac-glow' as string]: theme.glow,
-  };
-}

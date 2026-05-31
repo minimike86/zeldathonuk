@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { AudioTrack } from '@/lib/obsApi';
 import { api } from '@/lib/api';
-import { themeFor } from '../obs/zelda-themes';
+import { themeFor } from '../obs/game-themes';
 import { ScenePreview } from './ScenePreview';
 
 /**
@@ -21,7 +21,7 @@ export function AudioControl() {
   const [previewOpen, setPreviewOpen] = useState<Record<string, boolean>>({});
   // Scene component names that have just been unregistered. Used to hide
   // the tile immediately while we wait for Vite HMR to re-evaluate
-  // zelda-themes.ts and drop the entry from the cascade.
+  // the zelda franchise module and drop the entry from the cascade.
   const [removedScenes, setRemovedScenes] = useState<Set<string>>(new Set());
 
   const wrap = async (fn: () => Promise<unknown>) => {
@@ -90,7 +90,7 @@ export function AudioControl() {
       // an authored scene.
       const ok = window.confirm(
         `Unregister ${sceneName}?\n\n` +
-          'This rewrites zelda-themes.ts and deletes the .tsx file. ' +
+          'This rewrites the zelda franchise module and deletes the .tsx file. ' +
           'Undo with git checkout.',
       );
       if (!ok) return;
@@ -213,7 +213,7 @@ export function AudioControl() {
                           onClick={() => unregisterScene(sceneName)}
                           title={
                             canDelete
-                              ? 'Delete this scene file and remove it from zelda-themes.ts'
+                              ? 'Delete this scene file and remove it from the zelda franchise module'
                               : 'Scene name not detectable (likely a minified build)'
                           }
                         >

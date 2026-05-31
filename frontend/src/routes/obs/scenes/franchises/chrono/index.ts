@@ -1,14 +1,14 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { ChronoCrossScene } from './ChronoCrossScene';
 import { ChronoTriggerScene } from './ChronoTriggerScene';
 
 /**
  * Chrono franchise theme entries. Spread into the `THEMES` array in
- * zelda-themes.ts. Most-specific `match` substrings come FIRST (themeFor
+ * game-themes.ts. Most-specific `match` substrings come FIRST (themeFor
  * returns the first substring hit); 'chrono cross' precedes 'chrono trigger'
  * so neither shadows the other.
  */
-export const chronoThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const chronoThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'chrono cross',
     theme: {

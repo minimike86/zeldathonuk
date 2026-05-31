@@ -1,13 +1,13 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { DuckTalesScene } from './DuckTalesScene';
 
 /**
  * Franchise theme entries for the audio-countdown visualiser. Spread into the
- * `THEMES` array in zelda-themes.ts. Within a franchise, list the most-specific
+ * `THEMES` array in game-themes.ts. Within a franchise, list the most-specific
  * `match` substrings first (themeFor returns the first substring hit); avoid a
  * literal `&` since some stored game labels carry the HTML entity `&amp;`.
  */
-export const ducktalesThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const ducktalesThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'ducktales',
     theme: {

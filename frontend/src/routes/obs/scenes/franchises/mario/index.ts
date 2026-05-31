@@ -1,4 +1,4 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { SuperMarioBros3Scene } from './SuperMarioBros3Scene';
 import { SuperMarioBros2Scene } from './SuperMarioBros2Scene';
 import { YoshisIslandScene } from './YoshisIslandScene';
@@ -12,14 +12,14 @@ import { MarioScene } from './MarioScene';
 
 /**
  * Mario franchise theme entries. Spread into the `THEMES` array in
- * zelda-themes.ts. Match substrings are ordered MOST-SPECIFIC FIRST because
+ * game-themes.ts. Match substrings are ordered MOST-SPECIFIC FIRST because
  * themeFor returns on the first substring hit:
  *   'super mario bros. 3' before 'super mario bros. 2' before 'super mario bros';
  *   'super mario world 2' (Yoshi's Island) before 'super mario world';
  *   'super mario galaxy' / '64' / 'rpg' before the bare 'super mario world';
  *   'mario kart' before the catch-all 'mario'.
  */
-export const marioThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const marioThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'super mario bros. 3',
     theme: {

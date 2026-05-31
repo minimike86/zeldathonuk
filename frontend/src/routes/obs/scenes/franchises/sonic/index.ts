@@ -1,4 +1,4 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { SonicScene } from './SonicScene';
 import { Sonic2Scene } from './Sonic2Scene';
 import { Sonic3Scene } from './Sonic3Scene';
@@ -7,10 +7,10 @@ import { Sonic3dScene } from './Sonic3dScene';
 
 /**
  * Sonic the Hedgehog franchise theme entries. Spread into the `THEMES` array
- * in zelda-themes.ts. Most-specific `match` substrings come FIRST (themeFor
+ * in game-themes.ts. Most-specific `match` substrings come FIRST (themeFor
  * returns the first substring hit) so the bare 'sonic' fallback stays last.
  */
-export const sonicThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const sonicThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'sonic the hedgehog 3',
     theme: {

@@ -1,15 +1,15 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { SuperMetroidScene } from './SuperMetroidScene';
 import { MetroidPrimeScene } from './MetroidPrimeScene';
 import { MetroidScene } from './MetroidScene';
 
 /**
  * Metroid franchise theme entries. Spread into the `THEMES` array in
- * zelda-themes.ts. Match substrings are ordered MOST-SPECIFIC FIRST because
+ * game-themes.ts. Match substrings are ordered MOST-SPECIFIC FIRST because
  * themeFor returns on the first substring hit:
  *   'super metroid' before 'metroid prime' before the catch-all 'metroid'.
  */
-export const metroidThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const metroidThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'super metroid',
     theme: {

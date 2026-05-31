@@ -1041,8 +1041,8 @@ export const obsApi = {
   },
   updateAudioTrack: (id: number, patch: Partial<AudioTrack>) =>
     api<AudioTrack>(`/api/audio/playlist/`, { method: 'POST', body: { id, ...patch } }),
-  // Dev-only: rewrites zelda-themes.ts to drop the import + scenes[] entry
-  // and deletes the scene's .tsx file. Backend returns 403 outside DEBUG.
+  // Dev-only: rewrites the zelda franchise module to drop the import + scenes[]
+  // entry and deletes the scene's .tsx file. Backend returns 403 outside DEBUG.
   unregisterScene: (sceneName: string) =>
     api<{
       scene_name: string;

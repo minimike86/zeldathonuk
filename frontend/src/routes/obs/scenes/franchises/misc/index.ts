@@ -1,4 +1,4 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { KirbyScene } from './KirbyScene';
 import { PokemonScene } from './PokemonScene';
 import { MetalGearScene } from './MetalGearScene';
@@ -7,7 +7,7 @@ import { SmashBrosScene } from './SmashBrosScene';
 
 /**
  * Misc-franchise theme entries for the audio-countdown visualiser. Spread into
- * the `THEMES` array in zelda-themes.ts. Within a franchise, list the most-
+ * the `THEMES` array in game-themes.ts. Within a franchise, list the most-
  * specific `match` substrings first (themeFor returns the first substring hit);
  * avoid a literal `&` since some stored game labels carry the HTML entity
  * `&amp;`.
@@ -15,7 +15,7 @@ import { SmashBrosScene } from './SmashBrosScene';
 
 /* Pokémon shares ONE theme object across two match strings — the accented
  * "pokémon" (matching stored labels) and the ASCII "pokemon" fallback. */
-const pokemonTheme: ZeldaTheme = {
+const pokemonTheme: GameTheme = {
   label: 'Pokémon',
   bgFrom: '#aee3ff',
   bgTo: '#bfe6a8',
@@ -26,7 +26,7 @@ const pokemonTheme: ZeldaTheme = {
   scenes: [PokemonScene],
 };
 
-export const miscThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const miscThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'kirby',
     theme: {

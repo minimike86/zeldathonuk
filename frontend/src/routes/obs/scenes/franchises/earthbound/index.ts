@@ -1,12 +1,12 @@
-import type { ZeldaTheme } from '../../../zelda-themes';
+import type { GameTheme } from '../../../game-themes';
 import { EarthboundScene } from './EarthboundScene';
 
 /**
  * EarthBound franchise theme entries. Spread into the `THEMES` array in
- * zelda-themes.ts. A single 'earthbound' match (themeFor returns the first
+ * game-themes.ts. A single 'earthbound' match (themeFor returns the first
  * substring hit).
  */
-export const earthboundThemes: Array<{ match: string; theme: ZeldaTheme }> = [
+export const earthboundThemes: Array<{ match: string; theme: GameTheme }> = [
   {
     match: 'earthbound',
     theme: {

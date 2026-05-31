@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { AudioTrack } from '@/lib/obsApi';
 import { env } from '@/lib/env';
-import { themeFor, themeToCssVars } from './zelda-themes';
+import { themeFor, themeToCssVars } from './game-themes';
 import { onThemeChanged } from '@/lib/themeBus';
 import './audio-countdown.css';
 

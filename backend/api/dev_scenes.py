@@ -1,7 +1,8 @@
 """Developer-only endpoints for managing /obs/audio-countdown scene files.
 
-These mutate the frontend source tree (rewrite zelda-themes.ts, delete the
-scene .tsx file) so they are guarded behind DEBUG and a strict name regex.
+These mutate the frontend source tree (rewrite the zelda franchise module,
+delete the scene .tsx file) so they are guarded behind DEBUG and a strict
+name regex.
 Used by the Music control page's per-scene unregister button.
 """
 from __future__ import annotations
@@ -71,14 +72,19 @@ def unregister_scene(request: Request) -> Response:
     if fe is None:
         return Response({'error': 'frontend source dir not found'}, status=500)
 
-    themes_path = fe / 'src' / 'routes' / 'obs' / 'zelda-themes.ts'
+    # Zelda scene entries live in the zelda franchise module; the scene .tsx
+    # components themselves stay in routes/obs/scenes/. (Other franchises are
+    # self-contained modules this dev tool doesn't manage.)
+    themes_path = (
+        fe / 'src' / 'routes' / 'obs' / 'scenes' / 'franchises' / 'zelda' / 'index.ts'
+    )
     scene_path = fe / 'src' / 'routes' / 'obs' / 'scenes' / f'{name}.tsx'
     if not themes_path.is_file():
-        return Response({'error': 'zelda-themes.ts not found'}, status=500)
+        return Response({'error': 'zelda franchise module not found'}, status=500)
 
     import_re = re.compile(
         rf"^\s*import\s*\{{\s*{re.escape(name)}\s*\}}\s*from\s*"
-        rf"['\"]\./scenes/{re.escape(name)}['\"];\s*$"
+        rf"['\"]\.\./\.\./{re.escape(name)}['\"];\s*$"
     )
 
     original = themes_path.read_text(encoding='utf-8')

@@ -77,8 +77,8 @@ urlpatterns = [
     path('audio/proxy/', audio.proxy, name='audio-proxy'),
     path('audio/now-playing/', audio.now_playing, name='audio-now-playing'),
     path('audio/track/<int:track_id>/', audio.update_track, name='audio-update-track'),
-    # Dev-only: edits frontend/src/routes/obs/zelda-themes.ts and deletes
-    # the scene's .tsx file. Guarded by DEBUG in the view.
+    # Dev-only: edits the zelda franchise module (scenes/franchises/zelda/
+    # index.ts) and deletes the scene's .tsx file. Guarded by DEBUG in the view.
     path('dev/scenes/unregister/', dev_scenes.unregister_scene, name='dev-unregister-scene'),
     # Sandbox triggers — fabricate Twitch events / donations for rehearsal.
     # DEBUG-only; return 404 in production.
