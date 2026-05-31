@@ -4,6 +4,7 @@ import { DonkeyKongCountry3Scene } from './DonkeyKongCountry3Scene';
 import { DonkeyKongCountryScene } from './DonkeyKongCountryScene';
 import { DonkeyKong64Scene } from './DonkeyKong64Scene';
 import { DonkeyKongLandScene } from './DonkeyKongLandScene';
+import { DiddyKongRacingScene } from './DiddyKongRacingScene';
 import { DonkeyKongScene } from './DonkeyKongScene';
 
 /**
@@ -77,6 +78,21 @@ export const dkThemes: Array<{ match: string; theme: GameTheme }> = [
       tertiary: '#8bac0f',
       glow: 'rgba(139, 172, 15, 0.6)',
       scenes: [DonkeyKongLandScene],
+    },
+  },
+  {
+    // Diddy Kong Racing has no "donkey kong" substring, so it needs its own
+    // entry (order vs the DK entries is irrelevant — disjoint strings).
+    match: 'diddy kong racing',
+    theme: {
+      label: 'Diddy Kong Racing',
+      bgFrom: '#2aa6d6',
+      bgTo: '#bdeede',
+      primary: '#e0341a',
+      secondary: '#1f86b8',
+      tertiary: '#ffd23a',
+      glow: 'rgba(255, 210, 58, 0.7)',
+      scenes: [DiddyKongRacingScene],
     },
   },
   {

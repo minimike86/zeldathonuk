@@ -433,7 +433,7 @@ const FRANCHISES: Array<[string, string[]]> = [
   ['Mega Man', ['mega man', 'rockman']],
   ['Sonic', ['sonic']],
   ['Mario', ['mario']],
-  ['Donkey Kong', ['donkey kong']],
+  ['Donkey Kong', ['donkey kong', 'diddy kong']],
   ['Metroid', ['metroid']],
   ['Castlevania', ['castlevania', 'akumajo', 'akumajō', 'dracula']],
   ['Street Fighter', ['street fighter']],
