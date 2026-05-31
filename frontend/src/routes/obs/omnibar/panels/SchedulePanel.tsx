@@ -67,8 +67,8 @@ registerPanel<Data>({
     //   UP FIRST       — nothing is playing yet AND this is the first
     //                    game in the whole schedule.
     //   BEST FOR LAST  — this is the final game in the schedule.
-    //   UP NEXT        — anywhere else in the middle.
-    let tag = 'UP NEXT';
+    //   NEXT GAME       — anywhere else in the middle.
+    let tag = 'NEXT GAME';
     if (!current && allGames[0]?.id === next.id) {
       tag = 'UP FIRST';
     } else if (allGames[allGames.length - 1]?.id === next.id) {

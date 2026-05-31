@@ -228,6 +228,7 @@ class TimerSerializer(serializers.ModelSerializer):
     is_running = serializers.BooleanField(read_only=True)
     is_paused = serializers.BooleanField(read_only=True)
     total_seconds = serializers.IntegerField(read_only=True)
+    total_ms = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = models.TimerRun
@@ -237,10 +238,12 @@ class TimerSerializer(serializers.ModelSerializer):
             'started_at',
             'paused_at',
             'accumulated_seconds',
+            'accumulated_ms',
             'ended_at',
             'is_running',
             'is_paused',
             'total_seconds',
+            'total_ms',
         ]
 
 
@@ -307,6 +310,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
     collected_item_counts = serializers.SerializerMethodField()
     obtained_objective_ids = serializers.SerializerMethodField()
     skipped_objective_ids = serializers.SerializerMethodField()
+    objective_split_ms = serializers.SerializerMethodField()
     order = serializers.IntegerField(required=False)
 
     def get_collected_item_ids(self, obj) -> list:
@@ -336,6 +340,15 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             for s in obj.objective_statuses.all()
             if s.status == models.ObjectiveStatus.SKIPPED
         ]
+
+    def get_objective_split_ms(self, obj) -> dict:
+        # {objective_id: split_ms} for obtained objectives that have a stamped
+        # split time — the timer page renders these as the frozen split values.
+        return {
+            str(s.objective_id): s.split_ms
+            for s in obj.objective_statuses.all()
+            if s.status == models.ObjectiveStatus.OBTAINED and s.split_ms is not None
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -427,6 +440,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'collected_item_counts',
             'obtained_objective_ids',
             'skipped_objective_ids',
+            'objective_split_ms',
             'sound_triggers',
         ]
 

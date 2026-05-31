@@ -8,7 +8,14 @@
   display: inline-block;
 }
 
-.wave-text > span {
+/* Each word is a nowrap group so its letters never break apart — line breaks
+ * only land at the spaces between words. */
+.wave-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.wave-word > span {
   display: inline-block;
   animation: wave-char-enter 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

@@ -344,6 +344,13 @@ class TimerRun(models.Model):
     accumulated_seconds = models.PositiveIntegerField(
         default=0, help_text='Total seconds spent running excluding the current segment.'
     )
+    accumulated_ms = models.PositiveBigIntegerField(
+        default=0,
+        help_text='Total MILLISECONDS spent running excluding the current '
+                  'segment. Source of truth for the centisecond display; '
+                  'accumulated_seconds is kept in sync (= accumulated_ms // 1000) '
+                  'for the omnibar, which only needs whole seconds.',
+    )
     ended_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self) -> str:
@@ -366,11 +373,17 @@ class TimerRun(models.Model):
         )
 
     @property
-    def total_seconds(self) -> int:
-        total = self.accumulated_seconds
+    def total_ms(self) -> int:
+        total = self.accumulated_ms
         if self.is_running and self.started_at:
-            total += int((timezone.now() - self.started_at).total_seconds())
+            total += int((timezone.now() - self.started_at).total_seconds() * 1000)
         return total
+
+    @property
+    def total_seconds(self) -> int:
+        # Derived from total_ms so the whole-second value the omnibar reads
+        # stays consistent with the centisecond display.
+        return self.total_ms // 1000
 
 
 class ItemLinkKind(models.TextChoices):
@@ -566,6 +579,12 @@ class ScheduleEntryObjective(models.Model):
     )
     status = models.CharField(max_length=12, choices=ObjectiveStatus.choices)
     obtained_at = models.DateTimeField(default=timezone.now)
+    split_ms = models.PositiveBigIntegerField(
+        null=True, blank=True,
+        help_text='Cumulative run time (milliseconds) at the moment this '
+                  'objective was split/obtained — the LiveSplit "split time". '
+                  'Null for skipped/outstanding objectives.',
+    )
 
     class Meta:
         ordering = ['-obtained_at']

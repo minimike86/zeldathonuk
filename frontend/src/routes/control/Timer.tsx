@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { GameObjective, ObjectiveStatus, ScheduleEntry } from '@/lib/obsApi';
@@ -15,7 +15,11 @@ import type { GameObjective, ObjectiveStatus, ScheduleEntry } from '@/lib/obsApi
  * time — per-split timing is intentionally out of scope.
  */
 export function TimerControl() {
-  const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 1500);
+  // Bumping `refreshKey` re-runs the poll immediately, so a timer action's
+  // result shows the instant the request resolves instead of waiting out the
+  // 1.5s interval (which made Start/Pause/Resume feel laggy).
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 1500, [refreshKey]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   // Re-render every 500ms so the running clock advances (time is server-side).
@@ -23,14 +27,26 @@ export function TimerControl() {
   // Optimistic per-objective status overlay so Split/Skip/Undo feel instant.
   // Pruned once the 1.5s poll reports the same value (see effect below).
   const [overlay, setOverlay] = useState<Record<number, ObjectiveStatus>>({});
+  // Optimistic frozen split times (objId → ms) so a just-split row shows its
+  // time instantly; pruned once the server reports the same split.
+  const [splitOverlay, setSplitOverlay] = useState<Record<number, number>>({});
   const [editingRoute, setEditingRoute] = useState(false);
 
-  useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 500);
-    return () => window.clearInterval(id);
-  }, []);
-
   const entry = cp?.schedule_entry_detail ?? null;
+  const running = entry?.timer?.is_running ?? false;
+
+  // Re-render ~60fps while the clock runs so the centiseconds advance
+  // smoothly. Idle when stopped/paused — the 1.5s poll covers state changes.
+  useEffect(() => {
+    if (!running) return;
+    let raf = 0;
+    const loop = () => {
+      setTick((t) => t + 1);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [running]);
 
   // Drop optimistic overlay entries once the server agrees with them.
   useEffect(() => {
@@ -56,16 +72,50 @@ export function TimerControl() {
     });
   }, [entry]);
 
+  // Drop optimistic split times once the server reports a split for that id.
+  useEffect(() => {
+    if (!entry) return;
+    const srv = entry.objective_split_ms;
+    setSplitOverlay((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const k of Object.keys(prev)) {
+        if (srv[k] != null) {
+          delete next[Number(k)];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [entry]);
+
   const run = async (fn: () => Promise<unknown>) => {
     setErr(null);
     setBusy(true);
     try {
       await fn();
+      // Pull fresh state right away rather than waiting for the next poll tick.
+      setRefreshKey((k) => k + 1);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
       setBusy(false);
     }
+  };
+
+  // Objective splits update the overlay synchronously (so the buttons respond
+  // instantly) and run their network calls in a serialized background queue —
+  // never blocking the UI on `busy`. A LiveSplit timer needs Space/Undo to
+  // fire back-to-back; the queue keeps requests in order, errors surface, and
+  // the poll reconciles. Distinct from `run`, which blocks the timer-control
+  // buttons where a brief lock is fine.
+  const objectiveChain = useRef<Promise<unknown>>(Promise.resolve());
+  const enqueue = (fn: () => Promise<unknown>) => {
+    setErr(null);
+    objectiveChain.current = objectiveChain.current
+      .then(fn)
+      .then(() => setRefreshKey((k) => k + 1))
+      .catch((e) => setErr((e as Error).message));
   };
 
   if (!entry) {
@@ -84,7 +134,7 @@ export function TimerControl() {
   }
 
   const t = entry.timer;
-  const displaySeconds = computeTimerSeconds(t);
+  const displayMs = computeTimerMs(t);
 
   return (
     <div className="control-card">
@@ -101,16 +151,16 @@ export function TimerControl() {
 
       <div
         style={{
-          fontFamily: "'VT323', monospace",
+          fontFamily: '"Share Tech Mono", ui-monospace, monospace',
           fontSize: '6rem',
           textAlign: 'center',
           lineHeight: 1,
-          color: t?.is_running ? '#7fff7f' : t?.is_paused ? '#ffcc00' : '#fff',
-          textShadow: '0 0 20px rgba(231, 19, 71, 0.6)',
+          color: '#fff',
+          fontVariantNumeric: 'tabular-nums',
           margin: '1.5rem 0 0.5rem',
         }}
       >
-        {formatHms(displaySeconds)}
+        {formatHmsCs(displayMs)}
       </div>
       <p className="text-center text-white-50 small mb-3">
         {t?.is_running
@@ -125,7 +175,14 @@ export function TimerControl() {
         )}
       </p>
 
-      <SplitsPanel entry={entry} overlay={overlay} setOverlay={setOverlay} run={run} busy={busy} />
+      <SplitsPanel
+        entry={entry}
+        overlay={overlay}
+        setOverlay={setOverlay}
+        splitOverlay={splitOverlay}
+        setSplitOverlay={setSplitOverlay}
+        enqueue={enqueue}
+      />
 
       <div className="control-btn-row mt-3" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
         {t?.is_running ? (
@@ -173,6 +230,8 @@ export function TimerControl() {
           disabled={busy}
           onClick={() => {
             if (!confirm('Reset the run? Clears the clock to 00:00:00 and resets all splits.')) return;
+            setOverlay({});
+            setSplitOverlay({});
             void run(() => resetRun(entry));
           }}
         >
@@ -222,14 +281,16 @@ function SplitsPanel({
   entry,
   overlay,
   setOverlay,
-  run,
-  busy,
+  splitOverlay,
+  setSplitOverlay,
+  enqueue,
 }: {
   entry: ScheduleEntry;
   overlay: Record<number, ObjectiveStatus>;
   setOverlay: Dispatch<SetStateAction<Record<number, ObjectiveStatus>>>;
-  run: (fn: () => Promise<unknown>) => Promise<void>;
-  busy: boolean;
+  splitOverlay: Record<number, number>;
+  setSplitOverlay: Dispatch<SetStateAction<Record<number, number>>>;
+  enqueue: (fn: () => Promise<unknown>) => void;
 }) {
   const route = useMemo(() => routeObjectives(entry), [entry]);
   const srvObt = useMemo(() => new Set(entry.obtained_objective_ids), [entry]);
@@ -238,37 +299,64 @@ function SplitsPanel({
   const statusOf = (id: number): ObjectiveStatus =>
     overlay[id] ?? (srvObt.has(id) ? 'obtained' : srvSkp.has(id) ? 'skipped' : 'outstanding');
 
+  // Frozen split time for an obtained objective (server value, or the
+  // optimistic overlay set the instant we split).
+  const splitOf = (id: number): number | undefined =>
+    entry.objective_split_ms[String(id)] ?? splitOverlay[id];
+
   const active = route.find((o) => statusOf(o.id) === 'outstanding') ?? null;
   const obtainedCount = route.filter((o) => statusOf(o.id) === 'obtained').length;
+  const skippedCount = route.filter((o) => statusOf(o.id) === 'skipped').length;
   const activeTotal = route.filter((o) => statusOf(o.id) !== 'skipped').length;
 
   const running = entry.timer?.is_running ?? false;
 
   // Mark `obj` with `status`, advance the omnibar "current objective" text to
-  // whatever the next outstanding split is (or `nextName` when given).
-  const setStatus = (objId: number, status: ObjectiveStatus, nextName: string) =>
-    run(async () => {
-      setOverlay((prev) => ({ ...prev, [objId]: status }));
-      await obsApi.setObjectiveStatus(entry.id, objId, status);
-      await obsApi.updateScheduleEntry(entry.id, { current_objective: nextName });
+  // `nextName`. The overlay updates synchronously here so the row + buttons
+  // react instantly; the network calls run in the background queue. `splitMs`
+  // (obtain only) freezes the split time; `finish` stops the timer (used when
+  // the final split completes the run).
+  const setStatus = (
+    objId: number,
+    status: ObjectiveStatus,
+    nextName: string,
+    splitMs?: number,
+    finish?: boolean,
+  ) => {
+    setOverlay((prev) => ({ ...prev, [objId]: status }));
+    setSplitOverlay((prev) => {
+      const next = { ...prev };
+      if (status === 'obtained' && splitMs != null) next[objId] = splitMs;
+      else delete next[objId];
+      return next;
     });
+    enqueue(async () => {
+      await obsApi.setObjectiveStatus(entry.id, objId, status, splitMs);
+      await obsApi.updateScheduleEntry(entry.id, { current_objective: nextName });
+      if (finish) await obsApi.stopTimer(entry.id);
+    });
+  };
 
   const nextOutstandingName = (excludeId: number): string =>
     route.find((o) => o.id !== excludeId && statusOf(o.id) === 'outstanding')?.name ?? '';
 
   const split = () => {
-    if (!active || busy) return;
-    setStatus(active.id, 'obtained', nextOutstandingName(active.id));
+    if (!active) return;
+    // Freeze the split at exactly what's on the clock; if no outstanding
+    // objectives remain after this one, this split finishes the run.
+    const ms = computeTimerMs(entry.timer);
+    const nextName = nextOutstandingName(active.id);
+    const isFinal = nextName === '';
+    setStatus(active.id, 'obtained', nextName, ms, isFinal);
   };
   const skip = () => {
-    if (!active || busy) return;
+    if (!active) return;
     setStatus(active.id, 'skipped', nextOutstandingName(active.id));
   };
   const undo = () => {
-    if (busy) return;
     const last = [...route].reverse().find((o) => statusOf(o.id) === 'obtained');
     if (!last) return;
-    // Reverting makes `last` the active split again.
+    // Reverting makes `last` the active split again (clears its frozen time).
     setStatus(last.id, 'outstanding', last.name);
   };
 
@@ -311,6 +399,7 @@ function SplitsPanel({
         <span className="small text-white-50">Splits</span>
         <span className="small text-white-50">
           {obtainedCount} / {activeTotal} done
+          {skippedCount > 0 && ` · ${skippedCount} skipped`}
         </span>
       </div>
 
@@ -322,6 +411,17 @@ function SplitsPanel({
           // groups render no header (the splits just follow on).
           const group = o.group.trim();
           const prevGroup = i > 0 ? route[i - 1].group.trim() : '';
+          // Split time: frozen value for obtained rows; the live running clock
+          // for the active row; blank otherwise.
+          let splitText = '';
+          if (status === 'obtained') {
+            const ms = splitOf(o.id);
+            if (ms != null) splitText = formatSplit(ms);
+          } else if (isActive && (running || entry.timer?.is_paused)) {
+            // Show the live clock while running, and the held time while paused
+            // (computeTimerMs returns the banked ms when not running).
+            splitText = formatSplit(computeTimerMs(entry.timer));
+          }
           return (
             <Fragment key={o.id}>
               {group && group !== prevGroup && (
@@ -336,6 +436,7 @@ function SplitsPanel({
                   )}
                 </span>
                 <span className="split-name">{o.name}</span>
+                <span className="split-time" data-active={isActive}>{splitText}</span>
                 <span className="split-mark">
                   {status === 'obtained' ? '✓' : status === 'skipped' ? '⏭' : isActive ? '▶' : ''}
                 </span>
@@ -348,7 +449,7 @@ function SplitsPanel({
       <div className="control-btn-row" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
         <button
           className="btn btn-primary"
-          disabled={busy || !running || !active}
+          disabled={!running || !active}
           onClick={split}
           title="Mark the active split done and advance (Space)"
         >
@@ -356,7 +457,7 @@ function SplitsPanel({
         </button>
         <button
           className="btn btn-outline-light btn-sm"
-          disabled={busy || !running || !active}
+          disabled={!running || !active}
           onClick={skip}
           title="Skip the active split (not needed this run)"
         >
@@ -364,7 +465,7 @@ function SplitsPanel({
         </button>
         <button
           className="btn btn-outline-light btn-sm"
-          disabled={busy || obtainedCount === 0}
+          disabled={obtainedCount === 0}
           onClick={undo}
           title="Undo the last split (Backspace)"
         >
@@ -417,9 +518,9 @@ function SplitsPanel({
         }
         .split-row[data-active="true"] {
           opacity: 1;
-          border-color: #e71347;
-          box-shadow: 0 0 12px rgba(231,19,71,0.45);
-          background: rgba(231,19,71,0.12);
+          border-color: rgba(255,255,255,0.55);
+          border-left: 3px solid #e71347;
+          background: rgba(255,255,255,0.06);
         }
         .split-icon {
           width: 28px;
@@ -436,6 +537,17 @@ function SplitsPanel({
           text-transform: uppercase;
         }
         .split-name { flex: 1 1 auto; }
+        .split-time {
+          flex: 0 0 auto;
+          font-family: "Share Tech Mono", ui-monospace, monospace;
+          font-size: 1.05rem;
+          line-height: 1;
+          min-width: 5rem;
+          text-align: right;
+          opacity: 0.7;
+          font-variant-numeric: tabular-nums;
+        }
+        .split-time[data-active="true"] { opacity: 1; }
         .split-mark { flex: 0 0 auto; font-size: 1.1rem; min-width: 1.2rem; text-align: center; }
       `}</style>
     </div>
@@ -547,21 +659,40 @@ async function resetRun(entry: ScheduleEntry): Promise<void> {
   await obsApi.updateScheduleEntry(entry.id, { current_objective: '' });
 }
 
-function computeTimerSeconds(timer: ScheduleEntry['timer']): number {
+/** Total elapsed run time in milliseconds. The live segment is read at ms
+ *  precision from the wall clock; the banked portion (accumulated_seconds) is
+ *  whole seconds, so resumed-after-pause runs lose sub-second precision only in
+ *  the banked part — fine for split display. */
+function computeTimerMs(timer: ScheduleEntry['timer']): number {
   if (!timer) return 0;
   if (timer.is_running && timer.started_at) {
     const startedMs = Date.parse(timer.started_at);
-    return (
-      timer.accumulated_seconds +
-      Math.max(0, Math.floor((Date.now() - startedMs) / 1000))
-    );
+    return timer.accumulated_ms + Math.max(0, Date.now() - startedMs);
   }
-  return timer.accumulated_seconds;
+  // Paused / stopped: show the banked ms exactly (centiseconds preserved).
+  return timer.accumulated_ms;
 }
 
-function formatHms(totalSeconds: number): string {
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** HH:MM:SS.cc (centiseconds) — the big clock. */
+function formatHmsCs(totalMs: number): string {
+  const totalSeconds = Math.floor(totalMs / 1000);
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const cs = Math.floor((totalMs % 1000) / 10);
+  return `${pad2(h)}:${pad2(m)}:${pad2(s)}.${pad2(cs)}`;
+}
+
+/** Compact split time — drops the hours field until it's needed. */
+function formatSplit(totalMs: number): string {
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const cs = Math.floor((totalMs % 1000) / 10);
+  return h > 0
+    ? `${h}:${pad2(m)}:${pad2(s)}.${pad2(cs)}`
+    : `${pad2(m)}:${pad2(s)}.${pad2(cs)}`;
 }

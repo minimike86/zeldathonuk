@@ -367,11 +367,10 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             )
         now = timezone.now()
         # Bank the live segment NOW (don't defer it to resume), then hold the
-        # clock. total_seconds then reads accumulated_seconds while paused, so
-        # the display stays put instead of dropping to the stale value.
-        timer.accumulated_seconds += int(
-            (now - timer.started_at).total_seconds()
-        )
+        # clock. total_ms then reads accumulated_ms while paused, so the display
+        # stays put — including the centiseconds — instead of snapping to .00.
+        timer.accumulated_ms += int((now - timer.started_at).total_seconds() * 1000)
+        timer.accumulated_seconds = timer.accumulated_ms // 1000
         timer.started_at = None
         timer.paused_at = now
         timer.save()
@@ -385,6 +384,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         timer.paused_at = None
         timer.ended_at = None
         timer.accumulated_seconds = 0
+        timer.accumulated_ms = 0
         timer.save()
         # Clean slate: also reopen the entry so a previously-finished run can be
         # restarted from 00:00:00.
@@ -417,9 +417,8 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'No timer.'}, status=status.HTTP_400_BAD_REQUEST)
         now = timezone.now()
         if timer.is_running and timer.started_at:
-            timer.accumulated_seconds += int(
-                (now - timer.started_at).total_seconds()
-            )
+            timer.accumulated_ms += int((now - timer.started_at).total_seconds() * 1000)
+            timer.accumulated_seconds = timer.accumulated_ms // 1000
         timer.started_at = None
         timer.paused_at = None
         timer.ended_at = now
@@ -648,10 +647,24 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
                 schedule_entry=entry, objective_id=objective_id
             ).delete()
         else:
+            defaults = {'status': new_status, 'obtained_at': timezone.now()}
+            # Stamp the LiveSplit "split time" (cumulative run ms) on obtain.
+            # The client sends what was on the clock so it matches exactly;
+            # skipped rows leave it null.
+            if new_status == models.ObjectiveStatus.OBTAINED:
+                raw_split = request.data.get('split_ms')
+                try:
+                    defaults['split_ms'] = (
+                        int(raw_split) if raw_split is not None else None
+                    )
+                except (TypeError, ValueError):
+                    defaults['split_ms'] = None
+            else:
+                defaults['split_ms'] = None
             models.ScheduleEntryObjective.objects.update_or_create(
                 schedule_entry=entry,
                 objective_id=objective_id,
-                defaults={'status': new_status, 'obtained_at': timezone.now()},
+                defaults=defaults,
             )
         # Reverse link for "item get" objectives: keep the linked item's
         # collected state in lockstep (skipped leaves the item alone). Writes

@@ -230,12 +230,16 @@ export interface TimerRun {
   started_at: string | null;
   paused_at: string | null;
   accumulated_seconds: number;
+  /** Banked milliseconds excluding the live segment — source of truth for the
+   *  centisecond display (accumulated_seconds is the whole-second derivative). */
+  accumulated_ms: number;
   ended_at: string | null;
   is_running: boolean;
   /** Started at least once and currently paused (segment banked, clock held).
    *  Mutually exclusive with is_running. */
   is_paused: boolean;
   total_seconds: number;
+  total_ms: number;
 }
 
 export type SlotType = 'game' | 'start' | 'meal' | 'sleep' | 'break' | 'end' | 'other';
@@ -278,6 +282,9 @@ export interface ScheduleEntry {
    *  game's objective library but in neither list is outstanding. */
   obtained_objective_ids: number[];
   skipped_objective_ids: number[];
+  /** {objective_id: cumulative run ms at split} for obtained objectives that
+   *  have a stamped split time — the timer page renders these frozen splits. */
+  objective_split_ms: Record<string, number>;
   /** Read-only nested. The omnibar feed doesn't act on these (the
    *  backend SSE evaluator fires triggers server-side); the control
    *  panel reads them to render the per-entry editor. */
@@ -1248,10 +1255,22 @@ export const obsApi = {
     api<GameObjective>(`/api/game-objectives/${id}/duplicate/`, { method: 'POST' }).then(
       withObjectivesBroadcast,
     ),
-  setObjectiveStatus: (entryId: number, objectiveId: number, status: ObjectiveStatus) =>
+  setObjectiveStatus: (
+    entryId: number,
+    objectiveId: number,
+    status: ObjectiveStatus,
+    splitMs?: number,
+  ) =>
     api<{ objective_id: number; status: ObjectiveStatus }>(
       `/api/schedule/${entryId}/set_objective_status/`,
-      { method: 'POST', body: { objective_id: objectiveId, status } },
+      {
+        method: 'POST',
+        body: {
+          objective_id: objectiveId,
+          status,
+          ...(splitMs != null ? { split_ms: Math.round(splitMs) } : {}),
+        },
+      },
     ).then(withObjectivesBroadcast),
   updateScheduleEntry: (
     entryId: number,

@@ -14,6 +14,12 @@ import './WaveText.css';
  * (e.g. the omnibar's tag pill slide-in lands before its body waves in).
  * The keyframe uses `animation-fill-mode: both` so characters hold the
  * pre-animation state during the delay rather than flashing on screen.
+ *
+ * Words are grouped into nowrap spans so a line break can only land at a
+ * space, never mid-word: each letter is its own inline-block, and without
+ * grouping the browser is free to break between any two of them (printing
+ * e.g. "MAGIC POW" / "DER"). The stagger index runs across the whole string
+ * so the wave stays continuous through the word groups.
  */
 export function WaveText({
   text,
@@ -32,20 +38,33 @@ export function WaveText({
       setVersion((v) => v + 1);
     }
   }, [text]);
+
+  // Tokenise into words and the whitespace between them. Whitespace renders as
+  // plain text (the only soft-wrap opportunity); each word is a nowrap group.
+  const tokens = text.match(/\s+|\S+/g) ?? [];
+  let charIndex = 0;
   return (
     <span className="wave-text">
-      {Array.from(text).map((ch, i) => (
-        <span
-          key={`${version}-${i}`}
-          style={{ animationDelay: `${startDelayMs + i * staggerMs}ms` }}
-        >
-          {/* Use a non-breaking space — a literal space inside an
-              inline-block span often collapses to zero width when the
-              parent allows white-space normalisation, which made the
-              omnibar render "Cadence of Hyrule" as "CADENCEOFHYRULE". */}
-          {ch === ' ' ? ' ' : ch}
-        </span>
-      ))}
+      {tokens.map((token, ti) => {
+        if (/\s/.test(token)) {
+          charIndex += token.length;
+          return ' ';
+        }
+        const startIndex = charIndex;
+        charIndex += token.length;
+        return (
+          <span className="wave-word" key={`${version}-w${ti}`}>
+            {Array.from(token).map((ch, ci) => (
+              <span
+                key={ci}
+                style={{ animationDelay: `${startDelayMs + (startIndex + ci) * staggerMs}ms` }}
+              >
+                {ch}
+              </span>
+            ))}
+          </span>
+        );
+      })}
     </span>
   );
 }

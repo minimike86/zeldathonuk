@@ -538,6 +538,15 @@
     calc(4200ms + var(--ob-celebrate-hold-ms, 0ms)) both;
 }
 
+/* Celebration tag wraps to two lines (stacked words) within its pill instead
+ * of stretching into one very long tag for copy like "OBJECTIVE COMPLETE!". */
+.omnibar--v2 .ob-fullbar--celebrate .ob-tag {
+  white-space: normal;
+  max-width: 13rem;
+  text-align: center;
+  line-height: 1.08;
+}
+
 /* Subhead wipe-fade-in — fires concurrently with WaveText so the
  * description reveals from the LEFT as the headline characters drop
  * in from above. clip-path inset opens left→right; the small -12px
@@ -583,12 +592,17 @@
    * Theme override: --theme-omnibar-celebration-heading. Per-fire
    * override via the trigger payload (CelebrationBanner passes it
    * inline) wins via inline-style specificity. */
-  font-size: 1.65rem;
+  font-size: 1.5rem;
   color: var(--theme-omnibar-celebration-heading, #ffe69b);
-  line-height: 1.1;
+  line-height: 1.05;
   text-shadow:
     0 1px 0 rgba(0, 0, 0, 0.55),
     0 0 18px rgba(255, 210, 58, 0.55);
+  /* Let a long objective / incentive name wrap to a second line inside the
+   * bar instead of running off the right edge (the row body defaults to
+   * white-space: nowrap). WaveText groups words so breaks land only at the
+   * spaces between them — never mid-word. */
+  white-space: normal;
 }
 
 .omnibar--v2 .ob-fullbar--celebrate .ob-celebrate-sub {
@@ -1039,7 +1053,14 @@
  * `both` fill holds it hidden through the delay, then it pops in alongside
  * the headline reveal. */
 .omnibar--v2 .ob-fullbar--celebrate .ob-item-icon {
-  animation: ob-celebrate-icon-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 2400ms both;
+  /* Enter (pop-in at 2400ms) AND exit (wipe out with the body stack at
+   * 4200ms, before the tag leaves at 4750ms). The enter is `both` so the icon
+   * stays hidden until its pop; the exit is `forwards` only so it doesn't
+   * back-fill over the enter before it fires. */
+  animation:
+    ob-celebrate-icon-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 2400ms both,
+    ob-celebrate-body-wipe-out 500ms cubic-bezier(0.22, 1, 0.36, 1)
+      calc(4200ms + var(--ob-celebrate-hold-ms, 0ms)) forwards;
 }
 
 @keyframes ob-celebrate-icon-in {
