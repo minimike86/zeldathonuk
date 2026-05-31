@@ -22,6 +22,7 @@ const sections = [
   { to: '/control/brb', label: 'BRB' },
   { to: '/control/omnibar', label: 'Omnibar' },
   { to: '/control/chest-announcer', label: 'Chest announcer' },
+  { to: '/control/logs', label: 'Logs & Queue' },
   // Visual / branding
   { to: '/control/theme', label: 'Theme' },
 ];

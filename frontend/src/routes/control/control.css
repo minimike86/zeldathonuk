@@ -833,3 +833,146 @@
   margin-top: 0.5rem;
   font-style: italic;
 }
+
+/* ── Logs & Queue ──────────────────────────────────────────────────────── */
+/* Three side-by-side lanes (awaiting / processing / failed) that collapse to
+ * a single stack on narrow screens. Each lane is a soft-tinted card. */
+.control-queue-lanes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .control-queue-lanes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.control-queue-lane {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.control-queue-lane-awaiting {
+  border-top: 3px solid #d9a531;
+}
+.control-queue-lane-processing {
+  border-top: 3px solid #3fa7d6;
+}
+.control-queue-lane-failed {
+  border-top: 3px solid #d65745;
+}
+
+.control-queue-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.control-queue-lane-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.control-queue-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+.control-queue-count-awaiting { color: #f1c75a; }
+.control-queue-count-processing { color: #79c8ea; }
+.control-queue-count-failed { color: #f08a7c; }
+
+.control-queue-lane-sub {
+  font-size: 0.75rem;
+  margin: 0.1rem 0 0.6rem;
+}
+
+.control-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.control-queue-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.control-queue-item-label {
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+.control-queue-item-meta {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.control-queue-eta {
+  color: #f1c75a;
+}
+
+.control-queue-item-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Audit-log level badge — colour-coded pill matching the lane accents. */
+.control-log-level {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.control-log-level-info {
+  color: #79c8ea;
+  background: rgba(63, 167, 214, 0.15);
+}
+.control-log-level-warning {
+  color: #f1c75a;
+  background: rgba(217, 165, 49, 0.18);
+}
+.control-log-level-error {
+  color: #f08a7c;
+  background: rgba(214, 87, 69, 0.2);
+}
+
+.control-log-detail-row > td {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.control-log-detail pre {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
+  overflow: auto;
+}

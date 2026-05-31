@@ -60,6 +60,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Audit trail — logs every mutating /api/ request to ActivityLog. Sits
+    # last so it sees the final response status (and skips GET/SSE traffic).
+    'api.activity.ActivityLogMiddleware',
 ]
 
 ROOT_URLCONF = 'zeldathon.urls'

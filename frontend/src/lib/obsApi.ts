@@ -626,6 +626,69 @@ export interface ExternalEvent {
   consumed_at: string | null;
 }
 
+// ── Logs & Queue ──────────────────────────────────────────────────────────
+export type ActivityCategory =
+  | 'operator-action'
+  | 'event-trigger'
+  | 'sound-trigger'
+  | 'webhook'
+  | 'external-event'
+  | 'system';
+export type ActivityLevel = 'info' | 'warning' | 'error';
+
+export interface ActivityLogEntry {
+  id: number;
+  created_at: string;
+  category: ActivityCategory;
+  action: string;
+  level: ActivityLevel;
+  summary: string;
+  source: string;
+  target_type: string;
+  target_id: string;
+  detail: Record<string, unknown>;
+  request_method: string;
+  request_path: string;
+  status_code: number | null;
+}
+
+export interface ActivityLogFilters {
+  category?: ActivityCategory | '';
+  level?: ActivityLevel | '';
+  source?: string;
+  search?: string;
+  limit?: number;
+}
+
+/** A management action the operator can take on a queued item — rendered as a
+ *  button that POSTs to `endpoint`. */
+export interface QueueAction {
+  label: string;
+  method: string;
+  endpoint: string;
+}
+
+export type QueueLane = 'awaiting' | 'processing' | 'failed';
+
+export interface QueueItem {
+  id: string;
+  lane: QueueLane;
+  kind: string;
+  source: string;
+  label: string;
+  occurred_at: string | null;
+  eta: string | null;
+  actions: QueueAction[];
+}
+
+export interface QueueSnapshot {
+  generated_at: string;
+  awaiting: QueueItem[];
+  processing: QueueItem[];
+  failed: QueueItem[];
+  counts: { awaiting: number; processing: number; failed: number };
+}
+
 export interface Incentive {
   id: number;
   event: number;
@@ -1714,6 +1777,25 @@ export const obsApi = {
       `/api/schedule-entry-sound-triggers/${id}/reset_fire/`,
       { method: 'POST' },
     ),
+
+  // ── Logs & Queue ────────────────────────────────────────────────────────
+  /** Read the audit trail, newest first. Server caps at `limit` (default 200). */
+  activityLog: (filters: ActivityLogFilters = {}) => {
+    const q = new URLSearchParams();
+    if (filters.category) q.set('category', filters.category);
+    if (filters.level) q.set('level', filters.level);
+    if (filters.source) q.set('source', filters.source);
+    if (filters.search) q.set('search', filters.search);
+    if (filters.limit) q.set('limit', String(filters.limit));
+    const qs = q.toString();
+    return api<ActivityLogEntry[]>(`/api/activity-log/${qs ? `?${qs}` : ''}`);
+  },
+  /** Live snapshot of the event queue (awaiting / processing / failed). */
+  queue: () => api<QueueSnapshot>('/api/queue/'),
+  /** Run a management action declared on a QueueItem (e.g. cancel / consume /
+   *  re-arm). The endpoint + method come straight from the snapshot. */
+  runQueueAction: (action: QueueAction) =>
+    api<unknown>(action.endpoint, { method: action.method }),
 };
 
 /** Hook that polls the API on an interval. Bare-bones — replace with TanStack

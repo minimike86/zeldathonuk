@@ -42,6 +42,7 @@ router.register(
     views.ScheduleEntrySoundTriggerViewSet,
     basename='schedule-entry-sound-trigger',
 )
+router.register('activity-log', views.ActivityLogViewSet, basename='activity-log')
 
 urlpatterns = [
     path('healthz/', views.healthz, name='api-healthz'),
@@ -87,6 +88,9 @@ urlpatterns = [
     # SSE push for low-latency overrides + playthrough + external events.
     # Omnibar prefers SSE; falls back to polling if the stream errors.
     path('stream/omnibar/', sse.omnibar_stream, name='omnibar-stream'),
+    # Live snapshot of the event "queue" (awaiting / processing / failed)
+    # for the control panel's Logs & Queue page.
+    path('queue/', views.queue_snapshot, name='queue-snapshot'),
     # Image upload (multipart) — returns an absolute URL clients can store
     # in a *_url field.
     path('uploads/image/', views.upload_image, name='upload-image'),

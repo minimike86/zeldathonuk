@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.db.models import Count, Max, Sum
+from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, parser_classes
@@ -15,7 +15,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from . import models, serializers, twitch
+from . import models, serializers, sse, twitch
 
 
 ALLOWED_IMAGE_TYPES = {
@@ -1640,3 +1640,161 @@ class EventCharityViewSet(viewsets.ModelViewSet):
         if charity_id:
             qs = qs.filter(charity_id=charity_id)
         return qs
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Logs & Queue — audit trail + a live view of the event "queue"
+# ──────────────────────────────────────────────────────────────────────────────
+class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only audit trail. Filter via
+    ``?category=&level=&source=&since={iso}&search=&limit=``.
+
+    The list is newest-first and capped (default 200, max 1000) since no
+    global pagination is configured. There is no auth on the API, so the
+    detail JSON is PII-redacted at write time (see ``activity._redact``) and
+    this endpoint should stay behind the operator-only reverse proxy.
+    """
+    queryset = models.ActivityLog.objects.all()
+    serializer_class = serializers.ActivityLogSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        p = self.request.query_params
+        if (category := p.get('category')):
+            qs = qs.filter(category=category)
+        if (level := p.get('level')):
+            qs = qs.filter(level=level)
+        if (source := p.get('source')):
+            qs = qs.filter(source=source)
+        if (since := p.get('since')):
+            qs = qs.filter(created_at__gt=since)
+        if (search := p.get('search')):
+            qs = qs.filter(Q(summary__icontains=search) | Q(action__icontains=search))
+        if self.action == 'list':
+            try:
+                limit = min(int(p.get('limit', 200)), 1000)
+            except (TypeError, ValueError):
+                limit = 200
+            qs = qs[:limit]
+        return qs
+
+
+def _queue_item(*, id, lane, kind, source, label, occurred_at=None, eta=None,
+                actions=None) -> dict:
+    """Uniform shape for a queue row across the three lanes."""
+    return {
+        'id': id,
+        'lane': lane,
+        'kind': kind,
+        'source': source,
+        'label': label,
+        'occurred_at': occurred_at,
+        'eta': eta,
+        'actions': actions or [],
+    }
+
+
+@api_view(['GET'])
+def queue_snapshot(_request: Request) -> Response:
+    """Live snapshot of the database-driven event "queue".
+
+    There is no real task queue — the SSE loop tails several tables. This
+    endpoint unifies them into three lanes the operator can scan:
+
+      - ``awaiting``    — not-yet-fired sound triggers (with ETA) and
+                          unconsumed external events.
+      - ``processing``  — overrides live right now + recently consumed events.
+      - ``failed``      — error-level ActivityLog rows in the recent window.
+
+    Each item carries ``actions`` (label + method + endpoint) so the frontend
+    can render management buttons generically.
+    """
+    now = timezone.now()
+    recent = now - timedelta(minutes=30)
+    awaiting: list[dict] = []
+    processing: list[dict] = []
+    failed: list[dict] = []
+
+    event = models.Event.objects.filter(is_active=True).first()
+
+    # Awaiting — pending sound triggers (with computed fire ETA).
+    for t, fire_at in sse.pending_sound_triggers(event):
+        sound_name = t.sound.name if t.sound_id else '(no sound)'
+        awaiting.append(_queue_item(
+            id=f'trigger-{t.id}',
+            lane='awaiting',
+            kind='sound-trigger',
+            source='system',
+            label=f'{sound_name} → entry #{t.schedule_entry_id}',
+            eta=fire_at,
+            actions=[{
+                'label': 'Re-arm',
+                'method': 'POST',
+                'endpoint': f'/api/schedule-entry-sound-triggers/{t.id}/reset_fire/',
+            }],
+        ))
+
+    # Awaiting — external events not yet consumed by the omnibar.
+    for ev in models.ExternalEvent.objects.filter(
+        consumed_at__isnull=True,
+    ).order_by('-occurred_at')[:50]:
+        awaiting.append(_queue_item(
+            id=f'external-{ev.id}',
+            lane='awaiting',
+            kind=f'{ev.source}/{ev.kind}',
+            source=ev.source,
+            label=f'{ev.source} · {ev.kind}',
+            occurred_at=ev.occurred_at,
+            actions=[{
+                'label': 'Force-consume',
+                'method': 'POST',
+                'endpoint': f'/api/external-events/{ev.id}/consume/',
+            }],
+        ))
+
+    # Processing — overrides live on the bar right now. These are genuinely
+    # in-flight (currently displayed). Consumed external events are *done*,
+    # not processing, so they leave the queue entirely once handled — that's
+    # what force-consume is for.
+    for o in models.OmnibarOverride.objects.filter(
+        is_active=True, starts_at__lte=now, expires_at__gt=now,
+    ).order_by('-priority', '-starts_at')[:50]:
+        processing.append(_queue_item(
+            id=f'override-{o.id}',
+            lane='processing',
+            kind=o.kind,
+            source='operator',
+            label=f'{o.kind} ({o.target_lane})',
+            occurred_at=o.starts_at,
+            eta=o.expires_at,
+            actions=[{
+                'label': 'Cancel',
+                'method': 'POST',
+                'endpoint': f'/api/overrides/{o.id}/deactivate/',
+            }],
+        ))
+
+    # Failed — error-level audit rows.
+    for log in models.ActivityLog.objects.filter(
+        level=models.ActivityLog.Level.ERROR, created_at__gte=recent,
+    )[:50]:
+        failed.append(_queue_item(
+            id=f'log-{log.id}',
+            lane='failed',
+            kind=log.action,
+            source=log.source,
+            label=log.summary,
+            occurred_at=log.created_at,
+        ))
+
+    return Response({
+        'generated_at': now,
+        'awaiting': awaiting,
+        'processing': processing,
+        'failed': failed,
+        'counts': {
+            'awaiting': len(awaiting),
+            'processing': len(processing),
+            'failed': len(failed),
+        },
+    })

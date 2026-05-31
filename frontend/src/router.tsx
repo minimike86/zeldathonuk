@@ -73,6 +73,7 @@ export const router = createBrowserRouter([
       { path: 'theme', ...lazy(() => import('@/routes/control/Theme'), 'ThemeControl') },
       { path: 'omnibar', ...lazy(() => import('@/routes/control/Omnibar'), 'OmnibarControl') },
       { path: 'chest-announcer', ...lazy(() => import('@/routes/control/ChestAnnouncer'), 'ChestAnnouncerControl') },
+      { path: 'logs', ...lazy(() => import('@/routes/control/LogsQueue'), 'LogsQueueControl') },
     ],
   },
   { path: '*', ...lazy(() => import('@/routes/NotFound'), 'NotFound') },

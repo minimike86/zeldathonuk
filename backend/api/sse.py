@@ -34,6 +34,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 
 from . import models
+from .activity import log_activity
 
 
 def _trigger_log(msg: str) -> None:
@@ -186,6 +187,46 @@ def _entry_etas(event: 'models.Event') -> dict[int, datetime]:
     return etas
 
 
+def _trigger_fire_at(t, etas) -> datetime | None:
+    """Wall-clock time a sound trigger should fire, or None if its entry's
+    ETA can't be computed yet. Shared by the fire loop and the queue view
+    so both agree on timing."""
+    entry_eta = etas.get(t.schedule_entry_id)
+    if entry_eta is None:
+        return None
+    if t.anchor == models.TriggerAnchor.END:
+        anchor_time = entry_eta + timedelta(
+            minutes=t.schedule_entry.effective_minutes or 0,
+        )
+    else:
+        anchor_time = entry_eta
+    return anchor_time + timedelta(seconds=t.offset_seconds)
+
+
+def pending_sound_triggers(event):
+    """Read-only view of the active event's not-yet-fired sound triggers with
+    their computed fire time, newest-anchored last. Used by the queue
+    snapshot endpoint to populate the "awaiting" lane — does NOT fire them."""
+    if not event:
+        return []
+    triggers = list(
+        models.ScheduleEntrySoundTrigger.objects
+        .filter(
+            is_active=True,
+            last_fired_at__isnull=True,
+            schedule_entry__event=event,
+        )
+        .select_related('sound', 'schedule_entry')
+    )
+    if not triggers:
+        return []
+    etas = _entry_etas(event)
+    out = []
+    for t in triggers:
+        out.append((t, _trigger_fire_at(t, etas)))
+    return out
+
+
 def _fire_due_sound_triggers() -> None:
     """Find any unfired sound triggers whose anchor time has been
     crossed and create the corresponding OmnibarOverride for each.
@@ -218,21 +259,14 @@ def _fire_due_sound_triggers() -> None:
     etas = _entry_etas(event)
     now = timezone.now()
     for t in triggers:
-        entry_eta = etas.get(t.schedule_entry_id)
-        if entry_eta is None:
+        fire_at = _trigger_fire_at(t, etas)
+        if fire_at is None:
             _trigger_log(
                 f'trigger {t.id} skipped: no ETA for entry '
                 f'{t.schedule_entry_id} (event start {event.start_time}, '
                 f'known ETAs {sorted(etas.keys())})'
             )
             continue
-        if t.anchor == models.TriggerAnchor.END:
-            anchor_time = entry_eta + timedelta(
-                minutes=t.schedule_entry.effective_minutes or 0,
-            )
-        else:
-            anchor_time = entry_eta
-        fire_at = anchor_time + timedelta(seconds=t.offset_seconds)
         if now < fire_at:
             # Don't spam every tick — log only when within 5 seconds
             # so the operator can see "almost there" without log noise
@@ -268,6 +302,15 @@ def _fire_due_sound_triggers() -> None:
             _trigger_log(
                 f'trigger {t.id} create-override FAILED (sound={t.sound_id}): {exc!r}'
             )
+            log_activity(
+                category='sound-trigger',
+                action='sound-trigger.failed',
+                summary=f'Sound trigger #{t.id} failed to fire ({t.sound.name!r})',
+                level='error',
+                source='system',
+                target=t,
+                detail={'error': repr(exc), 'sound_id': t.sound_id},
+            )
             continue
         t.last_fired_at = now
         t.save(update_fields=['last_fired_at'])
@@ -276,6 +319,20 @@ def _fire_due_sound_triggers() -> None:
             f'anchor={t.anchor} offset={t.offset_seconds}s '
             f'override={override.id} sound={t.sound.name!r} '
             f'url={t.sound.url!r}'
+        )
+        log_activity(
+            category='sound-trigger',
+            action='sound-trigger.fired',
+            summary=f'Fired sound trigger #{t.id}: {t.sound.name!r}',
+            source='system',
+            target=t,
+            detail={
+                'schedule_entry_id': t.schedule_entry_id,
+                'anchor': t.anchor,
+                'offset_seconds': t.offset_seconds,
+                'override_id': override.id,
+                'tag': t.tag,
+            },
         )
 
 

@@ -929,3 +929,26 @@ class EventCharitySerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class ActivityLogSerializer(serializers.ModelSerializer):
+    """Read-only view of the audit trail for the control panel."""
+
+    class Meta:
+        model = models.ActivityLog
+        fields = [
+            'id',
+            'created_at',
+            'category',
+            'action',
+            'level',
+            'summary',
+            'source',
+            'target_type',
+            'target_id',
+            'detail',
+            'request_method',
+            'request_path',
+            'status_code',
+        ]
+        read_only_fields = fields

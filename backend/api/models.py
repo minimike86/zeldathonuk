@@ -1753,7 +1753,7 @@ class Milestone(models.Model):
         return self.reached_at is not None
 
     @classmethod
-    def mark_reached_for_event(cls, event_id) -> None:
+    def mark_reached_for_event(cls, event_id) -> list['Milestone']:
         """Stamp ``reached_at`` on every still-pending milestone of this event
         whose threshold the running donation total now meets.
 
@@ -1766,17 +1766,29 @@ class Milestone(models.Model):
         ``DonationViewSet.totals``. A single bulk UPDATE filtered on
         ``reached_at__isnull=True`` keeps this idempotent and cheap, so it's
         safe to run on every donation save.
+
+        Returns the milestones that flipped false→true on *this* call (so the
+        signal can write one audit-log row per newly-reached milestone); an
+        empty list when nothing crossed.
         """
         if not event_id:
-            return
+            return []
         total = Donation.objects.filter(event_id=event_id).aggregate(
             t=models.Sum('amount'),
         )['t'] or Decimal('0')
-        cls.objects.filter(
+        pending = cls.objects.filter(
             event_id=event_id,
             reached_at__isnull=True,
             threshold_amount__lte=total,
-        ).update(reached_at=timezone.now())
+        )
+        # Snapshot the rows about to flip before the bulk UPDATE clears the
+        # filter, so the caller can report exactly which crossed.
+        newly = list(pending)
+        if newly:
+            cls.objects.filter(pk__in=[m.pk for m in newly]).update(
+                reached_at=timezone.now(),
+            )
+        return newly
 
 
 class RaffleDeliveryMethod(models.TextChoices):
@@ -2819,3 +2831,77 @@ class EventCharity(models.Model):
             EventCharity.objects.filter(
                 event_id=self.event_id, is_primary=True,
             ).exclude(pk=self.pk).update(is_primary=False)
+
+
+class ActivityLog(models.Model):
+    """Append-only audit trail of everything the app does.
+
+    Captures operator actions (mutating API requests, written by
+    ``ActivityLogMiddleware``), internal event triggers (sound triggers,
+    milestone crossings, written by explicit ``log_activity`` calls), and
+    errors. The control panel's Logs & Queue page reads this table; the
+    queue's "failed" lane is simply ``level='error'`` rows in a recent
+    window.
+
+    Rows are never edited — only inserted and (eventually) pruned by the
+    ``prune_activity_log`` management command. There is no auth on the API
+    (see the API-no-auth note), so the middleware redacts known PII keys
+    (donor names, messages, tokens) before persisting request bodies, and
+    the read endpoint must be reverse-proxy-gated like other operator data.
+    """
+
+    class Category(models.TextChoices):
+        OPERATOR_ACTION = 'operator-action', 'Operator action'
+        EVENT_TRIGGER = 'event-trigger', 'Event trigger'
+        SOUND_TRIGGER = 'sound-trigger', 'Sound trigger'
+        WEBHOOK = 'webhook', 'Webhook'
+        EXTERNAL_EVENT = 'external-event', 'External event'
+        SYSTEM = 'system', 'System'
+
+    class Level(models.TextChoices):
+        INFO = 'info', 'Info'
+        WARNING = 'warning', 'Warning'
+        ERROR = 'error', 'Error'
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    category = models.CharField(
+        max_length=24, choices=Category.choices, db_index=True,
+    )
+    action = models.CharField(
+        max_length=64,
+        help_text="Slug verb, e.g. 'timer.start', 'override.create', "
+                  "'sound-trigger.fired', 'webhook.justgiving.ingest'.",
+    )
+    level = models.CharField(
+        max_length=8, choices=Level.choices, default=Level.INFO, db_index=True,
+    )
+    summary = models.CharField(max_length=300, help_text='One-line human summary.')
+    source = models.CharField(
+        max_length=32, default='system',
+        help_text="Origin: 'operator', 'system', 'twitch', 'justgiving', …",
+    )
+    target_type = models.CharField(max_length=64, blank=True)
+    target_id = models.CharField(max_length=64, blank=True)
+    detail = models.JSONField(
+        default=dict, blank=True,
+        help_text='Sanitised request body / payload / error context.',
+    )
+    request_method = models.CharField(max_length=8, blank=True)
+    request_path = models.CharField(max_length=300, blank=True)
+    status_code = models.SmallIntegerField(null=True, blank=True)
+    acknowledged_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When an operator dismissed this entry from the queue\'s '
+                  'failed lane. The row stays in the audit trail — this only '
+                  'clears it from the live "needs attention" view.',
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['category', '-created_at']),
+            models.Index(fields=['level', '-created_at']),
+        ]
+
+    def __str__(self) -> str:
+        return f'[{self.level}] {self.category}/{self.action} — {self.summary}'
