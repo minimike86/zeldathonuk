@@ -66,7 +66,7 @@ export function CameraFrame({ style }: { style: React.CSSProperties }) {
  *  year, so the second slot pulls from `Event.gameblast_logo_url`
  *  (editable in /control/events). The hardcoded URL here is only used
  *  as a fallback when no active event has set one yet. */
-const SPONSOR_SPECIALEFFECT_LOGO = '/assets/img/specialeffect-logo.svg';
+const SPONSOR_SPECIALEFFECT_LOGO = '/assets/img/charity/specialeffect/specialeffect-logo.svg';
 const SPONSOR_GAMEBLAST_FALLBACK = '/assets/img/GB22_Logo_Linear_DarkBGs_Small.png';
 
 /** Rotating background images that sit behind the charity logo — Zelda

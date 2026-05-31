@@ -446,7 +446,7 @@ function CharitySlidesSection() {
               <input
                 value={form.image_url}
                 onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                placeholder="/assets/img/specialeffect-logo.svg"
+                placeholder="/assets/img/charity/specialeffect/specialeffect-logo.svg"
               />
             </label>
             <label className="d-flex flex-column">
@@ -644,7 +644,7 @@ function CharitySlideRow({
               <input
                 value={draft.image_url}
                 onChange={(e) => update('image_url', e.target.value)}
-                placeholder="/assets/img/specialeffect-logo.svg"
+                placeholder="/assets/img/charity/specialeffect/specialeffect-logo.svg"
               />
               <input
                 value={draft.alt_text}

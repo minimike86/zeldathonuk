@@ -37,7 +37,7 @@ const POLL_MS = 5_000;
 const FALLBACK_SLIDES: Array<Omit<CharitySlide, 'id' | 'created_at' | 'updated_at'>> = [
   {
     kind: 'logo',
-    image_url: '/assets/img/specialeffect-logo.svg',
+    image_url: '/assets/img/charity/specialeffect/specialeffect-logo.svg',
     alt_text: 'SpecialEffect',
     title: '',
     body: '',
