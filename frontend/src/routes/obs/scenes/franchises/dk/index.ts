@@ -2,6 +2,8 @@ import type { GameTheme } from '../../../game-themes';
 import { DonkeyKongCountry2Scene } from './DonkeyKongCountry2Scene';
 import { DonkeyKongCountry3Scene } from './DonkeyKongCountry3Scene';
 import { DonkeyKongCountryScene } from './DonkeyKongCountryScene';
+import { DonkeyKong64Scene } from './DonkeyKong64Scene';
+import { DonkeyKongLandScene } from './DonkeyKongLandScene';
 import { DonkeyKongScene } from './DonkeyKongScene';
 
 /**
@@ -49,6 +51,32 @@ export const dkThemes: Array<{ match: string; theme: GameTheme }> = [
       tertiary: '#caa23a',
       glow: 'rgba(106, 160, 74, 0.7)',
       scenes: [DonkeyKongCountryScene],
+    },
+  },
+  {
+    match: 'donkey kong 64',
+    theme: {
+      label: 'Donkey Kong 64',
+      bgFrom: '#f4d27a',
+      bgTo: '#4e8a3a',
+      primary: '#ffd23a',
+      secondary: '#2f7a34',
+      tertiary: '#e0341a',
+      glow: 'rgba(255, 210, 58, 0.7)',
+      scenes: [DonkeyKong64Scene],
+    },
+  },
+  {
+    match: 'donkey kong land',
+    theme: {
+      label: 'Donkey Kong Land',
+      bgFrom: '#9bbc0f',
+      bgTo: '#306230',
+      primary: '#0f380f',
+      secondary: '#306230',
+      tertiary: '#8bac0f',
+      glow: 'rgba(139, 172, 15, 0.6)',
+      scenes: [DonkeyKongLandScene],
     },
   },
   {

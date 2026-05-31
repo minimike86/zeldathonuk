@@ -1,10 +1,12 @@
 /* ─────────────────────────────────────────────────────────────────────────
  * METROID franchise scenes. Co-located CSS (not the shared scenes.css).
  * One unique namespace per game: smet (Super Metroid) / mprime (Metroid Prime)
- * / met (NES Metroid fallback).
+ * / met (NES Metroid fallback) / mfus (Fusion) / m2 (Metroid II) / mp3 (Prime
+ * 3 Corruption) / mp2 (Prime 2 Echoes).
  * ───────────────────────────────────────────────────────────────────────── */
 
-.smet-scene, .mprime-scene, .met-scene {
+.smet-scene, .mprime-scene, .met-scene,
+.mfus-scene, .m2-scene, .mp3-scene, .mp2-scene {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -174,11 +176,207 @@
 }
 @keyframes met-cannon-pulse { 0%, 100% { opacity: 0.4; transform: scale(0.85); } 50% { opacity: 0.95; transform: scale(1.1); } }
 
+/* ═══════════════════ METROID FUSION (BSL station + SA-X) ═══════════════════ */
+.mfus-scene { background: linear-gradient(180deg, #04201f 0%, #07302d 55%, #03100f 100%); }
+
+.mfus-hazard {
+  position: absolute; inset: 0;
+  background: radial-gradient(60% 45% at 50% 80%, rgba(245, 150, 30, 0.22), transparent 72%);
+  animation: mfus-hazard-strobe 3.4s ease-in-out infinite;
+}
+@keyframes mfus-hazard-strobe { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.85; } }
+
+.mfus-corridor { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.mfus-door {
+  position: absolute; top: 32%; left: 50%; transform: translateX(-50%);
+  width: 7%; max-width: 80px;
+  filter: drop-shadow(0 0 12px rgba(245, 150, 30, 0.6));
+  animation: mfus-door-pulse 4s ease-in-out infinite;
+}
+@keyframes mfus-door-pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+
+.mfus-sax {
+  position: absolute; top: 38%; left: 50%; width: 5.5%; max-width: 64px;
+  filter: drop-shadow(0 0 10px rgba(31, 122, 120, 0.5));
+  animation: mfus-sax-stalk 9s ease-in-out infinite;
+}
+@keyframes mfus-sax-stalk {
+  0%, 100% { transform: translateX(-150%); opacity: 0.7; }
+  50% { transform: translateX(50%); opacity: 1; }
+}
+
+.mfus-sax-eye {
+  position: absolute; top: 41%; left: 50%; width: 2%; padding-bottom: 2%; max-width: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 207, 74, 0.85), transparent 70%);
+  animation: mfus-eye-glow 2.6s ease-in-out infinite;
+}
+@keyframes mfus-eye-glow { 0%, 100% { opacity: 0.4; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
+
+.mfus-parasites,
+.mfus-parasites::before {
+  position: absolute; top: 14%; left: 6%; width: 2px; height: 2px; border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    120px 80px #f5961e, 320px 160px #ffcf4a, 520px 100px #f5961e, 720px 200px #ffcf4a,
+    900px 120px #f5961e, 1040px 220px #ffcf4a, 220px 260px #f5961e, 640px 300px #ffcf4a;
+  animation: mfus-parasite-drift 14s linear infinite, mfus-parasite-tw 3.6s ease-in-out infinite;
+}
+.mfus-parasites::before { content: ''; transform: translate(160px, 110px) scale(0.7); animation-delay: -7s, 1.8s; opacity: 0.7; }
+@keyframes mfus-parasite-drift { 0% { transform: translate(0, 0); } 100% { transform: translate(40px, -50px); } }
+@keyframes mfus-parasite-tw { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+
+/* ═══════════════════ METROID II (SR388, Game-Boy green) ═══════════════════ */
+.m2-scene { background: linear-gradient(180deg, #0f380f 0%, #1a4a1a 55%, #0a280a 100%); }
+
+.m2-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(50% 48% at 50% 52%, rgba(155, 188, 15, 0.18), transparent 70%);
+  animation: m2-glow-pulse 7.5s ease-in-out infinite;
+}
+@keyframes m2-glow-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+
+.m2-ceiling { position: absolute; top: 0; left: 0; width: 100%; height: 26%; }
+.m2-backwall { position: absolute; bottom: 0; left: 0; width: 100%; height: 70%; }
+.m2-floor { position: absolute; bottom: 0; left: 0; width: 100%; height: 24%; }
+
+.m2-metroid {
+  position: absolute; top: 22%; right: 20%; width: 9%; max-width: 110px;
+  filter: drop-shadow(0 0 12px rgba(155, 188, 15, 0.5));
+  animation: m2-metroid-float 7s ease-in-out infinite;
+}
+@keyframes m2-metroid-float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-18px, 14px); }
+}
+
+.m2-samus {
+  position: absolute; bottom: 22%; left: 26%; width: 7.5%; max-width: 92px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5));
+  animation: m2-samus-bob 5s ease-in-out infinite;
+}
+@keyframes m2-samus-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+.m2-cannon-glow {
+  position: absolute; bottom: 34%; left: 33%; width: 4.5%; padding-bottom: 4.5%; max-width: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(155, 188, 15, 0.55), transparent 70%);
+  animation: m2-cannon-pulse 2.4s ease-in-out infinite;
+}
+@keyframes m2-cannon-pulse { 0%, 100% { opacity: 0.4; transform: scale(0.85); } 50% { opacity: 0.95; transform: scale(1.1); } }
+
+.m2-scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(180deg, rgba(15, 56, 15, 0) 0px, rgba(15, 56, 15, 0) 2px, rgba(10, 30, 10, 0.35) 3px, rgba(10, 30, 10, 0.35) 4px);
+  animation: m2-scanline-flicker 0.25s steps(2) infinite;
+}
+@keyframes m2-scanline-flicker { 0% { opacity: 0.6; } 100% { opacity: 0.75; } }
+
+/* ═══════════════════ METROID PRIME 3 (Corruption, GFS Olympus) ═══════════════════ */
+.mp3-scene { background: radial-gradient(120% 100% at 50% 30%, #0a1830 0%, #06101f 55%, #03060c 100%); }
+
+.mp3-corruption {
+  position: absolute; inset: 0;
+  background: radial-gradient(80% 70% at 50% 60%, rgba(58, 160, 255, 0.16), transparent 70%);
+  animation: mp3-corruption-pulse 6s ease-in-out infinite;
+}
+@keyframes mp3-corruption-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+.mp3-stars,
+.mp3-stars::before {
+  position: absolute; top: 4%; left: 4%; width: 2px; height: 2px; border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    100px 40px #7ac6ff, 300px 90px #fff, 500px 50px #7ac6ff, 700px 110px #fff,
+    900px 60px #7ac6ff, 1080px 100px #fff, 200px 150px #7ac6ff, 620px 170px #fff,
+    420px 130px #fff, 820px 140px #7ac6ff;
+  animation: mp3-star-tw 5s ease-in-out infinite;
+}
+.mp3-stars::before { content: ''; transform: translate(140px, 90px) scale(0.8); animation-delay: 2.5s; opacity: 0.7; }
+@keyframes mp3-star-tw { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+.mp3-planet { position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; }
+
+.mp3-ship {
+  position: absolute; top: 16%; left: 50%; transform: translateX(-50%);
+  width: 30%; max-width: 360px;
+  filter: drop-shadow(0 0 12px rgba(58, 160, 255, 0.45));
+  animation: mp3-ship-drift 12s ease-in-out infinite;
+}
+@keyframes mp3-ship-drift {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-14px); }
+}
+
+.mp3-meter {
+  position: absolute; top: 9%; right: 6%; width: 13%; max-width: 160px;
+  filter: drop-shadow(0 0 6px rgba(58, 160, 255, 0.5));
+  animation: mp3-meter-tick 3s steps(4) infinite;
+}
+@keyframes mp3-meter-tick { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+.mp3-spores,
+.mp3-spores::before {
+  position: absolute; top: 30%; left: 8%; width: 2px; height: 2px; border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    80px 60px #3aa0ff, 260px 120px #7ac6ff, 460px 80px #3aa0ff, 660px 150px #7ac6ff,
+    860px 100px #3aa0ff, 1040px 170px #7ac6ff, 180px 200px #3aa0ff, 560px 220px #7ac6ff;
+  animation: mp3-spore-rise 13s linear infinite, mp3-spore-tw 4s ease-in-out infinite;
+}
+.mp3-spores::before { content: ''; transform: translate(120px, 130px) scale(0.75); animation-delay: -6.5s, 2s; opacity: 0.7; }
+@keyframes mp3-spore-rise { 0% { transform: translateY(0); } 100% { transform: translateY(-60px); } }
+@keyframes mp3-spore-tw { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+
+/* ═══════════════════ METROID PRIME 2 (Echoes, split Aether) ═══════════════════ */
+.mp2-scene { background: #0a0414; }
+
+.mp2-light-half {
+  position: absolute; top: 0; left: 0; width: 50%; height: 100%;
+  background: linear-gradient(180deg, #1c4a30 0%, #0e3420 60%, #081e14 100%);
+  animation: mp2-light-pulse 7s ease-in-out infinite;
+}
+@keyframes mp2-light-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.15); } }
+
+.mp2-dark-half {
+  position: absolute; top: 0; right: 0; width: 50%; height: 100%;
+  background: linear-gradient(180deg, #2a0c40 0%, #1a0628 60%, #0c0418 100%);
+  animation: mp2-dark-pulse 7s ease-in-out infinite;
+}
+@keyframes mp2-dark-pulse { 0%, 100% { filter: brightness(0.9); } 50% { filter: brightness(1.1) saturate(1.2); } }
+
+.mp2-light-scene { position: absolute; top: 0; left: 0; width: 50%; height: 100%; }
+.mp2-dark-scene { position: absolute; top: 0; right: 0; width: 50%; height: 100%; }
+
+.mp2-rift {
+  position: absolute; top: 18%; left: 50%; transform: translateX(-50%);
+  width: 10%; max-width: 120px; height: 64%;
+  filter: drop-shadow(0 0 14px rgba(160, 64, 208, 0.6));
+  animation: mp2-rift-pulse 4.5s ease-in-out infinite;
+}
+@keyframes mp2-rift-pulse {
+  0%, 100% { transform: translateX(-50%) scaleY(0.97); opacity: 0.8; }
+  50% { transform: translateX(-50%) scaleY(1.03); opacity: 1; }
+}
+
+.mp2-seam {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 6%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(160, 64, 208, 0.35), rgba(224, 192, 255, 0.5), rgba(168, 232, 160, 0.3), transparent);
+  animation: mp2-seam-pulse 5s ease-in-out infinite;
+}
+@keyframes mp2-seam-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
 /* ═══════════════════ REDUCED MOTION GUARD ═══════════════════ */
 @media (prefers-reduced-motion: reduce) {
   .smet-glow, .smet-metroid, .smet-samus, .smet-cannon-glow, .smet-spores, .smet-spores::before,
   .mprime-scanline, .mprime-hud, .mprime-radar-sweep, .mprime-readout, .mprime-scan, .mprime-morphball,
-  .met-glow, .met-door, .met-metroid, .met-samus, .met-cannon-glow {
+  .met-glow, .met-door, .met-metroid, .met-samus, .met-cannon-glow,
+  .mfus-hazard, .mfus-door, .mfus-sax, .mfus-sax-eye, .mfus-parasites, .mfus-parasites::before,
+  .m2-glow, .m2-metroid, .m2-samus, .m2-cannon-glow, .m2-scanlines,
+  .mp3-corruption, .mp3-stars, .mp3-stars::before, .mp3-ship, .mp3-meter, .mp3-spores, .mp3-spores::before,
+  .mp2-light-half, .mp2-dark-half, .mp2-rift, .mp2-seam {
     animation: none;
   }
 }

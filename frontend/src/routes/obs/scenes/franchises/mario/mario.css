@@ -6,7 +6,9 @@
 
 /* Shared stage-root rule applied to every Mario scene */
 .smb3-scene, .smb2-scene, .yi-scene, .smg-scene, .smw-scene,
-.sm64-scene, .smrpg-scene, .mk-scene, .smb1-scene, .mario-scene {
+.sm64-scene, .smrpg-scene, .mk-scene, .smb1-scene, .mario-scene,
+.pm-scene, .sml-scene, .drm-scene, .mpaint-scene, .smo-scene,
+.smk-scene, .mk8-scene {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -459,6 +461,278 @@
 
 .mario-ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 10%; }
 
+/* ═══════════════════ PAPER MARIO (papercraft) ═══════════════════ */
+.pm-scene { background: linear-gradient(180deg, #8fd6ff 0%, #c4ecff 55%, #eafbff 100%); }
+
+.pm-sun {
+  position: absolute; top: 7%; right: 12%; width: 12%; max-width: 130px;
+  filter: drop-shadow(0 3px 4px rgba(120, 100, 40, 0.3));
+  animation: pm-sun-spin 40s linear infinite;
+}
+@keyframes pm-sun-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.pm-cloud { position: absolute; width: 14%; max-width: 170px; filter: drop-shadow(0 3px 3px rgba(60, 90, 130, 0.18)); }
+.pm-cloud-a { top: 16%; animation: pm-drift 40s linear infinite; }
+.pm-cloud-b { top: 30%; width: 10%; animation: pm-drift 54s linear infinite; animation-delay: -20s; opacity: 0.95; }
+@keyframes pm-drift { 0% { transform: translateX(-22vw); } 100% { transform: translateX(120vw); } }
+
+.pm-hills { position: absolute; left: 0; width: 100%; }
+.pm-hills-far { bottom: 14%; height: 30%; }
+.pm-hills-near { bottom: 0; height: 24%; }
+
+.pm-mario {
+  position: absolute; bottom: 16%; left: 26%; width: 10%; max-width: 120px;
+  transform-origin: bottom center;
+  filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.25));
+  animation: pm-hop 2.6s ease-in-out infinite;
+}
+@keyframes pm-hop {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  45% { transform: translateY(-16px) rotate(1deg); }
+}
+
+.pm-goomba {
+  position: absolute; bottom: 14%; left: 64%; width: 7%; max-width: 84px;
+  filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.25));
+  animation: pm-waddle 3.4s ease-in-out infinite;
+}
+@keyframes pm-waddle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.pm-scrap { position: absolute; top: -4%; width: 1.6%; max-width: 18px; }
+.pm-scrap-a { left: 30%; animation: pm-fall 7s linear infinite; }
+.pm-scrap-b { left: 54%; animation: pm-fall 9s linear infinite; animation-delay: -3s; }
+.pm-scrap-c { left: 76%; animation: pm-fall 8s linear infinite; animation-delay: -5s; }
+@keyframes pm-fall {
+  0% { transform: translate(0, -10vh) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translate(-60px, 96vh) rotate(540deg); opacity: 0; }
+}
+
+/* ═══════════════════ SUPER MARIO LAND (Game Boy) ═══════════════════ */
+.sml-scene { background: linear-gradient(180deg, #9bbc0f 0%, #8bac0f 60%, #306230 100%); }
+
+.sml-sun {
+  position: absolute; top: 9%; right: 16%; width: 9%; max-width: 100px;
+  animation: sml-sun-pulse 6s ease-in-out infinite;
+}
+@keyframes sml-sun-pulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+.sml-pyramids { position: absolute; bottom: 16%; left: 0; width: 100%; height: 38%; }
+
+.sml-sphinx { position: absolute; bottom: 16%; right: 14%; width: 13%; max-width: 150px; }
+
+.sml-palm {
+  position: absolute; bottom: 14%; left: 10%; width: 11%; max-width: 130px;
+  transform-origin: bottom center;
+  animation: sml-palm-sway 5s ease-in-out infinite;
+}
+@keyframes sml-palm-sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+
+.sml-plane {
+  position: absolute; top: 22%; width: 12%; max-width: 140px;
+  animation: sml-plane-fly 14s linear infinite;
+}
+@keyframes sml-plane-fly {
+  0% { transform: translateX(120vw) scaleX(-1); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateX(-30vw) scaleX(-1); opacity: 0; }
+}
+.sml-prop { transform-origin: 105px 34px; animation: sml-prop-spin 0.3s linear infinite; }
+@keyframes sml-prop-spin {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(0.12); }
+  100% { transform: scaleY(1); }
+}
+
+.sml-ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 16%; }
+
+.sml-lcd {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(15, 56, 15, 0.18) 0px, rgba(15, 56, 15, 0.18) 1px, transparent 2px, transparent 4px);
+  mix-blend-mode: multiply;
+}
+
+/* ═══════════════════ DR. MARIO (capsule playfield) ═══════════════════ */
+.drm-scene { background: linear-gradient(180deg, #120a3a 0%, #1c1452 55%, #0a0620 100%); }
+
+.drm-grid { position: absolute; inset: 0; }
+
+.drm-capsule { position: absolute; filter: drop-shadow(0 0 8px rgba(160, 124, 255, 0.4)); }
+.drm-capsule-fall {
+  top: -10%; left: 46%; width: 4.5%; max-width: 54px;
+  animation: drm-fall 6s ease-in infinite;
+}
+@keyframes drm-fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  88% { opacity: 1; transform: translateY(70vh) rotate(0deg); }
+  100% { transform: translateY(74vh) rotate(0deg); opacity: 0; }
+}
+.drm-capsule-set-a { bottom: 18%; left: 30%; width: 9%; max-width: 110px; }
+.drm-capsule-set-b { bottom: 18%; left: 58%; width: 9%; max-width: 110px; }
+
+.drm-virus { position: absolute; width: 6%; max-width: 72px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)); }
+.drm-virus-a { bottom: 30%; left: 24%; animation: drm-wobble 2.6s ease-in-out infinite; }
+.drm-virus-b { bottom: 28%; left: 50%; animation: drm-wobble 3.0s ease-in-out infinite; animation-delay: -1s; }
+.drm-virus-c { bottom: 32%; left: 70%; animation: drm-wobble 2.4s ease-in-out infinite; animation-delay: -1.6s; }
+@keyframes drm-wobble {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-8px) rotate(4deg); }
+}
+
+/* ═══════════════════ MARIO PAINT (canvas toy) ═══════════════════ */
+.mpaint-scene { background: linear-gradient(180deg, #fbf6e8 0%, #f2ecd8 100%); }
+
+.mpaint-grid { position: absolute; inset: 0; }
+
+.mpaint-doodle { position: absolute; inset: 0; opacity: 0.92; }
+
+.mpaint-palette {
+  position: absolute; top: 18%; left: 4%; width: 7%; max-width: 80px;
+  filter: drop-shadow(2px 4px 5px rgba(0, 0, 0, 0.18));
+  animation: mpaint-palette-bob 5s ease-in-out infinite;
+}
+@keyframes mpaint-palette-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.mpaint-cursor {
+  position: absolute; top: 30%; left: 40%; width: 5%; max-width: 56px;
+  filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, 0.3));
+  animation: mpaint-cursor-move 11s ease-in-out infinite;
+}
+@keyframes mpaint-cursor-move {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(34vw, 18vh) rotate(-8deg); }
+  50% { transform: translate(12vw, 40vh) rotate(4deg); }
+  75% { transform: translate(40vw, 26vh) rotate(-6deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.mpaint-fly {
+  position: absolute; top: 24%; left: 24%; width: 5%; max-width: 56px;
+  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.3));
+  animation: mpaint-fly-buzz 9s ease-in-out infinite;
+}
+@keyframes mpaint-fly-buzz {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(40vw, 10vh); }
+  40% { transform: translate(20vw, 36vh); }
+  60% { transform: translate(56vw, 30vh); }
+  80% { transform: translate(30vw, 8vh); }
+  100% { transform: translate(0, 0); }
+}
+.mpaint-fly-wings { transform-origin: 30px 14px; animation: mpaint-wings 0.12s ease-in-out infinite; }
+@keyframes mpaint-wings { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.6); } }
+
+/* ═══════════════════ SUPER MARIO ODYSSEY (New Donk City) ═══════════════════ */
+.smo-scene { background: linear-gradient(180deg, #2a1f55 0%, #7a3a6a 45%, #e08a4a 80%, #ffc06a 100%); }
+
+.smo-sun {
+  position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%);
+  width: 40%; padding-bottom: 24%; max-width: 520px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 220, 140, 0.7), transparent 65%);
+  animation: smo-sun-glow 9s ease-in-out infinite;
+}
+@keyframes smo-sun-glow { 0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.05); } }
+
+.smo-skyline { position: absolute; left: 0; width: 100%; }
+.smo-skyline-far { bottom: 14%; height: 38%; }
+.smo-skyline-near { bottom: 0; height: 50%; }
+
+.smo-odyssey {
+  position: absolute; top: 10%; width: 18%; max-width: 220px;
+  filter: drop-shadow(0 6px 12px rgba(40, 20, 60, 0.5));
+  animation: smo-odyssey-fly 30s linear infinite;
+}
+@keyframes smo-odyssey-fly {
+  0% { transform: translateX(118vw); }
+  100% { transform: translateX(-40vw); }
+}
+
+.smo-cappy {
+  position: absolute; top: 30%; left: 36%; width: 9%; max-width: 104px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+  animation: smo-cappy-tumble 7s ease-in-out infinite;
+}
+@keyframes smo-cappy-tumble {
+  0% { transform: translate(0, 0) rotate(-12deg); }
+  50% { transform: translate(30px, -26px) rotate(14deg); }
+  100% { transform: translate(0, 0) rotate(-12deg); }
+}
+
+/* ═══════════════════ SUPER MARIO KART (SNES Mode-7) ═══════════════════ */
+.smk-scene { background: linear-gradient(180deg, #2a7adf 0%, #6bb4f0 46%, #a8d8f4 62%, #d8c89a 62%, #e8dcb0 100%); }
+
+.smk-track { position: absolute; bottom: 0; left: 0; width: 100%; height: 80%; }
+
+.smk-itembox { position: absolute; width: 4%; max-width: 46px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)); }
+.smk-itembox-a { top: 40%; left: 44%; animation: smk-box-bob 3.6s ease-in-out infinite; }
+.smk-itembox-b { top: 32%; left: 56%; width: 2.6%; animation: smk-box-bob 4.2s ease-in-out infinite; animation-delay: -1.5s; }
+@keyframes smk-box-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+.smk-kart {
+  position: absolute; bottom: 8%; width: 9%; max-width: 110px;
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.4));
+  animation: smk-kart-hop 6s ease-in-out infinite;
+}
+@keyframes smk-kart-hop {
+  0% { transform: translateX(-12vw); }
+  48% { transform: translateX(44vw) translateY(0); }
+  52% { transform: translateX(48vw) translateY(-12px); }
+  100% { transform: translateX(112vw); }
+}
+
+/* ═══════════════════ MARIO KART 8 (anti-grav neon) ═══════════════════ */
+.mk8-scene { background: radial-gradient(130% 110% at 50% 40%, #1a1442 0%, #100a30 55%, #060318 100%); }
+
+.mk8-stars,
+.mk8-stars::before {
+  position: absolute; top: 4%; left: 6%; width: 2px; height: 2px; border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    40px 30px #cfe6ff, 200px 70px #ffffff, 360px 20px #ff9fe0, 520px 90px #ffffff,
+    700px 40px #9fe6ff, 860px 110px #ffffff, 1020px 30px #cfe6ff, 160px 150px #ff9fe0,
+    480px 170px #ffffff, 900px 150px #9fe6ff, 1120px 60px #ffffff;
+  animation: mk8-twinkle 5s ease-in-out infinite;
+}
+.mk8-stars::before { content: ''; transform: translate(90px, 110px) scale(0.8); animation-delay: 2.2s; opacity: 0.7; }
+@keyframes mk8-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+.mk8-loop {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  filter: drop-shadow(0 0 16px rgba(160, 124, 255, 0.4));
+  animation: mk8-loop-pulse 5s ease-in-out infinite;
+}
+@keyframes mk8-loop-pulse {
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 77, 210, 0.4)); }
+  50% { filter: drop-shadow(0 0 22px rgba(51, 230, 255, 0.55)); }
+}
+.mk8-boost { animation: mk8-boost-flash 1.4s ease-in-out infinite; }
+@keyframes mk8-boost-flash { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+.mk8-wall {
+  position: absolute; top: 14%; right: 8%; width: 16%; max-width: 200px;
+  animation: mk8-wall-glow 6s ease-in-out infinite;
+}
+@keyframes mk8-wall-glow { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+
+.mk8-kart {
+  position: absolute; bottom: 26%; width: 9%; max-width: 104px;
+  filter: drop-shadow(0 0 10px rgba(51, 230, 255, 0.55));
+  animation: mk8-kart-zip 8s linear infinite;
+}
+@keyframes mk8-kart-zip {
+  0% { transform: translate(-12vw, 8vh) rotate(-10deg); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translate(48vw, -6vh) rotate(8deg); }
+  90% { opacity: 1; }
+  100% { transform: translate(112vw, -18vh) rotate(-14deg); opacity: 0; }
+}
+
 /* ═══════════════════ REDUCED MOTION GUARD ═══════════════════ */
 @media (prefers-reduced-motion: reduce) {
   .smb3-cloud, .smb3-leaf, .smb3-airship, .smb3-prop, .smb3-prop-slow,
@@ -470,7 +744,14 @@
   .smrpg-stars, .smrpg-stars::before, .smrpg-road, .smrpg-wishstar, .smrpg-fall,
   .mk-stars, .mk-stars::before, .mk-road, .mk-kart, .mk-banner, .mk-itembox,
   .smb1-cloud, .smb1-blocks, .smb1-coin,
-  .mario-cloud, .mario-emblem, .mario-emblem-glow, .mario-coin, .mario-block {
+  .mario-cloud, .mario-emblem, .mario-emblem-glow, .mario-coin, .mario-block,
+  .pm-sun, .pm-cloud, .pm-mario, .pm-goomba, .pm-scrap,
+  .sml-sun, .sml-palm, .sml-plane, .sml-prop,
+  .drm-capsule-fall, .drm-virus,
+  .mpaint-palette, .mpaint-cursor, .mpaint-fly, .mpaint-fly-wings,
+  .smo-sun, .smo-odyssey, .smo-cappy,
+  .smk-itembox, .smk-kart,
+  .mk8-stars, .mk8-stars::before, .mk8-loop, .mk8-boost, .mk8-wall, .mk8-kart {
     animation: none;
   }
 }

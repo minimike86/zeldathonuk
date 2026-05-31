@@ -6,8 +6,15 @@ import { SuperMarioGalaxyScene } from './SuperMarioGalaxyScene';
 import { SuperMarioWorldScene } from './SuperMarioWorldScene';
 import { SuperMario64Scene } from './SuperMario64Scene';
 import { SuperMarioRpgScene } from './SuperMarioRpgScene';
+import { SuperMarioKartScene } from './SuperMarioKartScene';
+import { MarioKart8Scene } from './MarioKart8Scene';
 import { MarioKartScene } from './MarioKartScene';
 import { SuperMarioBrosScene } from './SuperMarioBrosScene';
+import { PaperMarioScene } from './PaperMarioScene';
+import { SuperMarioLandScene } from './SuperMarioLandScene';
+import { DrMarioScene } from './DrMarioScene';
+import { MarioPaintScene } from './MarioPaintScene';
+import { SuperMarioOdysseyScene } from './SuperMarioOdysseyScene';
 import { MarioScene } from './MarioScene';
 
 /**
@@ -112,6 +119,32 @@ export const marioThemes: Array<{ match: string; theme: GameTheme }> = [
     },
   },
   {
+    match: 'super mario kart',
+    theme: {
+      label: 'Super Mario Kart',
+      bgFrom: '#2a7adf',
+      bgTo: '#e8dcb0',
+      primary: '#e23b3b',
+      secondary: '#ffd23a',
+      tertiary: '#f4ecd8',
+      glow: 'rgba(42, 122, 223, 0.6)',
+      scenes: [SuperMarioKartScene],
+    },
+  },
+  {
+    match: 'mario kart 8',
+    theme: {
+      label: 'Mario Kart 8',
+      bgFrom: '#1a1442',
+      bgTo: '#060318',
+      primary: '#ff4dd2',
+      secondary: '#33e6ff',
+      tertiary: '#a07cff',
+      glow: 'rgba(51, 230, 255, 0.65)',
+      scenes: [MarioKart8Scene],
+    },
+  },
+  {
     match: 'mario kart',
     theme: {
       label: 'Mario Kart',
@@ -135,6 +168,71 @@ export const marioThemes: Array<{ match: string; theme: GameTheme }> = [
       tertiary: '#c8702a',
       glow: 'rgba(226, 59, 59, 0.6)',
       scenes: [SuperMarioBrosScene],
+    },
+  },
+  {
+    match: 'paper mario',
+    theme: {
+      label: 'Paper Mario',
+      bgFrom: '#8fd6ff',
+      bgTo: '#eafbff',
+      primary: '#e23b3b',
+      secondary: '#5fb83f',
+      tertiary: '#ffd23a',
+      glow: 'rgba(226, 59, 59, 0.55)',
+      scenes: [PaperMarioScene],
+    },
+  },
+  {
+    match: 'super mario land',
+    theme: {
+      label: 'Super Mario Land',
+      bgFrom: '#9bbc0f',
+      bgTo: '#306230',
+      primary: '#0f380f',
+      secondary: '#306230',
+      tertiary: '#8bac0f',
+      glow: 'rgba(139, 172, 15, 0.6)',
+      scenes: [SuperMarioLandScene],
+    },
+  },
+  {
+    match: 'dr. mario',
+    theme: {
+      label: 'Dr. Mario',
+      bgFrom: '#120a3a',
+      bgTo: '#0a0620',
+      primary: '#e23b3b',
+      secondary: '#3a7adf',
+      tertiary: '#ffd23a',
+      glow: 'rgba(160, 124, 255, 0.55)',
+      scenes: [DrMarioScene],
+    },
+  },
+  {
+    match: 'mario paint',
+    theme: {
+      label: 'Mario Paint',
+      bgFrom: '#fbf6e8',
+      bgTo: '#f2ecd8',
+      primary: '#e23b3b',
+      secondary: '#3a7adf',
+      tertiary: '#4cd95e',
+      glow: 'rgba(74, 217, 94, 0.5)',
+      scenes: [MarioPaintScene],
+    },
+  },
+  {
+    match: 'super mario odyssey',
+    theme: {
+      label: 'Super Mario Odyssey',
+      bgFrom: '#2a1f55',
+      bgTo: '#ffc06a',
+      primary: '#e23b3b',
+      secondary: '#ffd27a',
+      tertiary: '#7af0ff',
+      glow: 'rgba(224, 138, 74, 0.6)',
+      scenes: [SuperMarioOdysseyScene],
     },
   },
   {
