@@ -1102,6 +1102,41 @@ function LayoutSection() {
   );
 }
 
+/**
+ * Hover-tooltip copy for each panel id rendered in the lane editor.
+ * Many panels gate themselves on data (e.g. `objective` returns null
+ * when `current_objective` is blank, `bid-war` returns null when no
+ * incentive carries a bid-war payload). Without these hints, ticking
+ * a panel and seeing nothing change in the omnibar feels broken when
+ * actually the operator just needs to populate the underlying field.
+ *
+ * Keep entries short — they render as native browser tooltips, so
+ * length isn't a hard limit but anything long enough to wrap reads
+ * awkwardly in the tooltip box.
+ */
+const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
+  // Status / top-lane panels
+  'current-game': 'Currently-playing game title + runners. Hidden when no entry is set as currently-playing.',
+  'playtime': 'Live playtime for the current game. Hidden when no entry is currently-playing.',
+  'custom-objective': 'Operator-set free-text objective from the live entry — use this for ad-hoc objectives that aren\'t in the per-game library. Hidden when the "Current objective" text field is blank — set it in the Live Show tab below.',
+  'next-objective': 'Next outstanding objective from the game library, in list order. Hidden when every objective is obtained or the game has none.',
+  'objective-checklist': 'Icon strip of the current run-section\'s objectives (coloured = obtained, greyed = outstanding). Auto-advances to the next section once everything in this one is done. Hidden when the game has no objectives.',
+  'setpiece': 'Boss / raid / setpiece banner — hidden unless the live entry has a setpiece in progress.',
+  'items-collected': 'Item icon strip for the live game. Hidden when the game has no items defined.',
+  'pre-stream': 'Pre-event countdown + upcoming cards. Auto-shows when no entry is currently-playing; auto-hides once one is.',
+
+  // Ticker / bottom-lane panels
+  'schedule-next': 'The next upcoming schedule entry. Hidden once the lineup is empty.',
+  'donation-reel': 'Most-recent donor reel (donor name + amount). Hidden when the event has no donations.',
+  'incentives': 'Active incentive progress bar. Hidden when no incentive is currently open.',
+  'bid-war': 'Bid-war option stack. Hidden unless an incentive payload carries ≥2 options.',
+  'milestones': 'Next un-reached milestone + progress. Hidden once every milestone is reached.',
+  'raffle': 'Active raffle name + entry count. Hidden when no raffle is open.',
+  'total-raised': 'Cumulative event total — always shown when an event is active.',
+  'charity-info': 'Rotating charity blurbs from the linked beneficiaries.',
+  'local-time': 'Wall-clock local time — always renders.',
+};
+
 function LanePanelEditor({
   title,
   lane,
@@ -1127,8 +1162,13 @@ function LanePanelEditor({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem 0.6rem', marginTop: '0.6rem' }}>
         {ALL_PANEL_IDS.map((id) => {
           const checked = draft.panels.has(id);
+          const description = PANEL_DESCRIPTIONS[id];
           return (
-            <label key={id} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', cursor: 'pointer' }}>
+            <label
+              key={id}
+              style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', cursor: 'pointer' }}
+              title={description ?? id}
+            >
               <input
                 type="checkbox"
                 checked={checked}

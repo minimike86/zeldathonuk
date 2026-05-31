@@ -40,7 +40,8 @@ import type {
 import './panels/CurrentGamePanel';
 import './panels/PlaytimePanel';
 import './panels/PreStreamPanel';
-import './panels/ObjectivePanel';
+import './panels/CustomObjectivePanel';
+import './panels/NextObjectivePanel';
 import './panels/ObjectiveChecklistPanel';
 import './panels/SetpiecePanel';
 import './panels/TotalRaisedPanel';

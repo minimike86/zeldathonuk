@@ -12,7 +12,7 @@ import type { LaneConfig } from '../lanes/Lane';
  *   {
  *     "lanes": [
  *       { "id": "top",    "mode": "rotating", "intervalMs": 8000,
- *         "panels": ["current-game", "playtime", "objective"] },
+ *         "panels": ["current-game", "playtime", "custom-objective"] },
  *       { "id": "bottom", "mode": "rotating", "intervalMs": 5000,
  *         "panels": ["schedule-next", "donation-reel", ...] }
  *     ]
@@ -30,14 +30,14 @@ const DEFAULT_TOP: LaneConfig = {
   // `pre-stream` last in the list as the pre-show / between-games
   // fallback. Its `selectData` returns null the moment a schedule
   // entry is set as currently-playing, so it doesn't compete with
-  // current-game / playtime / objective during a live segment —
+  // current-game / playtime / custom-objective during a live segment —
   // it only activates when the lane would otherwise be empty
   // (pre-event countdown, or the gap while the operator picks the
   // next game). Without a fallback like this, the top lane sits
   // blank pre-stream because every other panel returns null.
   panels: [
-    'current-game', 'playtime', 'objective', 'objective-checklist', 'setpiece',
-    'items-collected', 'pre-stream',
+    'current-game', 'playtime', 'custom-objective', 'next-objective',
+    'objective-checklist', 'setpiece', 'items-collected', 'pre-stream',
   ],
 };
 
@@ -64,8 +64,8 @@ export const DEFAULT_LAYOUT: OmnibarLayoutConfig = {
 
 export const ALL_PANEL_IDS = [
   // Status / top-lane affinity
-  'current-game', 'playtime', 'objective', 'objective-checklist', 'setpiece',
-  'items-collected', 'pre-stream',
+  'current-game', 'playtime', 'custom-objective', 'next-objective',
+  'objective-checklist', 'setpiece', 'items-collected', 'pre-stream',
   // Ticker / bottom-lane affinity
   'schedule-next', 'donation-reel', 'incentives', 'bid-war', 'milestones',
   'raffle', 'total-raised', 'charity-info', 'local-time',
@@ -241,9 +241,14 @@ function pickLane(lanes: RawLane[], id: 'top' | 'bottom'): LaneConfig | null {
   // Filter out unknown panel ids so a stale layout doesn't crash —
   // panels we don't have a registered handler for are silently dropped.
   const panels = Array.isArray(lane.panels)
-    ? lane.panels.filter(
-        (p): p is string => typeof p === 'string' && KNOWN_IDS.has(p),
-      )
+    ? lane.panels
+        .filter((p): p is string => typeof p === 'string')
+        // Legacy: `objective` was renamed to `custom-objective` so the
+        // checkbox label matches what operators actually use it for.
+        // Translate before the KNOWN_IDS filter so saved layouts from
+        // before the rename keep working without a DB migration.
+        .map((p) => (p === 'objective' ? 'custom-objective' : p))
+        .filter((p) => KNOWN_IDS.has(p))
     : [];
   // An explicitly-saved lane with no panels is a deliberate "clear
   // this lane" — collapse to the pre-stream fallback rather than

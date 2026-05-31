@@ -3,10 +3,12 @@ import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 
 /**
- * What the runner is trying to do RIGHT NOW. Operator-set free text on
- * the active ScheduleEntry.current_objective field. Returns null when
- * the field is blank so the panel drops out of rotation entirely
- * instead of parking on an empty "objective: …" card.
+ * Custom objective — what the runner is trying to do RIGHT NOW, set by
+ * the operator as free text on the active ScheduleEntry.current_objective
+ * field. Used for ad-hoc objectives that aren't in the per-game library
+ * (e.g. "find the missing rupee", "100% completion sub-goal"). Returns
+ * null when the field is blank so the panel drops out of rotation
+ * entirely instead of parking on an empty "objective: …" card.
  *
  * The objective + "in {game}" hint can overflow a narrow rail, so the
  * body is wrapped in MarqueeOnOverflow — it scrolls only when measured
@@ -33,7 +35,7 @@ function Panel({ data }: PanelProps<Data>) {
 }
 
 registerPanel<Data>({
-  id: 'objective',
+  id: 'custom-objective',
   component: Panel,
   selectData: (feed) => {
     const entry = feed.currentlyPlaying?.schedule_entry_detail;

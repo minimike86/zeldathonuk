@@ -5,14 +5,20 @@ import { registerPanel, type PanelProps } from './registry';
 import type { GameObjective } from '@/lib/obsApi';
 
 /**
- * Live objectives checklist for the current game: the full per-game
- * objective library rendered as an icon strip — coloured when obtained,
- * greyed when still outstanding. Skipped objectives (operator marked "not
- * needed this run") are dropped entirely and excluded from the count.
+ * Live objectives checklist for the current game, scoped to the
+ * **current run-section** so the rail isn't trying to scroll through
+ * a 30-objective library at once. The "current section" is the group
+ * containing the next still-outstanding objective; once every
+ * objective in that group is obtained, the panel automatically
+ * advances to the next group with outstanding work. Skipped
+ * objectives (operator marked "not needed this run") are dropped
+ * entirely and excluded from the count.
  *
- * Reads `entry.game.objectives` + the entry's obtained/skipped id-sets from
- * the feed. Hidden when the game has no objectives. The game name + strip
- * scroll via MarqueeOnOverflow when they overflow the rail.
+ * Falls back to `category` when `group` is blank — matches the
+ * fallback convention documented on GameObjective.group. Hidden
+ * when the game has no objectives. Game name + section label +
+ * tile strip scroll via MarqueeOnOverflow when they overflow the
+ * rail.
  */
 interface Row {
   objective: GameObjective;
@@ -21,13 +27,13 @@ interface Row {
 
 interface Data {
   gameTitle: string;
+  /** Current run-section label (e.g. "Prologue", "Endgame"). Null
+   *  when the active objectives have no group/category set, in which
+   *  case the panel renders without a section chip. */
+  sectionLabel: string | null;
   rows: Row[];
   obtainedCount: number;
   total: number;
-  /** First still-outstanding objective in list order (sorted by
-   *  `order` then `name`). Null when every active objective is
-   *  obtained — the panel renders "All done!" instead. */
-  nextUp: GameObjective | null;
 }
 
 const tileStyle = (obtained: boolean): CSSProperties => ({
@@ -44,32 +50,8 @@ function Panel({ data }: PanelProps<Data>) {
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <MarqueeOnOverflow>
           <span className="ob-text-strong">{data.gameTitle}</span>
-          {/* "Next" chip — calls out the very next outstanding
-            * objective in list order so viewers landing on the panel
-            * mid-rotation immediately see what the runner is working
-            * toward, without having to find the first colour tile in
-            * the strip. When everything's done it flips to a short
-            * celebratory cap instead. */}
-          {data.nextUp ? (
-            <span
-              className="ob-objective-next"
-              title={`Next: ${data.nextUp.name}`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-            >
-              <span className="ob-text-muted">Next:</span>
-              {data.nextUp.image_url && (
-                <span className="ob-item-icon" aria-hidden>
-                  <img src={data.nextUp.image_url} alt="" />
-                </span>
-              )}
-              <span className="ob-text-strong">{data.nextUp.name}</span>
-            </span>
-          ) : (
-            <span className="ob-text-strong">All done!</span>
+          {data.sectionLabel && (
+            <span className="ob-text-muted">· {data.sectionLabel}</span>
           )}
           {data.rows.map(({ objective, obtained }) => (
             <span key={objective.id} style={tileStyle(obtained)} title={objective.name}>
@@ -107,20 +89,30 @@ registerPanel<Data>({
       .slice()
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
     if (active.length === 0) return null;
-    const rows = active.map((objective) => ({
+    // Group key: `group` is the primary section label; `category`
+    // is the documented fallback when group is blank; '' (empty
+    // string) groups all label-less objectives together so they at
+    // least render as one cohort instead of one-per-tile.
+    const groupKey = (o: GameObjective): string =>
+      o.group?.trim() || o.category?.trim() || '';
+    // Pick the section to show: the one containing the next
+    // outstanding objective. Once that section is done the runner
+    // has rolled into the next section automatically. If the whole
+    // run is complete, fall back to the last section so the panel
+    // still renders a 100%-green strip rather than disappearing.
+    const nextUp = active.find((o) => !obtained.has(o.id));
+    const targetGroup = nextUp ? groupKey(nextUp) : groupKey(active[active.length - 1]);
+    const sectionObjectives = active.filter((o) => groupKey(o) === targetGroup);
+    const rows = sectionObjectives.map((objective) => ({
       objective,
       obtained: obtained.has(objective.id),
     }));
-    // First still-outstanding objective in list order (the same sort
-    // applied to `active` above) — used by the panel's "Next: …"
-    // chip so viewers see what the runner is heading for next.
-    const nextUp = active.find((o) => !obtained.has(o.id)) ?? null;
     return {
       gameTitle: entry.display_title,
+      sectionLabel: targetGroup || null,
       rows,
       obtainedCount: rows.filter((r) => r.obtained).length,
-      total: active.length,
-      nextUp,
+      total: sectionObjectives.length,
     };
   },
   minDurationMs: 7000,
