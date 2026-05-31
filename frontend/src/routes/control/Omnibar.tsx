@@ -3417,14 +3417,62 @@ function IncentiveRow({ incentive }: { incentive: Incentive }) {
 // ── 4. Milestones ────────────────────────────────────────────────────────
 
 const MILESTONE_COLUMNS: TableColumn<Milestone>[] = [
-  { id: 'name',      header: 'Name',       sortValue: (m) => m.name,                            initialWidth: 200 },
-  { id: 'threshold', header: 'Threshold',  sortValue: (m) => Number(m.threshold_amount) || 0,   initialWidth: 130 },
-  { id: 'message',   header: 'Message',    sortValue: (m) => m.celebration_message,             initialWidth: 260 },
-  { id: 'audio_url', header: 'Audio URL',  sortValue: (m) => m.audio_url,                       initialWidth: 240 },
-  { id: 'order',     header: 'Order',      sortValue: (m) => m.order,                           initialWidth: 80 },
-  { id: 'state',     header: 'State',      sortValue: (m) => (m.is_reached ? 0 : 1),            initialWidth: 140 },
-  { id: 'actions',   header: '',                                                                initialWidth: 480 },
+  // Initial widths trimmed so the row fits a typical control-panel
+  // viewport (~1280px) without needing horizontal scroll. Audio URL
+  // and message column widths now lean on the operator's resize-bar
+  // adjustments (persisted via useTableControls's storage key) if they
+  // want longer URLs to be more visible by default.
+  { id: 'name',      header: 'Name',       sortValue: (m) => m.name,                            initialWidth: 150 },
+  { id: 'threshold', header: 'Threshold',  sortValue: (m) => Number(m.threshold_amount) || 0,   initialWidth: 100 },
+  { id: 'message',   header: 'Message',    sortValue: (m) => m.celebration_message,             initialWidth: 180 },
+  { id: 'audio_url', header: 'Audio URL',  sortValue: (m) => m.audio_url,                       initialWidth: 170 },
+  // Colour pickers cluster — five small swatches per row. Sort by
+  // "has any colour set" so themed milestones float to the top of the
+  // sort.
+  { id: 'colours',   header: 'Colours',    sortValue: (m) =>
+      (m.tag_color_from || m.tag_color_to || m.heading_color
+        || m.sub_color || m.flash_color) ? 0 : 1,                                                initialWidth: 170 },
+  { id: 'order',     header: '#',          sortValue: (m) => m.order,                           initialWidth: 56 },
+  { id: 'state',     header: 'State',      sortValue: (m) => (m.is_reached ? 0 : 1),            initialWidth: 110 },
+  { id: 'actions',   header: '',                                                                initialWidth: 220 },
 ];
+
+/** localStorage slot for the per-browser default celebration colours
+ *  the operator wants every new milestone to pick up. Persisting keeps
+ *  the defaults stable across page refreshes / tab swaps so the
+ *  operator only configures the palette once per session. */
+const MILESTONE_DEFAULTS_KEY = 'control:milestone-default-colours-v1';
+
+const EMPTY_DEFAULTS = {
+  tag_color_from: '',
+  tag_color_to: '',
+  heading_color: '',
+  sub_color: '',
+  flash_color: '',
+};
+
+type MilestoneDefaults = typeof EMPTY_DEFAULTS;
+
+/** Read the saved defaults out of localStorage. Tolerant of malformed
+ *  / older shapes — anything that doesn't look like the expected
+ *  string-keyed record gets ignored and the empty defaults returned. */
+function loadDefaults(): MilestoneDefaults {
+  if (typeof window === 'undefined') return EMPTY_DEFAULTS;
+  try {
+    const raw = window.localStorage.getItem(MILESTONE_DEFAULTS_KEY);
+    if (!raw) return EMPTY_DEFAULTS;
+    const parsed = JSON.parse(raw) as Partial<MilestoneDefaults>;
+    return {
+      tag_color_from: typeof parsed.tag_color_from === 'string' ? parsed.tag_color_from : '',
+      tag_color_to:   typeof parsed.tag_color_to   === 'string' ? parsed.tag_color_to   : '',
+      heading_color:  typeof parsed.heading_color  === 'string' ? parsed.heading_color  : '',
+      sub_color:      typeof parsed.sub_color      === 'string' ? parsed.sub_color      : '',
+      flash_color:    typeof parsed.flash_color    === 'string' ? parsed.flash_color    : '',
+    };
+  } catch {
+    return EMPTY_DEFAULTS;
+  }
+}
 
 function MilestonesSection() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
@@ -3439,6 +3487,41 @@ function MilestonesSection() {
     threshold_amount: '1000.00',
     celebration_message: 'Halfway to the moon!',
   });
+  // Default celebration colours — applied to every new milestone the
+  // operator creates and (via the "Apply to empty" button below)
+  // optionally back-filled onto existing milestones with unset slots.
+  // Persisted in localStorage so the operator's palette survives a
+  // refresh / cross-tab nav.
+  const [defaults, setDefaultsState] = useState<MilestoneDefaults>(() => loadDefaults());
+  const setDefaults = (next: MilestoneDefaults | ((prev: MilestoneDefaults) => MilestoneDefaults)) => {
+    setDefaultsState((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      try {
+        window.localStorage.setItem(MILESTONE_DEFAULTS_KEY, JSON.stringify(resolved));
+      } catch { /* ignore storage failures */ }
+      return resolved;
+    });
+  };
+  // Bridge so the existing <MilestoneColourCluster> (which expects a
+  // MilestoneDraft-keyed onChange) can write into the defaults state.
+  // The cluster only ever writes the five colour keys we care about,
+  // so casting through Partial<MilestoneDraft> is safe.
+  const setDefaultColour = <K extends keyof MilestoneDefaults>(key: K, value: MilestoneDefaults[K]) => {
+    setDefaults((d) => ({ ...d, [key]: value }));
+  };
+  // A MilestoneDraft-shaped object so <MilestoneColourCluster> can
+  // render the defaults — only the five colour keys are read.
+  const defaultsAsDraft = {
+    name: '',
+    threshold_amount: '',
+    celebration_message: '',
+    audio_url: '',
+    ...defaults,
+    order: '',
+  } as MilestoneDraft;
+  const hasDefaults =
+    !!defaults.tag_color_from || !!defaults.tag_color_to ||
+    !!defaults.heading_color || !!defaults.sub_color || !!defaults.flash_color;
 
   const create = async () => {
     if (!event) return;
@@ -3449,7 +3532,57 @@ function MilestonesSection() {
         name: form.name,
         threshold_amount: form.threshold_amount,
         celebration_message: form.celebration_message,
+        // Per-create-form colour overrides come straight from the
+        // saved defaults. Empty strings are spread but the backend
+        // model defaults the fields to '' anyway so they're no-ops.
+        tag_color_from: defaults.tag_color_from,
+        tag_color_to:   defaults.tag_color_to,
+        heading_color:  defaults.heading_color,
+        sub_color:      defaults.sub_color,
+        flash_color:    defaults.flash_color,
       });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Fill blank colour slots on existing milestones from the saved
+   *  defaults. Each row is patched independently — a row with all
+   *  five slots already populated is skipped, a row with some blanks
+   *  gets only those slots written. */
+  const applyDefaultsToEmpty = async () => {
+    if (!milestones?.length || !hasDefaults) return;
+    const updates = milestones.flatMap((m) => {
+      const patch: Partial<{
+        tag_color_from: string;
+        tag_color_to: string;
+        heading_color: string;
+        sub_color: string;
+        flash_color: string;
+      }> = {};
+      if (!m.tag_color_from && defaults.tag_color_from) patch.tag_color_from = defaults.tag_color_from;
+      if (!m.tag_color_to   && defaults.tag_color_to)   patch.tag_color_to   = defaults.tag_color_to;
+      if (!m.heading_color  && defaults.heading_color)  patch.heading_color  = defaults.heading_color;
+      if (!m.sub_color      && defaults.sub_color)      patch.sub_color      = defaults.sub_color;
+      if (!m.flash_color    && defaults.flash_color)    patch.flash_color    = defaults.flash_color;
+      if (Object.keys(patch).length === 0) return [];
+      return [{ id: m.id, patch }];
+    });
+    if (updates.length === 0) {
+      alert('Every milestone already has its colour slots set — nothing to back-fill.');
+      return;
+    }
+    if (!confirm(
+      `Apply default colours to ${updates.length} milestone${updates.length === 1 ? '' : 's'}? ` +
+        `Only EMPTY colour slots are overwritten; existing per-milestone colours are left alone.`,
+    )) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await Promise.all(
+        updates.map(({ id, patch }) => obsApi.updateMilestone(id, patch)),
+      );
     } finally {
       setBusy(false);
     }
@@ -3466,6 +3599,72 @@ function MilestonesSection() {
             Fixed donation thresholds. <code>Mark reached</code> sets the
             timestamp and the omnibar fires a celebration.
           </p>
+
+          {/* Default celebration colours. The five swatches mirror the
+            * per-row cluster below; whatever's set here is applied to
+            * every new milestone the operator creates. The "Apply to
+            * empty" button back-fills any blank slot on existing
+            * milestones without touching slots that already have a
+            * per-row override. Persists in localStorage so the
+            * defaults survive a refresh / tab swap. */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.5rem 0.75rem',
+              marginBottom: '0.85rem',
+              borderRadius: 6,
+              background: 'rgba(0, 0, 0, 0.18)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+              <span className="text-white-50" style={{ fontSize: '0.75rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Default colours
+              </span>
+              <span className="text-white-50" style={{ fontSize: '0.75rem', maxWidth: 280 }}>
+                Applied to every new milestone you add below.
+              </span>
+            </div>
+            <MilestoneColourCluster
+              busy={busy}
+              draft={defaultsAsDraft}
+              onChange={(key, value) => {
+                if (
+                  key === 'tag_color_from' || key === 'tag_color_to' ||
+                  key === 'heading_color' || key === 'sub_color' || key === 'flash_color'
+                ) {
+                  setDefaultColour(key, value as string);
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-light"
+              disabled={busy || !hasDefaults || !(milestones?.length)}
+              onClick={applyDefaultsToEmpty}
+              title={
+                hasDefaults
+                  ? 'Copy each default colour into any milestone that has THAT slot blank. Slots already set are not overwritten.'
+                  : 'Pick at least one default colour first'
+              }
+            >
+              Apply to empty rows
+            </button>
+            {hasDefaults && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-light"
+                disabled={busy}
+                onClick={() => setDefaults(EMPTY_DEFAULTS)}
+                title="Clear all five default slots — new milestones will fall back to the theme defaults"
+              >
+                Clear defaults
+              </button>
+            )}
+          </div>
 
           <div className="control-btn-row" style={{ flexWrap: 'wrap' }}>
             <label className="d-flex flex-column flex-grow-1" style={{ minWidth: 200 }}>
@@ -3513,12 +3712,18 @@ function MilestonesSection() {
 }
 
 function MilestonesTable({ rows }: { rows: Milestone[] }) {
-  const ctrl = useTableControls(rows, MILESTONE_COLUMNS, 'control:milestones-v1');
+  const ctrl = useTableControls(rows, MILESTONE_COLUMNS, 'control:milestones-v2');
   return (
     <div>
       <ctrl.FilterInput placeholder="Filter milestones…" />
       <div style={{ overflowX: 'auto' }}>
-        <table className="control-table" style={{ minWidth: 1100, tableLayout: 'fixed' }}>
+        {/* No minWidth on the table — the column widths above are
+          * sized to fit a ~1280px viewport without horizontal scroll,
+          * and `tableLayout: fixed` keeps the column widths honoured
+          * so a long Audio URL doesn't stretch the row. Bumping the
+          * storage key (v1 → v2) drops any prior persisted widths
+          * that were set against the old 480px-actions layout. */}
+        <table className="control-table" style={{ width: '100%', tableLayout: 'fixed' }}>
           <colgroup>
             {MILESTONE_COLUMNS.map((c) => <col key={c.id} style={ctrl.colStyle(c.id)} />)}
           </colgroup>
@@ -3552,7 +3757,113 @@ interface MilestoneDraft {
   threshold_amount: string;
   celebration_message: string;
   audio_url: string;
+  tag_color_from: string;
+  tag_color_to: string;
+  heading_color: string;
+  sub_color: string;
+  flash_color: string;
   order: string;
+}
+
+/** Five-swatch colour cluster rendered inside each milestone row.
+ *  Each slot pairs a native `<input type="color">` with a small clear-X
+ *  button so the operator can blank a slot back to "use theme default"
+ *  without typing an empty string by hand. The colour input only
+ *  accepts hex; blank fields render with a transparent-looking
+ *  checker so it's obvious nothing is set. */
+function MilestoneColourCluster({
+  busy,
+  draft,
+  onChange,
+}: {
+  busy: boolean;
+  draft: MilestoneDraft;
+  onChange: <K extends keyof MilestoneDraft>(key: K, value: MilestoneDraft[K]) => void;
+}) {
+  const slots: Array<{ key: keyof MilestoneDraft; title: string; label: string }> = [
+    { key: 'tag_color_from', title: 'Tag pill — top stop',    label: 'Tag from' },
+    { key: 'tag_color_to',   title: 'Tag pill — bottom stop', label: 'Tag to' },
+    { key: 'heading_color',  title: 'Headline colour',         label: 'Head' },
+    { key: 'sub_color',      title: 'Subhead colour',          label: 'Sub' },
+    { key: 'flash_color',    title: 'Flash overlay colour',    label: 'Flash' },
+  ];
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(5, auto)',
+        columnGap: '0.18rem',
+        rowGap: '0.18rem',
+        alignItems: 'center',
+        // The set-state X button overlays the swatch corner so the
+        // cluster keeps its 5-swatch row even on narrow columns
+        // rather than wrapping to a second line.
+      }}
+    >
+      {slots.map(({ key, title, label }) => {
+        const value = String(draft[key] ?? '');
+        const set = value.length > 0;
+        return (
+          <div
+            key={key}
+            title={title}
+            style={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}
+          >
+            <input
+              type="color"
+              disabled={busy}
+              // Default the picker to a safe value so it opens on something
+              // rather than the browser-default black when the field is
+              // empty. Changing the picker always WRITES a real value.
+              value={set ? value : '#ffd23a'}
+              onChange={(e) => onChange(key, e.target.value as MilestoneDraft[typeof key])}
+              style={{
+                width: 26,
+                height: 22,
+                padding: 0,
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderRadius: 3,
+                cursor: 'pointer',
+                // Faded when unset so the operator can scan a row and
+                // see at a glance which slots have colour customised.
+                opacity: set ? 1 : 0.4,
+              }}
+              aria-label={title}
+            />
+            {set && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onChange(key, '' as MilestoneDraft[typeof key])}
+                title={`Clear ${label}`}
+                aria-label={`Clear ${label}`}
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  width: 12,
+                  height: 12,
+                  padding: 0,
+                  border: '1px solid rgba(0,0,0,0.55)',
+                  borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.78)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                  fontSize: '0.65rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function milestoneDraft(m: Milestone): MilestoneDraft {
@@ -3561,6 +3872,11 @@ function milestoneDraft(m: Milestone): MilestoneDraft {
     threshold_amount: m.threshold_amount,
     celebration_message: m.celebration_message,
     audio_url: m.audio_url,
+    tag_color_from: m.tag_color_from,
+    tag_color_to: m.tag_color_to,
+    heading_color: m.heading_color,
+    sub_color: m.sub_color,
+    flash_color: m.flash_color,
     order: String(m.order),
   };
 }
@@ -3598,6 +3914,11 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
         threshold_amount: draft.threshold_amount.trim(),
         celebration_message: draft.celebration_message,
         audio_url: draft.audio_url.trim(),
+        tag_color_from: draft.tag_color_from.trim(),
+        tag_color_to: draft.tag_color_to.trim(),
+        heading_color: draft.heading_color.trim(),
+        sub_color: draft.sub_color.trim(),
+        flash_color: draft.flash_color.trim(),
         order: Number.isFinite(orderN) ? Math.max(0, Math.round(orderN)) : milestone.order,
       });
       setDirty(false);
@@ -3654,7 +3975,7 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
           value={draft.name}
           onChange={(e) => patch('name', e.target.value)}
           placeholder="Name"
-          style={{ width: '100%', minWidth: 140 }}
+          style={{ width: '100%' }}
         />
       </td>
       <td>
@@ -3665,7 +3986,7 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
           min="0"
           value={draft.threshold_amount}
           onChange={(e) => patch('threshold_amount', e.target.value)}
-          style={{ width: 110 }}
+          style={{ width: '100%' }}
         />
       </td>
       <td>
@@ -3675,7 +3996,7 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
           value={draft.celebration_message}
           onChange={(e) => patch('celebration_message', e.target.value)}
           placeholder="Halfway to the moon!"
-          style={{ width: '100%', minWidth: 200 }}
+          style={{ width: '100%' }}
         />
       </td>
       <td>
@@ -3685,7 +4006,21 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
           value={draft.audio_url}
           onChange={(e) => patch('audio_url', e.target.value)}
           placeholder="https://… (optional)"
-          style={{ width: '100%', minWidth: 200 }}
+          style={{ width: '100%' }}
+        />
+      </td>
+      <td>
+        {/* Per-milestone celebration colour overrides — five tiny
+          * swatch pickers laid out in a single row. Each is a native
+          * <input type="color"> with a clear-X next to it so the
+          * operator can unset a slot to fall back to the theme
+          * default. Order matches the CelebrationBanner cascade:
+          * tag-from, tag-to (pair makes a gradient), heading, sub,
+          * flash. */}
+        <MilestoneColourCluster
+          busy={busy}
+          draft={draft}
+          onChange={patch}
         />
       </td>
       <td>
@@ -3696,37 +4031,45 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
           min="0"
           value={draft.order}
           onChange={(e) => patch('order', e.target.value)}
-          style={{ width: 70 }}
+          style={{ width: '100%' }}
         />
       </td>
-      <td>
+      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {milestone.is_reached
-          ? <span className="text-success">REACHED · {fmtTime(milestone.reached_at!)}</span>
+          ? <span className="text-success" title={`Reached ${fmtTime(milestone.reached_at!)}`}>
+              ✓ Reached
+            </span>
           : <span>pending</span>}
       </td>
       <td style={{ whiteSpace: 'nowrap' }}>
-        <div style={{ display: 'inline-flex', gap: '0.35rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+        {/* Action cluster compressed to icon-only buttons with title
+          * tooltips. "Mark reached" and "Re-arm" toggle each other
+          * based on `is_reached` so only one shows per row, halving
+          * the column width without losing functionality. */}
+        <div style={{ display: 'inline-flex', gap: '0.2rem', flexWrap: 'nowrap', alignItems: 'center' }}>
           <button
             type="button"
-            className="btn btn-sm btn-bloodmoon"
+            className="btn btn-sm btn-bloodmoon trigger-icon-btn"
             disabled={!canSave}
             onClick={save}
-            title={dirty ? 'Commit pending edits' : 'No changes'}
+            title={dirty ? 'Save pending edits' : 'No changes'}
+            aria-label="Save"
           >
-            Save
+            ✓
           </button>
           <button
             type="button"
-            className="btn btn-sm btn-outline-light"
+            className="btn btn-sm btn-outline-light trigger-icon-btn"
             disabled={!dirty || busy}
             onClick={resetDraft}
             title="Discard pending edits"
+            aria-label="Reset edits"
           >
-            Reset
+            ↺
           </button>
           <button
             type="button"
-            className="btn btn-sm btn-outline-light"
+            className="btn btn-sm btn-outline-light trigger-icon-btn"
             disabled={busy || !draft.audio_url.trim()}
             onClick={() => {
               try {
@@ -3736,37 +4079,42 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
               } catch { /* ignore */ }
             }}
             title={draft.audio_url ? 'Play the fanfare audio locally' : 'Set an Audio URL to test'}
+            aria-label="Test audio"
           >
-            ▶ Test
+            ▶
           </button>
+          {milestone.is_reached ? (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-warning trigger-icon-btn"
+              disabled={busy}
+              onClick={resetReached}
+              title="Reset to pending so the celebration can fire again"
+              aria-label="Re-arm milestone"
+            >
+              ⟲
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-light trigger-icon-btn"
+              disabled={busy}
+              onClick={mark}
+              title="Mark this milestone reached now"
+              aria-label="Mark reached"
+            >
+              ★
+            </button>
+          )}
           <button
             type="button"
-            className="btn btn-sm btn-outline-light"
-            disabled={busy || milestone.is_reached}
-            onClick={mark}
-          >
-            Mark reached
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-warning"
-            disabled={busy || !milestone.is_reached}
-            onClick={resetReached}
-            title={
-              milestone.is_reached
-                ? 'Reset to pending so the celebration can fire again'
-                : 'Milestone is already pending — nothing to reset'
-            }
-          >
-            ⟲ Re-arm
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-danger"
+            className="btn btn-sm btn-outline-danger trigger-icon-btn"
             disabled={busy}
+            title="Delete milestone"
+            aria-label="Delete milestone"
             onClick={remove}
           >
-            Delete
+            ✕
           </button>
         </div>
       </td>

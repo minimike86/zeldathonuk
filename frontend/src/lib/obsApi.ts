@@ -646,6 +646,15 @@ export interface Milestone {
   celebration_message: string;
   reached_at: string | null;
   audio_url: string;
+  /** Optional celebration colour overrides — passed through to the
+   *  omnibar CelebrationBanner when the milestone is reached. Empty
+   *  strings fall back to the active theme's omnibar_celebration_*
+   *  defaults, and then to the baked-in gold-flash mood. */
+  tag_color_from: string;
+  tag_color_to: string;
+  heading_color: string;
+  sub_color: string;
+  flash_color: string;
   order: number;
   is_reached: boolean;
   created_at: string;
@@ -1441,6 +1450,15 @@ export const obsApi = {
     celebration_message?: string;
     audio_url?: string;
     order?: number;
+    // Per-milestone celebration colour overrides. All optional —
+    // blanks fall back to the active theme's omnibar_celebration_*
+    // defaults, then to the baked-in gold-flash mood. See
+    // CelebrationBanner.readColourOverrides for the resolution chain.
+    tag_color_from?: string;
+    tag_color_to?: string;
+    heading_color?: string;
+    sub_color?: string;
+    flash_color?: string;
   }) => api<Milestone>('/api/milestones/', { method: 'POST', body }),
   updateMilestone: (
     id: number,
@@ -1450,6 +1468,11 @@ export const obsApi = {
       celebration_message: string;
       audio_url: string;
       order: number;
+      tag_color_from: string;
+      tag_color_to: string;
+      heading_color: string;
+      sub_color: string;
+      flash_color: string;
     }>,
   ) =>
     api<Milestone>(`/api/milestones/${id}/`, { method: 'PATCH', body: patch }),

@@ -356,7 +356,7 @@ def stream_status(request: Request) -> Response:
 
 
 @api_view(['POST'])
-def push_schedule(_request: Request) -> Response:
+def push_schedule(_req: Request) -> Response:  # noqa: ARG001 — unused; named _req so it doesn't shadow the module-level _request() Helix helper
     """Replace the Twitch channel schedule with the active event's lineup."""
     # Token first — gives a clear "no token configured" message rather than the
     # (now auto-resolved) broadcaster id being the apparent blocker.

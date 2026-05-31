@@ -77,17 +77,47 @@ import './omnibar.css';
 const CELEBRATION_BASE_MS = 6200;
 
 // Pause between consecutive queued celebrations (e.g. one donation crossing
-// several milestones), so each banner reads as its own moment.
-const CELEBRATION_GAP_MS = 350;
+// several milestones), so each banner reads as its own moment. Bumped from
+// 350ms to 1.1s — a single donation can fire three or four milestones at
+// once, and the previous 350ms beat ran them together as one continuous
+// flash. Just over a second of empty lane between banners gives viewers
+// time to register the previous achievement before the next enters.
+const CELEBRATION_GAP_MS = 1100;
 
-/** A queued celebration takeover. `holdMs` is extra hold beyond the base
- *  choreography; `audioUrl` (when set) plays as the banner enters. */
+// Extra hold added on top of CELEBRATION_BASE_MS for milestone celebrations
+// specifically. Milestones tend to carry long event-defined headlines
+// ("£25,000 Milestone — Halfway to the moon!") whose WaveText reveal can
+// still be unwrapping when the default 6.2s choreography starts its exit.
+// 2.5s of extra dwell lets the headline + subhead settle and gives
+// viewers time to actually read them before the bar resets.
+const MILESTONE_CELEBRATION_HOLD_MS = 2500;
+
+/** A queued celebration takeover.
+ *
+ *  `holdMs`         — extra hold beyond the base choreography.
+ *  `audioUrl`       — fanfare to play when the banner mounts.
+ *  `audioVolume`    — playback gain (default 0.85).
+ *  `audioDelayMs`   — defer audio play by this many ms after the
+ *                     banner enters. Default 0 keeps the legacy
+ *                     "play on enter" behaviour; milestones pass a
+ *                     non-zero value so the fanfare lands with the
+ *                     headline WaveText reveal rather than during
+ *                     the tag pill's slide-in.
+ */
 interface CelebrationItem {
   reason: CelebrationReason;
   holdMs: number;
   audioUrl?: string;
   audioVolume?: number;
+  audioDelayMs?: number;
 }
+
+/** When the milestone (or any) audio should kick in relative to the
+ *  banner mounting. Matches the WaveText `startDelayMs` in
+ *  CelebrationBanner — tag arrow lands at t≈2400ms, headline reveal
+ *  starts at t≈2500ms, so the fanfare lands with the headline rather
+ *  than during the silent tag slide-in. */
+const CELEBRATION_AUDIO_WAVE_DELAY_MS = 2500;
 
 export function Omnibar() {
   return (
@@ -155,6 +185,11 @@ function OmnibarInner() {
   const celebrationQueueRef = useRef<CelebrationItem[]>([]);
   const celebratingActiveRef = useRef(false);
   const celebrationTimerRef = useRef<number | null>(null);
+  // Separate timer for the deferred fanfare play (when audioDelayMs > 0)
+  // so we can cancel a queued play if the celebration is interrupted
+  // before the delay elapses — without it, the audio would still kick
+  // in even after the banner has been torn down.
+  const celebrationAudioTimerRef = useRef<number | null>(null);
   const advanceCelebrationRef = useRef<() => void>(() => {});
 
   const startCelebration = useCallback(
@@ -165,10 +200,32 @@ function OmnibarInner() {
       // Bump the nonce so the celebrate fullbar remounts and the flash +
       // banner entrance animations restart for this item.
       setCelebrateNonce((n) => n + 1);
+      // Clear any stale deferred-audio timer from a previous item so a
+      // back-to-back celebration doesn't fire the prior item's fanfare
+      // late.
+      if (celebrationAudioTimerRef.current !== null) {
+        window.clearTimeout(celebrationAudioTimerRef.current);
+        celebrationAudioTimerRef.current = null;
+      }
       if (item.audioUrl) {
-        const audio = new Audio(item.audioUrl);
-        audio.volume = item.audioVolume ?? 0.85;
-        audio.play().catch(() => {});
+        const playFanfare = () => {
+          const audio = new Audio(item.audioUrl);
+          audio.volume = item.audioVolume ?? 0.85;
+          audio.play().catch(() => {});
+        };
+        const delay = item.audioDelayMs ?? 0;
+        if (delay > 0) {
+          // Delay the fanfare so it lands at the same moment the
+          // WaveText reveal kicks off — the tag arrow's slide-in is
+          // visual-only; pairing audio with the reveal gives viewers
+          // a sound cue for the headline they're about to read.
+          celebrationAudioTimerRef.current = window.setTimeout(() => {
+            celebrationAudioTimerRef.current = null;
+            playFanfare();
+          }, delay);
+        } else {
+          playFanfare();
+        }
       }
       // After this item's choreography, advance to the next (or finish).
       celebrationTimerRef.current = window.setTimeout(
@@ -214,6 +271,9 @@ function OmnibarInner() {
     () => () => {
       if (celebrationTimerRef.current !== null) {
         window.clearTimeout(celebrationTimerRef.current);
+      }
+      if (celebrationAudioTimerRef.current !== null) {
+        window.clearTimeout(celebrationAudioTimerRef.current);
       }
     },
     [],
@@ -316,10 +376,36 @@ function OmnibarInner() {
     // Queue it — a single donation can cross several milestones at once, and
     // each should get its own flash + banner + fanfare in sequence. The
     // optional per-milestone fanfare audio plays as that banner enters.
+    //
+    // Per-milestone colour overrides ride alongside the milestone object
+    // on the payload. CelebrationBanner reads `payload.tag_color_from`
+    // / `_to`, `payload.heading_color`, `payload.sub_color`; the
+    // `flash_color` is read by the wrapper in Omnibar that sets the
+    // `--ob-celebrate-flash-color` CSS var. Empty strings are
+    // intentionally NOT spread so the banner's fallback chain
+    // (payload → theme default → baked-in gold) still kicks in.
+    const m = e.milestone;
+    const colourPayload: Record<string, string> = {};
+    if (m.tag_color_from) colourPayload.tag_color_from = m.tag_color_from;
+    if (m.tag_color_to) colourPayload.tag_color_to = m.tag_color_to;
+    if (m.heading_color) colourPayload.heading_color = m.heading_color;
+    if (m.sub_color) colourPayload.sub_color = m.sub_color;
+    if (m.flash_color) colourPayload.flash_color = m.flash_color;
     enqueueCelebration({
-      reason: { kind: 'milestone-reached', payload: { milestone: e.milestone } },
-      holdMs: 0, // default 6.2s choreography
+      reason: {
+        kind: 'milestone-reached',
+        payload: { milestone: m, ...colourPayload },
+      },
+      // Hold past the default 6.2s choreography so the WaveText reveal
+      // on long milestone titles + the subhead get a clean read window
+      // before the body wipes out (see MILESTONE_CELEBRATION_HOLD_MS).
+      holdMs: MILESTONE_CELEBRATION_HOLD_MS,
       audioUrl: e.milestone.audio_url || undefined,
+      // Defer the fanfare until the tag arrow has slid in and the
+      // headline WaveText is about to start. Without this delay the
+      // sound plays during the silent tag entrance, so viewers hear
+      // the celebration before they can read what it's celebrating.
+      audioDelayMs: CELEBRATION_AUDIO_WAVE_DELAY_MS,
     });
   });
   useBusSubscription('incentive-unlocked', (e) => {

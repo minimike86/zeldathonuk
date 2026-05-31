@@ -57,10 +57,20 @@ class Command(BaseCommand):
                                   '(wrong callback or failed/revoked state).')
         parser.add_argument('--dry-run', action='store_true',
                              help='Show what would change without calling Twitch to create/delete.')
+        parser.add_argument('--list', action='store_true',
+                             help='List current subscriptions + statuses and exit (read-only). '
+                                  'Only needs TWITCH_CLIENT_ID/SECRET.')
 
     def handle(self, *args, **opts):
-        for name in ('TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET',
-                     'TWITCH_EVENTSUB_SECRET', 'TWITCH_EVENTSUB_CALLBACK_URL'):
+        # Listing is read-only and only needs the app credentials.
+        for name in ('TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'):
+            if not getattr(settings, name, ''):
+                raise CommandError(f'{name} is not set — configure it first.')
+        if opts['list']:
+            self._list()
+            return
+
+        for name in ('TWITCH_EVENTSUB_SECRET', 'TWITCH_EVENTSUB_CALLBACK_URL'):
             if not getattr(settings, name, ''):
                 raise CommandError(f'{name} is not set — configure it first.')
         callback = settings.TWITCH_EVENTSUB_CALLBACK_URL.strip()
@@ -147,3 +157,23 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'\n{verb}. created {created}, kept {skipped}, pruned {pruned}, failed {failed}.'
         ))
+
+    def _list(self):
+        """Read-only: print every EventSub subscription + status + callback."""
+        try:
+            subs = twitch.list_eventsub_subscriptions()
+        except twitch.TwitchAuthError as exc:
+            raise CommandError(str(exc))
+        if not subs:
+            self.stdout.write('No EventSub subscriptions registered.')
+            return
+        from collections import Counter
+        counts = Counter(s.get('status') for s in subs)
+        for s in sorted(subs, key=lambda x: (x.get('status', ''), x.get('type', ''))):
+            status = s.get('status', '?')
+            callback = (s.get('transport') or {}).get('callback', '')
+            line = f'  {status:38} {s.get("type"):34} {callback}'
+            style = self.style.SUCCESS if status == 'enabled' else self.style.ERROR
+            self.stdout.write(style(line))
+        summary = ', '.join(f'{k}={v}' for k, v in counts.items())
+        self.stdout.write(self.style.SUCCESS(f'\n{len(subs)} subscription(s): {summary}'))

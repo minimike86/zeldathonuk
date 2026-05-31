@@ -1701,6 +1701,41 @@ class Milestone(models.Model):
                   'this once when the milestone is crossed. Absolute URL '
                   'or site-relative path.',
     )
+    # ── Per-milestone celebration colours ──────────────────────────────
+    # When the milestone is reached the omnibar fires a celebration
+    # takeover (see CelebrationBanner). These fields let the operator
+    # colour-code each milestone's banner so e.g. the £5k flash is
+    # green and the £25k flash is purple — useful when grouping
+    # milestones into tiers. All optional — blanks fall back to the
+    # theme defaults (omnibar_celebration_* on ThemeSettings), then to
+    # the baked-in gold-flash mood.
+    tag_color_from = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Top stop of the celebration tag pill gradient. Sent '
+                  'to the banner as payload.tag_color_from. Pair with '
+                  'tag_color_to to get a gradient; either alone falls '
+                  'through to the theme default.',
+    )
+    tag_color_to = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Bottom stop of the celebration tag pill gradient.',
+    )
+    heading_color = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Headline (WaveText) colour during the celebration. '
+                  'Sent as payload.heading_color.',
+    )
+    sub_color = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Subhead (italic line under the headline) colour. '
+                  'Sent as payload.sub_color.',
+    )
+    flash_color = models.CharField(
+        max_length=40, default='', blank=True,
+        help_text='Top-anchored flash overlay colour. Sent as '
+                  'payload.flash_color — the banner mixes it at three '
+                  'alpha stops so any solid hex / rgb value works.',
+    )
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

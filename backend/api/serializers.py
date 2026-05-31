@@ -669,6 +669,8 @@ class MilestoneSerializer(serializers.ModelSerializer):
         model = models.Milestone
         fields = ['id', 'event', 'name', 'threshold_amount',
                   'celebration_message', 'reached_at', 'audio_url',
+                  'tag_color_from', 'tag_color_to',
+                  'heading_color', 'sub_color', 'flash_color',
                   'order', 'is_reached', 'created_at']
         read_only_fields = ['id', 'reached_at', 'is_reached', 'created_at']
 
