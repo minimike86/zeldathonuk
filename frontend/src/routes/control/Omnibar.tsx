@@ -3546,6 +3546,42 @@ function MilestonesSection() {
     }
   };
 
+  /**
+   * Reset every milestone to pending in one bulk action.
+   *
+   * Calls `obsApi.resetMilestone(id)` in parallel on every milestone
+   * — the same operation as the per-row ⟲ Re-arm button, just
+   * applied across the whole list. Clears `reached_at` on each row
+   * AND drops it from the omnibar's local `reachedIdsRef` set on
+   * the next poll, so the next time the running total crosses each
+   * threshold the celebration fires fresh.
+   *
+   * Use it for QA / preview, or to wipe the slate between events.
+   * Confirms before doing anything.
+   */
+  const resetAll = async () => {
+    if (!milestones?.length) return;
+    const reachedCount = milestones.filter((m) => m.is_reached).length;
+    if (
+      !confirm(
+        `Reset ALL ${milestones.length} milestone${
+          milestones.length === 1 ? '' : 's'
+        } back to pending?\n\n` +
+          (reachedCount > 0
+            ? `${reachedCount} of them are currently reached — those clear their timestamps and become eligible to celebrate again the next time the running total crosses each threshold.`
+            : "None are reached right now, so this won't change anything visible — it just nudges the omnibar's local state to match."),
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await Promise.all(milestones.map((m) => obsApi.resetMilestone(m.id)));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   /** Fill blank colour slots on existing milestones from the saved
    *  defaults. Each row is patched independently — a row with all
    *  five slots already populated is skipped, a row with some blanks
@@ -3599,6 +3635,26 @@ function MilestonesSection() {
             Fixed donation thresholds. <code>Mark reached</code> sets the
             timestamp and the omnibar fires a celebration.
           </p>
+
+          {/* Bulk reset every milestone to pending — same operation as
+            * the per-row ⟲ Re-arm button, applied across the whole
+            * list. Confirms before doing anything; disabled when no
+            * milestones are loaded or a row save is in flight. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-warning"
+              disabled={busy || !milestones?.length}
+              onClick={resetAll}
+              title={
+                milestones?.length
+                  ? 'Clear reached_at on every milestone so they re-fire next time the total crosses each threshold.'
+                  : 'No milestones to reset'
+              }
+            >
+              ⟲ Reset all to pending
+            </button>
+          </div>
 
           {/* Default celebration colours. The five swatches mirror the
             * per-row cluster below; whatever's set here is applied to
