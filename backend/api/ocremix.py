@@ -58,7 +58,13 @@ def discover_game_ids(session: requests.Session, query: str) -> list[int]:
 
 
 def _fetch_remix(session: requests.Session, ocr_id: str) -> dict | None:
-    r = session.get(f'https://ocremix.org/remix/{ocr_id}/', timeout=20)
+    try:
+        r = session.get(f'https://ocremix.org/remix/{ocr_id}/', timeout=20)
+    except requests.RequestException:
+        # Transient network error (timeout/reset) under concurrent load —
+        # treat as "couldn't fetch" so the caller counts it failed and a
+        # later idempotent re-run retries it, rather than aborting the chunk.
+        return None
     if not r.ok:
         return None
     # The URL lives in a double-quoted href, so apostrophes are legal path
@@ -112,8 +118,13 @@ def scrape_game(
     processed — used by the admin action to stream feedback and by the
     management command to print to stdout.
     """
-    base = session.get(f'https://ocremix.org/game/{game_id}', timeout=20)
     result = ScrapeResult(game_id=game_id, game_title=f'game-{game_id}')
+    try:
+        base = session.get(f'https://ocremix.org/game/{game_id}', timeout=20)
+    except requests.RequestException:
+        # Game page unreachable this pass — skip the whole game; a re-run picks
+        # it up. Never let one bad request kill a multi-game worker.
+        return result
     if not base.ok:
         return result
 
@@ -128,8 +139,11 @@ def scrape_game(
     # (…/game/67/legend-of-zelda-ocarina-of-time-n64); append /remixes to it.
     # Requesting /game/<id>/remixes WITHOUT the slug just 302s back to the
     # capped base page, hence resolving the slug from the redirect first.
-    listing = session.get(base.url.rstrip('/') + '/remixes', timeout=20)
-    page = listing.text if listing.ok else base.text
+    try:
+        listing = session.get(base.url.rstrip('/') + '/remixes', timeout=20)
+        page = listing.text if listing.ok else base.text
+    except requests.RequestException:
+        page = base.text  # fall back to the (capped) base listing
 
     # The "class=main" anchor markup has drifted, so the primary pattern often
     # finds nothing; the bare /remix/OCR\d+ fallback reliably yields every id on
@@ -148,29 +162,37 @@ def scrape_game(
             seen.append((rid, display))
 
     for i, (rid, display) in enumerate(seen[:limit]):
-        if models.AudioTrack.objects.filter(ocr_id=rid).exists():
-            result.skipped += 1
-            continue
-        track_data = _fetch_remix(session, rid)
-        if not track_data:
+        # One bad remix (network blip, or a duplicate ocr_id row that makes
+        # update_or_create raise MultipleObjectsReturned) must never abort the
+        # rest of the game — count it failed and move on.
+        try:
+            if models.AudioTrack.objects.filter(ocr_id=rid).exists():
+                result.skipped += 1
+                continue
+            track_data = _fetch_remix(session, rid)
+            if not track_data:
+                result.failed += 1
+                if on_progress:
+                    on_progress(f'{rid}: skipped (no MP3 URL)')
+                continue
+            models.AudioTrack.objects.update_or_create(
+                ocr_id=rid,
+                defaults={
+                    'title': track_data['title'] or display,
+                    'artist': track_data['artist'],
+                    'game': result.game_title,
+                    'source_url': track_data['mp3'],
+                    'enabled': True,
+                    'order': i,
+                },
+            )
+            result.added += 1
+            if on_progress:
+                on_progress(f'{rid}: {track_data["title"][:70]}')
+            time.sleep(delay)
+        except Exception as exc:  # noqa: BLE001 — keep the worker alive
             result.failed += 1
             if on_progress:
-                on_progress(f'{rid}: skipped (no MP3 URL)')
-            continue
-        models.AudioTrack.objects.update_or_create(
-            ocr_id=rid,
-            defaults={
-                'title': track_data['title'] or display,
-                'artist': track_data['artist'],
-                'game': result.game_title,
-                'source_url': track_data['mp3'],
-                'enabled': True,
-                'order': i,
-            },
-        )
-        result.added += 1
-        if on_progress:
-            on_progress(f'{rid}: {track_data["title"][:70]}')
-        time.sleep(delay)
+                on_progress(f'{rid}: error ({type(exc).__name__})')
 
     return result
