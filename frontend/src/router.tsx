@@ -1,110 +1,79 @@
+import type { ComponentType } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import { RootLayout } from '@/components/layout/RootLayout';
 import { ObsLayout } from '@/components/layout/ObsLayout';
 
-import { Home } from '@/routes/Home';
-import { About } from '@/routes/About';
-import { History } from '@/routes/History';
-import { Charity } from '@/routes/Charity';
-import { Schedule } from '@/routes/Schedule';
-import { Donations } from '@/routes/Donations';
-import { Incentives } from '@/routes/Incentives';
-import { Login } from '@/routes/Login';
-import { PrivacyPolicy } from '@/routes/PrivacyPolicy';
-import { TermsOfUse } from '@/routes/TermsOfUse';
-import { NotFound } from '@/routes/NotFound';
-import { GameTracking } from '@/routes/GameTracking';
-
-import { Obs } from '@/routes/obs/Obs';
-import { ObsLayoutRoute } from '@/routes/obs/Layout';
-import { UnifiedLayout } from '@/routes/obs/Unified';
-import { AudioCountdown } from '@/routes/obs/AudioCountdown';
-import { Brb } from '@/routes/obs/Brb';
-import { Tts } from '@/routes/obs/Tts';
-// Omnibar v2 lives in routes/obs/omnibar/. The v1 component
-// (routes/obs/Omnibar.tsx) is still imported transitively by
-// UnifiedLayout for /obs/full; only the standalone /obs/omnibar
-// route is on v2 today.
-import { Omnibar } from '@/routes/obs/omnibar/Omnibar';
-import { ChestAnnouncer } from '@/routes/obs/ChestAnnouncer';
-
-import { ControlLayout } from '@/routes/control/Dashboard';
-import { ScheduleControl } from '@/routes/control/Schedule';
-import { TimerControl } from '@/routes/control/Timer';
-import { ItemsControl } from '@/routes/control/Items';
-import { ObjectivesControl } from '@/routes/control/Objectives';
-import { DonationsControl } from '@/routes/control/Donations';
-import { BrbControl } from '@/routes/control/Brb';
-import { GamesControl } from '@/routes/control/Games';
-import { RunnersControl } from '@/routes/control/Runners';
-import { EventsControl } from '@/routes/control/Events';
-import { CharitiesControl } from '@/routes/control/Charities';
-import { RafflesControl } from '@/routes/control/Raffles';
-import { ThemeControl } from '@/routes/control/Theme';
-import { AudioControl } from '@/routes/control/Audio';
-import { OmnibarControl } from '@/routes/control/Omnibar';
-import { ChestAnnouncerControl } from '@/routes/control/ChestAnnouncer';
-
-import { Timers } from '@/routes/api/Timers';
-import { CountUp } from '@/routes/api/CountUp';
+/**
+ * Code-split route helper. Each page becomes its own lazily-loaded chunk via
+ * React Router's `lazy`, so the initial bundle is just the shell + the landed
+ * route — public visitors never download the (heavy) control-panel or OBS
+ * code, and the build stops shipping one ~1.3 MB monolith. The shell layouts
+ * (RootLayout / ObsLayout) stay eager so the nav/background paint instantly.
+ */
+const lazy = (loader: () => Promise<Record<string, unknown>>, name: string) => ({
+  lazy: async () => {
+    const mod = await loader();
+    return { Component: mod[name] as ComponentType };
+  },
+});
 
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
-      { path: '/', element: <Home /> },
-      { path: '/login', element: <Login /> },
-      { path: '/about', element: <About /> },
-      { path: '/history', element: <History /> },
-      { path: '/charity', element: <Charity /> },
-      { path: '/schedule', element: <Schedule /> },
-      { path: '/incentives', element: <Incentives /> },
-      { path: '/donations', element: <Donations /> },
+      { path: '/', ...lazy(() => import('@/routes/Home'), 'Home') },
+      { path: '/login', ...lazy(() => import('@/routes/Login'), 'Login') },
+      { path: '/about', ...lazy(() => import('@/routes/About'), 'About') },
+      { path: '/history', ...lazy(() => import('@/routes/History'), 'History') },
+      { path: '/charity', ...lazy(() => import('@/routes/Charity'), 'Charity') },
+      { path: '/schedule', ...lazy(() => import('@/routes/Schedule'), 'Schedule') },
+      { path: '/incentives', ...lazy(() => import('@/routes/Incentives'), 'Incentives') },
+      { path: '/donations', ...lazy(() => import('@/routes/Donations'), 'Donations') },
       { path: '/donors', element: <Navigate to="/donations" replace /> },
       { path: '/donate', element: <Navigate to="/donations" replace /> },
-      { path: '/privacy', element: <PrivacyPolicy /> },
+      { path: '/privacy', ...lazy(() => import('@/routes/PrivacyPolicy'), 'PrivacyPolicy') },
       { path: '/privacy-policy', element: <Navigate to="/privacy" replace /> },
-      { path: '/terms', element: <TermsOfUse /> },
+      { path: '/terms', ...lazy(() => import('@/routes/TermsOfUse'), 'TermsOfUse') },
       { path: '/terms-of-service', element: <Navigate to="/terms" replace /> },
     ],
   },
   {
     element: <ObsLayout />,
     children: [
-      { path: '/obs', element: <Obs /> },
-      { path: '/obs/layout/:layout', element: <ObsLayoutRoute /> },
-      { path: '/obs/full', element: <UnifiedLayout /> },
-      { path: '/obs/audio-countdown', element: <AudioCountdown /> },
-      { path: '/obs/brb', element: <Brb /> },
-      { path: '/obs/tts', element: <Tts /> },
-      { path: '/obs/omnibar', element: <Omnibar /> },
-      { path: '/obs/chest-announcer', element: <ChestAnnouncer /> },
-      { path: '/tracking/:game', element: <GameTracking /> },
-      { path: '/api/timers', element: <Timers /> },
-      { path: '/api/count-up', element: <CountUp /> },
+      { path: '/obs', ...lazy(() => import('@/routes/obs/Obs'), 'Obs') },
+      { path: '/obs/layout/:layout', ...lazy(() => import('@/routes/obs/Layout'), 'ObsLayoutRoute') },
+      { path: '/obs/full', ...lazy(() => import('@/routes/obs/Unified'), 'UnifiedLayout') },
+      { path: '/obs/audio-countdown', ...lazy(() => import('@/routes/obs/AudioCountdown'), 'AudioCountdown') },
+      { path: '/obs/brb', ...lazy(() => import('@/routes/obs/Brb'), 'Brb') },
+      { path: '/obs/tts', ...lazy(() => import('@/routes/obs/Tts'), 'Tts') },
+      { path: '/obs/omnibar', ...lazy(() => import('@/routes/obs/omnibar/Omnibar'), 'Omnibar') },
+      { path: '/obs/chest-announcer', ...lazy(() => import('@/routes/obs/ChestAnnouncer'), 'ChestAnnouncer') },
+      { path: '/tracking/:game', ...lazy(() => import('@/routes/GameTracking'), 'GameTracking') },
+      { path: '/api/timers', ...lazy(() => import('@/routes/api/Timers'), 'Timers') },
+      { path: '/api/count-up', ...lazy(() => import('@/routes/api/CountUp'), 'CountUp') },
     ],
   },
   {
     path: '/control',
-    element: <ControlLayout />,
+    ...lazy(() => import('@/routes/control/Dashboard'), 'ControlLayout'),
     children: [
-      { path: 'schedule', element: <ScheduleControl /> },
-      { path: 'timer', element: <TimerControl /> },
-      { path: 'items', element: <ItemsControl /> },
-      { path: 'objectives', element: <ObjectivesControl /> },
+      { path: 'schedule', ...lazy(() => import('@/routes/control/Schedule'), 'ScheduleControl') },
+      { path: 'timer', ...lazy(() => import('@/routes/control/Timer'), 'TimerControl') },
+      { path: 'items', ...lazy(() => import('@/routes/control/Items'), 'ItemsControl') },
+      { path: 'objectives', ...lazy(() => import('@/routes/control/Objectives'), 'ObjectivesControl') },
       { path: 'objective', element: <Navigate to="/control/objectives" replace /> },
-      { path: 'donations', element: <DonationsControl /> },
-      { path: 'brb', element: <BrbControl /> },
-      { path: 'audio', element: <AudioControl /> },
-      { path: 'games', element: <GamesControl /> },
-      { path: 'runners', element: <RunnersControl /> },
-      { path: 'events', element: <EventsControl /> },
-      { path: 'charities', element: <CharitiesControl /> },
-      { path: 'raffles', element: <RafflesControl /> },
-      { path: 'theme', element: <ThemeControl /> },
-      { path: 'omnibar', element: <OmnibarControl /> },
-      { path: 'chest-announcer', element: <ChestAnnouncerControl /> },
+      { path: 'donations', ...lazy(() => import('@/routes/control/Donations'), 'DonationsControl') },
+      { path: 'brb', ...lazy(() => import('@/routes/control/Brb'), 'BrbControl') },
+      { path: 'audio', ...lazy(() => import('@/routes/control/Audio'), 'AudioControl') },
+      { path: 'games', ...lazy(() => import('@/routes/control/Games'), 'GamesControl') },
+      { path: 'runners', ...lazy(() => import('@/routes/control/Runners'), 'RunnersControl') },
+      { path: 'events', ...lazy(() => import('@/routes/control/Events'), 'EventsControl') },
+      { path: 'charities', ...lazy(() => import('@/routes/control/Charities'), 'CharitiesControl') },
+      { path: 'raffles', ...lazy(() => import('@/routes/control/Raffles'), 'RafflesControl') },
+      { path: 'theme', ...lazy(() => import('@/routes/control/Theme'), 'ThemeControl') },
+      { path: 'omnibar', ...lazy(() => import('@/routes/control/Omnibar'), 'OmnibarControl') },
+      { path: 'chest-announcer', ...lazy(() => import('@/routes/control/ChestAnnouncer'), 'ChestAnnouncerControl') },
     ],
   },
-  { path: '*', element: <NotFound /> },
+  { path: '*', ...lazy(() => import('@/routes/NotFound'), 'NotFound') },
 ]);
