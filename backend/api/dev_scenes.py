@@ -72,19 +72,22 @@ def unregister_scene(request: Request) -> Response:
     if fe is None:
         return Response({'error': 'frontend source dir not found'}, status=500)
 
-    # Zelda scene entries live in the zelda franchise module; the scene .tsx
-    # components themselves stay in routes/obs/scenes/. (Other franchises are
-    # self-contained modules this dev tool doesn't manage.)
-    themes_path = (
-        fe / 'src' / 'routes' / 'obs' / 'scenes' / 'franchises' / 'zelda' / 'index.ts'
+    # Zelda scene entries AND the .tsx component files both live in the
+    # zelda franchise module — co-located the same way the other franchises
+    # (mario, sonic, ff, ...) are. The legacy split (components at
+    # routes/obs/scenes/, theme entries at routes/obs/scenes/franchises/zelda/)
+    # was unified; this dev tool only manages the Zelda franchise.
+    zelda_dir = (
+        fe / 'src' / 'routes' / 'obs' / 'scenes' / 'franchises' / 'zelda'
     )
-    scene_path = fe / 'src' / 'routes' / 'obs' / 'scenes' / f'{name}.tsx'
+    themes_path = zelda_dir / 'index.ts'
+    scene_path = zelda_dir / f'{name}.tsx'
     if not themes_path.is_file():
         return Response({'error': 'zelda franchise module not found'}, status=500)
 
     import_re = re.compile(
         rf"^\s*import\s*\{{\s*{re.escape(name)}\s*\}}\s*from\s*"
-        rf"['\"]\.\./\.\./{re.escape(name)}['\"];\s*$"
+        rf"['\"]\./{re.escape(name)}['\"];\s*$"
     )
 
     original = themes_path.read_text(encoding='utf-8')

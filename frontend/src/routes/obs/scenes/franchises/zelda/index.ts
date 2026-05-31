@@ -5,32 +5,32 @@
  * most-specific-first.
  *
  * NOTE: the dev-only scene-unregister tool (backend/api/dev_scenes.py) rewrites
- * this file's `import { XScene } from '../../XScene'` lines and `scenes:` arrays
+ * this file's `import { XScene } from './XScene'` lines and `scenes:` arrays
  * — keep that import shape intact.
  */
 import type { GameTheme } from '../../../game-themes';
-import { WindWakerScene } from '../../WindWakerScene';
-import { OcarinaScene } from '../../OcarinaScene';
-import { MajorasMaskScene } from '../../MajorasMaskScene';
-import { BotwScene } from '../../BotwScene';
-import { BotwDeathMountainScene } from '../../BotwDeathMountainScene';
-import { TotkScene } from '../../TotkScene';
-import { TotkDepthsScene } from '../../TotkDepthsScene';
-import { SkywardScene } from '../../SkywardScene';
-import { TwilightCastleScene } from '../../TwilightCastleScene';
-import { TwilightWolfMidnaScene } from '../../TwilightWolfMidnaScene';
-import { AlttpScene } from '../../AlttpScene';
-import { NesScene } from '../../NesScene';
-import { Zelda2Scene } from '../../Zelda2Scene';
-import { OracleAgesScene } from '../../OracleAgesScene';
-import { OracleSeasonsScene } from '../../OracleSeasonsScene';
-import { AlbwScene } from '../../AlbwScene';
-import { PhantomHourglassScene } from '../../PhantomHourglassScene';
-import { FourSwordsAdventuresScene } from '../../FourSwordsAdventuresScene';
-import { SpiritTracksScene } from '../../SpiritTracksScene';
-import { MinishCapScene } from '../../MinishCapScene';
-import { LinksAwakeningScene } from '../../LinksAwakeningScene';
-import '../../scenes.css';
+import { WindWakerScene } from './WindWakerScene';
+import { OcarinaScene } from './OcarinaScene';
+import { MajorasMaskScene } from './MajorasMaskScene';
+import { BotwScene } from './BotwScene';
+import { BotwDeathMountainScene } from './BotwDeathMountainScene';
+import { TotkScene } from './TotkScene';
+import { TotkDepthsScene } from './TotkDepthsScene';
+import { SkywardScene } from './SkywardScene';
+import { TwilightCastleScene } from './TwilightCastleScene';
+import { TwilightWolfMidnaScene } from './TwilightWolfMidnaScene';
+import { AlttpScene } from './AlttpScene';
+import { NesScene } from './NesScene';
+import { Zelda2Scene } from './Zelda2Scene';
+import { OracleAgesScene } from './OracleAgesScene';
+import { OracleSeasonsScene } from './OracleSeasonsScene';
+import { AlbwScene } from './AlbwScene';
+import { PhantomHourglassScene } from './PhantomHourglassScene';
+import { FourSwordsAdventuresScene } from './FourSwordsAdventuresScene';
+import { SpiritTracksScene } from './SpiritTracksScene';
+import { MinishCapScene } from './MinishCapScene';
+import { LinksAwakeningScene } from './LinksAwakeningScene';
+import './zelda.css';
 
 export const zeldaThemes: Array<{ match: string; theme: GameTheme }> = [
   {

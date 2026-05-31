@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { themeToCssVars, type GameTheme } from '../obs/game-themes';
-import '../obs/scenes/scenes.css';
+import '../obs/scenes/franchises/zelda/zelda.css';
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;

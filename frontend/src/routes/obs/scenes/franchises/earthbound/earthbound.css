@@ -1,7 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────────
  * EARTHBOUND — Onett at dusk: small-town houses + telephone poles, a Mr.
  * Saturn bow-dot, quirky purple/teal Americana sky with a few stars.
- * Co-located scene CSS (not the shared scenes.css); `.eb-` namespace.
+ * Co-located scene CSS; `.eb-` namespace.
  * ───────────────────────────────────────────────────────────────────────── */
 .eb-scene {
   position: absolute;

@@ -1,7 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────────
  * STREET FIGHTER — Ryu's Suzaku Castle stage at sunset: a pagoda beside a
  * waterfall, fighter silhouette mid-stance, orange sky. Covers SF II / Super
- * SF II. Co-located scene CSS (not the shared scenes.css); `.sf-` namespace.
+ * SF II. Co-located scene CSS; `.sf-` namespace.
  * ───────────────────────────────────────────────────────────────────────── */
 .sf-scene {
   position: absolute;

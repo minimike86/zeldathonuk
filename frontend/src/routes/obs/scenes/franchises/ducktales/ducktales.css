@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────────────────
  * DUCKTALES — NES "Moon" stage. Scrooge pogo-bounces over a cratered surface.
- * Co-located scene CSS (not the shared scenes.css); `.dt-` namespace.
+ * Co-located scene CSS; `.dt-` namespace.
  * ───────────────────────────────────────────────────────────────────────── */
 .dt-scene {
   position: absolute;

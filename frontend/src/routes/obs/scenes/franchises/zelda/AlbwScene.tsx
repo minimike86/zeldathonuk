@@ -39,7 +39,7 @@ export function AlbwScene() {
 
       {/* Paint drips streaming down from the top edge of the canvas.
         * Each strand is a thin vertical bar with a bulbous tip — the
-        * `animation` (in scenes.css) extends it downward over time. */}
+        * `animation` (in zelda.css) extends it downward over time. */}
       <div className="albw-drips">
         <span className="albw-drip" style={{ left: '6%',  ['--drip-color' as string]: '#ffc83d', ['--drip-delay' as string]: '0s',   ['--drip-len' as string]: '38vh', ['--drip-dur' as string]: '11s' }} />
         <span className="albw-drip" style={{ left: '17%', ['--drip-color' as string]: '#a07cff', ['--drip-delay' as string]: '-3s',  ['--drip-len' as string]: '52vh', ['--drip-dur' as string]: '14s' }} />

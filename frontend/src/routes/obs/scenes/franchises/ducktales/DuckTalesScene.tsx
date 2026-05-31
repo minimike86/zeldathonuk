@@ -6,9 +6,8 @@ import './ducktales.css';
  * hanging in the black sky and an alien saucer drifting past. Cyan/violet
  * palette after the legendary Moon Theme.
  *
- * Template scene for the franchise scene set: pure SVG + a co-located CSS file
- * (no shared scenes.css), `.dt-` class namespace, root is the standard
- * absolute/inset-0 stage layer.
+ * Template scene for the franchise scene set: pure SVG + a co-located CSS file,
+ * `.dt-` class namespace, root is the standard absolute/inset-0 stage layer.
  */
 export function DuckTalesScene() {
   return (
