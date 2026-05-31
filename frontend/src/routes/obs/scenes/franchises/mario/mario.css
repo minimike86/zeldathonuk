@@ -355,19 +355,12 @@
 }
 @keyframes mk-road-pulse { 0%, 100% { filter: drop-shadow(0 0 12px rgba(160, 124, 255, 0.4)); } 50% { filter: drop-shadow(0 0 22px rgba(122, 240, 255, 0.55)); } }
 
-.mk-kart {
-  position: absolute; bottom: 30%; width: 8%; max-width: 90px;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
-  offset-rotate: 0deg;
-  animation: mk-kart-zip 9s linear infinite;
-}
-@keyframes mk-kart-zip {
-  0% { transform: translate(-10vw, 14vh) rotate(-14deg); opacity: 0; }
-  10% { opacity: 1; }
-  50% { transform: translate(52vw, -2vh) rotate(6deg); }
-  90% { opacity: 1; }
-  100% { transform: translate(112vw, -16vh) rotate(-20deg); opacity: 0; }
-}
+/* Kart is now drawn inside the road SVG and animated via SMIL
+ * <animateMotion mpath="#mk-road-path"> — see MarioKartScene.tsx.
+ * No standalone .mk-kart element + CSS keyframes are needed; doing
+ * it in SVG means the kart tracks the literal road geometry rather
+ * than a hand-translated pixel path that breaks the moment the stage
+ * isn't exactly 1920×1080. */
 
 .mk-banner {
   position: absolute; top: 18%; left: 18%; width: 7%; max-width: 80px; opacity: 0.85;
@@ -689,6 +682,25 @@
 /* ═══════════════════ MARIO KART 8 (anti-grav neon) ═══════════════════ */
 .mk8-scene { background: radial-gradient(130% 110% at 50% 40%, #1a1442 0%, #100a30 55%, #060318 100%); }
 
+/* Atmospheric nebula glow — three offset radial gradients layered over the
+ * base bg give depth without any additional sprites. */
+.mk8-nebula {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(55% 38% at 18% 28%, rgba(255, 77, 210, 0.28), transparent 70%),
+    radial-gradient(48% 32% at 82% 18%, rgba(51, 230, 255, 0.22), transparent 70%),
+    radial-gradient(40% 28% at 68% 72%, rgba(160, 124, 255, 0.25), transparent 70%);
+  filter: blur(0.5px);
+  animation: mk8-nebula-shift 18s ease-in-out infinite;
+}
+@keyframes mk8-nebula-shift {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.85; }
+  50%      { transform: scale(1.04) translate(-1%, 1%); opacity: 1; }
+}
+
+/* Parallax starfield. The near layer uses big colourful specks; the far
+ * layer reuses the same box-shadow grid scaled down and offset so it
+ * reads as a finer dust behind. */
 .mk8-stars,
 .mk8-stars::before {
   position: absolute; top: 4%; left: 6%; width: 2px; height: 2px; border-radius: 50%;
@@ -696,11 +708,63 @@
   box-shadow:
     40px 30px #cfe6ff, 200px 70px #ffffff, 360px 20px #ff9fe0, 520px 90px #ffffff,
     700px 40px #9fe6ff, 860px 110px #ffffff, 1020px 30px #cfe6ff, 160px 150px #ff9fe0,
-    480px 170px #ffffff, 900px 150px #9fe6ff, 1120px 60px #ffffff;
+    480px 170px #ffffff, 900px 150px #9fe6ff, 1120px 60px #ffffff,
+    280px 240px #ffffff, 620px 270px #ff9fe0, 1040px 220px #cfe6ff,
+    140px 320px #9fe6ff, 420px 360px #ffffff, 780px 340px #ff9fe0, 1100px 320px #ffffff;
   animation: mk8-twinkle 5s ease-in-out infinite;
 }
 .mk8-stars::before { content: ''; transform: translate(90px, 110px) scale(0.8); animation-delay: 2.2s; opacity: 0.7; }
+.mk8-stars-far {
+  transform: scale(0.45) translate(60vw, 30vh);
+  opacity: 0.55;
+  animation-duration: 8s;
+  animation-delay: -1.6s;
+  filter: blur(0.4px);
+}
 @keyframes mk8-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+/* Distant planet in the upper-left, drifting subtly. */
+.mk8-planet {
+  position: absolute; top: 6%; left: 4%; width: 14%; max-width: 220px;
+  opacity: 0.78;
+  filter: drop-shadow(0 0 28px rgba(255, 159, 224, 0.45));
+  animation: mk8-planet-drift 22s ease-in-out infinite;
+}
+@keyframes mk8-planet-drift {
+  0%, 100% { transform: translate(0, 0) rotate(-3deg); }
+  50%      { transform: translate(-1%, 1.5%) rotate(2deg); }
+}
+
+/* Shooting comets streaking across the sky on independent cadences.
+ * The element is a thin diagonal bar with a glowing tip, translated
+ * from above-left to off-screen-right. */
+.mk8-comet {
+  position: absolute; top: 8%; left: 0; width: 220px; height: 3px;
+  background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.0) 35%, #cfe6ff 70%, #ffffff 100%);
+  border-radius: 999px;
+  filter: drop-shadow(0 0 8px #33e6ff) drop-shadow(0 0 12px #cfe6ff);
+  opacity: 0;
+  transform-origin: right center;
+  animation: mk8-comet-fly 9s linear infinite;
+}
+.mk8-comet-2 { top: 26%; animation-duration: 11s; animation-delay: 4.4s; }
+@keyframes mk8-comet-fly {
+  0%   { transform: translate(-22vw, -4vh) rotate(22deg); opacity: 0; }
+  8%   { opacity: 0; }
+  12%  { opacity: 1; }
+  78%  { opacity: 1; }
+  90%  { transform: translate(108vw, 36vh) rotate(22deg); opacity: 0; }
+  100% { transform: translate(108vw, 36vh) rotate(22deg); opacity: 0; }
+}
+
+/* Distant finish-line arch — bobs gently as if floating in space. */
+.mk8-arch {
+  position: absolute; top: 14%; left: 38%; width: 10%; max-width: 160px;
+  opacity: 0.7;
+  filter: drop-shadow(0 0 16px rgba(160, 124, 255, 0.55));
+  animation: mk8-arch-bob 6.5s ease-in-out infinite;
+}
+@keyframes mk8-arch-bob { 0%, 100% { transform: translateY(0) rotate(-0.5deg); } 50% { transform: translateY(-10px) rotate(0.5deg); } }
 
 .mk8-loop {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -709,28 +773,76 @@
 }
 @keyframes mk8-loop-pulse {
   0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 77, 210, 0.4)); }
-  50% { filter: drop-shadow(0 0 22px rgba(51, 230, 255, 0.55)); }
+  50%      { filter: drop-shadow(0 0 22px rgba(51, 230, 255, 0.55)); }
 }
 .mk8-boost { animation: mk8-boost-flash 1.4s ease-in-out infinite; }
-@keyframes mk8-boost-flash { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes mk8-boost-flash { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
 
-.mk8-wall {
-  position: absolute; top: 14%; right: 8%; width: 16%; max-width: 200px;
-  animation: mk8-wall-glow 6s ease-in-out infinite;
+/* Item boxes hovering above the track surface — spin via SVG transform
+ * with a slight vertical bob. Each box has its own cadence so the trio
+ * never lines up. */
+.mk8-loop-box { transform-box: fill-box; transform-origin: center; }
+.mk8-loop-box-a { animation: mk8-loop-box-spin 4.6s ease-in-out infinite; }
+.mk8-loop-box-b { animation: mk8-loop-box-spin 5.4s ease-in-out infinite; animation-delay: -1.8s; }
+.mk8-loop-box-c { animation: mk8-loop-box-spin 5.0s ease-in-out infinite; animation-delay: -0.9s; }
+@keyframes mk8-loop-box-spin {
+  0%, 100% { transform: rotateY(0deg) translateY(0); }
+  50%      { transform: rotateY(180deg) translateY(-10px); }
 }
-@keyframes mk8-wall-glow { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
 
-.mk8-kart {
-  position: absolute; bottom: 26%; width: 9%; max-width: 104px;
-  filter: drop-shadow(0 0 10px rgba(51, 230, 255, 0.55));
-  animation: mk8-kart-zip 8s linear infinite;
+/* Coin shimmer — pure scaleX coin-flip with an opacity pulse so they
+ * sparkle without rotating off-axis. */
+.mk8-loop-coin { transform-box: fill-box; transform-origin: center; filter: drop-shadow(0 0 4px rgba(255, 232, 58, 0.7)); }
+.mk8-loop-coin-a { animation: mk8-loop-coin-flip 2.2s ease-in-out infinite; }
+.mk8-loop-coin-b { animation: mk8-loop-coin-flip 2.4s ease-in-out infinite; animation-delay: -0.6s; }
+.mk8-loop-coin-c { animation: mk8-loop-coin-flip 2.0s ease-in-out infinite; animation-delay: -1.0s; }
+.mk8-loop-coin-d { animation: mk8-loop-coin-flip 2.6s ease-in-out infinite; animation-delay: -1.4s; }
+.mk8-loop-coin-e { animation: mk8-loop-coin-flip 2.3s ease-in-out infinite; animation-delay: -0.3s; }
+@keyframes mk8-loop-coin-flip {
+  0%, 100% { transform: scaleX(1); opacity: 0.95; }
+  50%      { transform: scaleX(0.15); opacity: 0.6; }
 }
-@keyframes mk8-kart-zip {
-  0% { transform: translate(-12vw, 8vh) rotate(-10deg); opacity: 0; }
-  10% { opacity: 1; }
-  50% { transform: translate(48vw, -6vh) rotate(8deg); }
-  90% { opacity: 1; }
-  100% { transform: translate(112vw, -18vh) rotate(-14deg); opacity: 0; }
+
+/* Kart group hugs the road via animateMotion — only adds a gentle bob
+ * for the anti-grav floating effect. The bob is intentionally small
+ * because animateMotion already pitches the kart with the road's
+ * tangent. */
+.mk8-kart-group { animation: mk8-kart-bob 1.6s ease-in-out infinite; }
+@keyframes mk8-kart-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+/* Foreground item boxes drifting in front of the track. */
+.mk8-itembox {
+  position: absolute; width: 4.2%; max-width: 56px;
+  filter: drop-shadow(0 0 12px rgba(122, 240, 255, 0.55));
+}
+.mk8-itembox-a { top: 12%; right: 18%; animation: mk8-box-spin 4.8s ease-in-out infinite; }
+.mk8-itembox-b { top: 32%; left: 14%; animation: mk8-box-spin 5.6s ease-in-out infinite; animation-delay: -2s; }
+.mk8-itembox-c { top: 26%; left: 50%; animation: mk8-box-spin 5.2s ease-in-out infinite; animation-delay: -1.1s; }
+@keyframes mk8-box-spin {
+  0%, 100% { transform: rotateY(0deg) translateY(0); }
+  50%      { transform: rotateY(180deg) translateY(-16px); }
+}
+
+/* Green-shell fly-by — the shell skids horizontally across the screen
+ * with a slight bounce arc, spins on its own axis, and fades at both
+ * ends. Long cycle so it feels like an occasional event rather than a
+ * constant stream of shells. */
+.mk8-shell {
+  position: absolute; bottom: 28%; left: 0; width: 4.8%; max-width: 64px;
+  filter: drop-shadow(0 0 8px rgba(92, 219, 92, 0.7));
+  opacity: 0;
+  animation: mk8-shell-fly 14s linear infinite;
+}
+@keyframes mk8-shell-fly {
+  0%, 6%   { transform: translate(-12vw, 0) rotate(0deg); opacity: 0; }
+  10%      { opacity: 1; }
+  30%      { transform: translate(30vw, -3vh) rotate(540deg); }
+  55%      { transform: translate(60vw, 1vh) rotate(1080deg); }
+  85%      { opacity: 1; }
+  95%, 100%{ transform: translate(110vw, -2vh) rotate(1800deg); opacity: 0; }
 }
 
 /* ═══════════════════ REDUCED MOTION GUARD ═══════════════════ */
@@ -742,7 +854,7 @@
   .smw-cloud, .smw-banzai, .smw-yoshi,
   .sm64-sun, .sm64-cloud, .sm64-painting-glow,
   .smrpg-stars, .smrpg-stars::before, .smrpg-road, .smrpg-wishstar, .smrpg-fall,
-  .mk-stars, .mk-stars::before, .mk-road, .mk-kart, .mk-banner, .mk-itembox,
+  .mk-stars, .mk-stars::before, .mk-road, .mk-banner, .mk-itembox,
   .smb1-cloud, .smb1-blocks, .smb1-coin,
   .mario-cloud, .mario-emblem, .mario-emblem-glow, .mario-coin, .mario-block,
   .pm-sun, .pm-cloud, .pm-mario, .pm-goomba, .pm-scrap,
@@ -751,7 +863,12 @@
   .mpaint-palette, .mpaint-cursor, .mpaint-fly, .mpaint-fly-wings,
   .smo-sun, .smo-odyssey, .smo-cappy,
   .smk-itembox, .smk-kart,
-  .mk8-stars, .mk8-stars::before, .mk8-loop, .mk8-boost, .mk8-wall, .mk8-kart {
+  .mk8-nebula, .mk8-stars, .mk8-stars::before, .mk8-stars-far, .mk8-planet,
+  .mk8-comet, .mk8-arch, .mk8-loop, .mk8-boost,
+  .mk8-loop-box-a, .mk8-loop-box-b, .mk8-loop-box-c,
+  .mk8-loop-coin-a, .mk8-loop-coin-b, .mk8-loop-coin-c,
+  .mk8-loop-coin-d, .mk8-loop-coin-e, .mk8-kart-group,
+  .mk8-itembox, .mk8-shell {
     animation: none;
   }
 }

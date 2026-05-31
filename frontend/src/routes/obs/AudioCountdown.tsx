@@ -158,7 +158,21 @@ export function AudioCountdown() {
     };
     const onEnded = () => advance();
     const onError = () => {
-      console.warn('Audio failed for track', current?.title);
+      // MEDIA_ERR_ABORTED (code 1) fires whenever the element's in-flight
+      // load is interrupted — and we deliberately interrupt it on every
+      // track switch via the `audio.load()` call in the [started, current]
+      // effect, plus the browser fires it whenever React updates the
+      // `src` attribute mid-fetch. Treating that as a playback failure
+      // makes the visualiser skip the brand-new track the moment it
+      // starts to load. Only real failures (network / decode / unsupported
+      // source) should advance. A null `audio.error` means the event fired
+      // without an actionable MediaError attached — treat it as transient.
+      const err = audio.error;
+      if (!err || err.code === MediaError.MEDIA_ERR_ABORTED) return;
+      console.warn(
+        `Audio failed for track "${current?.title}" (code ${err.code}):`,
+        err.message,
+      );
       advance();
     };
     audio.addEventListener('ended', onEnded);
