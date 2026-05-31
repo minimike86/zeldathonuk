@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
-import { FontAwesomeIcon, FontAwesomeIconProps } from '@fortawesome/react-fontawesome';
+import { FontAwesomeIcon, type FontAwesomeIconProps } from '@fortawesome/react-fontawesome';
 import {
   faBars,
   faListOl,
@@ -85,7 +85,11 @@ export function Navbar() {
   // already used by ThemeProvider + useOmnibarFeed.
   const [themeBump, dispatchThemeBump] = useReducer((n: number) => n + 1, 0);
   useEffect(() => onThemeChanged(dispatchThemeBump), []);
-  const { data: theme } = usePolledQuery(obsApi.themeSettings, 3000, [themeBump]);
+  // cacheKey seeds the last theme on mount so the logo renders correct first
+  // paint instead of flashing DEFAULT_LOGO until the fetch lands.
+  const { data: theme } = usePolledQuery(obsApi.themeSettings, 30000, [themeBump], {
+    cacheKey: 'zeldathon-theme',
+  });
   const donationPages = event?.donation_pages ?? [];
   const logoSrc = theme?.logo_url || DEFAULT_LOGO;
   // Per-mount shuffled deck — each nav item picks one of the four

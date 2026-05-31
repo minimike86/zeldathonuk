@@ -1717,8 +1717,22 @@ export function usePolledQuery<T>(
   // value loaded by an earlier query — otherwise the first tick fires with
   // the stale value and the user waits a full interval for the next one.
   deps: unknown[] = [],
+  // Opt-in localStorage cache. When set, the LAST result is persisted and used
+  // as the INITIAL data on the next mount — so near-static data (theme, logo)
+  // is present on first render instead of flashing a default until the first
+  // fetch lands. Only use for small, safe-to-show-stale payloads.
+  options?: { cacheKey?: string },
 ): { data: T | null; error: Error | null } {
-  const [data, setData] = useState<T | null>(null);
+  const cacheKey = options?.cacheKey;
+  const [data, setData] = useState<T | null>(() => {
+    if (!cacheKey) return null;
+    try {
+      const raw = window.localStorage.getItem(cacheKey);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch {
+      return null;
+    }
+  });
   const [error, setError] = useState<Error | null>(null);
   // Keep the latest fn in a ref so closures created with dynamic state
   // (e.g. `() => obsApi.schedule(event.id)`) always read the current value
@@ -1733,7 +1747,16 @@ export function usePolledQuery<T>(
     const tick = async () => {
       try {
         const result = await fnRef.current();
-        if (!cancelled) setData(result);
+        if (!cancelled) {
+          setData(result);
+          if (cacheKey) {
+            try {
+              window.localStorage.setItem(cacheKey, JSON.stringify(result));
+            } catch {
+              /* private mode / quota — seeding just won't be available */
+            }
+          }
+        }
       } catch (e) {
         if (!cancelled) setError(e as Error);
       }
@@ -1747,7 +1770,7 @@ export function usePolledQuery<T>(
       cancelled = true;
       if (timer !== null) window.clearTimeout(timer);
     };
-  }, [intervalMs, ...deps]);
+  }, [intervalMs, cacheKey, ...deps]);
 
   return { data, error };
 }

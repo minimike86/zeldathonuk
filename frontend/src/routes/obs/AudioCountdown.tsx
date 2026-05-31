@@ -35,6 +35,7 @@ export function AudioCountdown() {
     obsApi.themeSettings,
     60_000,
     [themeBump],
+    { cacheKey: 'zeldathon-theme' },
   );
   const titleLogo = themeSettings?.logo_url || DEFAULT_AC_LOGO;
   const { data: pinned } = usePolledQuery(obsApi.nowPlayingAudio, 1500);

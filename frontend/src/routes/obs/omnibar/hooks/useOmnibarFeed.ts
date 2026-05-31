@@ -60,13 +60,10 @@ const POLL_EVENT_MS = 5_000;
 const POLL_SCHEDULE_MS = 8000;
 const POLL_DONATIONS_MS = 3000;
 const POLL_INCENTIVES_MS = 5000;
-// Theme poll. Floor for cross-browser refresh — OBS browser sources
-// don't share BroadcastChannel with /control/theme so the poll cadence
-// is the only thing that catches them up. 3s matches <ThemeProvider>,
-// keeping the omnibar's feed.theme (used for the wordmark logo) in
-// sync with the CSS-var apply path within a few seconds of activation.
-// Same-browser tabs additionally hop the queue via themeBus below.
-const POLL_THEME_MS = 3000;
+// Theme poll. Cross-device fallback only — same-browser tabs hop the queue
+// via themeBus below, and the theme is a near-static singleton, so a 30s
+// cadence is plenty (was 3s, which hammered /api/theme/ needlessly).
+const POLL_THEME_MS = 30000;
 
 export function useOmnibarFeed(now: Date): OmnibarFeed {
   // Cross-tab event-row push: when another tab (notably /control/omnibar)
@@ -135,7 +132,9 @@ export function useOmnibarFeed(now: Date): OmnibarFeed {
     POLL_INCENTIVES_MS,
     [event?.id],
   );
-  const { data: theme } = usePolledQuery(obsApi.themeSettings, POLL_THEME_MS, [themeBump]);
+  const { data: theme } = usePolledQuery(obsApi.themeSettings, POLL_THEME_MS, [themeBump], {
+    cacheKey: 'zeldathon-theme',
+  });
 
   return useMemo<OmnibarFeed>(() => {
     const sched = schedule ?? [];
