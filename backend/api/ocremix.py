@@ -61,9 +61,13 @@ def _fetch_remix(session: requests.Session, ocr_id: str) -> dict | None:
     r = session.get(f'https://ocremix.org/remix/{ocr_id}/', timeout=20)
     if not r.ok:
         return None
+    # The URL lives in a double-quoted href, so apostrophes are legal path
+    # chars — do NOT exclude them. Zelda filenames are full of them
+    # (Hero's_Rest, Ganon's_Tower, Link's_Awakening, Majora's_Mask), and
+    # excluding ' truncated the match before ".mp3", failing ~1 in 4 remixes.
     mp3_m = re.search(
         r'(https://(?:iterations\.org|ocrmirror\.org|ocr\.blueblue\.fr)'
-        r'/files/music/remixes/[^\s"\'<>]+\.mp3)',
+        r'/files/music/remixes/[^\s"<>]+\.mp3)',
         r.text,
     )
     if not mp3_m:
