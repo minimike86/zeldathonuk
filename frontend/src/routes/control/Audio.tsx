@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { AudioTrack, VisualiserStyle } from '@/lib/obsApi';
 import { api } from '@/lib/api';
@@ -54,8 +54,38 @@ export function AudioControl() {
 
   // Set the /obs/audio-countdown canvas visualiser style (global; 'auto'
   // rotates per track). The overlay picks it up on its next ~1.5s poll.
-  const setVisualiser = (style: VisualiserStyle) =>
-    wrap(() => obsApi.setNowPlayingAudio({ visualiser_style: style }));
+  //
+  // Optimistic UI: the polled `now?.visualiser_style` only refreshes on
+  // the next 1.5s tick, so without a local override the active button
+  // wouldn't visibly flip until that poll arrived — which made the
+  // selection feel laggy. Track the operator's most recent choice in
+  // state and let it win over the polled value until the polled value
+  // catches up (i.e. matches the optimistic pick), at which point we
+  // clear the override.
+  //
+  // Also intentionally NOT going through `wrap` here so the global
+  // `busy` flag doesn't disable every visualiser button mid-write —
+  // the operator can click straight from "bars" to "wave" to "spline"
+  // without waiting for each round-trip to commit. The last
+  // mutation wins on the server too.
+  const [optimisticVis, setOptimisticVis] = useState<VisualiserStyle | null>(null);
+  const setVisualiser = (style: VisualiserStyle) => {
+    setOptimisticVis(style);
+    setErr(null);
+    obsApi.setNowPlayingAudio({ visualiser_style: style }).catch((e) => {
+      // On error, surface it and let the polled value reassert truth.
+      setErr((e as Error).message);
+      setOptimisticVis(null);
+    });
+  };
+  // Clear the optimistic override once the polled value confirms it —
+  // keeps the local state from going stale if the operator changes
+  // the visualiser from a different tab.
+  useEffect(() => {
+    if (optimisticVis !== null && now?.visualiser_style === optimisticVis) {
+      setOptimisticVis(null);
+    }
+  }, [optimisticVis, now?.visualiser_style]);
 
   const enabled = useMemo(
     () => (tracks ?? []).filter((t) => t.enabled).sort((a, b) => a.order - b.order || a.id - b.id),
@@ -215,12 +245,20 @@ export function AudioControl() {
         <div className="mt-3 d-flex flex-wrap gap-2 align-items-center">
           <span className="small text-white-50 me-1">Visualiser</span>
           {VIS_STYLES.map(([val, label]) => {
-            const active = (now?.visualiser_style ?? 'bars') === val;
+            // Optimistic local pick wins until the poll confirms it,
+            // so the active highlight flips on click rather than
+            // waiting up to 1.5s for the next /api/audio/now-playing/
+            // round-trip.
+            const effective = optimisticVis ?? now?.visualiser_style ?? 'bars';
+            const active = effective === val;
             return (
               <button
                 key={val}
                 className={`btn btn-sm ${active ? 'btn-bloodmoon' : 'btn-outline-light'}`}
-                disabled={busy}
+                // Intentionally NOT gated on `busy` — the visualiser
+                // setter is fire-and-forget and the last click wins
+                // on the server, so we let the operator rapid-fire
+                // through styles without blocking on each round-trip.
                 onClick={() => setVisualiser(val)}
                 title={`Use the ${label} visualiser on /obs/audio-countdown`}
               >
