@@ -111,16 +111,16 @@ export function WindWakerScene() {
       </svg>
 
       {/* Valoo perched atop the volcano, above the cloud band. */}
-      <img className="ww-valoo" src="/assets/img/valoo_ww.png" alt="" />
+      <img className="ww-valoo" src="/assets/img/game-franchise/legend-of-zelda/ww/audio-scene/valoo_ww.png" alt="" />
 
       {/* Zephos drifting across the sky on his cloud. Same trick as the
        * boat: linear X traversal with two incommensurate Y wanders so each
        * trip across takes a different route. */}
-      <img className="ww-zephos" src="/assets/img/zephos_ww.png" alt="" />
+      <img className="ww-zephos" src="/assets/img/game-franchise/legend-of-zelda/ww/audio-scene/zephos_ww.png" alt="" />
 
       {/* Cyclos, Zephos's grumpy brother, drifting the opposite way
        * (right → left) on his magenta cloud. Independent Y wanders. */}
-      <img className="ww-cyclos" src="/assets/img/cyclos_ww.png" alt="" />
+      <img className="ww-cyclos" src="/assets/img/game-franchise/legend-of-zelda/ww/audio-scene/cyclos_ww.png" alt="" />
 
       {/* The King of Red Lions sailing across, looping. Artwork supplied by
         * the project owner. A trailing wake fans out behind the stern. */}
@@ -135,7 +135,7 @@ export function WindWakerScene() {
                   strokeWidth="1.1" strokeDasharray="8 12" opacity="0.5" />
           </g>
         </svg>
-        <img src="/assets/img/red_lions_ww.png" alt="" />
+        <img src="/assets/img/game-franchise/legend-of-zelda/ww/audio-scene/red_lions_ww.png" alt="" />
       </div>
 
       {/* Salvage Corp ship sailing the opposite way (right → left). Sits a
@@ -157,7 +157,7 @@ export function WindWakerScene() {
           <ellipse cx="100" cy="22" rx="92" ry="9" fill="rgba(255, 255, 255, 0.55)" />
           <ellipse cx="100" cy="22" rx="62" ry="6" fill="rgba(255, 255, 255, 0.75)" />
         </svg>
-        <img src="/assets/img/salvage_corp_ww.png" alt="" />
+        <img src="/assets/img/game-franchise/legend-of-zelda/ww/audio-scene/salvage_corp_ww.png" alt="" />
       </div>
 
       {/* Seagulls circling */}
@@ -330,7 +330,7 @@ export function WindWakerScene() {
       {/* Fishman — pops up at random spots across the ocean. The single
        * animation cycles through several positions; between pops his
        * opacity is 0 so the teleport from spot to spot is invisible. */}
-      <img className="ww-fishman" src="/assets/img/fishman_ww.png" alt="" />
+      <img className="ww-fishman" src="/assets/img/game-franchise/legend-of-zelda/ww/audio-scene/fishman_ww.png" alt="" />
 
       {/* Cel-shaded splash that fires at each of fishman's pop positions.
        * Its keyframe animation shares the same position waypoints as
