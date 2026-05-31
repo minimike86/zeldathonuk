@@ -152,32 +152,35 @@ function QueueLane({
         <ul className="control-queue-list">
           {items.map((item) => (
             <li key={item.id} className="control-queue-item">
-              <div className="control-queue-item-main">
-                <span className="control-queue-item-label">{item.label}</span>
-                <span className="control-queue-item-meta">
-                  <code>{item.kind}</code>
-                  {item.eta && tone === 'awaiting' && (
-                    <span className="control-queue-eta"> · {relativeEta(item.eta)}</span>
-                  )}
-                  {item.occurred_at && (
-                    <span> · {fmtTime(item.occurred_at)}</span>
-                  )}
-                </span>
-              </div>
-              {item.actions.length > 0 && (
-                <div className="control-queue-item-actions">
-                  {item.actions.map((a) => (
-                    <button
-                      key={a.endpoint}
-                      type="button"
-                      className="btn btn-outline-light btn-sm"
-                      onClick={() => onAction(a)}
-                    >
-                      {a.label}
-                    </button>
-                  ))}
+              <div className="control-queue-item-top">
+                <div className="control-queue-item-main">
+                  <span className="control-queue-item-label">{item.label}</span>
+                  <span className="control-queue-item-meta">
+                    <code>{item.kind}</code>
+                    {item.eta && tone === 'awaiting' && (
+                      <span className="control-queue-eta"> · {relativeEta(item.eta)}</span>
+                    )}
+                    {item.occurred_at && (
+                      <span> · {fmtTime(item.occurred_at)}</span>
+                    )}
+                  </span>
                 </div>
-              )}
+                {item.actions.length > 0 && (
+                  <div className="control-queue-item-actions">
+                    {item.actions.map((a) => (
+                      <button
+                        key={a.endpoint}
+                        type="button"
+                        className="btn btn-outline-light btn-sm"
+                        onClick={() => onAction(a)}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {item.hint && <p className="control-queue-item-hint">{item.hint}</p>}
             </li>
           ))}
         </ul>

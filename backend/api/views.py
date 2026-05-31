@@ -1678,9 +1678,20 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs[:limit]
         return qs
 
+    @action(detail=True, methods=['post'])
+    def acknowledge(self, request: Request, pk=None) -> Response:
+        """Dismiss this entry from the queue's failed lane. The row stays in
+        the audit trail (append-only) — this just stamps ``acknowledged_at``
+        so it drops out of the live "needs attention" view."""
+        obj = self.get_object()
+        if obj.acknowledged_at is None:
+            obj.acknowledged_at = timezone.now()
+            obj.save(update_fields=['acknowledged_at'])
+        return Response(self.get_serializer(obj).data)
+
 
 def _queue_item(*, id, lane, kind, source, label, occurred_at=None, eta=None,
-                actions=None) -> dict:
+                actions=None, hint='') -> dict:
     """Uniform shape for a queue row across the three lanes."""
     return {
         'id': id,
@@ -1691,7 +1702,51 @@ def _queue_item(*, id, lane, kind, source, label, occurred_at=None, eta=None,
         'occurred_at': occurred_at,
         'eta': eta,
         'actions': actions or [],
+        'hint': hint,
     }
+
+
+def _failure_hint(log) -> tuple[str, list[dict]]:
+    """Given a failed (error-level) ActivityLog row, return a plain-English
+    "what now?" hint plus any contextual re-run actions. Every failed item
+    also gets an Acknowledge action (added by the caller) so the operator can
+    always clear it from the lane."""
+    if log.category == models.ActivityLog.Category.SOUND_TRIGGER:
+        actions = []
+        if log.target_id:
+            actions.append({
+                'label': 'Re-arm trigger',
+                'method': 'POST',
+                'endpoint': f'/api/schedule-entry-sound-triggers/{log.target_id}/reset_fire/',
+            })
+        return (
+            'The sound trigger could not fire (its override failed to create). '
+            'Re-arm it to try again, or check the linked sound asset URL.',
+            actions,
+        )
+    if log.category in (
+        models.ActivityLog.Category.WEBHOOK,
+        models.ActivityLog.Category.EXTERNAL_EVENT,
+    ):
+        return (
+            'An inbound webhook / event was rejected — usually a signature '
+            'mismatch or malformed payload. Check the upstream integration '
+            'config; no local action is needed if it was a stray request.',
+            [],
+        )
+    if log.category == models.ActivityLog.Category.OPERATOR_ACTION:
+        return (
+            f'This operator action was rejected by the server '
+            f'(status {log.status_code or "error"}) — the target may no '
+            f'longer exist or the request was invalid. Usually safe to '
+            f'acknowledge once you\'ve confirmed the change you wanted is in place.',
+            [],
+        )
+    return (
+        'Unexpected error. Open the Audit log tab and expand this entry to '
+        'see the full detail, then acknowledge once handled.',
+        [],
+    )
 
 
 @api_view(['GET'])
@@ -1774,10 +1829,20 @@ def queue_snapshot(_request: Request) -> Response:
             }],
         ))
 
-    # Failed — error-level audit rows.
+    # Failed — error-level audit rows not yet acknowledged. Each carries a
+    # plain-English hint, any contextual re-run action, and an Acknowledge
+    # action so the operator always has a clear next step.
     for log in models.ActivityLog.objects.filter(
-        level=models.ActivityLog.Level.ERROR, created_at__gte=recent,
+        level=models.ActivityLog.Level.ERROR,
+        created_at__gte=recent,
+        acknowledged_at__isnull=True,
     )[:50]:
+        hint, actions = _failure_hint(log)
+        actions.append({
+            'label': 'Acknowledge',
+            'method': 'POST',
+            'endpoint': f'/api/activity-log/{log.id}/acknowledge/',
+        })
         failed.append(_queue_item(
             id=f'log-{log.id}',
             lane='failed',
@@ -1785,6 +1850,8 @@ def queue_snapshot(_request: Request) -> Response:
             source=log.source,
             label=log.summary,
             occurred_at=log.created_at,
+            actions=actions,
+            hint=hint,
         ))
 
     return Response({

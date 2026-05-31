@@ -907,12 +907,27 @@
 
 .control-queue-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
   padding: 0.5rem;
   border-radius: 0.4rem;
   background: rgba(255, 255, 255, 0.05);
+}
+
+.control-queue-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.control-queue-item-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
+  border-left: 2px solid rgba(214, 87, 69, 0.5);
+  padding-left: 0.5rem;
 }
 
 .control-queue-item-main {

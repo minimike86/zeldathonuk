@@ -679,6 +679,8 @@ export interface QueueItem {
   occurred_at: string | null;
   eta: string | null;
   actions: QueueAction[];
+  /** Plain-English "what now?" guidance — currently set on failed items. */
+  hint?: string;
 }
 
 export interface QueueSnapshot {

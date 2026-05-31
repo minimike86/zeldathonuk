@@ -950,5 +950,6 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             'request_method',
             'request_path',
             'status_code',
+            'acknowledged_at',
         ]
         read_only_fields = fields
