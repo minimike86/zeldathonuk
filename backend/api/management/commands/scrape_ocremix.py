@@ -1,7 +1,10 @@
 """Scrape OCRemix for game-specific remix MP3 URLs and store as AudioTracks.
 
-Three modes:
+Four modes:
 - `--game-id 95359` — scrape one specific game.
+- `--game-ids 64,65,66` — scrape an explicit comma-separated id list. Used to
+  partition a discovered id set across parallel workers (each worker takes a
+  disjoint slice, so concurrent runs never touch the same game/track).
 - `--search zelda` — discover every game matching the query (via OCR's
   quicksearch endpoint) and scrape each one.
 - `--all-zelda` — shorthand for `--search zelda`. Pulls every Zelda title.
@@ -23,6 +26,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument('--game-id', type=int, help='Scrape one specific OCRemix game id.')
+        group.add_argument(
+            '--game-ids', type=str,
+            help='Scrape a comma-separated list of OCRemix game ids (e.g. 64,65,66). '
+                 'Lets a caller partition a discovered id set across parallel workers.',
+        )
         group.add_argument('--search', type=str, help='Discover games matching this query and scrape each.')
         group.add_argument('--all-zelda', action='store_true', help='Scrape every Zelda game OCRemix knows about.')
         parser.add_argument('--limit', type=int, default=200, help='Max remixes per game.')
@@ -35,6 +43,9 @@ class Command(BaseCommand):
 
         if options['game_id']:
             game_ids = [options['game_id']]
+        elif options['game_ids']:
+            game_ids = [int(x) for x in options['game_ids'].split(',') if x.strip()]
+            self.stdout.write(self.style.NOTICE(f'Scraping {len(game_ids)} explicit game ids'))
         else:
             query = 'zelda' if options['all_zelda'] else options['search']
             game_ids = ocremix.discover_game_ids(session, query)
