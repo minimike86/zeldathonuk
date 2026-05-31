@@ -23,6 +23,10 @@ export function AudioControl() {
   // the tile immediately while we wait for Vite HMR to re-evaluate
   // the zelda franchise module and drop the entry from the cascade.
   const [removedScenes, setRemovedScenes] = useState<Set<string>>(new Set());
+  // Library filters. With 240+ games the flat card list is unwieldy.
+  const [franchise, setFranchise] = useState('');
+  const [gameFilter, setGameFilter] = useState('');
+  const [query, setQuery] = useState('');
 
   const wrap = async (fn: () => Promise<unknown>) => {
     setErr(null);
@@ -102,7 +106,43 @@ export function AudioControl() {
       });
     });
 
-  const groups = groupByGame(tracks ?? []);
+  const allGames = useMemo(
+    () =>
+      Object.keys(groupByGame(tracks ?? [])).sort((a, b) =>
+        cleanGameName(a).localeCompare(cleanGameName(b)),
+      ),
+    [tracks],
+  );
+  // Franchises present, with how many games each holds, for the dropdown.
+  const franchiseOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const g of allGames) counts.set(franchiseOf(g), (counts.get(franchiseOf(g)) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [allGames]);
+  // Game dropdown narrows to the selected franchise.
+  const gameOptions = useMemo(
+    () => allGames.filter((g) => !franchise || franchiseOf(g) === franchise),
+    [allGames, franchise],
+  );
+  const q = query.trim().toLowerCase();
+  // Apply franchise + game + search, then group the survivors into cards
+  // (alphabetical so the long list is navigable).
+  const groups = useMemo(() => {
+    const matched = (tracks ?? []).filter((t) => {
+      const g = t.game || 'Unknown';
+      if (franchise && franchiseOf(g) !== franchise) return false;
+      if (gameFilter && g !== gameFilter) return false;
+      if (q && !`${t.title} ${t.artist} ${g}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    return Object.fromEntries(
+      Object.entries(groupByGame(matched)).sort((a, b) =>
+        cleanGameName(a[0]).localeCompare(cleanGameName(b[0])),
+      ),
+    );
+  }, [tracks, franchise, gameFilter, q]);
+  const shownGameCount = Object.keys(groups).length;
+  const shownTrackCount = Object.values(groups).reduce((n, ts) => n + ts.length, 0);
   const enabledCount = enabled.length;
   const isPaused = !!now?.is_paused;
   const isPinned = !!now?.is_pinned;
@@ -169,6 +209,76 @@ export function AudioControl() {
 
         {err && <p className="text-danger mt-2">{err}</p>}
       </div>
+
+      <div className="control-card">
+        <div className="d-flex flex-wrap gap-3 align-items-end">
+          <div>
+            <label className="small text-white-50 d-block mb-1">Franchise</label>
+            <select
+              className="form-select form-select-sm"
+              value={franchise}
+              onChange={(e) => {
+                setFranchise(e.target.value);
+                setGameFilter('');
+              }}
+            >
+              <option value="">All franchises</option>
+              {franchiseOptions.map(([f, n]) => (
+                <option key={f} value={f}>
+                  {f} ({n})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="small text-white-50 d-block mb-1">Game</label>
+            <select
+              className="form-select form-select-sm"
+              value={gameFilter}
+              onChange={(e) => setGameFilter(e.target.value)}
+            >
+              <option value="">All games</option>
+              {gameOptions.map((g) => (
+                <option key={g} value={g}>
+                  {cleanGameName(g)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-grow-1" style={{ minWidth: 180 }}>
+            <label className="small text-white-50 d-block mb-1">Search</label>
+            <input
+              className="form-control form-control-sm"
+              type="search"
+              placeholder="Title, artist or game…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          {(franchise || gameFilter || query) && (
+            <button
+              className="btn btn-outline-light btn-sm"
+              onClick={() => {
+                setFranchise('');
+                setGameFilter('');
+                setQuery('');
+              }}
+            >
+              Clear
+            </button>
+          )}
+          <div className="small text-white-50 ms-auto">
+            {shownGameCount} game{shownGameCount === 1 ? '' : 's'} · {shownTrackCount} track
+            {shownTrackCount === 1 ? '' : 's'}
+          </div>
+        </div>
+      </div>
+
+      {shownGameCount === 0 && (
+        <div className="control-card">
+          <p className="m-0 text-white-50">No tracks match your filters.</p>
+        </div>
+      )}
 
       {Object.entries(groups).map(([game, gameTracks]) => {
         const theme = themeFor(game);
@@ -311,4 +421,35 @@ function groupByGame(tracks: AudioTrack[]): Record<string, AudioTrack[]> {
 
 function cleanGameName(raw: string): string {
   return raw.split('[')[0].trim();
+}
+
+// Coarse franchise buckets for the library filter. First keyword hit wins;
+// keys are matched as lowercase substrings of the game label. Anything that
+// matches nothing lands in "Other". (Zelda labels all carry "zelda".)
+const FRANCHISES: Array<[string, string[]]> = [
+  ['Zelda', ['zelda']],
+  ['Final Fantasy', ['final fantasy']],
+  ['Chrono', ['chrono']],
+  ['Mega Man', ['mega man', 'rockman']],
+  ['Sonic', ['sonic']],
+  ['Mario', ['mario']],
+  ['Donkey Kong', ['donkey kong']],
+  ['Metroid', ['metroid']],
+  ['Castlevania', ['castlevania', 'akumajo', 'akumajō', 'dracula']],
+  ['Street Fighter', ['street fighter']],
+  ['EarthBound', ['earthbound', 'mother']],
+  ['DuckTales', ['ducktales']],
+  ['Kirby', ['kirby']],
+  ['Pokémon', ['pokémon', 'pokemon', 'pokkén', 'pokken']],
+  ['Metal Gear', ['metal gear']],
+  ['Star Fox', ['star fox', 'starfox']],
+  ['Smash Bros.', ['smash bros']],
+];
+
+function franchiseOf(game: string): string {
+  const g = game.toLowerCase();
+  for (const [label, keys] of FRANCHISES) {
+    if (keys.some((k) => g.includes(k))) return label;
+  }
+  return 'Other';
 }
