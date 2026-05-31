@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { AudioTrack } from '@/lib/obsApi';
+import type { AudioTrack, VisualiserStyle } from '@/lib/obsApi';
 import { env } from '@/lib/env';
 import { themeFor, themeToCssVars } from './game-themes';
 import { onThemeChanged } from '@/lib/themeBus';
@@ -56,8 +56,15 @@ export function AudioCountdown() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataRef = useRef<Uint8Array | null>(null);
+  const timeDataRef = useRef<Uint8Array | null>(null);
   const rafRef = useRef<number | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  // Visualiser style, mirrored from the now-playing poll so the RAF loop (which
+  // mounts once) can switch renderers live without re-subscribing. 'auto' is
+  // resolved to a concrete style per track id below.
+  const styleRef = useRef<VisualiserStyle>('bars');
+  // Bass-reactive particles for the 'wave' style — kept across frames.
+  const particlesRef = useRef<Particle[]>([]);
   // Mirrors `pinned?.is_paused` so callbacks (e.g. the canplay handler) can
   // read the latest paused state without re-subscribing the effect every
   // time pause is toggled — re-subscribing would call audio.load() and
@@ -272,8 +279,22 @@ export function AudioCountdown() {
     analyserRef.current = analyser;
     sourceNodeRef.current = source;
     dataRef.current = new Uint8Array(analyser.frequencyBinCount);
+    timeDataRef.current = new Uint8Array(analyser.fftSize);
     void ctx.resume();
   }, [started]);
+
+  // Keep styleRef in sync with the control-panel selection. 'auto' rotates
+  // through the concrete styles keyed by the current track id, so it holds
+  // steady while a track plays and changes when the track does.
+  useEffect(() => {
+    const sel = pinned?.visualiser_style ?? 'bars';
+    if (sel === 'auto') {
+      const id = pinned?.track_id ?? current?.id ?? 0;
+      styleRef.current = AUTO_CYCLE[Math.abs(id) % AUTO_CYCLE.length];
+    } else {
+      styleRef.current = sel;
+    }
+  }, [pinned?.visualiser_style, pinned?.track_id, current?.id]);
 
   const handleStart = () => {
     const audio = audioRef.current;
@@ -298,29 +319,38 @@ export function AudioCountdown() {
       const w = canvas.width;
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
-      const bars = 96;
-      const bw = w / bars;
-      const stage =
-        canvas.closest('.ac-stage') ?? document.documentElement;
+      const stage = canvas.closest('.ac-stage') ?? document.documentElement;
       const css = window.getComputedStyle(stage as Element);
       const top = css.getPropertyValue('--ac-primary').trim() || '#e71347';
       const bottom = css.getPropertyValue('--ac-secondary').trim() || '#62182f';
+
       const analyser = analyserRef.current;
-      const data = dataRef.current;
-      if (analyser && data) {
-        analyser.getByteFrequencyData(data as unknown as Uint8Array<ArrayBuffer>);
-        const step = data.length / bars;
-        for (let i = 0; i < bars; i++) {
-          const value = data[Math.floor(i * step)] / 255;
-          const bh = Math.max(value * h, 4);
-          paintBar(ctx, i * bw + 1, h - bh, bw - 2, bh, value, top, bottom);
-        }
+      const freq = dataRef.current;
+      const time = timeDataRef.current;
+      let freqData: Uint8Array;
+      let timeData: Uint8Array;
+      if (analyser && freq && time) {
+        analyser.getByteFrequencyData(freq as unknown as Uint8Array<ArrayBuffer>);
+        analyser.getByteTimeDomainData(time as unknown as Uint8Array<ArrayBuffer>);
+        freqData = freq;
+        timeData = time;
       } else {
-        for (let i = 0; i < bars; i++) {
-          const amp = (Math.sin(Date.now() / 200 + i / 3) + 1) / 2;
-          const bh = (amp * h) / 2 + 6;
-          paintBar(ctx, i * bw + 1, h - bh, bw - 2, bh, amp * 0.5, top, bottom);
-        }
+        // No live audio yet (pre-Start): synthesize so every style animates.
+        const t = Date.now() / 1000;
+        freqData = synthFreq(t);
+        timeData = synthTime(t);
+      }
+
+      const v: VizContext = {
+        ctx, w, h, top, bottom,
+        freq: freqData, time: timeData, particles: particlesRef.current,
+      };
+      switch (styleRef.current) {
+        case 'mirror': drawMirror(v); break;
+        case 'waveform': drawWaveform(v); break;
+        case 'radial': drawRadial(v); break;
+        case 'wave': drawWave(v); break;
+        default: drawBars(v);
       }
       rafRef.current = window.requestAnimationFrame(tick);
     };
@@ -556,6 +586,225 @@ function paintBar(
   ctx.fillStyle = grad;
   ctx.globalAlpha = 0.6 + intensity * 0.4;
   ctx.fillRect(x, y, w, h);
+  ctx.globalAlpha = 1;
+}
+
+// ── Visualiser styles ──────────────────────────────────────────────────────
+// Each renderer draws one frame onto the canvas from `freq` (0..255 frequency
+// magnitudes) and/or `time` (0..255 time-domain, 128 = silence), tinted with
+// the live theme colours. They're pure given the VizContext (particles carry
+// the only cross-frame state). 'auto' rotates through these per track.
+const AUTO_CYCLE: VisualiserStyle[] = ['bars', 'mirror', 'waveform', 'radial', 'wave'];
+
+interface Particle {
+  x: number;
+  y: number;
+  vy: number;
+  r: number;
+  life: number;
+}
+
+interface VizContext {
+  ctx: CanvasRenderingContext2D;
+  w: number;
+  h: number;
+  top: string;
+  bottom: string;
+  freq: Uint8Array;
+  time: Uint8Array;
+  particles: Particle[];
+}
+
+// Reusable scratch buffers for the pre-Start synthetic animation (sized to the
+// analyser's frequencyBinCount=128 / fftSize=256) so we don't allocate per frame.
+const SYNTH_FREQ = new Uint8Array(128);
+const SYNTH_TIME = new Uint8Array(256);
+
+function synthFreq(t: number): Uint8Array {
+  for (let i = 0; i < SYNTH_FREQ.length; i++) {
+    const base = Math.sin(t * 2 + i / 6) * 0.5 + 0.5;
+    const decay = 1 - i / SYNTH_FREQ.length; // bass-weighted like real spectra
+    SYNTH_FREQ[i] = Math.max(0, Math.min(255, base * decay * 230));
+  }
+  return SYNTH_FREQ;
+}
+
+function synthTime(t: number): Uint8Array {
+  for (let i = 0; i < SYNTH_TIME.length; i++) {
+    const x = i / SYNTH_TIME.length;
+    const wv = Math.sin(x * Math.PI * 6 + t * 4) * Math.sin(t * 1.3) * 0.5;
+    SYNTH_TIME[i] = 128 + wv * 110;
+  }
+  return SYNTH_TIME;
+}
+
+function avg(arr: Uint8Array, from: number, to: number): number {
+  let s = 0;
+  const a = Math.max(0, from);
+  const b = Math.min(arr.length, to);
+  for (let i = a; i < b; i++) s += arr[i];
+  return b > a ? s / (b - a) / 255 : 0;
+}
+
+function drawBars(v: VizContext): void {
+  const { ctx, w, h, top, bottom, freq } = v;
+  const bars = 96;
+  const bw = w / bars;
+  const step = freq.length / bars;
+  for (let i = 0; i < bars; i++) {
+    const value = freq[Math.floor(i * step)] / 255;
+    const bh = Math.max(value * h, 4);
+    paintBar(ctx, i * bw + 1, h - bh, bw - 2, bh, value, top, bottom);
+  }
+}
+
+function drawMirror(v: VizContext): void {
+  const { ctx, w, h, top, bottom, freq } = v;
+  const bars = 80;
+  const bw = w / bars;
+  const cy = h / 2;
+  const step = freq.length / bars;
+  for (let i = 0; i < bars; i++) {
+    const value = freq[Math.floor(i * step)] / 255;
+    const bh = Math.max(value * (h / 2), 2);
+    const x = i * bw + 1;
+    const grad = ctx.createLinearGradient(0, cy - bh, 0, cy + bh);
+    grad.addColorStop(0, top);
+    grad.addColorStop(0.5, bottom);
+    grad.addColorStop(1, top);
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = 0.55 + value * 0.45;
+    ctx.fillRect(x, cy - bh, bw - 2, bh * 2);
+  }
+  ctx.globalAlpha = 1;
+  // centre seam glow
+  ctx.strokeStyle = top;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, cy);
+  ctx.lineTo(w, cy);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawWaveform(v: VizContext): void {
+  const { ctx, w, h, top, bottom, time } = v;
+  const n = time.length;
+  const mid = h / 2;
+  const amp = h * 0.42;
+  const trace = (color: string, width: number, blur: number, alpha: number) => {
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * w;
+      const y = mid + ((time[i] - 128) / 128) * amp;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blur;
+    ctx.globalAlpha = alpha;
+    ctx.stroke();
+  };
+  trace(bottom, 7, 4, 0.4); // soft underlay
+  trace(top, 3, 18, 1); // bright core
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+}
+
+function drawRadial(v: VizContext): void {
+  const { ctx, w, h, top, bottom, freq } = v;
+  const cx = w / 2;
+  const cy = h / 2;
+  const base = Math.min(h * 0.34, 120);
+  const bass = avg(freq, 0, 8);
+  // pulsing core
+  const coreR = base * 0.5 * (0.85 + bass * 0.5);
+  const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+  core.addColorStop(0, top);
+  core.addColorStop(1, bottom);
+  ctx.fillStyle = core;
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  // spokes
+  const N = 96;
+  const inner = base * 0.55;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < N; i++) {
+    const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
+    const value = freq[Math.floor((i * freq.length) / N)] / 255;
+    const len = inner + value * base * 0.95;
+    const ca = Math.cos(ang);
+    const sa = Math.sin(ang);
+    ctx.beginPath();
+    ctx.moveTo(cx + ca * inner, cy + sa * inner);
+    ctx.lineTo(cx + ca * len, cy + sa * len);
+    ctx.strokeStyle = top;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.4 + value * 0.6;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawWave(v: VizContext): void {
+  const { ctx, w, h, top, bottom, freq, particles } = v;
+  const n = 96;
+  const step = freq.length / n;
+  // filled spectrum area
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * w;
+    const value = freq[Math.floor(i * step)] / 255;
+    const y = h - Math.max(value * h * 0.9, 3);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, top);
+  grad.addColorStop(1, bottom);
+  ctx.fillStyle = grad;
+  ctx.globalAlpha = 0.55;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // bass-reactive particles rising off the curve
+  const bass = avg(freq, 0, 6);
+  if (bass > 0.55 && particles.length < 70) {
+    const spawn = Math.round(bass * 3);
+    for (let k = 0; k < spawn; k++) {
+      particles.push({
+        x: Math.random() * w,
+        y: h - 10,
+        vy: -(1 + bass * 4 + Math.random() * 2),
+        r: 2 + Math.random() * 3,
+        life: 1,
+      });
+    }
+  }
+  ctx.fillStyle = top;
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.y += p.vy;
+    p.vy *= 0.99;
+    p.life -= 0.012;
+    if (p.life <= 0 || p.y < -10) {
+      particles.splice(i, 1);
+      continue;
+    }
+    ctx.globalAlpha = Math.max(0, p.life) * 0.85;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.globalAlpha = 1;
 }
 

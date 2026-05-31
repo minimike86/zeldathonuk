@@ -566,11 +566,21 @@ export interface AudioTrack {
   url: string;
 }
 
+/** Canvas visualiser styles for /obs/audio-countdown. 'auto' rotates per track. */
+export type VisualiserStyle =
+  | 'bars'
+  | 'mirror'
+  | 'waveform'
+  | 'radial'
+  | 'wave'
+  | 'auto';
+
 export interface NowPlayingAudio {
   track_id: number | null;
   track: AudioTrack | null;
   is_pinned: boolean;
   is_paused: boolean;
+  visualiser_style: VisualiserStyle;
   updated_at: string;
 }
 
@@ -578,6 +588,7 @@ export interface NowPlayingAudioPatch {
   track_id?: number | null;
   is_pinned?: boolean;
   is_paused?: boolean;
+  visualiser_style?: VisualiserStyle;
 }
 
 // ── Omnibar v2 ─────────────────────────────────────────────────────────────

@@ -976,6 +976,9 @@ class NowPlayingAudio(models.Model):
     )
     is_pinned = models.BooleanField(default=False)
     is_paused = models.BooleanField(default=False)
+    # Visualiser style for the /obs/audio-countdown canvas: one of
+    # bars | mirror | waveform | radial | wave | auto (auto rotates per track).
+    visualiser_style = models.CharField(max_length=20, default='bars')
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

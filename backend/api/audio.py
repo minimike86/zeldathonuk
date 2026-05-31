@@ -99,6 +99,8 @@ def now_playing(request: Request) -> Response:
       - ``is_pinned``: bool. True = user-selected (Next walks the list);
         False = random rotation (Next picks randomly).
       - ``is_paused``: bool. Toggles playback in /obs/audio-countdown.
+      - ``visualiser_style``: str. Canvas visualiser style for the overlay
+        (bars | mirror | waveform | radial | wave | auto).
     """
     state = models.NowPlayingAudio.get()
     if request.method == 'PUT':
@@ -117,12 +119,15 @@ def now_playing(request: Request) -> Response:
             state.is_pinned = bool(body['is_pinned'])
         if 'is_paused' in body:
             state.is_paused = bool(body['is_paused'])
+        if 'visualiser_style' in body:
+            state.visualiser_style = str(body['visualiser_style'])[:20]
         state.save()
     return Response(
         {
             'track_id': state.track_id,
             'is_pinned': state.is_pinned,
             'is_paused': state.is_paused,
+            'visualiser_style': state.visualiser_style,
             'track': _serialize_track(state.track),
             'updated_at': state.updated_at.isoformat(),
         }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import type { AudioTrack } from '@/lib/obsApi';
+import type { AudioTrack, VisualiserStyle } from '@/lib/obsApi';
 import { api } from '@/lib/api';
 import { themeFor } from '../obs/game-themes';
 import { ScenePreview } from './ScenePreview';
@@ -51,6 +51,11 @@ export function AudioControl() {
 
   const togglePaused = () =>
     wrap(() => obsApi.setNowPlayingAudio({ is_paused: !now?.is_paused }));
+
+  // Set the /obs/audio-countdown canvas visualiser style (global; 'auto'
+  // rotates per track). The overlay picks it up on its next ~1.5s poll.
+  const setVisualiser = (style: VisualiserStyle) =>
+    wrap(() => obsApi.setNowPlayingAudio({ visualiser_style: style }));
 
   const enabled = useMemo(
     () => (tracks ?? []).filter((t) => t.enabled).sort((a, b) => a.order - b.order || a.id - b.id),
@@ -205,6 +210,24 @@ export function AudioControl() {
               ↻ Back to random
             </button>
           </div>
+        </div>
+
+        <div className="mt-3 d-flex flex-wrap gap-2 align-items-center">
+          <span className="small text-white-50 me-1">Visualiser</span>
+          {VIS_STYLES.map(([val, label]) => {
+            const active = (now?.visualiser_style ?? 'bars') === val;
+            return (
+              <button
+                key={val}
+                className={`btn btn-sm ${active ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+                disabled={busy}
+                onClick={() => setVisualiser(val)}
+                title={`Use the ${label} visualiser on /obs/audio-countdown`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {err && <p className="text-danger mt-2">{err}</p>}
@@ -422,6 +445,17 @@ function groupByGame(tracks: AudioTrack[]): Record<string, AudioTrack[]> {
 function cleanGameName(raw: string): string {
   return raw.split('[')[0].trim();
 }
+
+// Visualiser styles offered on the control page (label per value). 'auto'
+// rotates through the concrete styles per track on the overlay.
+const VIS_STYLES: Array<[VisualiserStyle, string]> = [
+  ['bars', 'Bars'],
+  ['mirror', 'Mirror'],
+  ['waveform', 'Waveform'],
+  ['radial', 'Radial'],
+  ['wave', 'Wave'],
+  ['auto', 'Auto'],
+];
 
 // Coarse franchise buckets for the library filter. First keyword hit wins;
 // keys are matched as lowercase substrings of the game label. Anything that
