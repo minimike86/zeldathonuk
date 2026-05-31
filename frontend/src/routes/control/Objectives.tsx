@@ -209,6 +209,15 @@ const OBJECTIVE_CATEGORIES = [
 const categoryLabel = (cat: string): string =>
   OBJECTIVE_CATEGORIES.find(([v]) => v === cat)?.[1] || cat || 'Other';
 
+// Setpiece automation roles — drive dungeon/boss setpieces off objective
+// completion (see recompute_setpieces on the backend).
+const SETPIECE_ROLES = [
+  ['', '— none —'],
+  ['dungeon-enter', 'Enter dungeon (→ dungeon active)'],
+  ['boss-enter', 'Enter boss arena (→ boss active, no alert)'],
+  ['boss-defeat', 'Defeat boss (→ clears boss, fires alert)'],
+] as const;
+
 /** Per-game objective library + (when live) per-run status grid. Tiles are
  *  coloured when obtained, greyed when outstanding, dimmed/struck when skipped.
  *  With a live `entry`, clicking a tile toggles obtained↔outstanding and a ⏭
@@ -936,6 +945,9 @@ function ObjectiveForm({
   const [category, setCategory] = useState(initial?.category || 'story');
   const [group, setGroup] = useState(initial?.group ?? '');
   const [linkedItem, setLinkedItem] = useState<number | null>(initial?.linked_item ?? null);
+  const [setpieceRole, setSetpieceRole] = useState<string>(initial?.setpiece_role ?? '');
+  const [setpieceName, setSetpieceName] = useState(initial?.setpiece_name ?? '');
+  const [clearsSetpiece, setClearsSetpiece] = useState(initial?.clears_setpiece ?? '');
   const [assets, setAssets] = useState<GameItemAsset[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -962,6 +974,12 @@ function ObjectiveForm({
     try {
       // Only "item get" objectives carry a linked item; clear it otherwise.
       const linked = category === 'item-get' ? linkedItem : null;
+      const setpieceFields = {
+        setpiece_role: setpieceRole as GameObjective['setpiece_role'],
+        // Linkage/display name only matters when a role is set.
+        setpiece_name: setpieceRole ? setpieceName.trim() : '',
+        clears_setpiece: clearsSetpiece.trim(),
+      };
       if (initial) {
         await obsApi.updateObjective(initial.id, {
           name: name.trim(),
@@ -969,6 +987,7 @@ function ObjectiveForm({
           category,
           group: group.trim(),
           linked_item: linked,
+          ...setpieceFields,
         });
       } else {
         await obsApi.createObjective({
@@ -979,6 +998,7 @@ function ObjectiveForm({
           group: group.trim(),
           linked_item: linked,
           order: nextOrder,
+          ...setpieceFields,
         });
       }
       onDone();
@@ -1060,6 +1080,40 @@ function ObjectiveForm({
             </select>
           </div>
         )}
+        <div style={{ minWidth: 220 }}>
+          <label className="d-block small text-white-50">Setpiece role</label>
+          <select
+            className="form-select form-select-sm"
+            value={setpieceRole}
+            onChange={(e) => setSetpieceRole(e.target.value)}
+          >
+            {SETPIECE_ROLES.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {setpieceRole && (
+          <div style={{ minWidth: 220 }}>
+            <label className="d-block small text-white-50">Setpiece name (display + key)</label>
+            <input
+              value={setpieceName}
+              onChange={(e) => setSetpieceName(e.target.value)}
+              placeholder="e.g. Forest Temple / Phantom Ganon"
+              className="form-control form-control-sm"
+            />
+          </div>
+        )}
+        <div style={{ minWidth: 220 }}>
+          <label className="d-block small text-white-50">Clears setpiece (optional)</label>
+          <input
+            value={clearsSetpiece}
+            onChange={(e) => setClearsSetpiece(e.target.value)}
+            placeholder="name of a setpiece to close"
+            className="form-control form-control-sm"
+          />
+        </div>
         <button type="submit" className="btn btn-bloodmoon btn-sm" disabled={busy}>
           {initial ? 'Save' : 'Add objective'}
         </button>

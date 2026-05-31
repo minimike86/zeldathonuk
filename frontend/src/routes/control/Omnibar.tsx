@@ -831,6 +831,12 @@ const SETPIECE_PRESETS = [
   { kind: 'cutscene', label: 'Cutscene', resultKind: 'setpiece-cleared' },
 ];
 
+const PIN_TOP_PRIORITY = 1000;
+
+function resultKindFor(kind: string): string {
+  return SETPIECE_PRESETS.find((p) => p.kind === kind)?.resultKind ?? 'setpiece-cleared';
+}
+
 function SetpieceSection() {
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 2000);
   const entry = cp?.schedule_entry_detail ?? null;
@@ -838,34 +844,27 @@ function SetpieceSection() {
   const [kind, setKind] = useState('boss');
   const [name, setName] = useState('');
 
-  // Sync local kind/name with entry on entry change.
-  const lastEntryRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (entry && entry.id !== lastEntryRef.current) {
-      lastEntryRef.current = entry.id;
-      setKind(entry.setpiece_kind || 'boss');
-      setName(entry.setpiece_name || '');
-    }
-  }, [entry]);
+  const setpieces = entry?.setpieces ?? [];
+  const nameTrimmed = name.trim();
+  const canStage = !!entry && !busy && !!kind.trim() && !!nameTrimmed;
 
-  const setStage = async (stage: 'imminent' | 'active') => {
-    if (!entry) return;
+  // Mutations rely on the 2s currently-playing poll to refresh the list.
+  const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
     try {
-      await obsApi.setSetpiece(entry.id, { stage, kind, name: name || undefined });
+      await fn();
     } finally {
       setBusy(false);
     }
   };
 
-  const clear = async (resultKind?: string) => {
-    if (!entry) return;
-    setBusy(true);
-    try {
-      await obsApi.setSetpiece(entry.id, { stage: 'cleared', result_kind: resultKind });
-    } finally {
-      setBusy(false);
-    }
+  const add = (stage: 'imminent' | 'active', presetKind?: string) => {
+    if (!entry || !nameTrimmed) return;
+    const k = (presetKind ?? kind).trim();
+    if (!k) return;
+    if (presetKind) setKind(presetKind);
+    void run(() => obsApi.addSetpiece(entry.id, { kind: k, name: nameTrimmed, stage }));
+    setName('');
   };
 
   return (
@@ -876,20 +875,67 @@ function SetpieceSection() {
       ) : (
         <>
           <p className="text-white-50">
-            Imminent → Active → Cleared flow for boss fights, shrines,
-            dungeons. The omnibar's <code>setpiece</code> panel surfaces
-            stage + name; clearing fires a PlaythroughEvent
-            (<code>boss-defeated</code> etc.) that triggers a celebration
-            animation.
+            Dungeon &amp; boss setpieces fire automatically off objective
+            completion (configure objective roles in the Objectives editor).
+            Add bespoke setpieces below. The omnibar shows the
+            highest-priority one; <strong>Pin to top</strong> forces a setpiece
+            above everything (including auto bosses).
           </p>
 
-          <div className="text-white-50 mb-2">
-            Current: {entry.setpiece_stage
-              ? <><strong>{entry.setpiece_stage}</strong> · <code>{entry.setpiece_kind}</code>{entry.setpiece_name && ` · "${entry.setpiece_name}"`}</>
-              : <em>none</em>}
-          </div>
+          {/* Live setpieces */}
+          {setpieces.length === 0 ? (
+            <div className="text-white-50 mb-2"><em>No live setpieces.</em></div>
+          ) : (
+            <ul className="setpiece-list">
+              {setpieces.map((sp) => (
+                <li key={sp.id} className="setpiece-row">
+                  <span className="setpiece-row-info">
+                    <code>{sp.kind}</code> <strong>{sp.name}</strong>{' '}
+                    <span className={`setpiece-badge setpiece-badge--${sp.stage}`}>
+                      {sp.stage}
+                    </span>
+                    {sp.is_auto && (
+                      <span className="setpiece-badge setpiece-badge--auto">auto</span>
+                    )}
+                    <span className="text-white-50"> · p{sp.priority}</span>
+                  </span>
+                  <span className="control-btn-row">
+                    <button
+                      className="btn btn-sm btn-outline-light"
+                      disabled={busy || sp.stage === 'imminent'}
+                      onClick={() => run(() => obsApi.updateSetpiece(entry.id, { setpiece_id: sp.id, stage: 'imminent' }))}
+                    >
+                      Imminent
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-light"
+                      disabled={busy || sp.stage === 'active'}
+                      onClick={() => run(() => obsApi.updateSetpiece(entry.id, { setpiece_id: sp.id, stage: 'active' }))}
+                    >
+                      Active
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-light"
+                      disabled={busy || sp.priority >= PIN_TOP_PRIORITY}
+                      onClick={() => run(() => obsApi.updateSetpiece(entry.id, { setpiece_id: sp.id, priority: PIN_TOP_PRIORITY }))}
+                    >
+                      Pin to top
+                    </button>
+                    <button
+                      className="btn btn-sm btn-setpiece-clear"
+                      disabled={busy}
+                      onClick={() => run(() => obsApi.clearSetpiece(entry.id, { setpiece_id: sp.id, result_kind: resultKindFor(sp.kind) }))}
+                    >
+                      Defeated / Cleared
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          <div className="control-btn-row" style={{ flexWrap: 'wrap' }}>
+          {/* Add a bespoke setpiece */}
+          <div className="control-btn-row setpiece-add" style={{ flexWrap: 'wrap' }}>
             <label className="d-flex flex-column">
               <small>Kind</small>
               <input
@@ -904,7 +950,7 @@ function SetpieceSection() {
               </datalist>
             </label>
             <label className="d-flex flex-column flex-grow-1" style={{ minWidth: 220 }}>
-              <small>Name (optional)</small>
+              <small>Name (required)</small>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -912,49 +958,35 @@ function SetpieceSection() {
               />
             </label>
             <button
-              className="btn btn-bloodmoon"
-              disabled={busy || !kind.trim()}
-              onClick={() => setStage('imminent')}
+              className="btn btn-bloodmoon setpiece-stage-btn"
+              disabled={!canStage}
+              onClick={() => add('imminent')}
             >
               Imminent
             </button>
             <button
-              className="btn btn-bloodmoon"
-              disabled={busy || !kind.trim()}
-              onClick={() => setStage('active')}
+              className="btn btn-bloodmoon setpiece-stage-btn"
+              disabled={!canStage}
+              onClick={() => add('active')}
             >
               Active
             </button>
           </div>
 
           <div className="control-btn-row mt-2" style={{ flexWrap: 'wrap' }}>
-            <small className="text-white-50 align-self-end">Quick presets:</small>
+            <small className="text-white-50 align-self-center">
+              Quick presets (need a name):
+            </small>
             {SETPIECE_PRESETS.map((p) => (
               <button
                 key={p.kind}
                 className="btn btn-sm btn-outline-light"
-                disabled={busy}
-                onClick={() => {
-                  setKind(p.kind);
-                  // Immediately stage as imminent so the omnibar shows
-                  // the build-up tag without a second click.
-                  obsApi.setSetpiece(entry.id, {
-                    stage: 'imminent', kind: p.kind, name: name || undefined,
-                  });
-                }}
+                disabled={busy || !nameTrimmed}
+                onClick={() => add('imminent', p.kind)}
               >
                 {p.label} → imminent
               </button>
             ))}
-            <button
-              className="btn btn-sm btn-outline-success"
-              disabled={busy || !entry.setpiece_stage}
-              onClick={() => clear(
-                SETPIECE_PRESETS.find((p) => p.kind === entry.setpiece_kind)?.resultKind,
-              )}
-            >
-              Defeated / Cleared
-            </button>
           </div>
         </>
       )}

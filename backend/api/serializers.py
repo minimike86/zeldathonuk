@@ -50,7 +50,8 @@ class GameObjectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.GameObjective
         fields = ['id', 'game', 'name', 'image_url', 'category', 'group',
-                  'linked_item', 'order']
+                  'linked_item', 'order',
+                  'setpiece_role', 'setpiece_name', 'clears_setpiece']
 
 
 class GameSerializer(serializers.ModelSerializer):
@@ -311,6 +312,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
     obtained_objective_ids = serializers.SerializerMethodField()
     skipped_objective_ids = serializers.SerializerMethodField()
     objective_split_ms = serializers.SerializerMethodField()
+    setpieces = serializers.SerializerMethodField()
     order = serializers.IntegerField(required=False)
 
     def get_collected_item_ids(self, obj) -> list:
@@ -349,6 +351,22 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             for s in obj.objective_statuses.all()
             if s.status == models.ObjectiveStatus.OBTAINED and s.split_ms is not None
         }
+
+    def get_setpieces(self, obj) -> list:
+        # Live setpieces, highest priority first (model Meta ordering). The
+        # omnibar surfaces only the top one; the control panel lists them all.
+        return [
+            {
+                'id': sp.id,
+                'kind': sp.kind,
+                'name': sp.name,
+                'stage': sp.stage,
+                'priority': sp.priority,
+                'is_auto': sp.is_auto,
+                'started_at': sp.started_at.isoformat() if sp.started_at else None,
+            }
+            for sp in obj.setpieces.all()
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -429,10 +447,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'is_completed',
             'was_skipped',
             'current_objective',
-            'setpiece_kind',
-            'setpiece_name',
-            'setpiece_stage',
-            'setpiece_started_at',
+            'setpieces',
             'notes',
             'timer_segment_ids',
             'timer',

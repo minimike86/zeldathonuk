@@ -295,6 +295,130 @@ class EventViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(event).data)
 
 
+def _route_objectives(entry) -> list:
+    """Ordered GameObjectives forming this entry's run route — the timer
+    splits (``timer_segment_ids``) if configured, else the game's library
+    order. Mirrors the frontend routeObjectives() in Timer.tsx. Queried fresh
+    (not via the prefetch cache) so it reflects edits made this request."""
+    if not entry.game_id:
+        return []
+    objectives = list(models.GameObjective.objects.filter(game_id=entry.game_id))
+    seg_ids = entry.timer_segment_ids or []
+    if seg_ids:
+        by_id = {o.id: o for o in objectives}
+        return [by_id[i] for i in seg_ids if i in by_id]
+    return sorted(objectives, key=lambda o: (o.order, o.name))
+
+
+def _obtained_objective_ids(entry) -> set:
+    """Set of objective ids OBTAINED for this entry — queried fresh so it
+    reflects the row written earlier in the same request."""
+    return set(
+        models.ScheduleEntryObjective.objects.filter(
+            schedule_entry=entry, status=models.ObjectiveStatus.OBTAINED
+        ).values_list('objective_id', flat=True)
+    )
+
+
+def recompute_setpieces(entry) -> list:
+    """Reconcile the entry's AUTO setpieces from current objective statuses.
+
+    Idempotent — derives each named setpiece's stage purely from which of its
+    driving objectives are obtained, then upserts/deletes the ``is_auto`` rows
+    to match (so undo reverses cleanly). Bespoke (``is_auto=False``) rows are
+    never touched. Returns the setpieces that transitioned existing→cleared
+    this call as ``[{'kind', 'name'}]`` for the caller to celebrate.
+
+    Stage rules per named setpiece:
+      - cleared: (boss) the defeat objective is obtained; (any) all objectives
+        whose ``clears_setpiece`` targets this name are obtained (>=1 exists).
+      - active: the enter objective (dungeon-enter / boss-enter) is obtained.
+      - imminent: the route-predecessor of the start objective is obtained.
+    """
+    GO = models.GameObjective
+    route = _route_objectives(entry)
+    obtained = _obtained_objective_ids(entry)
+    index_of = {o.id: i for i, o in enumerate(route)}
+
+    # Build the named groups of driving objectives.
+    # name -> {kind, enter, defeat, clearers: []}
+    groups: dict = {}
+
+    def group_for(name: str, kind: str) -> dict:
+        return groups.setdefault(
+            name, {'kind': kind, 'enter': None, 'defeat': None, 'clearers': []}
+        )
+
+    for o in route:
+        nm = (o.setpiece_name or '').strip()
+        role = o.setpiece_role
+        if role == GO.SETPIECE_ROLE_DUNGEON_ENTER and nm:
+            g = group_for(nm, 'dungeon'); g['kind'] = 'dungeon'; g['enter'] = o
+        elif role == GO.SETPIECE_ROLE_BOSS_ENTER and nm:
+            g = group_for(nm, 'boss'); g['kind'] = 'boss'; g['enter'] = o
+        elif role == GO.SETPIECE_ROLE_BOSS_DEFEAT and nm:
+            g = group_for(nm, 'boss'); g['kind'] = 'boss'; g['defeat'] = o
+        target = (o.clears_setpiece or '').strip()
+        if target:
+            group_for(target, 'dungeon')['clearers'].append(o)
+
+    existing_rows = {
+        sp.name: sp
+        for sp in models.Setpiece.objects.filter(schedule_entry=entry, is_auto=True)
+    }
+    cleared_transitions = []
+    keep_names = set()
+
+    for name, g in groups.items():
+        kind = g['kind']
+        enter = g['enter']
+        defeat = g['defeat']
+        clearers = g['clearers']
+
+        is_cleared = False
+        if defeat is not None and defeat.id in obtained:
+            is_cleared = True
+        if clearers and all(c.id in obtained for c in clearers):
+            is_cleared = True
+
+        derived = None  # None | 'imminent' | 'active'
+        if not is_cleared:
+            start = enter or defeat
+            if enter is not None and enter.id in obtained:
+                derived = models.Setpiece.STAGE_ACTIVE
+            elif start is not None:
+                idx = index_of.get(start.id)
+                if idx is not None and idx > 0 and route[idx - 1].id in obtained:
+                    derived = models.Setpiece.STAGE_IMMINENT
+
+        existing = existing_rows.get(name)
+        if derived is not None:
+            keep_names.add(name)
+            if existing is None:
+                models.Setpiece.objects.create(
+                    schedule_entry=entry, kind=kind, name=name, stage=derived,
+                    priority=models.Setpiece.default_priority_for(kind), is_auto=True,
+                )
+            elif existing.stage != derived or existing.kind != kind:
+                existing.stage = derived
+                existing.kind = kind
+                existing.save(update_fields=['stage', 'kind'])
+        else:
+            if existing is not None:
+                if is_cleared:
+                    cleared_transitions.append({'kind': existing.kind, 'name': name})
+                existing.delete()
+
+    # Drop orphan auto rows whose driving group no longer exists at all (e.g.
+    # an objective's setpiece_name was edited away). Rows for names that ARE in
+    # `groups` were already kept or deleted above. Not a "clear" — no event.
+    for name, sp in existing_rows.items():
+        if name not in groups:
+            sp.delete()
+
+    return cleared_transitions
+
+
 class ScheduleEntryViewSet(viewsets.ModelViewSet):
     queryset = (
         models.ScheduleEntry.objects.all()
@@ -306,6 +430,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             'runners', 'game__items', 'game__items__sets',
             'game__items__unlocks_with', 'game__item_sets',
             'game__objectives', 'collected_items', 'objective_statuses',
+            'setpieces',
         )
     )
     serializer_class = serializers.ScheduleEntrySerializer
@@ -691,72 +816,112 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
                     schedule_entry=entry, item_id__in=ids
                 ).delete()
             self._sync_linked_objectives(entry)
-        return Response({'objective_id': int(objective_id), 'status': new_status})
-
-    @action(detail=True, methods=['post'])
-    def setpiece(self, request: Request, pk=None) -> Response:
-        """Operator endpoint for managing the live setpiece sub-state.
-
-        Body shapes:
-
-          { "stage": "imminent" | "active",
-            "kind": "boss",       (required when stage != cleared, optional
-                                   to update mid-stream)
-            "name": "Ganondorf" } (optional display name)
-
-          { "stage": "cleared",
-            "result_kind": "boss-defeated" } — clears setpiece fields and
-          emits a PlaythroughEvent of result_kind so the omnibar fires
-          its celebration animation. `result_kind` defaults to
-          ``setpiece-cleared`` and the payload mirrors the cleared
-          setpiece for handlers that want richer rendering.
-        """
-        entry = self.get_object()
-        stage = request.data.get('stage')
-        if stage == 'cleared':
-            result_kind = (request.data.get('result_kind') or 'setpiece-cleared').strip()
-            cleared = {
-                'kind': entry.setpiece_kind,
-                'name': entry.setpiece_name,
-                'started_at': entry.setpiece_started_at.isoformat() if entry.setpiece_started_at else None,
-            }
-            entry.setpiece_kind = ''
-            entry.setpiece_name = ''
-            entry.setpiece_stage = ''
-            entry.setpiece_started_at = None
-            entry.save(update_fields=[
-                'setpiece_kind', 'setpiece_name', 'setpiece_stage', 'setpiece_started_at',
-            ])
+        # Drive omnibar setpieces off objective completion: reconcile the
+        # derived (auto) setpieces from the new status snapshot, then fire a
+        # celebration PlaythroughEvent for each one that just cleared.
+        for ct in recompute_setpieces(entry):
+            if ct['kind'] == 'boss':
+                result_kind = 'boss-defeated'
+            elif ct['kind'] == 'dungeon':
+                result_kind = 'dungeon-complete'
+            else:
+                result_kind = 'setpiece-cleared'
             models.PlaythroughEvent.objects.create(
                 schedule_entry=entry,
                 kind=result_kind,
-                payload=cleared,
+                payload={'kind': ct['kind'], 'name': ct['name']},
             )
-            return Response(serializers.ScheduleEntrySerializer(entry).data)
-        if stage not in (
-            models.ScheduleEntry.SETPIECE_IMMINENT,
-            models.ScheduleEntry.SETPIECE_ACTIVE,
-        ):
-            return Response(
-                {'detail': 'stage must be "imminent", "active", or "cleared".'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        kind = (request.data.get('kind') or entry.setpiece_kind or '').strip()
+        return Response({'objective_id': int(objective_id), 'status': new_status})
+
+    @action(detail=True, methods=['post'])
+    def add_setpiece(self, request: Request, pk=None) -> Response:
+        """Create a bespoke (operator) setpiece. Body
+        ``{kind, name, stage, priority?}``. ``name`` is REQUIRED — staging a
+        preset with no name used to render "SHRINE COMING UP — SHRINE"."""
+        entry = self.get_object()
+        kind = (request.data.get('kind') or '').strip()
+        name = (request.data.get('name') or '').strip()
+        stage = request.data.get('stage') or models.Setpiece.STAGE_IMMINENT
         if not kind:
+            return Response({'detail': 'kind required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not name:
+            return Response({'detail': 'name required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if stage not in (models.Setpiece.STAGE_IMMINENT, models.Setpiece.STAGE_ACTIVE):
             return Response(
-                {'detail': 'kind required when starting a setpiece.'},
+                {'detail': 'stage must be "imminent" or "active".'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        name = request.data.get('name')
-        entry.setpiece_kind = kind
-        if name is not None:
-            entry.setpiece_name = str(name)
-        entry.setpiece_stage = stage
-        if entry.setpiece_started_at is None:
-            entry.setpiece_started_at = timezone.now()
-        entry.save(update_fields=[
-            'setpiece_kind', 'setpiece_name', 'setpiece_stage', 'setpiece_started_at',
-        ])
+        raw_priority = request.data.get('priority')
+        try:
+            priority = (
+                int(raw_priority) if raw_priority is not None
+                else models.Setpiece.default_priority_for(kind)
+            )
+        except (TypeError, ValueError):
+            priority = models.Setpiece.default_priority_for(kind)
+        models.Setpiece.objects.create(
+            schedule_entry=entry, kind=kind, name=name, stage=stage,
+            priority=priority, is_auto=False,
+        )
+        return Response(serializers.ScheduleEntrySerializer(entry).data)
+
+    @action(detail=True, methods=['post'])
+    def update_setpiece(self, request: Request, pk=None) -> Response:
+        """Update a setpiece's stage and/or priority. Body
+        ``{setpiece_id, stage?, priority?}``. ``priority: 1000`` is the
+        control panel's "pin to top"."""
+        entry = self.get_object()
+        sp = models.Setpiece.objects.filter(
+            schedule_entry=entry, pk=request.data.get('setpiece_id')
+        ).first()
+        if sp is None:
+            return Response({'detail': 'setpiece not found.'}, status=status.HTTP_404_NOT_FOUND)
+        update_fields = []
+        stage = request.data.get('stage')
+        if stage is not None:
+            if stage not in (models.Setpiece.STAGE_IMMINENT, models.Setpiece.STAGE_ACTIVE):
+                return Response(
+                    {'detail': 'stage must be "imminent" or "active".'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            sp.stage = stage
+            update_fields.append('stage')
+        raw_priority = request.data.get('priority')
+        if raw_priority is not None:
+            try:
+                sp.priority = int(raw_priority)
+            except (TypeError, ValueError):
+                return Response(
+                    {'detail': 'priority must be an integer.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            update_fields.append('priority')
+        if update_fields:
+            sp.save(update_fields=update_fields)
+        return Response(serializers.ScheduleEntrySerializer(entry).data)
+
+    @action(detail=True, methods=['post'])
+    def clear_setpiece(self, request: Request, pk=None) -> Response:
+        """Delete a setpiece. Body ``{setpiece_id, result_kind?}``. When
+        ``result_kind`` is supplied, fire a celebration PlaythroughEvent
+        (mirrors the legacy clear → boss-defeated etc.)."""
+        entry = self.get_object()
+        sp = models.Setpiece.objects.filter(
+            schedule_entry=entry, pk=request.data.get('setpiece_id')
+        ).first()
+        if sp is None:
+            return Response({'detail': 'setpiece not found.'}, status=status.HTTP_404_NOT_FOUND)
+        result_kind = (request.data.get('result_kind') or '').strip()
+        snapshot = {
+            'kind': sp.kind,
+            'name': sp.name,
+            'started_at': sp.started_at.isoformat() if sp.started_at else None,
+        }
+        sp.delete()
+        if result_kind:
+            models.PlaythroughEvent.objects.create(
+                schedule_entry=entry, kind=result_kind, payload=snapshot,
+            )
         return Response(serializers.ScheduleEntrySerializer(entry).data)
 
 

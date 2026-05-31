@@ -601,7 +601,12 @@ function OmnibarInner() {
       if (!obtainedObjectiveIdsRef.current.has(id)) {
         obtainedObjectiveIdsRef.current.add(id);
         const objective = library.find((o) => o.id === id);
-        if (objective) emit({ kind: 'objective-obtained', objective });
+        // Setpiece-role objectives (enter dungeon / enter boss arena / defeat
+        // boss) drive the setpiece panel — and boss-defeat fires its own
+        // celebration server-side — so skip the generic pickup alert for them.
+        if (objective && !objective.setpiece_role) {
+          emit({ kind: 'objective-obtained', objective });
+        }
       }
     }
     for (const id of [...obtainedObjectiveIdsRef.current]) {

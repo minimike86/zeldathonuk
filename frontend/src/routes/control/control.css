@@ -320,6 +320,84 @@
   flex-wrap: wrap;
 }
 
+/* ── Setpiece controls ──────────────────────────────────────────────────
+ * The add row carries labelled inputs (a <small> caption stacked above the
+ * field). Bottom-align everything so the Imminent/Active buttons line up with
+ * the input boxes rather than stretching to the full label+input height. */
+.setpiece-add {
+  align-items: flex-end;
+}
+/* Match the stage buttons' box metrics to .control-card inputs so they read as
+ * the same height as the fields to their left. */
+.setpiece-stage-btn {
+  align-self: flex-end;
+  padding: 0.45rem 1rem;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.setpiece-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.setpiece-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+.setpiece-row-info {
+  color: #fff;
+}
+.setpiece-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+.setpiece-badge--imminent {
+  background: rgba(255, 193, 7, 0.22);
+  color: #ffd454;
+}
+.setpiece-badge--active {
+  background: rgba(220, 53, 69, 0.28);
+  color: #ff8a96;
+}
+.setpiece-badge--auto {
+  background: rgba(255, 255, 255, 0.14);
+  color: #cfd6dd;
+}
+
+/* Solid, readable "Defeated / Cleared" button — the old btn-outline-success
+ * was transparent green-on-dark and near-impossible to read. */
+.btn-setpiece-clear {
+  background: #2e7d32;
+  border: 1px solid #2e7d32;
+  color: #fff;
+}
+.btn-setpiece-clear:hover:not(:disabled),
+.btn-setpiece-clear:focus:not(:disabled) {
+  background: #276a2b;
+  border-color: #276a2b;
+  color: #fff;
+}
+.btn-setpiece-clear:disabled {
+  opacity: 0.55;
+}
+
 /* Horizontal-scroll wrapper used by the /control/donations table.
  * The action column carries three labelled buttons (Replay TTS,
  * Mute, Delete) which together push the row past the viewport on

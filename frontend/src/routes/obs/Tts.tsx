@@ -213,7 +213,9 @@ export function Tts() {
   );
 
   function speak(item: QueueItem, onDone: () => void) {
-    if (!('speechSynthesis' in window)) {
+    // Value check (not `'x' in window`) so TS doesn't narrow `window` to
+    // `never` in this branch — speechSynthesis is a declared Window member.
+    if (typeof window.speechSynthesis === 'undefined') {
       // No Web Speech API — still show the card, advance after the
       // safety timeout so the queue keeps moving.
       window.setTimeout(onDone, MAX_UTTERANCE_HOLD_MS / 2);

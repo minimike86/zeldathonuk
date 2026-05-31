@@ -6,7 +6,7 @@ import { DsTop } from './layouts/DsTop';
 import { DsBoth } from './layouts/DsBoth';
 import { FsaSplit } from './layouts/FsaSplit';
 
-const REGISTRY: Record<string, () => JSX.Element> = {
+const REGISTRY: Record<string, () => React.JSX.Element> = {
   '16x9': Widescreen,
   '4x3': Standard,
   '3ds': ThreeDs,

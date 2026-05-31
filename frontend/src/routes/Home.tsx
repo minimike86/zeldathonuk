@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { WaveText } from '@/components/WaveText';

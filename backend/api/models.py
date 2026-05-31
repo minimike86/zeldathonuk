@@ -268,36 +268,10 @@ class ScheduleEntry(models.Model):
                   'Ganondorf, second phase"). Surfaced in the omnibar '
                   'ObjectivePanel when set; hidden when blank.',
     )
-    SETPIECE_IMMINENT = 'imminent'
-    SETPIECE_ACTIVE = 'active'
-    SETPIECE_STAGE_CHOICES = [
-        ('', 'Inactive'),
-        (SETPIECE_IMMINENT, 'Imminent — build-up'),
-        (SETPIECE_ACTIVE, 'Active — in progress'),
-    ]
-    setpiece_kind = models.CharField(
-        max_length=32,
-        blank=True,
-        help_text='Open string for the type of set-piece in progress: "boss", '
-                  '"shrine", "dungeon", "cutscene", anything the operator '
-                  'declares. Blank = no set-piece active.',
-    )
-    setpiece_name = models.CharField(
-        max_length=120,
-        blank=True,
-        help_text='Display name for the set-piece (e.g. "Ganondorf"). '
-                  'Surfaced by the omnibar SetpiecePanel.',
-    )
-    setpiece_stage = models.CharField(
-        max_length=16,
-        blank=True,
-        default='',
-        choices=SETPIECE_STAGE_CHOICES,
-        help_text='Operator-controlled lifecycle of the current set-piece. '
-                  'Blank = none. Defeated is signalled via a PlaythroughEvent '
-                  '(boss-defeated etc.) which clears these fields too.',
-    )
-    setpiece_started_at = models.DateTimeField(null=True, blank=True)
+    # Setpieces (boss / dungeon / shrine build-up tags) live in their own
+    # `Setpiece` model now — many can be live at once (see related_name
+    # 'setpieces'). They are driven automatically off objective completion
+    # plus bespoke operator entries.
     notes = models.TextField(blank=True)
     timer_segment_ids = models.JSONField(
         default=list,
@@ -545,6 +519,47 @@ class GameObjective(models.Model):
     )
     order = models.PositiveIntegerField(default=0)
 
+    # ── Setpiece automation ───────────────────────────────────────────────
+    # These let an objective drive an omnibar Setpiece as the run progresses
+    # (timer splits mark objectives obtained → setpieces advance). See
+    # views.recompute_setpieces. `category`/`group` above stay purely for the
+    # checklist display; setpiece automation is opt-in via these fields.
+    SETPIECE_ROLE_NONE = ''
+    SETPIECE_ROLE_DUNGEON_ENTER = 'dungeon-enter'
+    SETPIECE_ROLE_BOSS_ENTER = 'boss-enter'
+    SETPIECE_ROLE_BOSS_DEFEAT = 'boss-defeat'
+    SETPIECE_ROLE_CHOICES = [
+        (SETPIECE_ROLE_NONE, '— none —'),
+        (SETPIECE_ROLE_DUNGEON_ENTER, 'Enter dungeon (→ dungeon active)'),
+        (SETPIECE_ROLE_BOSS_ENTER, 'Enter boss arena (→ boss active, no alert)'),
+        (SETPIECE_ROLE_BOSS_DEFEAT, 'Defeat boss (→ clears boss, fires alert)'),
+    ]
+    setpiece_role = models.CharField(
+        max_length=40,
+        blank=True,
+        choices=SETPIECE_ROLE_CHOICES,
+        help_text='Role this objective plays in setpiece automation. '
+                  '"Enter dungeon"/"Enter boss arena" flip the named setpiece to '
+                  'active when obtained; the objective BEFORE one of these flips '
+                  'it to imminent. "Defeat boss" clears the named boss setpiece '
+                  'and fires a celebration.',
+    )
+    setpiece_name = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Display name + linkage key of the setpiece this objective '
+                  'drives via setpiece_role (e.g. "Forest Temple", "Phantom '
+                  'Ganon"). Objectives sharing a name drive the same setpiece.',
+    )
+    clears_setpiece = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Name of a setpiece this objective marks CLEARED when '
+                  'obtained — e.g. a dungeon\'s key item or boss-defeat closing '
+                  'the dungeon. A dungeon clears once ALL objectives targeting '
+                  'its name are obtained (handles "item and/or boss, or both").',
+    )
+
     class Meta:
         ordering = ['game', 'order', 'name']
         # Name need only be unique within a (game, group) — the same objective
@@ -592,6 +607,85 @@ class ScheduleEntryObjective(models.Model):
 
     def __str__(self) -> str:
         return f'{self.schedule_entry} → {self.objective.name} ({self.status})'
+
+
+class Setpiece(models.Model):
+    """A live omnibar setpiece (boss fight / dungeon / shrine build-up tag).
+
+    Many can be live at once for a single ScheduleEntry — e.g. a dungeon is
+    `active` the whole time the runner is inside it while bosses within come
+    and go. The omnibar surfaces only the highest-priority one (boss outranks
+    dungeon; active outranks imminent; operators can pin a bespoke setpiece to
+    the very top). "Cleared" is not a stored stage: clearing deletes the row
+    (and may fire a celebration PlaythroughEvent).
+
+    `is_auto` rows are reconciled from objective statuses by
+    views.recompute_setpieces and must not be hand-edited (bar clear/pin);
+    `is_auto=False` rows are bespoke operator entries left untouched by the
+    reconcile pass.
+    """
+
+    STAGE_IMMINENT = 'imminent'
+    STAGE_ACTIVE = 'active'
+    STAGE_CHOICES = [
+        (STAGE_IMMINENT, 'Imminent — build-up'),
+        (STAGE_ACTIVE, 'Active — in progress'),
+    ]
+
+    # Default priority by kind (higher shown first); pin-to-top uses 1000.
+    PRIORITY_BY_KIND = {
+        'boss': 100,
+        'shrine': 60,
+        'dungeon': 40,
+        'cutscene': 30,
+    }
+    DEFAULT_PRIORITY = 50
+    PIN_TOP_PRIORITY = 1000
+
+    schedule_entry = models.ForeignKey(
+        ScheduleEntry, on_delete=models.CASCADE, related_name='setpieces'
+    )
+    kind = models.CharField(
+        max_length=32,
+        help_text='Type of setpiece: "boss", "dungeon", "shrine", "cutscene", '
+                  'or anything the operator declares.',
+    )
+    name = models.CharField(
+        max_length=120,
+        help_text='Display name (e.g. "Phantom Ganon"). For auto rows this also '
+                  'keys the setpiece to its driving objectives.',
+    )
+    stage = models.CharField(max_length=16, choices=STAGE_CHOICES)
+    priority = models.IntegerField(
+        default=DEFAULT_PRIORITY,
+        help_text='Higher = surfaced first on the omnibar. Defaults by kind; '
+                  'operator "pin to top" sets 1000.',
+    )
+    is_auto = models.BooleanField(
+        default=False,
+        help_text='True = derived from objective statuses and reconciled '
+                  'automatically; False = bespoke operator entry.',
+    )
+    started_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-priority', '-started_at']
+        constraints = [
+            # Auto rows are keyed by (entry, name) so reconcile can upsert.
+            models.UniqueConstraint(
+                fields=['schedule_entry', 'name'],
+                condition=models.Q(is_auto=True),
+                name='uniq_auto_setpiece_per_entry',
+            ),
+        ]
+
+    @classmethod
+    def default_priority_for(cls, kind: str) -> int:
+        return cls.PRIORITY_BY_KIND.get((kind or '').strip().lower(), cls.DEFAULT_PRIORITY)
+
+    def __str__(self) -> str:
+        return f'{self.schedule_entry} → {self.kind}:{self.name} ({self.stage})'
 
 
 class DonationPlatform(models.TextChoices):

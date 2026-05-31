@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { Donation, EventModel, MuteReason, MuteReasonChoice } from '@/lib/obsApi';
 import { api } from '@/lib/api';

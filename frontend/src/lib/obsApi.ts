@@ -138,6 +138,46 @@ export interface GameObjective {
    *  state). Null when the objective isn't tied to an item. */
   linked_item: number | null;
   order: number;
+  /** Role this objective plays in driving an omnibar setpiece (see
+   *  recompute_setpieces on the backend). */
+  setpiece_role: SetpieceRole;
+  /** Display name + linkage key of the setpiece this objective drives. */
+  setpiece_name: string;
+  /** Name of a setpiece this objective marks cleared when obtained. */
+  clears_setpiece: string;
+}
+
+export type SetpieceRole = '' | 'dungeon-enter' | 'boss-enter' | 'boss-defeat';
+
+/** A live setpiece on a ScheduleEntry. Many can be active at once; the omnibar
+ *  surfaces only the highest-priority one (see topSetpiece). */
+export interface Setpiece {
+  id: number;
+  kind: string;
+  name: string;
+  stage: 'imminent' | 'active';
+  priority: number;
+  is_auto: boolean;
+  started_at: string | null;
+}
+
+/** Pick the single setpiece to surface on the omnibar: highest priority, then
+ *  active over imminent, then most recently started. Returns null when none. */
+export function topSetpiece(setpieces: Setpiece[] | null | undefined): Setpiece | null {
+  if (!setpieces || setpieces.length === 0) return null;
+  const score = (s: Setpiece): [number, number, number] => [
+    s.priority,
+    s.stage === 'active' ? 1 : 0,
+    s.started_at ? new Date(s.started_at).getTime() : 0,
+  ];
+  return setpieces.reduce((best, cur) => {
+    const b = score(best);
+    const c = score(cur);
+    for (let i = 0; i < b.length; i++) {
+      if (c[i] !== b[i]) return c[i] > b[i] ? cur : best;
+    }
+    return best;
+  });
 }
 
 /** Per-run status of a game objective. Absence from both id-lists on the
@@ -262,12 +302,9 @@ export interface ScheduleEntry {
   is_completed: boolean;
   was_skipped: boolean;
   current_objective: string;
-  setpiece_kind: string;
-  setpiece_name: string;
-  /** '' | 'imminent' | 'active'. 'cleared' is signalled via a
-   *  PlaythroughEvent, not stored here. */
-  setpiece_stage: '' | 'imminent' | 'active';
-  setpiece_started_at: string | null;
+  /** Live setpieces, highest priority first (server-ordered). Many can be
+   *  active at once; the omnibar surfaces only topSetpiece(...). */
+  setpieces: Setpiece[];
   notes: string;
   /** Ordered GameObjective ids forming this run's LiveSplit route (the timer
    *  splits). Empty = the timer falls back to all of the game's objectives in
@@ -1234,6 +1271,9 @@ export const obsApi = {
     group?: string;
     linked_item?: number | null;
     order?: number;
+    setpiece_role?: SetpieceRole;
+    setpiece_name?: string;
+    clears_setpiece?: string;
   }) =>
     api<GameObjective>('/api/game-objectives/', { method: 'POST', body }).then(
       withObjectivesBroadcast,
@@ -1241,7 +1281,10 @@ export const obsApi = {
   updateObjective: (
     id: number,
     patch: Partial<
-      Pick<GameObjective, 'name' | 'image_url' | 'category' | 'group' | 'linked_item' | 'order'>
+      Pick<GameObjective,
+        'name' | 'image_url' | 'category' | 'group' | 'linked_item' | 'order'
+        | 'setpiece_role' | 'setpiece_name' | 'clears_setpiece'
+      >
     >,
   ) =>
     api<GameObjective>(`/api/game-objectives/${id}/`, { method: 'PATCH', body: patch }).then(
@@ -1285,13 +1328,32 @@ export const obsApi = {
       method: 'PATCH',
       body: patch,
     }),
-  setSetpiece: (
+  /** Create a bespoke operator setpiece. `name` is required server-side. */
+  addSetpiece: (
     entryId: number,
-    body:
-      | { stage: 'imminent' | 'active'; kind: string; name?: string }
-      | { stage: 'cleared'; result_kind?: string },
+    body: { kind: string; name: string; stage: 'imminent' | 'active'; priority?: number },
   ) =>
-    api<ScheduleEntry>(`/api/schedule/${entryId}/setpiece/`, {
+    api<ScheduleEntry>(`/api/schedule/${entryId}/add_setpiece/`, {
+      method: 'POST',
+      body,
+    }),
+
+  /** Flip a setpiece's stage and/or re-prioritise it (priority 1000 = pin to top). */
+  updateSetpiece: (
+    entryId: number,
+    body: { setpiece_id: number; stage?: 'imminent' | 'active'; priority?: number },
+  ) =>
+    api<ScheduleEntry>(`/api/schedule/${entryId}/update_setpiece/`, {
+      method: 'POST',
+      body,
+    }),
+
+  /** Delete a setpiece; pass result_kind to fire a celebration event. */
+  clearSetpiece: (
+    entryId: number,
+    body: { setpiece_id: number; result_kind?: string },
+  ) =>
+    api<ScheduleEntry>(`/api/schedule/${entryId}/clear_setpiece/`, {
       method: 'POST',
       body,
     }),

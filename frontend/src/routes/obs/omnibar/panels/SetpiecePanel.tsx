@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { topSetpiece } from '@/lib/obsApi';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 
@@ -60,16 +61,15 @@ registerPanel<Data>({
   selectData: (feed) => {
     const entry = feed.currentlyPlaying?.schedule_entry_detail;
     if (!entry) return null;
-    const stage = entry.setpiece_stage;
-    if (stage !== 'imminent' && stage !== 'active') return null;
-    if (!entry.setpiece_kind) return null;
+    // Surface only the highest-priority live setpiece (boss outranks dungeon;
+    // active outranks imminent; operators can pin a bespoke one to the top).
+    const top = topSetpiece(entry.setpieces);
+    if (!top || !top.kind) return null;
     return {
-      kind: entry.setpiece_kind,
-      name: entry.setpiece_name,
-      stage,
-      startedAt: entry.setpiece_started_at
-        ? new Date(entry.setpiece_started_at).getTime()
-        : null,
+      kind: top.kind,
+      name: top.name,
+      stage: top.stage,
+      startedAt: top.started_at ? new Date(top.started_at).getTime() : null,
     };
   },
   minDurationMs: 6000,

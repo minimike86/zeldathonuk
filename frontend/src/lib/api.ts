@@ -10,13 +10,18 @@ type FetchOptions = Omit<RequestInit, 'body'> & {
 };
 
 export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public statusText: string,
-    public body: unknown,
-  ) {
+  // Explicit field declarations rather than constructor parameter properties:
+  // the latter emit runtime code, which `erasableSyntaxOnly` (tsconfig) forbids.
+  status: number;
+  statusText: string;
+  body: unknown;
+
+  constructor(status: number, statusText: string, body: unknown) {
     super(formatApiError(status, statusText, body));
     this.name = 'ApiError';
+    this.status = status;
+    this.statusText = statusText;
+    this.body = body;
   }
 }
 

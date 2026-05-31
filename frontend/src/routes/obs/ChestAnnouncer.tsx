@@ -7,7 +7,6 @@ import {
   HERO_IDLE_SRC,
   HERO_REACH_SRC,
   HERO_HOLD_SRC,
-  CHEST_SRC,
 } from './chest-placeholders';
 import { playFanfare, warmUpFanfare, type PlaybackHandle } from './fanfare';
 import { pickTrigger, playSound } from './chestSoundTriggers';

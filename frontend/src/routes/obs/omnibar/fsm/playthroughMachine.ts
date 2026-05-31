@@ -1,4 +1,4 @@
-import type { CurrentlyPlaying, ScheduleEntry } from '@/lib/obsApi';
+import { topSetpiece, type CurrentlyPlaying, type ScheduleEntry } from '@/lib/obsApi';
 import type { PlaythroughPhase } from '../bus/types';
 
 /**
@@ -55,22 +55,17 @@ export function derivePlaythroughPhase(
 }
 
 function deriveLiveSub(entry: ScheduleEntry): import('../bus/types').LiveSubState {
-  // Setpiece sub-state is operator-driven via /api/schedule/{id}/setpiece/.
-  // setpiece_stage is the source of truth; the kind/name fields populate
-  // the omnibar's setpiece panel. `cleared` is signalled via a
-  // PlaythroughEvent (boss-defeated etc.) which fires the celebration
+  // Setpieces live in entry.setpieces — driven automatically off objective
+  // completion plus bespoke operator entries. We surface only the
+  // highest-priority one (boss outranks dungeon; active outranks imminent;
+  // operators can pin a bespoke setpiece to the top). `cleared` is signalled
+  // via a PlaythroughEvent (boss-defeated etc.) which fires the celebration
   // separately — it doesn't show up here.
-  if (entry.setpiece_stage && entry.setpiece_kind) {
-    const setpiece = {
-      kind: entry.setpiece_kind,
-      name: entry.setpiece_name,
-    };
-    if (entry.setpiece_stage === 'imminent') {
-      return { kind: 'setpiece-imminent', setpiece };
-    }
-    if (entry.setpiece_stage === 'active') {
-      return { kind: 'setpiece-active', setpiece };
-    }
+  const top = topSetpiece(entry.setpieces);
+  if (top && top.kind) {
+    const setpiece = { kind: top.kind, name: top.name };
+    if (top.stage === 'imminent') return { kind: 'setpiece-imminent', setpiece };
+    if (top.stage === 'active') return { kind: 'setpiece-active', setpiece };
   }
   return { kind: 'nominal' };
 }
