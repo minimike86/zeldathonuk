@@ -1,0 +1,360 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * CASTLEVANIA franchise scenes. Five gothic vignettes, one per game.
+ * Co-located scene CSS (not the shared scenes.css). Each scene owns a unique
+ * class prefix:
+ *   .sotn-  Symphony of the Night
+ *   .scv4-  Super Castlevania IV
+ *   .cv3-   Castlevania III
+ *   .cv2-   Castlevania II
+ *   .cv1-   Castlevania (NES fallback)
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ===========================================================================
+ * SYMPHONY OF THE NIGHT — ornate inverted gothic castle, candelabra, Alucard.
+ * =========================================================================== */
+.sotn-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0a0a2e 0%, #141452 46%, #1d1438 100%);
+}
+.sotn-moon {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: 18%;
+  max-width: 200px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 30px rgba(255, 226, 150, 0.5));
+  animation: sotn-moon-pulse 9s ease-in-out infinite;
+}
+@keyframes sotn-moon-pulse {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+/* The inverted castle hangs from the top of the frame */
+.sotn-castle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 64%;
+  max-width: 760px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 6px 22px rgba(0, 0, 0, 0.6));
+  animation: sotn-castle-float 14s ease-in-out infinite;
+}
+@keyframes sotn-castle-float {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 10px); }
+}
+.sotn-candelabra {
+  position: absolute;
+  bottom: 6%;
+  width: 9%;
+  max-width: 110px;
+  filter: drop-shadow(0 0 14px rgba(255, 170, 60, 0.6));
+}
+.sotn-candelabra-left { left: 9%; }
+.sotn-candelabra-right { right: 9%; }
+.sotn-flame {
+  transform-origin: 50% 100%;
+  animation: sotn-flicker 1.4s ease-in-out infinite;
+}
+.sotn-candelabra-right .sotn-flame { animation-delay: 0.5s; }
+@keyframes sotn-flicker {
+  0%, 100% { transform: scaleY(1) translateX(0); opacity: 0.95; }
+  35% { transform: scaleY(0.86) translateX(0.6px); opacity: 1; }
+  70% { transform: scaleY(1.08) translateX(-0.6px); opacity: 0.88; }
+}
+/* Alucard silhouette, cape billowing, foreground centre */
+.sotn-alucard {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  width: 12%;
+  max-width: 150px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.6));
+}
+.sotn-cape {
+  transform-origin: 50% 14%;
+  animation: sotn-cape-sway 6s ease-in-out infinite;
+}
+@keyframes sotn-cape-sway {
+  0%, 100% { transform: rotate(-1.5deg) skewX(-2deg); }
+  50% { transform: rotate(1.5deg) skewX(2deg); }
+}
+
+/* ===========================================================================
+ * SUPER CASTLEVANIA IV — SNES grand hall, chandeliers, stained glass.
+ * =========================================================================== */
+.scv4-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a0608 0%, #4a0c12 50%, #1c0406 100%);
+}
+.scv4-window {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: 28%;
+  max-width: 320px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 26px rgba(255, 210, 120, 0.45));
+  animation: scv4-glow 7s ease-in-out infinite;
+}
+@keyframes scv4-glow {
+  0%, 100% { opacity: 0.92; }
+  50% { opacity: 1; }
+}
+.scv4-pillars {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 88%;
+}
+.scv4-chandelier {
+  position: absolute;
+  top: 4%;
+  width: 14%;
+  max-width: 170px;
+  transform-origin: 50% 0;
+  filter: drop-shadow(0 0 16px rgba(255, 190, 80, 0.6));
+  animation: scv4-swing 6.5s ease-in-out infinite;
+}
+.scv4-chandelier-left { left: 14%; }
+.scv4-chandelier-right { right: 14%; animation-delay: 0.9s; }
+@keyframes scv4-swing {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
+}
+.scv4-carpet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 26%;
+}
+
+/* ===========================================================================
+ * CASTLEVANIA III — Trevor with whip on a crumbling bridge, stormy.
+ * =========================================================================== */
+.cv3-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #161028 0%, #241a3c 48%, #0c0816 100%);
+}
+.cv3-clouds {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+}
+.cv3-lightning {
+  position: absolute;
+  inset: 0;
+  background: rgba(190, 200, 255, 0.5);
+  opacity: 0;
+  animation: cv3-flash 7s linear infinite;
+}
+@keyframes cv3-flash {
+  0%, 88%, 100% { opacity: 0; }
+  90% { opacity: 0.55; }
+  92% { opacity: 0.1; }
+  94% { opacity: 0.45; }
+  96% { opacity: 0; }
+}
+.cv3-bridge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 42%;
+}
+.cv3-castle {
+  position: absolute;
+  bottom: 28%;
+  right: 8%;
+  width: 24%;
+  max-width: 280px;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.6));
+}
+/* Trevor cracking the whip on the bridge */
+.cv3-trevor {
+  position: absolute;
+  bottom: 28%;
+  left: 20%;
+  width: 11%;
+  max-width: 140px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+}
+.cv3-whip {
+  transform-origin: 12% 28%;
+  animation: cv3-whip-crack 2.6s ease-in-out infinite;
+}
+@keyframes cv3-whip-crack {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  72% { transform: rotate(-34deg); }
+  84% { transform: rotate(8deg); }
+}
+
+/* ===========================================================================
+ * CASTLEVANIA II — Simon's Quest night town / graveyard, fog, eerie.
+ * =========================================================================== */
+.cv2-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0a1a14 0%, #16242c 45%, #1a1030 100%);
+}
+.cv2-moon {
+  position: absolute;
+  top: 10%;
+  right: 16%;
+  width: 13%;
+  max-width: 150px;
+  filter: drop-shadow(0 0 26px rgba(140, 255, 180, 0.5));
+  animation: cv2-moon-glow 8s ease-in-out infinite;
+}
+@keyframes cv2-moon-glow {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+.cv2-town {
+  position: absolute;
+  bottom: 18%;
+  left: 0;
+  width: 100%;
+  height: 44%;
+}
+.cv2-graves {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 26%;
+}
+/* Drifting fog bands */
+.cv2-fog,
+.cv2-fog::before {
+  position: absolute;
+  bottom: 14%;
+  left: -20%;
+  width: 140%;
+  height: 26%;
+  background: radial-gradient(ellipse at center, rgba(150, 200, 170, 0.22) 0%, transparent 70%);
+  animation: cv2-drift 22s linear infinite;
+}
+.cv2-fog::before {
+  content: '';
+  bottom: -40%;
+  left: -10%;
+  opacity: 0.6;
+  animation-delay: 9s;
+  animation-duration: 30s;
+}
+@keyframes cv2-drift {
+  0% { transform: translateX(-12%); }
+  50% { transform: translateX(12%); }
+  100% { transform: translateX(-12%); }
+}
+.cv2-bats {
+  transform-origin: center;
+  animation: cv2-bat-fly 13s linear infinite;
+}
+@keyframes cv2-bat-fly {
+  0% { transform: translate(-10vw, 4vh); }
+  50% { transform: translate(40vw, -2vh); }
+  100% { transform: translate(90vw, 5vh); }
+}
+
+/* ===========================================================================
+ * CASTLEVANIA (NES) — Dracula's castle on a hill, blood moon, bats, lightning.
+ * =========================================================================== */
+.cv1-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1a0510 0%, #3a0a18 44%, #100308 100%);
+}
+.cv1-moon {
+  position: absolute;
+  top: 9%;
+  left: 50%;
+  width: 22%;
+  max-width: 240px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 40px rgba(220, 60, 60, 0.6));
+  animation: cv1-moon-pulse 6s ease-in-out infinite;
+}
+@keyframes cv1-moon-pulse {
+  0%, 100% { opacity: 0.92; filter: drop-shadow(0 0 40px rgba(220, 60, 60, 0.55)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 56px rgba(220, 60, 60, 0.8)); }
+}
+.cv1-lightning {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 200, 200, 0.45);
+  opacity: 0;
+  animation: cv1-flash 5.5s linear infinite;
+}
+@keyframes cv1-flash {
+  0%, 84%, 100% { opacity: 0; }
+  86% { opacity: 0.5; }
+  88% { opacity: 0.08; }
+  90% { opacity: 0.38; }
+  93% { opacity: 0; }
+}
+.cv1-hill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 56%;
+}
+.cv1-castle {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  width: 40%;
+  max-width: 460px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.7));
+}
+.cv1-bats {
+  transform-origin: center;
+  animation: cv1-bat-swarm 11s ease-in-out infinite;
+}
+.cv1-bats-2 { animation-delay: 3s; animation-duration: 9s; }
+@keyframes cv1-bat-swarm {
+  0% { transform: translate(70vw, 10vh) scale(0.7); }
+  50% { transform: translate(30vw, 2vh) scale(1); }
+  100% { transform: translate(-10vw, 14vh) scale(0.6); }
+}
+
+/* ===========================================================================
+ * Shared reduced-motion guard for every Castlevania scene.
+ * =========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .sotn-moon, .sotn-castle, .sotn-flame, .sotn-cape,
+  .scv4-window, .scv4-chandelier,
+  .cv3-lightning, .cv3-whip,
+  .cv2-moon, .cv2-fog, .cv2-fog::before, .cv2-bats,
+  .cv1-moon, .cv1-lightning, .cv1-bats {
+    animation: none;
+  }
+}

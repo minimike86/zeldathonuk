@@ -1,0 +1,148 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * STREET FIGHTER — Ryu's Suzaku Castle stage at sunset: a pagoda beside a
+ * waterfall, fighter silhouette mid-stance, orange sky. Covers SF II / Super
+ * SF II. Co-located scene CSS (not the shared scenes.css); `.sf-` namespace.
+ * ───────────────────────────────────────────────────────────────────────── */
+.sf-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ff8a3c 0%, #e8542e 40%, #7a2150 78%, #2a103a 100%);
+}
+
+/* Setting sun low behind the pagoda */
+.sf-sun {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  width: 26%;
+  max-width: 280px;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff2c0 0%, #ffd24a 38%, rgba(255, 170, 60, 0) 72%);
+  animation: sf-sun-pulse 8s ease-in-out infinite;
+}
+@keyframes sf-sun-pulse {
+  0%, 100% { opacity: 0.92; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.03); }
+}
+
+/* Distant ridge silhouette */
+.sf-ridge {
+  position: absolute;
+  bottom: 22%;
+  left: 0;
+  width: 100%;
+  height: 30%;
+}
+
+/* Pagoda perched on the right cliff */
+.sf-pagoda {
+  position: absolute;
+  bottom: 24%;
+  right: 8%;
+  width: 26%;
+  max-width: 300px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+}
+
+/* Waterfall pouring on the left */
+.sf-waterfall {
+  position: absolute;
+  bottom: 18%;
+  left: 12%;
+  width: 16%;
+  max-width: 180px;
+  height: 56%;
+  overflow: hidden;
+}
+.sf-waterfall-streak {
+  animation: sf-fall 1.1s linear infinite;
+}
+.sf-waterfall-streak-2 { animation-delay: 0.4s; }
+.sf-waterfall-streak-3 { animation-delay: 0.7s; }
+@keyframes sf-fall {
+  0% { transform: translateY(-22%); opacity: 0.4; }
+  50% { opacity: 0.85; }
+  100% { transform: translateY(22%); opacity: 0.4; }
+}
+
+/* Foreground arena floor */
+.sf-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 26%;
+}
+
+/* Ryu silhouette mid-stance */
+.sf-fighter {
+  position: absolute;
+  bottom: 22%;
+  left: 26%;
+  width: 13%;
+  max-width: 160px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+  animation: sf-stance 3.4s ease-in-out infinite;
+}
+@keyframes sf-stance {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-4px) scaleY(1.015); }
+}
+
+/* Hadouken energy ball gathering at the fighter's hands */
+.sf-hadouken {
+  position: absolute;
+  bottom: 34%;
+  left: 30%;
+  width: 7%;
+  max-width: 80px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #9fe0ff 40%, rgba(80, 170, 255, 0) 72%);
+  animation: sf-charge 2.2s ease-in-out infinite;
+}
+@keyframes sf-charge {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 0.95; transform: scale(1); }
+}
+
+/* Drifting cherry-blossom petals */
+.sf-petals,
+.sf-petals::before {
+  position: absolute;
+  top: -4%;
+  left: 10%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50% 0 50% 50%;
+  background: transparent;
+  box-shadow:
+    60px 40px #ffd6e6, 200px 120px #ffc2dc, 340px 60px #ffe0ec, 520px 160px #ffc2dc,
+    700px 90px #ffd6e6, 880px 200px #ffe0ec, 1040px 50px #ffc2dc, 1180px 150px #ffd6e6;
+  animation: sf-petal-fall 9s linear infinite;
+}
+.sf-petals::before {
+  content: '';
+  transform: translate(80px, -60px);
+  animation-delay: 4s;
+  opacity: 0.7;
+}
+@keyframes sf-petal-fall {
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.9; }
+  90% { opacity: 0.9; }
+  100% { transform: translateY(110vh) translateX(40px) rotate(220deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-sun, .sf-waterfall-streak, .sf-fighter, .sf-hadouken,
+  .sf-petals, .sf-petals::before {
+    animation: none;
+  }
+}

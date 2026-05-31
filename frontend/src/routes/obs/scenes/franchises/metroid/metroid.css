@@ -1,0 +1,184 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * METROID franchise scenes. Co-located CSS (not the shared scenes.css).
+ * One unique namespace per game: smet (Super Metroid) / mprime (Metroid Prime)
+ * / met (NES Metroid fallback).
+ * ───────────────────────────────────────────────────────────────────────── */
+
+.smet-scene, .mprime-scene, .met-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* ═══════════════════ SUPER METROID (Zebes caverns) ═══════════════════ */
+.smet-scene { background: linear-gradient(180deg, #07181c 0%, #0c2a2c 50%, #04100f 100%); }
+
+.smet-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(50% 45% at 50% 55%, rgba(31, 163, 160, 0.28), transparent 72%);
+  animation: smet-glow-pulse 7s ease-in-out infinite;
+}
+@keyframes smet-glow-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+.smet-ceiling { position: absolute; top: 0; left: 0; width: 100%; height: 26%; }
+.smet-backwall { position: absolute; bottom: 0; left: 0; width: 100%; height: 70%; }
+.smet-ledge { position: absolute; bottom: 0; left: 0; width: 100%; height: 22%; }
+
+.smet-metroid {
+  position: absolute; top: 16%; right: 16%; width: 10%; max-width: 120px;
+  filter: drop-shadow(0 0 16px rgba(95, 232, 214, 0.6));
+  animation: smet-metroid-float 6s ease-in-out infinite;
+}
+@keyframes smet-metroid-float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-10px, -16px); }
+}
+
+.smet-samus {
+  position: absolute; bottom: 18%; left: 26%; width: 8%; max-width: 96px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+  animation: smet-samus-bob 5s ease-in-out infinite;
+}
+@keyframes smet-samus-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+.smet-cannon-glow {
+  position: absolute; bottom: 30%; left: 33%; width: 5%; padding-bottom: 5%; max-width: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(95, 232, 214, 0.55), transparent 70%);
+  animation: smet-cannon-pulse 2.4s ease-in-out infinite;
+}
+@keyframes smet-cannon-pulse { 0%, 100% { opacity: 0.4; transform: scale(0.85); } 50% { opacity: 0.95; transform: scale(1.1); } }
+
+.smet-spores,
+.smet-spores::before {
+  position: absolute; top: 8%; left: 8%; width: 2px; height: 2px; border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    80px 60px #5fe8d6, 260px 120px #7af0e0, 440px 80px #5fe8d6, 620px 160px #7af0e0,
+    800px 100px #5fe8d6, 980px 180px #7af0e0, 1100px 60px #5fe8d6, 180px 220px #7af0e0,
+    540px 240px #5fe8d6, 900px 220px #7af0e0;
+  animation: smet-spores-rise 12s linear infinite, smet-spores-tw 4s ease-in-out infinite;
+}
+.smet-spores::before { content: ''; transform: translate(120px, 140px) scale(0.8); animation-delay: -6s, 2s; opacity: 0.7; }
+@keyframes smet-spores-rise {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-60px); }
+}
+@keyframes smet-spores-tw { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+
+/* ═══════════════════ METROID PRIME (visor HUD) ═══════════════════ */
+.mprime-scene { background: radial-gradient(120% 100% at 50% 50%, #1a2026 0%, #0c1014 60%, #060809 100%); }
+
+.mprime-scanline {
+  position: absolute; left: 0; width: 100%; height: 4%;
+  background: linear-gradient(180deg, transparent, rgba(25, 198, 214, 0.45), transparent);
+  animation: mprime-scan-sweep 5s linear infinite;
+}
+@keyframes mprime-scan-sweep {
+  0% { top: -6%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 102%; opacity: 0; }
+}
+
+.mprime-hud {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  filter: drop-shadow(0 0 8px rgba(245, 130, 31, 0.4));
+  animation: mprime-hud-flicker 6s ease-in-out infinite;
+}
+@keyframes mprime-hud-flicker { 0%, 100% { opacity: 0.9; } 48% { opacity: 0.82; } 50% { opacity: 1; } }
+
+.mprime-radar {
+  position: absolute; top: 8%; left: 5%; width: 12%; max-width: 130px;
+  filter: drop-shadow(0 0 6px rgba(245, 130, 31, 0.5));
+}
+.mprime-radar-sweep { transform-origin: 60px 60px; animation: mprime-radar-spin 4s linear infinite; }
+@keyframes mprime-radar-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.mprime-readout {
+  position: absolute; top: 10%; right: 6%; width: 13%; max-width: 150px;
+  filter: drop-shadow(0 0 6px rgba(245, 130, 31, 0.45));
+  animation: mprime-readout-tick 3s steps(4) infinite;
+}
+@keyframes mprime-readout-tick { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+.mprime-scan {
+  position: absolute; top: 36%; left: 50%; transform: translateX(-50%);
+  width: 16%; max-width: 200px;
+  filter: drop-shadow(0 0 8px rgba(25, 198, 214, 0.5));
+  animation: mprime-scan-lock 4s ease-in-out infinite;
+}
+@keyframes mprime-scan-lock {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.7; }
+  50% { transform: translateX(-50%) scale(1.06); opacity: 1; }
+}
+
+.mprime-morphball {
+  position: absolute; bottom: 12%; width: 8%; max-width: 90px;
+  filter: drop-shadow(0 0 10px rgba(245, 130, 31, 0.55));
+  animation: mprime-ball-roll 11s linear infinite;
+}
+@keyframes mprime-ball-roll {
+  0% { transform: translateX(-12vw) rotate(0deg); }
+  100% { transform: translateX(118vw) rotate(1440deg); }
+}
+
+/* ═══════════════════ METROID (NES Brinstar fallback) ═══════════════════ */
+.met-scene { background: linear-gradient(180deg, #2a0636 0%, #1a0826 55%, #100418 100%); }
+
+.met-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(90, 230, 120, 0.16), transparent 70%);
+  animation: met-glow-pulse 8s ease-in-out infinite;
+}
+@keyframes met-glow-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+
+.met-ceiling { position: absolute; top: 0; left: 0; width: 100%; height: 22%; }
+.met-floor { position: absolute; bottom: 0; left: 0; width: 100%; height: 24%; }
+
+.met-door {
+  position: absolute; bottom: 24%; right: 8%; width: 4.5%; max-width: 56px;
+  filter: drop-shadow(0 0 10px rgba(95, 232, 122, 0.5));
+  animation: met-door-pulse 3s ease-in-out infinite;
+}
+@keyframes met-door-pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+
+.met-metroid {
+  position: absolute; top: 28%; left: 56%; width: 9%; max-width: 110px;
+  filter: drop-shadow(0 0 16px rgba(95, 232, 122, 0.6));
+  animation: met-metroid-float 7s ease-in-out infinite;
+}
+@keyframes met-metroid-float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-26px, 14px); }
+}
+
+.met-samus {
+  position: absolute; bottom: 26%; left: 26%; width: 7.5%; max-width: 90px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+  animation: met-samus-jump 3.2s ease-in-out infinite;
+}
+@keyframes met-samus-jump {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-30px); }
+  55% { transform: translateY(-30px); }
+}
+
+.met-cannon-glow {
+  position: absolute; bottom: 36%; left: 32%; width: 4%; padding-bottom: 4%; max-width: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(95, 232, 122, 0.55), transparent 70%);
+  animation: met-cannon-pulse 2.2s ease-in-out infinite;
+}
+@keyframes met-cannon-pulse { 0%, 100% { opacity: 0.4; transform: scale(0.85); } 50% { opacity: 0.95; transform: scale(1.1); } }
+
+/* ═══════════════════ REDUCED MOTION GUARD ═══════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .smet-glow, .smet-metroid, .smet-samus, .smet-cannon-glow, .smet-spores, .smet-spores::before,
+  .mprime-scanline, .mprime-hud, .mprime-radar-sweep, .mprime-readout, .mprime-scan, .mprime-morphball,
+  .met-glow, .met-door, .met-metroid, .met-samus, .met-cannon-glow {
+    animation: none;
+  }
+}

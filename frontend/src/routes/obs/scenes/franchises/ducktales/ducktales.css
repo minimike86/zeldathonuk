@@ -1,0 +1,114 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * DUCKTALES — NES "Moon" stage. Scrooge pogo-bounces over a cratered surface.
+ * Co-located scene CSS (not the shared scenes.css); `.dt-` namespace.
+ * ───────────────────────────────────────────────────────────────────────── */
+.dt-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #120a2e 0%, #1c1147 42%, #0a0620 100%);
+}
+
+/* Starfield — three layered box-shadow "constellations" twinkling out of phase */
+.dt-stars,
+.dt-stars::before,
+.dt-stars::after {
+  position: absolute;
+  top: 4%;
+  left: 6%;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    40px 30px #bfe9ff, 180px 70px #ffffff, 320px 20px #9fd6ff, 480px 90px #ffffff,
+    640px 40px #bfe9ff, 760px 110px #ffffff, 60px 150px #9fd6ff, 240px 200px #ffffff,
+    420px 160px #bfe9ff, 600px 210px #ffffff, 820px 60px #9fd6ff, 980px 130px #ffffff,
+    1080px 40px #bfe9ff, 1180px 180px #ffffff, 900px 220px #9fd6ff;
+  animation: dt-twinkle 4s ease-in-out infinite;
+}
+.dt-stars::before {
+  content: '';
+  transform: translate(120px, 90px) scale(0.8);
+  animation-delay: 1.3s;
+  opacity: 0.8;
+}
+.dt-stars::after {
+  content: '';
+  transform: translate(60px, 260px) scale(1.2);
+  animation-delay: 2.6s;
+  opacity: 0.6;
+}
+
+@keyframes dt-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.dt-earth {
+  position: absolute;
+  top: 9%;
+  left: 8%;
+  width: 14%;
+  max-width: 150px;
+  filter: drop-shadow(0 0 18px rgba(63, 174, 255, 0.55));
+  animation: dt-earth-bob 11s ease-in-out infinite;
+}
+
+@keyframes dt-earth-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.dt-ufo {
+  position: absolute;
+  top: 16%;
+  width: 12%;
+  max-width: 150px;
+  filter: drop-shadow(0 0 12px rgba(122, 240, 255, 0.5));
+  animation: dt-ufo-drift 19s linear infinite;
+}
+
+@keyframes dt-ufo-drift {
+  0% { transform: translateX(-20vw) translateY(0); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translateX(55vw) translateY(-18px); }
+  92% { opacity: 1; }
+  100% { transform: translateX(120vw) translateY(0); opacity: 0; }
+}
+
+.dt-moon {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 38%;
+  filter: drop-shadow(0 -6px 16px rgba(90, 63, 176, 0.4));
+}
+
+/* Scrooge pogos in place — sits on the lunar ridge, bounces on the cane */
+.dt-scrooge {
+  position: absolute;
+  bottom: 24%;
+  left: 50%;
+  width: 6%;
+  max-width: 80px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  animation: dt-pogo 1.05s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes dt-pogo {
+  0%, 100% { transform: translate(-50%, 0) scaleY(0.94); }
+  18% { transform: translate(-50%, 4px) scaleY(0.88); }
+  55% { transform: translate(-50%, -46px) scaleY(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-stars, .dt-stars::before, .dt-stars::after,
+  .dt-earth, .dt-ufo, .dt-scrooge {
+    animation: none;
+  }
+}

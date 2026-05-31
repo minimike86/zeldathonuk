@@ -33,6 +33,24 @@ import { MinishCapScene } from './scenes/MinishCapScene';
 import { LinksAwakeningScene } from './scenes/LinksAwakeningScene';
 import './scenes/scenes.css';
 
+// Non-Zelda franchise themes live in self-contained modules under
+// scenes/franchises/<franchise>/ (scene components + co-located CSS + an
+// exported theme-entry array). They are spread into THEMES below. Keeping them
+// in separate modules lets multiple authors add franchises without touching
+// this file's THEMES body or the shared scenes.css.
+import { ducktalesThemes } from './scenes/franchises/ducktales';
+import { ffThemes } from './scenes/franchises/ff';
+import { chronoThemes } from './scenes/franchises/chrono';
+import { megamanThemes } from './scenes/franchises/megaman';
+import { sonicThemes } from './scenes/franchises/sonic';
+import { marioThemes } from './scenes/franchises/mario';
+import { dkThemes } from './scenes/franchises/dk';
+import { metroidThemes } from './scenes/franchises/metroid';
+import { castlevaniaThemes } from './scenes/franchises/castlevania';
+import { streetfighterThemes } from './scenes/franchises/streetfighter';
+import { earthboundThemes } from './scenes/franchises/earthbound';
+import { miscThemes } from './scenes/franchises/misc';
+
 export interface ZeldaTheme {
   /** Display label, used by the now-playing card. */
   label: string;
@@ -317,6 +335,21 @@ const THEMES: Array<{ match: string; theme: ZeldaTheme }> = [
       scenes: [NesScene],
     },
   },
+  // ── Non-Zelda franchises (spread from scenes/franchises/*). Matches are
+  // disjoint from the Zelda block above, so order between blocks is irrelevant;
+  // each franchise module orders its own matches most-specific-first. ──
+  ...ffThemes,
+  ...chronoThemes,
+  ...megamanThemes,
+  ...sonicThemes,
+  ...marioThemes,
+  ...dkThemes,
+  ...metroidThemes,
+  ...castlevaniaThemes,
+  ...streetfighterThemes,
+  ...earthboundThemes,
+  ...ducktalesThemes,
+  ...miscThemes,
 ];
 
 export function themeFor(gameName: string | undefined | null): ZeldaTheme {

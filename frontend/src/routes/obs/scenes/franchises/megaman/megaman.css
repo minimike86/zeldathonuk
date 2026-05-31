@@ -1,0 +1,497 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * MEGA MAN franchise scenes — co-located scene CSS (not the shared scenes.css).
+ * One unique namespace per game:
+ *   .mmx-  Mega Man X (Tron-blue Maverick city)
+ *   .mm9-  Mega Man 9 (8-bit revival stage)
+ *   .mm3-  Mega Man 3 (slide-motif stage)
+ *   .mm2-  Mega Man 2 (title-screen night skyline)
+ *   .mm1-  Mega Man  (NES boss-gate, fallback)
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ════════════════════════ MEGA MAN X ════════════════════════ */
+.mmx-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #020a22 0%, #06183f 50%, #0a2a5e 100%);
+}
+
+.mmx-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 90%;
+  height: 40%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(40, 230, 255, 0.35) 0%, transparent 70%);
+  animation: mmx-pulse 5s ease-in-out infinite;
+}
+
+@keyframes mmx-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.mmx-grid {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  opacity: 0.6;
+}
+
+.mmx-skyline {
+  position: absolute;
+  bottom: 24%;
+  left: 0;
+  width: 100%;
+  height: 52%;
+  filter: drop-shadow(0 0 10px rgba(40, 230, 255, 0.35));
+}
+
+.mmx-windows {
+  animation: mmx-flicker 3.4s ease-in-out infinite;
+}
+
+@keyframes mmx-flicker {
+  0%, 100% { opacity: 0.55; }
+  40% { opacity: 1; }
+  70% { opacity: 0.75; }
+}
+
+.mmx-streak {
+  position: absolute;
+  top: 32%;
+  left: 0;
+  width: 22%;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, #7af6ff, #ffffff);
+  box-shadow: 0 0 12px rgba(122, 246, 255, 0.9);
+  animation: mmx-streak 6s linear infinite;
+}
+
+@keyframes mmx-streak {
+  0% { transform: translateX(-30vw); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(130vw); opacity: 0; }
+}
+
+.mmx-x {
+  position: absolute;
+  bottom: 16%;
+  left: 16%;
+  width: 7%;
+  max-width: 90px;
+  filter: drop-shadow(0 0 8px rgba(40, 230, 255, 0.6));
+}
+
+.mmx-buster {
+  transform-origin: center;
+  animation: mmx-charge 1.4s ease-in-out infinite;
+}
+
+@keyframes mmx-charge {
+  0%, 100% { opacity: 0.55; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+.mmx-ledge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22%;
+}
+
+.mmx-motes,
+.mmx-motes::before {
+  position: absolute;
+  bottom: 18%;
+  left: 12%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    60px 0 #28e6ff, 220px -20px #7af6ff, 420px 10px #28e6ff, 640px -30px #7af6ff,
+    820px 0 #28e6ff, 1000px -20px #7af6ff, 360px -40px #28e6ff, 760px -50px #7af6ff;
+  animation: mmx-rise 7s linear infinite;
+}
+.mmx-motes::before {
+  content: '';
+  transform: translateX(140px);
+  animation-delay: 3.5s;
+  opacity: 0.7;
+}
+
+@keyframes mmx-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-160px); opacity: 0; }
+}
+
+/* ════════════════════════ MEGA MAN 9 ════════════════════════ */
+.mm9-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #4aa7ff 0%, #2f7fe0 55%, #1b58b8 100%);
+}
+
+.mm9-cloud {
+  position: absolute;
+  top: 14%;
+  width: 12%;
+  max-width: 150px;
+  animation: mm9-cloud 24s linear infinite;
+}
+
+@keyframes mm9-cloud {
+  0% { transform: translateX(-20vw); }
+  100% { transform: translateX(120vw); }
+}
+
+.mm9-bricks {
+  position: absolute;
+  bottom: 16%;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  opacity: 0.85;
+}
+
+.mm9-capsule {
+  position: absolute;
+  top: 36%;
+  right: 24%;
+  width: 4%;
+  max-width: 46px;
+  animation: mm9-bob 2.2s ease-in-out infinite;
+}
+
+@keyframes mm9-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.mm9-tiles {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 56%;
+  filter: drop-shadow(0 -2px 0 rgba(0, 0, 0, 0.25));
+}
+
+.mm9-hero {
+  position: absolute;
+  bottom: 38%;
+  left: 30%;
+  width: 6%;
+  max-width: 70px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4));
+  animation: mm9-hop 1.4s steps(2, end) infinite;
+}
+
+@keyframes mm9-hop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-26px); }
+}
+
+/* ════════════════════════ MEGA MAN 3 ════════════════════════ */
+.mm3-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1a2c47 0%, #243a5e 60%, #2c4670 100%);
+}
+
+.mm3-pipes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+}
+
+.mm3-ceiling {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 22%;
+}
+
+.mm3-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 26%;
+}
+
+.mm3-dashes {
+  position: absolute;
+  bottom: 30%;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background:
+    repeating-linear-gradient(90deg, rgba(122, 200, 255, 0.7) 0 26px, transparent 26px 70px);
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+  animation: mm3-dash 0.6s linear infinite;
+}
+
+@keyframes mm3-dash {
+  0% { background-position-x: 0; }
+  100% { background-position-x: -70px; }
+}
+
+.mm3-hero {
+  position: absolute;
+  bottom: 27%;
+  left: 38%;
+  width: 8%;
+  max-width: 110px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+  animation: mm3-slide 3.2s ease-in-out infinite;
+}
+
+@keyframes mm3-slide {
+  0% { transform: translateX(-10vw); opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateX(60vw); opacity: 0; }
+}
+
+.mm3-spark {
+  animation: mm3-spark 0.35s ease-in-out infinite;
+}
+
+@keyframes mm3-spark {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.mm3-rush {
+  position: absolute;
+  bottom: 27%;
+  right: 14%;
+  width: 7%;
+  max-width: 80px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  animation: mm3-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes mm3-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ════════════════════════ MEGA MAN 2 ════════════════════════ */
+.mm2-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #030a26 0%, #071640 55%, #0b2152 100%);
+}
+
+.mm2-stars,
+.mm2-stars::before {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    40px 20px #bfe4ff, 200px 60px #ffffff, 360px 30px #7af6ff, 520px 80px #ffffff,
+    700px 40px #bfe4ff, 880px 90px #ffffff, 1020px 30px #7af6ff, 140px 120px #ffffff,
+    600px 110px #bfe4ff, 940px 140px #ffffff, 1140px 70px #7af6ff;
+  animation: mm2-twinkle 4.5s ease-in-out infinite;
+}
+.mm2-stars::before {
+  content: '';
+  transform: translate(80px, 70px) scale(0.85);
+  animation-delay: 2s;
+  opacity: 0.7;
+}
+
+@keyframes mm2-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.mm2-skyline {
+  position: absolute;
+  bottom: 18%;
+  left: 0;
+  width: 100%;
+  height: 56%;
+}
+
+.mm2-windows {
+  animation: mm2-flicker 3.8s ease-in-out infinite;
+}
+
+@keyframes mm2-flicker {
+  0%, 100% { opacity: 0.6; }
+  45% { opacity: 1; }
+  75% { opacity: 0.8; }
+}
+
+.mm2-tower {
+  position: absolute;
+  bottom: 0;
+  right: 4%;
+  width: 16%;
+  max-width: 220px;
+  height: 80%;
+}
+
+.mm2-beacon {
+  animation: mm2-beacon 1.8s ease-in-out infinite;
+}
+
+@keyframes mm2-beacon {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.mm2-ledge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 56%;
+  height: 24%;
+}
+
+.mm2-hero {
+  position: absolute;
+  bottom: 18%;
+  left: 22%;
+  width: 6%;
+  max-width: 78px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+  animation: mm2-breathe 4s ease-in-out infinite;
+}
+
+@keyframes mm2-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* ════════════════════════ MEGA MAN (NES boss-gate) ════════════════════════ */
+.mm1-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0c1d3a 0%, #16284a 60%, #1f3257 100%);
+}
+
+.mm1-wall {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+}
+
+.mm1-gate {
+  position: absolute;
+  top: 16%;
+  left: 50%;
+  width: 18%;
+  max-width: 220px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 16px rgba(40, 230, 255, 0.5));
+}
+
+.mm1-gate-ring {
+  transform-origin: center;
+  animation: mm1-ring 6s linear infinite;
+}
+
+@keyframes mm1-ring {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.mm1-gate-core {
+  transform-origin: center;
+  animation: mm1-core 2.2s ease-in-out infinite;
+}
+
+@keyframes mm1-core {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.mm1-door {
+  position: absolute;
+  top: 0;
+  width: 12%;
+  max-width: 140px;
+  height: 100%;
+}
+.mm1-door-left { left: 0; }
+.mm1-door-right { right: 0; }
+
+.mm1-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 26%;
+}
+
+.mm1-hero {
+  position: absolute;
+  bottom: 24%;
+  left: 50%;
+  width: 7%;
+  max-width: 90px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+  animation: mm1-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes mm1-breathe {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
+}
+
+.mm1-buster {
+  animation: mm1-buster 1.6s ease-in-out infinite;
+}
+
+@keyframes mm1-buster {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ════════════════════════ REDUCED MOTION ════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .mmx-glow, .mmx-windows, .mmx-streak, .mmx-buster, .mmx-motes, .mmx-motes::before,
+  .mm9-cloud, .mm9-capsule, .mm9-hero,
+  .mm3-dashes, .mm3-hero, .mm3-spark, .mm3-rush,
+  .mm2-stars, .mm2-stars::before, .mm2-windows, .mm2-beacon, .mm2-hero,
+  .mm1-gate-ring, .mm1-gate-core, .mm1-hero, .mm1-buster {
+    animation: none;
+  }
+}

@@ -1,0 +1,377 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * DONKEY KONG franchise scenes — co-located scene CSS (not shared scenes.css).
+ * One unique namespace per game:
+ *   .dkc2-  Donkey Kong Country 2 (Crocodile Isle galleon, stormy purples)
+ *   .dkc3-  Donkey Kong Country 3 (alpine glacial lake, cool blues/greens)
+ *   .dkc-   Donkey Kong Country   (jungle canopy, warm greens)
+ *   .dk-    Donkey Kong           (arcade girders, fallback)
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ════════════════════════ DKC2 — Crocodile Isle ════════════════════════ */
+.dkc2-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a1245 0%, #3a1c52 40%, #1a2e44 100%);
+}
+
+.dkc2-lightning {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 60% 22%, rgba(200, 180, 255, 0.55) 0%, transparent 55%);
+  opacity: 0;
+  animation: dkc2-flash 9s ease-in-out infinite;
+}
+
+@keyframes dkc2-flash {
+  0%, 12%, 100% { opacity: 0; }
+  4% { opacity: 0.9; }
+  6% { opacity: 0.2; }
+  8% { opacity: 0.8; }
+}
+
+.dkc2-clouds {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  animation: dkc2-drift 26s linear infinite;
+}
+
+@keyframes dkc2-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-60px); }
+}
+
+.dkc2-ship {
+  position: absolute;
+  bottom: 22%;
+  left: 50%;
+  width: 30%;
+  max-width: 380px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  animation: dkc2-rock 6s ease-in-out infinite;
+}
+
+@keyframes dkc2-rock {
+  0%, 100% { transform: translateX(-50%) rotate(-2.5deg); }
+  50% { transform: translateX(-50%) rotate(2.5deg); }
+}
+
+.dkc2-lantern {
+  animation: dkc2-lantern 2.4s ease-in-out infinite;
+}
+
+@keyframes dkc2-lantern {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.dkc2-sea {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 32%;
+}
+
+.dkc2-spray,
+.dkc2-spray::before {
+  position: absolute;
+  bottom: 24%;
+  left: 10%;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    80px 0 rgba(200, 230, 255, 0.8), 300px -16px rgba(200, 230, 255, 0.6),
+    540px 6px rgba(200, 230, 255, 0.8), 780px -20px rgba(200, 230, 255, 0.6),
+    980px 0 rgba(200, 230, 255, 0.7);
+  animation: dkc2-spray 7s linear infinite;
+}
+.dkc2-spray::before {
+  content: '';
+  transform: translateX(160px);
+  animation-delay: 3.5s;
+  opacity: 0.6;
+}
+
+@keyframes dkc2-spray {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-110px); opacity: 0; }
+}
+
+/* ════════════════════════ DKC3 — alpine lake ════════════════════════ */
+.dkc3-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #a9cfe4 0%, #7fb0cf 38%, #3f7396 100%);
+}
+
+.dkc3-sun {
+  position: absolute;
+  top: 12%;
+  right: 18%;
+  width: 13%;
+  max-width: 150px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 252, 240, 0.95) 0%, rgba(255, 252, 240, 0.3) 55%, transparent 72%);
+  animation: dkc3-sun 8s ease-in-out infinite;
+}
+
+@keyframes dkc3-sun {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.dkc3-mountains {
+  position: absolute;
+  top: 14%;
+  left: 0;
+  width: 100%;
+  height: 34%;
+}
+
+.dkc3-pines {
+  position: absolute;
+  top: 34%;
+  left: 0;
+  width: 100%;
+  height: 24%;
+}
+
+.dkc3-tower {
+  position: absolute;
+  top: 30%;
+  left: 14%;
+  width: 5%;
+  max-width: 70px;
+}
+
+.dkc3-lake {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 46%;
+}
+
+.dkc3-jetty {
+  position: absolute;
+  bottom: 6%;
+  left: 0;
+  width: 30%;
+  max-width: 360px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+.dkc3-mist {
+  position: absolute;
+  bottom: 18%;
+  left: 0;
+  width: 100%;
+  height: 18%;
+  background: linear-gradient(90deg, transparent, rgba(220, 234, 244, 0.45), transparent);
+  animation: dkc3-mist 16s linear infinite;
+}
+
+@keyframes dkc3-mist {
+  0% { transform: translateX(-40%); opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { transform: translateX(40%); opacity: 0.4; }
+}
+
+/* ════════════════════════ DKC — jungle canopy ════════════════════════ */
+.dkc-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2c5a2a 0%, #3e7438 45%, #6aa04a 100%);
+}
+
+.dkc-sun {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: 60%;
+  height: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(240, 232, 150, 0.4) 0%, transparent 65%);
+  animation: dkc-sun 7s ease-in-out infinite;
+}
+
+@keyframes dkc-sun {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.dkc-canopy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+}
+
+.dkc-vines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 70%;
+  opacity: 0.9;
+}
+
+.dkc-tyre {
+  position: absolute;
+  top: 18%;
+  right: 26%;
+  width: 6%;
+  max-width: 80px;
+  transform-origin: top center;
+  animation: dkc-swing 4.5s ease-in-out infinite;
+}
+
+@keyframes dkc-swing {
+  0%, 100% { transform: rotate(-9deg); }
+  50% { transform: rotate(9deg); }
+}
+
+.dkc-barrels {
+  position: absolute;
+  bottom: 4%;
+  left: 14%;
+  width: 11%;
+  max-width: 150px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+}
+
+.dkc-dk {
+  position: absolute;
+  top: 8%;
+  left: 12%;
+  width: 10%;
+  max-width: 130px;
+  transform-origin: top center;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+  animation: dkc-swing-dk 5.5s ease-in-out infinite;
+}
+
+@keyframes dkc-swing-dk {
+  0%, 100% { transform: rotate(4deg); }
+  50% { transform: rotate(-4deg); }
+}
+
+.dkc-sign {
+  position: absolute;
+  bottom: 6%;
+  right: 22%;
+  width: 9%;
+  max-width: 120px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+}
+
+.dkc-fronds {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+}
+
+/* ════════════════════════ DK — arcade girders ════════════════════════ */
+.dk-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #050507 0%, #0a0a10 100%);
+}
+
+.dk-girders {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 4px rgba(224, 52, 26, 0.4));
+}
+
+.dk-ladders {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.dk-barrel {
+  position: absolute;
+  top: 6%;
+  left: 22%;
+  width: 5%;
+  max-width: 60px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  animation: dk-roll 5s linear infinite;
+}
+
+@keyframes dk-roll {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  25% { transform: translate(40vw, 26%) rotate(720deg); }
+  50% { transform: translate(8vw, 52%) rotate(1080deg); }
+  75% { transform: translate(48vw, 78%) rotate(1800deg); }
+  92% { opacity: 1; }
+  100% { transform: translate(10vw, 96%) rotate(2160deg); opacity: 0; }
+}
+
+.dk-pauline {
+  position: absolute;
+  top: 4%;
+  left: 40%;
+  width: 3.4%;
+  max-width: 40px;
+  animation: dk-help 1.6s ease-in-out infinite;
+}
+
+@keyframes dk-help {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-5px); }
+}
+
+.dk-ape {
+  position: absolute;
+  top: 2%;
+  left: 12%;
+  width: 11%;
+  max-width: 130px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+  animation: dk-pound 1.1s ease-in-out infinite;
+}
+
+@keyframes dk-pound {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.95) translateY(2px); }
+}
+
+/* ════════════════════════ REDUCED MOTION ════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .dkc2-lightning, .dkc2-clouds, .dkc2-ship, .dkc2-lantern, .dkc2-spray, .dkc2-spray::before,
+  .dkc3-sun, .dkc3-mist,
+  .dkc-sun, .dkc-tyre, .dkc-dk,
+  .dk-barrel, .dk-pauline, .dk-ape {
+    animation: none;
+  }
+}

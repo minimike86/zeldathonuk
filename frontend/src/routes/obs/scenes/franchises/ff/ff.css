@@ -1,0 +1,737 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FINAL FANTASY franchise scenes — shared co-located CSS.
+ * One namespace per game: .ff8- .ff7- .ff6- .ff9- .ff5- .ff4- .ff10- .ff1-
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── shared scene root scaffold ─────────────────────────────────────────── */
+.ff8-scene, .ff7-scene, .ff6-scene, .ff9-scene,
+.ff5-scene, .ff4-scene, .ff10-scene, .ff1-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF VIII — Balamb Garden floating academy at dusk
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff8-scene {
+  background: linear-gradient(180deg, #0c2348 0%, #134a6e 55%, #1f7a8c 100%);
+}
+.ff8-sun {
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  width: 380px;
+  height: 380px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 150, 0.45) 0%, rgba(255, 180, 120, 0.12) 45%, transparent 70%);
+  animation: ff8-sun-pulse 9s ease-in-out infinite;
+}
+@keyframes ff8-sun-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.ff8-clouds {
+  position: absolute;
+  top: 6%;
+  left: 0;
+  width: 100%;
+  height: 26%;
+  animation: ff8-clouds-drift 60s linear infinite;
+}
+@keyframes ff8-clouds-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-6%); }
+}
+.ff8-gulls {
+  position: absolute;
+  top: 22%;
+  width: 18%;
+  max-width: 220px;
+  animation: ff8-gulls-cross 28s linear infinite;
+}
+@keyframes ff8-gulls-cross {
+  0% { transform: translateX(-25vw) translateY(0); opacity: 0; }
+  10% { opacity: 0.9; }
+  50% { transform: translateX(50vw) translateY(-20px); }
+  90% { opacity: 0.9; }
+  100% { transform: translateX(120vw) translateY(6px); opacity: 0; }
+}
+.ff8-sea {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 34%;
+}
+.ff8-garden {
+  position: absolute;
+  bottom: 26%;
+  left: 50%;
+  width: 34%;
+  max-width: 440px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 14px 22px rgba(6, 18, 36, 0.6));
+  animation: ff8-garden-hover 8s ease-in-out infinite;
+}
+@keyframes ff8-garden-hover {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -14px); }
+}
+.ff8-spire-light {
+  animation: ff8-blink 2.4s ease-in-out infinite;
+}
+@keyframes ff8-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.ff8-motes {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 20% 60%, rgba(200, 240, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 70% 40%, rgba(200, 240, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 45% 75%, rgba(255, 240, 200, 0.6), transparent),
+    radial-gradient(2px 2px at 85% 65%, rgba(200, 240, 255, 0.7), transparent);
+  animation: ff8-motes-rise 14s ease-in-out infinite;
+}
+@keyframes ff8-motes-rise {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(-22px); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF VII — Midgar industrial skyline, Mako green glow
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff7-scene {
+  background: linear-gradient(180deg, #0a1413 0%, #10201c 50%, #08120f 100%);
+}
+.ff7-haze {
+  position: absolute;
+  bottom: 8%;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: radial-gradient(ellipse at 50% 100%, rgba(80, 220, 120, 0.22) 0%, transparent 65%);
+  animation: ff7-haze-pulse 7s ease-in-out infinite;
+}
+@keyframes ff7-haze-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.ff7-skyline-far {
+  position: absolute;
+  bottom: 12%;
+  left: 0;
+  width: 100%;
+  height: 32%;
+}
+.ff7-pillar {
+  position: absolute;
+  bottom: 0;
+  left: 14%;
+  width: 14%;
+  max-width: 180px;
+}
+.ff7-skyline-mid {
+  position: absolute;
+  bottom: 6%;
+  left: 0;
+  width: 100%;
+  height: 40%;
+}
+.ff7-reactor {
+  position: absolute;
+  bottom: 30%;
+  right: 14%;
+  width: 20%;
+  max-width: 240px;
+  filter: drop-shadow(0 0 20px rgba(90, 230, 130, 0.5));
+}
+.ff7-core {
+  transform-origin: 110px 100px;
+  animation: ff7-core-pulse 3.2s ease-in-out infinite;
+}
+@keyframes ff7-core-pulse {
+  0%, 100% { opacity: 0.8; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.ff7-stacks {
+  position: absolute;
+  bottom: 6%;
+  left: 36%;
+  width: 26%;
+  max-width: 300px;
+  height: 40%;
+}
+.ff7-steam {
+  animation: ff7-steam-rise 9s ease-in-out infinite;
+}
+@keyframes ff7-steam-rise {
+  0% { transform: translateY(0); opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+.ff7-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 14%;
+}
+.ff7-sparks {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 25% 70%, rgba(120, 255, 140, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 60% 50%, rgba(120, 255, 140, 0.7), transparent),
+    radial-gradient(2px 2px at 80% 75%, rgba(160, 255, 170, 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 40% 85%, rgba(120, 255, 140, 0.6), transparent);
+  animation: ff7-sparks-rise 11s linear infinite;
+}
+@keyframes ff7-sparks-rise {
+  0% { transform: translateY(20px); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-60px); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF VI — Magitek + airship over snowy mountains, opera house, twilight purple
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff6-scene {
+  background: linear-gradient(180deg, #2a1a44 0%, #4a2c64 50%, #6e4080 100%);
+}
+.ff6-moon {
+  position: absolute;
+  top: 12%;
+  right: 18%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 200, 240, 0.5) 0%, rgba(180, 140, 200, 0.15) 45%, transparent 70%);
+  animation: ff6-moon-glow 10s ease-in-out infinite;
+}
+@keyframes ff6-moon-glow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.ff6-snow {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 15% 20%, #fff, transparent),
+    radial-gradient(2px 2px at 45% 10%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 70% 30%, #e8e0ff, transparent),
+    radial-gradient(2px 2px at 85% 15%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 30% 40%, #e8e0ff, transparent);
+  background-size: 100% 100%;
+  animation: ff6-snow-fall 12s linear infinite;
+}
+@keyframes ff6-snow-fall {
+  0% { transform: translateY(-20px); opacity: 0.7; }
+  100% { transform: translateY(60px); opacity: 0.4; }
+}
+.ff6-mountains {
+  position: absolute;
+  bottom: 14%;
+  left: 0;
+  width: 100%;
+  height: 40%;
+}
+.ff6-airship {
+  position: absolute;
+  top: 20%;
+  width: 22%;
+  max-width: 240px;
+  filter: drop-shadow(0 6px 12px rgba(20, 10, 36, 0.5));
+  animation: ff6-airship-cross 34s linear infinite;
+}
+@keyframes ff6-airship-cross {
+  0% { transform: translateX(-25vw) translateY(0); }
+  50% { transform: translateX(45vw) translateY(-14px); }
+  100% { transform: translateX(120vw) translateY(0); }
+}
+.ff6-opera {
+  position: absolute;
+  bottom: 18%;
+  left: 16%;
+  width: 18%;
+  max-width: 220px;
+  filter: drop-shadow(0 4px 10px rgba(20, 10, 36, 0.5));
+}
+.ff6-magitek {
+  position: absolute;
+  bottom: 8%;
+  right: 18%;
+  width: 16%;
+  max-width: 180px;
+  filter: drop-shadow(0 6px 8px rgba(20, 10, 36, 0.6));
+  animation: ff6-magitek-stomp 2.6s ease-in-out infinite;
+}
+@keyframes ff6-magitek-stomp {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-4px) rotate(-1.5deg); }
+  75% { transform: translateY(-4px) rotate(1.5deg); }
+}
+.ff6-cannon {
+  animation: ff6-cannon-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ff6-cannon-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.ff6-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 16%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF IX — Alexandria castle / theatre airship, warm amber & blue medieval
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff9-scene {
+  background: linear-gradient(180deg, #131f44 0%, #243a64 55%, #3a4f7a 100%);
+}
+.ff9-moon {
+  position: absolute;
+  top: 10%;
+  left: 16%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 226, 160, 0.4) 0%, rgba(255, 200, 120, 0.12) 45%, transparent 70%);
+  animation: ff9-moon-glow 11s ease-in-out infinite;
+}
+@keyframes ff9-moon-glow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.ff9-clouds {
+  position: absolute;
+  top: 5%;
+  left: 0;
+  width: 100%;
+  height: 24%;
+  animation: ff9-clouds-drift 70s linear infinite;
+}
+@keyframes ff9-clouds-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-5%); }
+}
+.ff9-airship {
+  position: absolute;
+  top: 24%;
+  width: 22%;
+  max-width: 260px;
+  filter: drop-shadow(0 6px 12px rgba(10, 16, 36, 0.5));
+  animation: ff9-airship-approach 30s linear infinite;
+}
+@keyframes ff9-airship-approach {
+  0% { transform: translateX(110vw) translateY(0); }
+  50% { transform: translateX(30vw) translateY(-12px); }
+  100% { transform: translateX(-30vw) translateY(0); }
+}
+.ff9-rooftops {
+  position: absolute;
+  bottom: 8%;
+  left: 0;
+  width: 100%;
+  height: 30%;
+}
+.ff9-castle {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  width: 24%;
+  max-width: 280px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 8px 16px rgba(10, 16, 36, 0.55));
+}
+.ff9-tower-light {
+  animation: ff9-blink 2.8s ease-in-out infinite;
+}
+@keyframes ff9-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.ff9-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 12%;
+}
+.ff9-lanterns {
+  position: absolute;
+  bottom: 6%;
+  left: 0;
+  width: 100%;
+  height: 14%;
+  background-image:
+    radial-gradient(4px 4px at 12% 40%, rgba(255, 200, 110, 0.95), transparent),
+    radial-gradient(4px 4px at 30% 40%, rgba(255, 200, 110, 0.95), transparent),
+    radial-gradient(4px 4px at 48% 40%, rgba(255, 200, 110, 0.95), transparent);
+  animation: ff9-lantern-flicker 3.5s ease-in-out infinite;
+}
+@keyframes ff9-lantern-flicker {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF V — elemental crystals + wind/leaves, greens & gold
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff5-scene {
+  background: linear-gradient(180deg, #1c3a1e 0%, #3a6e34 50%, #8aa84a 100%);
+}
+.ff5-dawn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 230, 140, 0.4) 0%, transparent 60%);
+  animation: ff5-dawn-glow 10s ease-in-out infinite;
+}
+@keyframes ff5-dawn-glow {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+.ff5-wind {
+  position: absolute;
+  top: 8%;
+  left: 0;
+  width: 100%;
+  height: 26%;
+  animation: ff5-wind-drift 9s linear infinite;
+}
+@keyframes ff5-wind-drift {
+  0% { transform: translateX(-4%); opacity: 0.4; }
+  50% { opacity: 0.9; }
+  100% { transform: translateX(4%); opacity: 0.4; }
+}
+.ff5-hills {
+  position: absolute;
+  bottom: 12%;
+  left: 0;
+  width: 100%;
+  height: 40%;
+}
+.ff5-crystals {
+  position: absolute;
+  bottom: 16%;
+  left: 50%;
+  width: 46%;
+  max-width: 600px;
+  transform: translateX(-50%);
+}
+.ff5-crystal {
+  transform-origin: center;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+.ff5-crystal-1 { animation: ff5-crystal-pulse 3.4s ease-in-out infinite; }
+.ff5-crystal-2 { animation: ff5-crystal-pulse 3.4s ease-in-out infinite 0.8s; }
+.ff5-crystal-3 { animation: ff5-crystal-pulse 3.4s ease-in-out infinite 1.6s; }
+.ff5-crystal-4 { animation: ff5-crystal-pulse 3.4s ease-in-out infinite 2.4s; }
+@keyframes ff5-crystal-pulse {
+  0%, 100% { opacity: 0.8; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-6px); }
+}
+.ff5-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 14%;
+}
+.ff5-leaves {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(3px 5px at 20% 30%, rgba(120, 200, 90, 0.85), transparent),
+    radial-gradient(3px 5px at 55% 50%, rgba(255, 210, 80, 0.8), transparent),
+    radial-gradient(3px 5px at 80% 40%, rgba(120, 200, 90, 0.8), transparent),
+    radial-gradient(2px 4px at 35% 60%, rgba(255, 210, 80, 0.7), transparent);
+  animation: ff5-leaves-blow 8s linear infinite;
+}
+@keyframes ff5-leaves-blow {
+  0% { transform: translate(-20px, 10px) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(80px, -30px) rotate(60deg); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF IV — the Red Wings airship beneath a huge moon, deep blue night
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff4-scene {
+  background: linear-gradient(180deg, #050a24 0%, #0c1640 55%, #182250 100%);
+}
+.ff4-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 28% 32%, #cfe0ff, transparent),
+    radial-gradient(2px 2px at 46% 14%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 62% 26%, #cfe0ff, transparent),
+    radial-gradient(1.5px 1.5px at 78% 12%, #fff, transparent),
+    radial-gradient(2px 2px at 90% 30%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 36% 44%, #cfe0ff, transparent);
+  animation: ff4-twinkle 5s ease-in-out infinite;
+}
+@keyframes ff4-twinkle {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.ff4-moon {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: 26%;
+  max-width: 320px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 40px rgba(232, 226, 208, 0.5));
+  animation: ff4-moon-glow 12s ease-in-out infinite;
+}
+@keyframes ff4-moon-glow {
+  0%, 100% { filter: drop-shadow(0 0 36px rgba(232, 226, 208, 0.45)); }
+  50% { filter: drop-shadow(0 0 52px rgba(232, 226, 208, 0.65)); }
+}
+.ff4-airship {
+  position: absolute;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+}
+.ff4-airship-lead {
+  top: 38%;
+  left: 50%;
+  width: 24%;
+  max-width: 280px;
+  transform: translateX(-50%);
+  animation: ff4-fly-lead 9s ease-in-out infinite;
+}
+@keyframes ff4-fly-lead {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -16px); }
+}
+.ff4-airship-2 {
+  top: 30%;
+  left: 18%;
+  width: 14%;
+  max-width: 170px;
+  animation: ff4-fly-escort 10s ease-in-out infinite;
+}
+.ff4-airship-3 {
+  top: 50%;
+  right: 16%;
+  width: 14%;
+  max-width: 170px;
+  animation: ff4-fly-escort 11s ease-in-out infinite 1.5s;
+}
+@keyframes ff4-fly-escort {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.ff4-clouds {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 36%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF X — ruined Zanarkand at night, blue pyreflies, water reflections
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff10-scene {
+  background: linear-gradient(180deg, #08142e 0%, #102a52 55%, #1a3a66 100%);
+}
+.ff10-moon {
+  position: absolute;
+  top: 10%;
+  right: 22%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(150, 200, 240, 0.4) 0%, rgba(100, 160, 220, 0.12) 45%, transparent 70%);
+  animation: ff10-moon-glow 11s ease-in-out infinite;
+}
+@keyframes ff10-moon-glow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.ff10-ruins-far {
+  position: absolute;
+  bottom: 30%;
+  left: 0;
+  width: 100%;
+  height: 34%;
+}
+.ff10-tower {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  width: 20%;
+  max-width: 240px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 18px rgba(90, 170, 230, 0.35));
+}
+.ff10-arches {
+  position: absolute;
+  bottom: 30%;
+  left: 0;
+  width: 100%;
+  height: 26%;
+}
+.ff10-pyreflies {
+  position: absolute;
+  bottom: 28%;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  background-image:
+    radial-gradient(2.5px 2.5px at 20% 80%, rgba(140, 200, 255, 0.95), transparent),
+    radial-gradient(2px 2px at 40% 60%, rgba(160, 210, 255, 0.8), transparent),
+    radial-gradient(2.5px 2.5px at 65% 70%, rgba(140, 200, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 80% 50%, rgba(160, 210, 255, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 52% 85%, rgba(180, 220, 255, 0.8), transparent);
+  animation: ff10-pyre-rise 10s ease-in-out infinite;
+}
+@keyframes ff10-pyre-rise {
+  0% { transform: translateY(20px); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateY(-80px); opacity: 0; }
+}
+.ff10-water {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+}
+.ff10-glints {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 28%;
+  background-image:
+    radial-gradient(3px 2px at 25% 40%, rgba(140, 200, 255, 0.6), transparent),
+    radial-gradient(3px 2px at 60% 60%, rgba(140, 200, 255, 0.5), transparent),
+    radial-gradient(3px 2px at 80% 30%, rgba(160, 210, 255, 0.55), transparent);
+  animation: ff10-glint-shimmer 6s ease-in-out infinite;
+}
+@keyframes ff10-glint-shimmer {
+  0%, 100% { opacity: 0.4; transform: translateX(0); }
+  50% { opacity: 0.9; transform: translateX(8px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FF (NES classic) — four crystals + Warrior of Light, starry sky (fallback)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ff1-scene {
+  background: linear-gradient(180deg, #06081f 0%, #0e1238 55%, #16204a 100%);
+}
+.ff1-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 10% 16%, #fff, transparent),
+    radial-gradient(2px 2px at 24% 28%, #cfe0ff, transparent),
+    radial-gradient(1.5px 1.5px at 40% 12%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 58% 22%, #cfe0ff, transparent),
+    radial-gradient(2px 2px at 72% 14%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 86% 26%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 92% 40%, #cfe0ff, transparent),
+    radial-gradient(1.5px 1.5px at 16% 44%, #fff, transparent);
+  animation: ff1-twinkle 5s ease-in-out infinite;
+}
+@keyframes ff1-twinkle {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.ff1-aura {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  width: 360px;
+  height: 360px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(160, 190, 255, 0.22) 0%, transparent 65%);
+  animation: ff1-aura-pulse 7s ease-in-out infinite;
+}
+@keyframes ff1-aura-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.ff1-crystals {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  width: 32%;
+  max-width: 400px;
+  transform: translateX(-50%);
+  animation: ff1-crystals-spin 14s ease-in-out infinite;
+}
+@keyframes ff1-crystals-spin {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg); }
+  50% { transform: translateX(-50%) rotate(3deg); }
+}
+.ff1-orb { transform-origin: center; filter: drop-shadow(0 0 6px currentColor); }
+.ff1-orb-1 { animation: ff1-orb-pulse 3.2s ease-in-out infinite; }
+.ff1-orb-2 { animation: ff1-orb-pulse 3.2s ease-in-out infinite 0.8s; }
+.ff1-orb-3 { animation: ff1-orb-pulse 3.2s ease-in-out infinite 1.6s; }
+.ff1-orb-4 { animation: ff1-orb-pulse 3.2s ease-in-out infinite 2.4s; }
+@keyframes ff1-orb-pulse {
+  0%, 100% { opacity: 0.78; }
+  50% { opacity: 1; }
+}
+.ff1-warrior {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  width: 9%;
+  max-width: 100px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  animation: ff1-warrior-bob 6s ease-in-out infinite;
+}
+@keyframes ff1-warrior-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -6px); }
+}
+.ff1-blade {
+  animation: ff1-blade-gleam 2.6s ease-in-out infinite;
+}
+@keyframes ff1-blade-gleam {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.ff1-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 14%;
+}
+
+/* ─── reduced-motion guard ──────────────────────────────────────────────────
+ * Disable every animation across all FF scenes. */
+@media (prefers-reduced-motion: reduce) {
+  .ff8-sun, .ff8-clouds, .ff8-gulls, .ff8-garden, .ff8-spire-light, .ff8-motes,
+  .ff7-haze, .ff7-core, .ff7-steam, .ff7-sparks,
+  .ff6-moon, .ff6-snow, .ff6-airship, .ff6-magitek, .ff6-cannon,
+  .ff9-moon, .ff9-clouds, .ff9-airship, .ff9-tower-light, .ff9-lanterns,
+  .ff5-dawn, .ff5-wind, .ff5-crystal, .ff5-leaves,
+  .ff4-stars, .ff4-moon, .ff4-airship-lead, .ff4-airship-2, .ff4-airship-3,
+  .ff10-moon, .ff10-pyreflies, .ff10-glints,
+  .ff1-stars, .ff1-aura, .ff1-crystals, .ff1-orb-1, .ff1-orb-2, .ff1-orb-3, .ff1-orb-4,
+  .ff1-warrior, .ff1-blade {
+    animation: none;
+  }
+}
