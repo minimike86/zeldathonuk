@@ -17,6 +17,7 @@ import { useExternalEventStream } from './hooks/useExternalEventStream';
 import { useOmnibarSse } from './hooks/useOmnibarSse';
 import { useLayoutConfig } from './hooks/useLayoutConfig';
 import { useTransitionsConfig } from './hooks/useTransitionsConfig';
+import { useImagePreload } from './hooks/useImagePreload';
 import { Lane } from './lanes/Lane';
 import { LiveDonationPanel } from './panels/LiveDonationPanel';
 import { UrgentBannerPanel } from './panels/UrgentBannerPanel';
@@ -141,6 +142,18 @@ function OmnibarInner() {
     feed.currentlyPlaying?.schedule_entry_detail?.game ?? null,
   );
   const transitions = useTransitionsConfig(feed.event);
+
+  // Warm the browser cache with every objective + item sprite for the
+  // currently-playing game so the ObjectiveChecklistPanel and
+  // ItemsCollectedPanel render synchronously off cache the moment they
+  // first rotate into a lane. Without this each new sprite would be
+  // fetched at paint time and the lane could briefly show a blank tile
+  // as the network round-trip completes.
+  const playingGame = feed.currentlyPlaying?.schedule_entry_detail?.game ?? null;
+  useImagePreload([
+    ...(playingGame?.objectives ?? []).map((o) => o.image_url),
+    ...(playingGame?.items ?? []).map((i) => i.image_url),
+  ]);
 
   const [omnibarState, dispatch] = useReducer(omnibarReducer, INITIAL);
 

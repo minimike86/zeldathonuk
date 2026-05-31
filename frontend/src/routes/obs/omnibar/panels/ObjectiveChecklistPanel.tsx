@@ -24,6 +24,10 @@ interface Data {
   rows: Row[];
   obtainedCount: number;
   total: number;
+  /** First still-outstanding objective in list order (sorted by
+   *  `order` then `name`). Null when every active objective is
+   *  obtained — the panel renders "All done!" instead. */
+  nextUp: GameObjective | null;
 }
 
 const tileStyle = (obtained: boolean): CSSProperties => ({
@@ -40,6 +44,33 @@ function Panel({ data }: PanelProps<Data>) {
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <MarqueeOnOverflow>
           <span className="ob-text-strong">{data.gameTitle}</span>
+          {/* "Next" chip — calls out the very next outstanding
+            * objective in list order so viewers landing on the panel
+            * mid-rotation immediately see what the runner is working
+            * toward, without having to find the first colour tile in
+            * the strip. When everything's done it flips to a short
+            * celebratory cap instead. */}
+          {data.nextUp ? (
+            <span
+              className="ob-objective-next"
+              title={`Next: ${data.nextUp.name}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <span className="ob-text-muted">Next:</span>
+              {data.nextUp.image_url && (
+                <span className="ob-item-icon" aria-hidden>
+                  <img src={data.nextUp.image_url} alt="" />
+                </span>
+              )}
+              <span className="ob-text-strong">{data.nextUp.name}</span>
+            </span>
+          ) : (
+            <span className="ob-text-strong">All done!</span>
+          )}
           {data.rows.map(({ objective, obtained }) => (
             <span key={objective.id} style={tileStyle(obtained)} title={objective.name}>
               {objective.image_url ? (
@@ -80,11 +111,16 @@ registerPanel<Data>({
       objective,
       obtained: obtained.has(objective.id),
     }));
+    // First still-outstanding objective in list order (the same sort
+    // applied to `active` above) — used by the panel's "Next: …"
+    // chip so viewers see what the runner is heading for next.
+    const nextUp = active.find((o) => !obtained.has(o.id)) ?? null;
     return {
       gameTitle: entry.display_title,
       rows,
       obtainedCount: rows.filter((r) => r.obtained).length,
       total: active.length,
+      nextUp,
     };
   },
   minDurationMs: 7000,
