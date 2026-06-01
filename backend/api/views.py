@@ -643,6 +643,110 @@ def _is_dungeon_staple_obj(entry, obj, multi: set, active_group) -> bool:
     )
 
 
+def _item_unlock_closure(item) -> set:
+    """All GameItem ids collected together with `item` — a BFS over the symmetric
+    unlocks_with graph, including the item itself."""
+    seen = {item.id}
+    frontier = [item]
+    while frontier:
+        cur = frontier.pop()
+        for nb in cur.unlocks_with.all():
+            if nb.id not in seen:
+                seen.add(nb.id)
+                frontier.append(nb)
+    return seen
+
+
+def _item_cascade_ids(item, *, collected: bool) -> set:
+    """Item ids whose collected state changes together with `item`: the symmetric
+    unlocks_with bundle plus upgrade-chain tiers (collecting a tier implies every
+    lower tier; clearing implies every higher), followed transitively. Trade
+    sequences are excluded. See ScheduleEntryViewSet._collect_cascade_ids."""
+    seen = {item.id}
+    frontier = [item]
+    while frontier:
+        cur = frontier.pop()
+        for nb in cur.unlocks_with.all():
+            if nb.id not in seen:
+                seen.add(nb.id)
+                frontier.append(nb)
+        for s in cur.sets.filter(kind=models.ItemLinkKind.UPGRADE):
+            for member in s.items.all():
+                implied = (
+                    (collected and member.order <= cur.order)
+                    or (not collected and member.order >= cur.order)
+                )
+                if implied and member.id not in seen:
+                    seen.add(member.id)
+                    frontier.append(member)
+    return seen
+
+
+def _sync_linked_objectives(entry) -> None:
+    """Mirror collected-item state into single-linked "item get" objectives:
+    obtained when the linked item is collected, outstanding when not. Manually
+    SKIPPED rows are left untouched. Shared dungeon staples (multi-linked) are
+    driven by attribution, so they're excluded here."""
+    if not entry.game_id:
+        return
+    collected_ids = set(
+        models.CollectedItem.objects.filter(schedule_entry=entry)
+        .values_list('item_id', flat=True)
+    )
+    link_counts = Counter(
+        models.GameObjective.objects.filter(
+            game_id=entry.game_id, linked_item__isnull=False
+        ).values_list('linked_item_id', flat=True)
+    )
+    multi_linked = {iid for iid, n in link_counts.items() if n > 1}
+    linked = models.GameObjective.objects.filter(
+        game_id=entry.game_id, linked_item__isnull=False
+    ).exclude(linked_item_id__in=multi_linked)
+    for obj in linked:
+        existing = models.ScheduleEntryObjective.objects.filter(
+            schedule_entry=entry, objective=obj
+        ).first()
+        if existing and existing.status == models.ObjectiveStatus.SKIPPED:
+            continue
+        if obj.linked_item_id in collected_ids:
+            if not existing or existing.status != models.ObjectiveStatus.OBTAINED:
+                models.ScheduleEntryObjective.objects.update_or_create(
+                    schedule_entry=entry,
+                    objective=obj,
+                    defaults={
+                        'status': models.ObjectiveStatus.OBTAINED,
+                        'obtained_at': timezone.now(),
+                    },
+                )
+        elif existing and existing.status == models.ObjectiveStatus.OBTAINED:
+            existing.delete()
+
+
+def _mirror_objective_link(entry, objective, *, obtained: bool) -> None:
+    """Keep a spine split's linked item in lockstep with its objective — the
+    same reverse-link ScheduleEntryViewSet.set_objective_status applies. Without
+    this a Stream Deck / macro-pad split marks the objective obtained but never
+    collects the GameItem, so the next _sync_linked_objectives (fired by any
+    items-grid change) reaps it as "obtained but uncollected". Skipped splits
+    must NOT call this (skipping leaves the item alone)."""
+    if not objective.linked_item_id:
+        return
+    # Shared dungeon staples: the item tally is a DERIVED aggregate of its
+    # objectives, so recompute it rather than toggling the shared row.
+    if len(_objectives_linking(entry, objective.linked_item_id)) > 1:
+        _recompute_shared_item_qty(entry, objective.linked_item)
+        return
+    ids = _item_cascade_ids(objective.linked_item, collected=obtained)
+    if obtained:
+        for iid in ids:
+            models.CollectedItem.objects.get_or_create(schedule_entry=entry, item_id=iid)
+    else:
+        models.CollectedItem.objects.filter(
+            schedule_entry=entry, item_id__in=ids
+        ).delete()
+    _sync_linked_objectives(entry)
+
+
 class ScheduleEntryViewSet(viewsets.ModelViewSet):
     queryset = (
         models.ScheduleEntry.objects.all()
@@ -781,15 +885,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
     def _unlock_closure(item) -> set:
         """All GameItem ids collected together with `item` — a BFS over the
         symmetric unlocks_with graph, including the item itself."""
-        seen = {item.id}
-        frontier = [item]
-        while frontier:
-            cur = frontier.pop()
-            for nb in cur.unlocks_with.all():
-                if nb.id not in seen:
-                    seen.add(nb.id)
-                    frontier.append(nb)
-        return seen
+        return _item_unlock_closure(item)
 
     def _cascade_unlocks(self, entry, item_id, *, collected: bool) -> None:
         """Apply a collected state to the item's tied companions (the trigger
@@ -824,74 +920,13 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         Trade sequences are excluded — you swap the item away, so earlier
         entries aren't implied.
         """
-        seen = {item.id}
-        frontier = [item]
-        while frontier:
-            cur = frontier.pop()
-            # Symmetric bundle.
-            for nb in cur.unlocks_with.all():
-                if nb.id not in seen:
-                    seen.add(nb.id)
-                    frontier.append(nb)
-            # Upgrade tiers, relative to this node's own position in each chain.
-            for s in cur.sets.filter(kind=models.ItemLinkKind.UPGRADE):
-                for member in s.items.all():
-                    implied = (
-                        (collected and member.order <= cur.order)
-                        or (not collected and member.order >= cur.order)
-                    )
-                    if implied and member.id not in seen:
-                        seen.add(member.id)
-                        frontier.append(member)
-        return seen
+        return _item_cascade_ids(item, collected=collected)
 
     def _sync_linked_objectives(self, entry) -> None:
-        """Mirror collected-item state into linked "item get" objectives:
-        obtained when the linked item is collected, outstanding when not.
-        Manually SKIPPED rows are left untouched. Called after any change to
-        this entry's collected items.
-
-        Only items linked by EXACTLY ONE objective are auto-synced here. Shared
-        dungeon staples (a Map/Compass/Key item linked by one objective per
-        dungeon) are driven explicitly by _attribute_dungeon_item against the
-        active dungeon — auto-syncing them would mark every dungeon's objective
-        obtained at once (the bug this fix addresses), so they're skipped."""
-        if not entry.game_id:
-            return
-        collected_ids = set(
-            models.CollectedItem.objects.filter(
-                schedule_entry=entry
-            ).values_list('item_id', flat=True)
-        )
-        # Item ids linked by more than one objective — these are dungeon staples
-        # driven by attribution, not by this stateless mirror.
-        link_counts = Counter(
-            models.GameObjective.objects.filter(
-                game_id=entry.game_id, linked_item__isnull=False
-            ).values_list('linked_item_id', flat=True)
-        )
-        multi_linked = {iid for iid, n in link_counts.items() if n > 1}
-        linked = models.GameObjective.objects.filter(
-            game_id=entry.game_id, linked_item__isnull=False
-        ).exclude(linked_item_id__in=multi_linked)
-        for obj in linked:
-            existing = models.ScheduleEntryObjective.objects.filter(
-                schedule_entry=entry, objective=obj
-            ).first()
-            if existing and existing.status == models.ObjectiveStatus.SKIPPED:
-                continue
-            if obj.linked_item_id in collected_ids:
-                if not existing or existing.status != models.ObjectiveStatus.OBTAINED:
-                    models.ScheduleEntryObjective.objects.update_or_create(
-                        schedule_entry=entry,
-                        objective=obj,
-                        defaults={
-                            'status': models.ObjectiveStatus.OBTAINED,
-                            'obtained_at': timezone.now(),
-                        },
-                    )
-            elif existing and existing.status == models.ObjectiveStatus.OBTAINED:
-                existing.delete()
+        """Mirror collected-item state into linked "item get" objectives.
+        Thin wrapper over the module-level :func:`_sync_linked_objectives`, which
+        the Stream Deck split path (timer_hotkey) also uses."""
+        _sync_linked_objectives(entry)
 
     @action(detail=True, methods=['post'])
     def toggle_collected(self, request: Request, pk=None) -> Response:
@@ -1522,6 +1557,10 @@ def timer_hotkey(request: Request) -> Response:
                 defaults={'status': models.ObjectiveStatus.OBTAINED,
                           'obtained_at': timezone.now(), 'split_ms': now_ms},
             )
+            # Keep the linked item in lockstep (collect it), or the next item
+            # sync would reap this obtained-but-uncollected objective. Skips
+            # leave the item alone, matching set_objective_status.
+            _mirror_objective_link(entry, active, obtained=True)
         entry.current_objective = next_name
         entry.save(update_fields=['current_objective'])
         fire_setpieces()
@@ -1551,6 +1590,8 @@ def timer_hotkey(request: Request) -> Response:
         models.ScheduleEntryObjective.objects.filter(
             schedule_entry=entry, objective=last
         ).delete()
+        # Reverse the linked-item collection too, mirroring the split lockstep.
+        _mirror_objective_link(entry, last, obtained=False)
         entry.current_objective = last.name
         entry.save(update_fields=['current_objective'])
         fire_setpieces()
