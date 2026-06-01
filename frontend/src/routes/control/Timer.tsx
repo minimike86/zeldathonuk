@@ -439,6 +439,22 @@ function SplitsPanel({
   const isSpine = (o: GameObjective): boolean => !isTally(o) && !isDungeonItem(o);
 
   const active = route.find((o) => isSpine(o) && statusOf(o.id) === 'outstanding') ?? null;
+
+  // Keep the active split pinned to the top of the (scrolling) splits list as
+  // the run advances, so the operator never has to scroll to find what's next.
+  const listRef = useRef<HTMLOListElement>(null);
+  const activeRowRef = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    const ol = listRef.current;
+    const row = activeRowRef.current;
+    if (!ol || !row) return;
+    // `.split-row` offsets are relative to the list (position: relative). If a
+    // section header sits directly above the active row, leave it visible.
+    const prev = row.previousElementSibling as HTMLElement | null;
+    const headroom = prev?.classList.contains('split-group-head') ? prev.offsetHeight : 0;
+    ol.scrollTo({ top: Math.max(0, row.offsetTop - headroom), behavior: 'smooth' });
+  }, [active?.id]);
+
   // Tally objectives never count toward "done / total"; they're informational.
   const counted = route.filter((o) => !isTally(o));
   const obtainedCount = counted.filter((o) => statusOf(o.id) === 'obtained').length;
@@ -585,7 +601,7 @@ function SplitsPanel({
         </span>
       </div>
 
-      <ol className="splits-list">
+      <ol className="splits-list" ref={listRef}>
         {route.map((o, i) => {
           const status = statusOf(o.id);
           const isActive = active?.id === o.id;
@@ -616,6 +632,7 @@ function SplitsPanel({
                 <li className="split-group-head">{group}</li>
               )}
               <li
+                ref={isActive ? activeRowRef : undefined}
                 className="split-row"
                 data-status={status}
                 data-active={isActive || clickToSplit}
@@ -705,6 +722,7 @@ function SplitsPanel({
           gap: 2px;
           max-height: 22rem;
           overflow-y: auto;
+          position: relative;
         }
         .split-group-head {
           list-style: none;
