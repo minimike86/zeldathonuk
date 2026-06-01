@@ -269,6 +269,13 @@ class ScheduleEntry(models.Model):
                   'Ganondorf, second phase"). Surfaced in the omnibar '
                   'ObjectivePanel when set; hidden when blank.',
     )
+    death_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Player deaths during this game, bumped from the Stream Deck '
+                  'via the timer-hotkey death-inc/death-dec actions. The omnibar '
+                  'death-count panel shows this per-game and sums it across the '
+                  "event's entries for a running total.",
+    )
     # Setpieces (boss / dungeon / shrine build-up tags) live in their own
     # `Setpiece` model now — many can be live at once (see related_name
     # 'setpieces'). They are driven automatically off objective completion

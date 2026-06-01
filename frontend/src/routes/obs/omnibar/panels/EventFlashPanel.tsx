@@ -49,7 +49,7 @@ registerEventHandler({ kind: 'boss-defeated', component: EventFlashAdapter, flas
 registerEventHandler({ kind: 'shrine-cleared', component: EventFlashAdapter, flashMood: 'celebrate', durationMs: FLASH_HOLD_MS });
 registerEventHandler({ kind: 'dungeon-complete', component: EventFlashAdapter, flashMood: 'celebrate', durationMs: FLASH_HOLD_MS });
 registerEventHandler({ kind: 'item-collected', component: EventFlashAdapter, durationMs: FLASH_HOLD_MS });
-registerEventHandler({ kind: 'player-death', component: EventFlashAdapter, durationMs: FLASH_HOLD_MS });
+// 'player-death' has its own richer takeover — see DeathFlashPanel.tsx.
 registerEventHandler({ kind: 'segment-complete', component: EventFlashAdapter, flashMood: 'celebrate', durationMs: FLASH_HOLD_MS });
 registerEventHandler({ kind: 'runner-swap', component: EventFlashAdapter, durationMs: FLASH_HOLD_MS });
 registerEventHandler({ kind: 'setpiece-cleared', component: EventFlashAdapter, flashMood: 'celebrate', durationMs: FLASH_HOLD_MS });

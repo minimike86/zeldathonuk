@@ -306,6 +306,10 @@ export interface ScheduleEntry {
   is_completed: boolean;
   was_skipped: boolean;
   current_objective: string;
+  /** Player deaths this game, bumped from the Stream Deck (timer-hotkey
+   *  death-inc/death-dec). The omnibar death-count panel sums it across the
+   *  event's entries for a running total. */
+  death_count: number;
   /** Live setpieces, highest priority first (server-ordered). Many can be
    *  active at once; the omnibar surfaces only topSetpiece(...). */
   setpieces: Setpiece[];

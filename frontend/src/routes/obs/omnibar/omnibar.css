@@ -2327,3 +2327,50 @@
   0%, 16%   { transform: translateX(0); }
   84%, 100% { transform: translateX(var(--bounce-distance, 0)); }
 }
+
+/* ── Player-death (KO) flash ─────────────────────────────────────────
+ * Takeover for the DeathFlashPanel. A jittering skull, the running death
+ * tally, and a quip — entered with a short shake + red glow so a death
+ * reads as a distinct "ouch" beat without going full game-over. */
+.omnibar--v2 .ob-death {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  /* One-shot shake on mount; `both` holds the final frame after. */
+  animation: ob-death-shake 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.omnibar--v2 .ob-death-skull {
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(231, 19, 71, 0.65));
+  transform-origin: 50% 70%;
+  /* Wobble starts once the entrance shake has settled. */
+  animation: ob-death-skull-wobble 900ms ease-in-out 480ms infinite;
+}
+.omnibar--v2 .ob-death-stack {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.omnibar--v2 .ob-death-headline {
+  color: #ff5d73;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 10px rgba(231, 19, 71, 0.55);
+}
+.omnibar--v2 .ob-death-sub {
+  font-size: 0.78rem;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+@keyframes ob-death-shake {
+  10%, 90%      { transform: translateX(-2px); }
+  20%, 80%      { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60%      { transform: translateX(5px); }
+}
+@keyframes ob-death-skull-wobble {
+  0%, 100% { transform: rotate(-8deg) translateY(0); }
+  50%      { transform: rotate(8deg) translateY(-2px); }
+}

@@ -1410,6 +1410,7 @@ _HOTKEY_ACTIONS = {
     'split', 'skip', 'undo',
     'collect-map', 'collect-compass', 'collect-big-key',
     'small-key-inc', 'small-key-dec',
+    'death-inc', 'death-dec',
 }
 
 
@@ -1596,6 +1597,21 @@ def timer_hotkey(request: Request) -> Response:
         entry.save(update_fields=['current_objective'])
         fire_setpieces()
         return Response({'action': action, 'objective_id': last.id})
+
+    # ── Death counter ────────────────────────────────────────────────────
+    if action in ('death-inc', 'death-dec'):
+        delta = 1 if action == 'death-inc' else -1
+        entry.death_count = max(0, entry.death_count + delta)
+        entry.save(update_fields=['death_count'])
+        # Increments fire the existing 'player-death' flash (omnibar renders it
+        # as a brief "KO"); decrements are silent corrections.
+        if delta > 0:
+            models.PlaythroughEvent.objects.create(
+                schedule_entry=entry,
+                kind='player-death',
+                payload={'count': entry.death_count},
+            )
+        return Response({'action': action, 'death_count': entry.death_count})
 
     # ── Dungeon-staple actions ───────────────────────────────────────────
     staple = {

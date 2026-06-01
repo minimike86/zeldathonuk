@@ -457,6 +457,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'is_completed',
             'was_skipped',
             'current_objective',
+            'death_count',
             'setpieces',
             'notes',
             'timer_segment_ids',
@@ -488,7 +489,7 @@ class ScheduleEntryLightSerializer(serializers.ModelSerializer):
             'id', 'event', 'slot_type', 'title', 'display_title', 'game',
             'parent_entry', 'start_offset_minutes', 'runners', 'order',
             'planned_minutes', 'effective_minutes', 'started_at', 'finished_at',
-            'is_completed', 'was_skipped', 'current_objective',
+            'is_completed', 'was_skipped', 'current_objective', 'death_count',
         ]
 
 

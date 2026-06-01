@@ -1155,6 +1155,7 @@ const PANEL_DESCRIPTIONS: Record<PanelId, string> = {
   'objective-checklist': 'Icon strip of the current run-section\'s objectives (coloured = obtained, greyed = outstanding). Auto-advances to the next section once everything in this one is done. Hidden when the game has no objectives.',
   'setpiece': 'Boss / raid / setpiece banner — hidden unless the live entry has a setpiece in progress.',
   'items-collected': 'Item icon strip for the live game. Hidden when the game has no items defined.',
+  'death-count': 'Player deaths for the current game (with its game chip) plus a running event total across all games. Bumped from the Stream Deck (death-inc/death-dec); each death also fires a brief "KO" flash. Hidden when no entry is currently-playing.',
   'pre-stream': 'Pre-event countdown + upcoming cards. Auto-shows when no entry is currently-playing; auto-hides once one is.',
 
   // Ticker / bottom-lane panels

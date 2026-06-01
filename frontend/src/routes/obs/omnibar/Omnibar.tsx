@@ -54,6 +54,8 @@ import './panels/DonationReelPanel';
 import './panels/CharityInfoPanel';
 import './panels/LocalTimePanel';
 import './panels/ItemsCollectedPanel';
+import './panels/DeathCountPanel';
+import './panels/DeathFlashPanel';
 import './motion/moods';
 import './motion/moods.css';
 import './omnibar.css';

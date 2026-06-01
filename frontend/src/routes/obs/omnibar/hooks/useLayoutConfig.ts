@@ -37,7 +37,8 @@ const DEFAULT_TOP: LaneConfig = {
   // blank pre-stream because every other panel returns null.
   panels: [
     'current-game', 'playtime', 'custom-objective', 'next-objective',
-    'objective-checklist', 'setpiece', 'items-collected', 'pre-stream',
+    'objective-checklist', 'setpiece', 'items-collected', 'death-count',
+    'pre-stream',
   ],
 };
 
@@ -65,7 +66,8 @@ export const DEFAULT_LAYOUT: OmnibarLayoutConfig = {
 export const ALL_PANEL_IDS = [
   // Status / top-lane affinity
   'current-game', 'playtime', 'custom-objective', 'next-objective',
-  'objective-checklist', 'setpiece', 'items-collected', 'pre-stream',
+  'objective-checklist', 'setpiece', 'items-collected', 'death-count',
+  'pre-stream',
   // Ticker / bottom-lane affinity
   'schedule-next', 'donation-reel', 'incentives', 'bid-war', 'milestones',
   'raffle', 'total-raised', 'charity-info', 'local-time',
