@@ -215,6 +215,15 @@
   }
   .control-header nav.control-nav.is-open {
     display: flex;
+    /* Cap the stacked link list to the space under the title/toggle and
+     * let it scroll on its own. Without this the ~17 links run off the
+     * bottom of the viewport inside the fixed-height shell with no way to
+     * reach the lower entries (Theme, etc.). dvh tracks the mobile URL
+     * bar; the vh line is the fallback for older engines. */
+    max-height: calc(100vh - 8rem);
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .control-nav-link {
     display: block;
