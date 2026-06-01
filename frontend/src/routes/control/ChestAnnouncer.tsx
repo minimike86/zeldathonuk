@@ -124,6 +124,8 @@ export function ChestAnnouncerControl() {
   const [pacingBetween, setPacingBetween] = useState<number>(1500);
   const [pacingMinHold, setPacingMinHold] = useState<number>(2800);
   const [pacingMaxHold, setPacingMaxHold] = useState<number>(20_000);
+  // Scene-size multiplier — same draft+save story as pacing.
+  const [scaleDraft, setScaleDraft] = useState<number>(1);
   const lastUpdatedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!settings) return;
@@ -133,6 +135,7 @@ export function ChestAnnouncerControl() {
       setPacingBetween(settings.between_cards_ms);
       setPacingMinHold(settings.card_min_hold_ms);
       setPacingMaxHold(settings.card_max_hold_ms);
+      setScaleDraft(settings.scale);
     }
   }, [settings]);
 
@@ -186,10 +189,27 @@ export function ChestAnnouncerControl() {
     }
   };
 
+  const scaleDirty = settings ? scaleDraft !== settings.scale : false;
+  const saveScale = async () => {
+    // Clamp to the same range the overlay enforces, rounded to a clean
+    // 5% step so the persisted value matches the slider notches.
+    const next = Math.max(0.25, Math.min(2, Math.round(scaleDraft * 20) / 20));
+    setScaleDraft(next);
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.updateChestAnnouncerSettings({ scale: next });
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const sourceUrl = `${window.location.origin}/obs/chest-announcer`;
 
   return (
-    <div style={{ display: 'grid', gap: '1.5rem' }}>
+    <div className="control-stack">
       <section className="control-card">
         <h2>Chest announcer</h2>
         <p className="text-white-50">
@@ -244,6 +264,62 @@ export function ChestAnnouncerControl() {
             {new Date(settings.updated_at).toLocaleTimeString('en-GB')}
           </div>
         )}
+      </section>
+
+      <section className="control-card">
+        <h2>Size</h2>
+        <p className="text-white-50">
+          Scales the whole scene — hero, chest, donation card and
+          confetti — relative to the OBS browser-source size. The default
+          (1.0) is tuned for a short capture rect; a full 1920×1080 source
+          makes the character huge, so dial this down until it sits right.
+          The walking line stays pinned, so the scene shrinks toward the
+          floor. Polled every 5 s — no OBS refresh needed.
+        </p>
+        <div
+          className="control-btn-row"
+          style={{ alignItems: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}
+        >
+          <label className="d-flex flex-column" style={{ flex: '1 1 220px' }}>
+            <small className="text-white-50">
+              Scene scale: <strong>{scaleDraft.toFixed(2)}×</strong>
+            </small>
+            <input
+              type="range"
+              min={0.25}
+              max={2}
+              step={0.05}
+              value={scaleDraft}
+              onChange={(e) => setScaleDraft(Number(e.target.value))}
+              disabled={busy || !settings}
+            />
+            <small className="text-white-50" style={{ fontSize: '0.8em' }}>
+              0.25× – 2.00×
+            </small>
+          </label>
+          <label className="d-flex flex-column">
+            <small className="text-white-50">Exact</small>
+            <input
+              type="number"
+              min={0.25}
+              max={2}
+              step={0.05}
+              value={scaleDraft}
+              onChange={(e) => setScaleDraft(Number(e.target.value) || 0)}
+              disabled={busy || !settings}
+              style={{ width: 100 }}
+            />
+          </label>
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            disabled={!scaleDirty || busy || !settings}
+            onClick={() => void saveScale()}
+            style={{ minWidth: 72 }}
+          >
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+        </div>
       </section>
 
       <section className="control-card">
@@ -566,8 +642,17 @@ function SoundTriggersSection() {
        *  min-width and refuses to honour a narrower <th> width;
        *  switching to fixed makes the <th> the single source of
        *  truth. Paired with the `chest-trigger-table` CSS overrides
-       *  below that set `min-width: 0` on the inputs themselves. */}
-      <table className="control-table chest-trigger-table mt-2" style={{ tableLayout: 'fixed' }}>
+       *  below that set `min-width: 0` on the inputs themselves.
+       *
+       *  The .control-table-scroll wrapper confines the table's
+       *  ~1274px of fixed column widths to a horizontal scroller
+       *  inside the card — without it the table forces the whole
+       *  /control page wider than the viewport on narrow / mobile
+       *  screens. Same pattern as the /control/donations table; it
+       *  also pins the trailing actions column so Test/Save/Delete
+       *  stay reachable however far the operator scrolls. */}
+      <div className="control-table-scroll mt-2">
+      <table className="control-table chest-trigger-table" style={{ tableLayout: 'fixed' }}>
         <thead>
           <tr>
             <ResizableTh
@@ -678,6 +763,7 @@ function SoundTriggersSection() {
           )}
         </tbody>
       </table>
+      </div>
 
       {!creating && (
         <div className="control-btn-row mt-2">

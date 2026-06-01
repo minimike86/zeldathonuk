@@ -32,14 +32,25 @@
    * for the confetti burst to stay inside the OBS capture rect; on very
    * short capture rects the scene rides higher. */
   --ca-h: 100cqh;
-  --ca-hero-px: calc(var(--ca-h) * 0.35);
-  --ca-chest-px: calc(var(--ca-h) * 0.29);
+  /* Operator scene-size multiplier from /control/chest-announcer
+   * (ChestAnnouncerSettings.scale). 1 = legacy size. The component
+   * overrides this inline; the default keeps the overlay correct before
+   * the settings poll returns. --ca-uh ("used height") is the scaled
+   * height that every scene element sizes off — sprites, card, fonts and
+   * confetti all reference --ca-uh, NOT raw --ca-h, so a single knob
+   * shrinks/grows the whole scene together. The ground baseline below
+   * stays on fixed px, so scaling pivots around the floor line. */
+  --ca-scale: 1;
+  --ca-uh: calc(var(--ca-h) * var(--ca-scale));
+  --ca-hero-px: calc(var(--ca-uh) * 0.35);
+  --ca-chest-px: calc(var(--ca-uh) * 0.29);
   /* Walking line pinned 95px above the bottom of the browser window — the
    * character's feet and the top of the ground stripe both sit here.
-   * Fixed px, unlike the sprite sizes which still scale with --ca-h. */
+   * Fixed px, unaffected by --ca-scale (sprite sizes scale, the floor
+   * stays put). */
   --ca-ground: 95px;
-  --ca-card-w: min(calc(var(--ca-h) * 1.3), 80cqw);
-  --ca-card-h: calc(var(--ca-h) * 0.24);
+  --ca-card-w: min(calc(var(--ca-uh) * 1.3), 80cqw);
+  --ca-card-h: calc(var(--ca-uh) * 0.24);
 }
 
 /* One-time gesture gate. Renders fullscreen until the operator clicks
@@ -289,12 +300,12 @@
   bottom: calc(var(--ca-ground) + var(--ca-chest-px) * 0.95);
 
   font-family: 'Bungee', sans-serif;
-  font-size: max(11px, calc(var(--ca-h) * 0.06));
+  font-size: max(11px, calc(var(--ca-uh) * 0.06));
   letter-spacing: 0.06em;
   color: var(--obs-accent-bright, #ffd166);
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--obs-accent, #e71347);
-  padding: calc(var(--ca-h) * 0.008) calc(var(--ca-h) * 0.018);
+  padding: calc(var(--ca-uh) * 0.008) calc(var(--ca-uh) * 0.018);
   border-radius: 999px;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
   white-space: nowrap;
@@ -342,13 +353,20 @@
   justify-content: center;
   align-items: center;
   text-align: center;
-  /* Padding sized off --ca-h (container height) — NOT percentages.
-   * Percentage padding in CSS references the containing block's WIDTH,
-   * so `padding: 4% 6%` here resolved to `4% × card_width` of vertical
-   * padding (huge when card_w > card_h, which is the normal case), and
-   * the donor line was getting pushed clean off the top of the card. */
-  padding: calc(var(--ca-h) * 0.015) calc(var(--ca-h) * 0.03);
-  color: var(--theme-text, #fff);
+  /* Padding sized off --ca-uh (scaled container height) — NOT
+   * percentages. Percentage padding in CSS references the containing
+   * block's WIDTH, so `padding: 4% 6%` here resolved to `4% × card_width`
+   * of vertical padding (huge when card_w > card_h, which is the normal
+   * case), and the donor line was getting pushed clean off the top of the
+   * card. */
+  padding: calc(var(--ca-uh) * 0.015) calc(var(--ca-uh) * 0.03);
+  /* The card background is ALWAYS the dark OBS stage gradient (below),
+   * regardless of the active site theme — so the text has to be light to
+   * contrast with it. We deliberately do NOT use --theme-text here: that
+   * tracks the *website's* body text colour, which is dark on light
+   * themes (Golden Goddess et al.), producing unreadable dark-on-dark
+   * donor names. The dark text-shadows below assume light text too. */
+  color: #fff;
   background: linear-gradient(
     180deg,
     var(--obs-bg-from, #4c1324) 0%,
@@ -393,7 +411,7 @@
 }
 
 .ca-card-donor {
-  font-size: calc(var(--ca-h) * 0.07);
+  font-size: calc(var(--ca-uh) * 0.07);
   letter-spacing: 0.015em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -406,11 +424,12 @@
   width: 100%;
   line-height: 1.1;
   /* Height-referenced gap, not `%` — see the note on .ca-card padding. */
-  margin-bottom: calc(var(--ca-h) * 0.012);
-  color: var(--theme-text, #fff);
+  margin-bottom: calc(var(--ca-uh) * 0.012);
+  /* Light text on the dark card — not --theme-text. See .ca-card. */
+  color: #fff;
 }
 .ca-card-amount {
-  font-size: calc(var(--ca-h) * 0.105);
+  font-size: calc(var(--ca-uh) * 0.105);
   color: var(--obs-accent-bright, #ffd166);
   line-height: 1;
   letter-spacing: 0.02em;
@@ -428,8 +447,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--ca-h) * 0.035);
-  height: calc(var(--ca-h) * 0.035);
+  width: calc(var(--ca-uh) * 0.035);
+  height: calc(var(--ca-uh) * 0.035);
   background: var(--c, var(--obs-accent, #e71347));
   border-radius: 1px;
   transform: translate(-50%, -50%);
@@ -450,7 +469,7 @@
      * the scene was scaled down, so 0.3×h gives ~12% headroom even on
      * the tightest upward trajectory. */
     transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg))
-      translateX(calc(var(--ca-h) * 0.3)) rotate(540deg);
+      translateX(calc(var(--ca-uh) * 0.3)) rotate(540deg);
     opacity: 0;
   }
 }

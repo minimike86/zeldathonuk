@@ -237,6 +237,21 @@
   color: var(--theme-surface-text, var(--theme-text, #fff));
 }
 
+/* Vertical stack of operator cards. A single-column grid whose track is
+ * capped with `minmax(0, 1fr)` — the `0` minimum is what stops a card
+ * with wide intrinsic content (a fixed-width table, a long unbreakable
+ * URL) from forcing the column, and therefore every sibling card, wider
+ * than the viewport. A bare `display: grid` defaults the track to `auto`,
+ * which sizes to the widest card's min-content and blew the /control
+ * pages past the browser edge on narrow screens. Pairs with the
+ * `min-width: 0` on `.control-card` above so the cards actually shrink
+ * into the capped track. */
+.control-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
 /* ── Operator-area card override ───────────────────────────────────
  *
  * The control panel intentionally diverges from the public theme
@@ -275,6 +290,15 @@
     transparent
   );
   color: rgba(255, 255, 255, 0.92);
+  /* Let the card shrink when it's a grid/flex item (e.g. inside
+   * `.control-stack`). Grid/flex items default to min-width:auto
+   * (= min-content), so a card holding a fixed-width table or a long
+   * unbreakable string would otherwise refuse to shrink and push itself
+   * — and every sibling card sharing the track — past the viewport on
+   * narrow screens. min-width:0 hands overflow back to the card's own
+   * content (the table's scroll wrapper, text wrapping). No effect on
+   * cards used as plain blocks elsewhere. */
+  min-width: 0;
   /* Operator cards are guaranteed dark by the rule above, so scope
    * the theme text vars back to white-based inside. Without this the
    * global Bootstrap utility overrides (text-white / text-white-50 /

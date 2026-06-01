@@ -88,6 +88,12 @@ const DEFAULT_CARD_MAX_HOLD_MS = 20_000;
 // Client-side clamp ranges so a bad value can't freeze the queue.
 const MIN_HOLD_RANGE: [number, number] = [500, 60_000];
 const MAX_HOLD_RANGE: [number, number] = [500, 300_000];
+// Scene-size multiplier range. The default OBS source is sized for a
+// short capture rect; a full 1920x1080 source makes the hero huge, so
+// the operator dials this down. Clamped here so a bad backend value
+// can't blow the scene up off-screen. Default 1 matches the legacy size.
+const SCALE_RANGE: [number, number] = [0.25, 2];
+const DEFAULT_SCALE = 1;
 const CONFETTI_MS = 900;
 
 // ── Walk path anchors (percentage of container width) ─────────────────
@@ -224,6 +230,14 @@ function ChestAnnouncerScene() {
       MAX_HOLD_RANGE[1],
       settings?.card_max_hold_ms ?? DEFAULT_CARD_MAX_HOLD_MS,
     ),
+  );
+
+  // Scene-size multiplier, applied as the `--ca-scale` CSS var on the
+  // root. Used only at render time (not inside the timer-driven phase
+  // machine), so a plain clamped value is enough — no ref needed.
+  const scale = Math.max(
+    SCALE_RANGE[0],
+    Math.min(SCALE_RANGE[1], settings?.scale ?? DEFAULT_SCALE),
   );
 
   // Sound triggers — per-rule audio overrides keyed on game / amount /
@@ -662,6 +676,7 @@ function ChestAnnouncerScene() {
       ref={rootRef}
       style={
         {
+          '--ca-scale': scale,
           '--ca-hero-x': `${heroX}%`,
           '--ca-hero-dir': heroDir,
           '--ca-walk-ms': `${walkMs}ms`,

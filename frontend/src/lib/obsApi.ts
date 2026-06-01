@@ -525,6 +525,11 @@ export interface ChestAnnouncerSettings {
    *  finish. A runaway long sting gets cut off after this so the
    *  queue keeps moving. Default 20000. */
   card_max_hold_ms: number;
+  /** Overall scene size as a multiplier of the container-derived
+   *  default. 1.0 is the legacy size; drop it for tall OBS sources
+   *  (e.g. a full 1920x1080 browser source) where the default hero is
+   *  huge. Clamped to 0.25–2.0 by the overlay + control page. */
+  scale: number;
   updated_at: string;
 }
 

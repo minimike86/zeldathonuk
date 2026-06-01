@@ -793,6 +793,7 @@ class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
             'between_cards_ms',
             'card_min_hold_ms',
             'card_max_hold_ms',
+            'scale',
             'updated_at',
         ]
         read_only_fields = ['updated_at']

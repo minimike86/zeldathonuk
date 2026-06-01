@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -2371,6 +2372,18 @@ class ChestAnnouncerSettings(models.Model):
             'gets cut off after this to keep the donation queue moving. '
             'Should be >= card_min_hold_ms. Range up to 300000 (5 min) '
             'enforced client-side.'
+        ),
+    )
+    scale = models.FloatField(
+        default=1.0,
+        validators=[MinValueValidator(0.1), MaxValueValidator(4.0)],
+        help_text=(
+            'Overall size of the scene (hero, chest, card, confetti) as a '
+            'multiplier of the container-derived default. 1.0 is the legacy '
+            'size; lower values shrink the scene for tall OBS sources (e.g. '
+            'a full 1920x1080 browser source, where the default is huge). '
+            'The ground baseline stays fixed, so the scene scales toward the '
+            'floor line. Range 0.25–2.0 enforced client-side.'
         ),
     )
     updated_at = models.DateTimeField(auto_now=True)
