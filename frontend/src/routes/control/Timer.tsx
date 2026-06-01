@@ -273,6 +273,9 @@ function HotkeyHelp() {
   const [open, setOpen] = useState(false);
   const url = new URL('/api/timer-hotkey/', env.VITE_API_URL).toString();
   const rows: { action: string; label: string }[] = [
+    { action: 'start', label: 'Start / resume timer' },
+    { action: 'finish', label: 'Finish run (stop + complete)' },
+    { action: 'reset', label: 'Reset timer to 00:00:00' },
     { action: 'split', label: 'Split active (advance)' },
     { action: 'skip', label: 'Skip active split' },
     { action: 'undo', label: 'Undo last split' },

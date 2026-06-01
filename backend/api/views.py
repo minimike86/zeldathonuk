@@ -1371,6 +1371,7 @@ def currently_playing(request: Request) -> Response:
 
 
 _HOTKEY_ACTIONS = {
+    'start', 'finish', 'reset',
     'split', 'skip', 'undo',
     'collect-map', 'collect-compass', 'collect-big-key',
     'small-key-inc', 'small-key-dec',
@@ -1384,9 +1385,10 @@ def timer_hotkey(request: Request) -> Response:
     The /control/timer page binds Space=split / Backspace=undo, but those only
     fire when the browser tab has OS focus. While the runner plays an emulator
     the emulator owns focus, so the operator can't hit splits. This endpoint
-    mirrors the page's split/skip/undo + dungeon-staple collection so a Stream
-    Deck button (static URL + ``{"action": ...}`` body) drives the live run from
-    any focus state. It always targets the currently-playing entry.
+    mirrors the page's timer controls (start / finish / reset), split/skip/undo,
+    and dungeon-staple collection so a Stream Deck button (static URL +
+    ``{"action": ...}`` body) drives the live run from any focus state. It always
+    targets the currently-playing entry.
 
     Split times are stamped from the server clock (``TimerRun.total_ms``) — within
     a network RTT of the on-page clock and consistent with how the omnibar reads
@@ -1437,6 +1439,47 @@ def timer_hotkey(request: Request) -> Response:
     def fire_setpieces():
         for ct in recompute_setpieces(entry):
             _fire_setpiece_clear(entry, ct)
+
+    # ── Timer-control actions (mirror start_timer / stop_timer / reset_timer) ──
+    if action in ('start', 'finish', 'reset'):
+        tr, _ = models.TimerRun.objects.get_or_create(schedule_entry=entry)
+        now = timezone.now()
+        if action == 'start':
+            # Start or resume — a no-op (already running) is not an error for a
+            # macro pad; just report state. Pause already banked the prior
+            # segment, so nothing to bank here (keeps the clock from jumping).
+            if not tr.is_running:
+                tr.started_at = now
+                tr.paused_at = None
+                tr.ended_at = None
+                tr.save()
+            if not entry.started_at:
+                entry.started_at = now
+                entry.save(update_fields=['started_at'])
+        elif action == 'finish':
+            if tr.is_running and tr.started_at:
+                tr.accumulated_ms = tr.total_ms
+                tr.accumulated_seconds = tr.accumulated_ms // 1000
+            tr.started_at = None
+            tr.paused_at = None
+            tr.ended_at = now
+            tr.save()
+            entry.finished_at = now
+            entry.is_completed = True
+            entry.save(update_fields=['finished_at', 'is_completed'])
+        else:  # reset — clean slate, reopen a finished run to 00:00:00.
+            tr.started_at = None
+            tr.paused_at = None
+            tr.ended_at = None
+            tr.accumulated_seconds = 0
+            tr.accumulated_ms = 0
+            tr.save()
+            entry.started_at = None
+            entry.finished_at = None
+            entry.is_completed = False
+            entry.save(update_fields=['started_at', 'finished_at', 'is_completed'])
+        return Response({'action': action, 'total_ms': tr.total_ms,
+                         'is_running': tr.is_running})
 
     # ── Spine actions ────────────────────────────────────────────────────
     if action in ('split', 'skip'):
