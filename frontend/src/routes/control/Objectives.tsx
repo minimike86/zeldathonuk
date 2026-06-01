@@ -831,7 +831,10 @@ function ObjectiveLibrary({
         }
         .obj-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+          /* Smaller tile floor so the sprite grid packs more per row at
+           * every width (auto-fill adds columns as they fit); the
+           * breakpoints below shrink it further on narrow screens. */
+          grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
           gap: 0.5rem;
           margin-top: 0.5rem;
         }
@@ -918,6 +921,27 @@ function ObjectiveLibrary({
         }
         .obj-asset-swatch[data-selected="true"] { border-color: #7fff7f; }
         .obj-asset-swatch img { width: 100%; aspect-ratio: 1; object-fit: contain; }
+
+        /* Narrow screens: step the tile floor down further (and tighten
+         * the padding/gap/label) so more sprites — and therefore smaller
+         * images — fit across. The image stays width:100% of the tile, so
+         * shrinking the column shrinks it. */
+        @media (max-width: 640px) {
+          .obj-grid {
+            grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+            gap: 0.4rem;
+          }
+          .obj-tile { padding: 0.35rem; }
+          .obj-name { font-size: 0.66rem; }
+        }
+        @media (max-width: 420px) {
+          .obj-grid {
+            grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+            gap: 0.3rem;
+          }
+          .obj-tile { padding: 0.25rem; border-width: 1px; }
+          .obj-name { font-size: 0.58rem; margin-top: 0.15rem; }
+        }
       `}</style>
     </div>
   );
