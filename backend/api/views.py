@@ -574,6 +574,58 @@ def _attribute_dungeon_item(entry, item, *, delta: int, split_ms=None) -> bool:
     return True
 
 
+def _multi_linked_item_ids(entry) -> set:
+    """GameItem ids linked by more than one objective for this entry's game —
+    the shared dungeon staples driven by active-dungeon attribution."""
+    if not entry.game_id:
+        return set()
+    counts = Counter(
+        models.GameObjective.objects.filter(
+            game_id=entry.game_id, linked_item__isnull=False
+        ).values_list('linked_item_id', flat=True)
+    )
+    return {iid for iid, n in counts.items() if n > 1}
+
+
+# Name patterns for the shared dungeon staples, keyed by hotkey action suffix.
+# Matched case-insensitively against GameItem.name and intersected with the
+# multi-linked set so a single (non-shared) item of the same name isn't hit.
+_STAPLE_PATTERNS = {
+    'map': r'map',
+    'compass': r'compass',
+    'big-key': r'big key|boss key',
+    'small-key': r'small key',
+}
+
+
+def _staple_item(entry, staple: str):
+    """Resolve the shared (multi-linked) GameItem for a staple kind, or None."""
+    pattern = _STAPLE_PATTERNS.get(staple)
+    if not pattern or not entry.game_id:
+        return None
+    multi = _multi_linked_item_ids(entry)
+    if not multi:
+        return None
+    return (
+        models.GameItem.objects.filter(
+            game_id=entry.game_id, id__in=multi, name__iregex=pattern
+        )
+        .order_by('id')
+        .first()
+    )
+
+
+def _is_dungeon_staple_obj(entry, obj, multi: set, active_group) -> bool:
+    """True when `obj` is a shared dungeon staple in the active dungeon — these
+    are click/hotkey-driven per dungeon, not part of the linear spine."""
+    return (
+        obj.linked_item_id is not None
+        and obj.linked_item_id in multi
+        and active_group is not None
+        and (obj.group or '') == active_group
+    )
+
+
 class ScheduleEntryViewSet(viewsets.ModelViewSet):
     queryset = (
         models.ScheduleEntry.objects.all()
@@ -1299,6 +1351,169 @@ def currently_playing(request: Request) -> Response:
     cp.schedule_entry_id = schedule_entry_id
     cp.save()
     return Response(serializers.CurrentlyPlayingSerializer(cp).data)
+
+
+_HOTKEY_ACTIONS = {
+    'split', 'skip', 'undo',
+    'collect-map', 'collect-compass', 'collect-big-key',
+    'small-key-inc', 'small-key-dec',
+}
+
+
+@api_view(['POST'])
+def timer_hotkey(request: Request) -> Response:
+    """Server-side timer actions for an external macro pad / Stream Deck.
+
+    The /control/timer page binds Space=split / Backspace=undo, but those only
+    fire when the browser tab has OS focus. While the runner plays an emulator
+    the emulator owns focus, so the operator can't hit splits. This endpoint
+    mirrors the page's split/skip/undo + dungeon-staple collection so a Stream
+    Deck button (static URL + ``{"action": ...}`` body) drives the live run from
+    any focus state. It always targets the currently-playing entry.
+
+    Split times are stamped from the server clock (``TimerRun.total_ms``) — within
+    a network RTT of the on-page clock and consistent with how the omnibar reads
+    time. Mirrors the frontend SplitsPanel "spine" notion: the linear split
+    sequence excludes tally objectives and the active dungeon's shared staples
+    (those are driven per dungeon by the collect-* actions).
+    """
+    action = (request.data.get('action') or '').strip()
+    if action not in _HOTKEY_ACTIONS:
+        return Response(
+            {'detail': f'action must be one of {sorted(_HOTKEY_ACTIONS)}.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    cp = models.CurrentlyPlaying.get()
+    entry = cp.schedule_entry
+    if entry is None:
+        return Response(
+            {'detail': 'Nothing is currently playing.'},
+            status=status.HTTP_409_CONFLICT,
+        )
+    timer = getattr(entry, 'timer', None)
+    now_ms = timer.total_ms if timer else None
+
+    route = _route_objectives(entry)
+    obtained = _obtained_objective_ids(entry)
+    active_group = _active_dungeon_group(entry)
+    multi = _multi_linked_item_ids(entry)
+
+    def is_spine(o) -> bool:
+        return (
+            o.link_mode != models.GameObjective.LINK_MODE_TALLY
+            and not _is_dungeon_staple_obj(entry, o, multi, active_group)
+        )
+
+    def next_spine_name(exclude_id) -> str:
+        for o in route:
+            if o.id != exclude_id and is_spine(o) and o.id not in obtained:
+                # skipped rows aren't in `obtained`; exclude them explicitly
+                st = models.ScheduleEntryObjective.objects.filter(
+                    schedule_entry=entry, objective=o
+                ).first()
+                if st and st.status == models.ObjectiveStatus.SKIPPED:
+                    continue
+                return o.name
+        return ''
+
+    def fire_setpieces():
+        for ct in recompute_setpieces(entry):
+            _fire_setpiece_clear(entry, ct)
+
+    # ── Spine actions ────────────────────────────────────────────────────
+    if action in ('split', 'skip'):
+        # Active = first spine objective with no obtained/skipped row.
+        skipped_ids = set(
+            models.ScheduleEntryObjective.objects.filter(
+                schedule_entry=entry, status=models.ObjectiveStatus.SKIPPED
+            ).values_list('objective_id', flat=True)
+        )
+        active = next(
+            (o for o in route if is_spine(o)
+             and o.id not in obtained and o.id not in skipped_ids),
+            None,
+        )
+        if active is None:
+            return Response(
+                {'detail': 'No active split.'}, status=status.HTTP_409_CONFLICT
+            )
+        next_name = next_spine_name(active.id)
+        if action == 'skip':
+            models.ScheduleEntryObjective.objects.update_or_create(
+                schedule_entry=entry, objective=active,
+                defaults={'status': models.ObjectiveStatus.SKIPPED,
+                          'obtained_at': timezone.now(), 'split_ms': None},
+            )
+        else:
+            models.ScheduleEntryObjective.objects.update_or_create(
+                schedule_entry=entry, objective=active,
+                defaults={'status': models.ObjectiveStatus.OBTAINED,
+                          'obtained_at': timezone.now(), 'split_ms': now_ms},
+            )
+        entry.current_objective = next_name
+        entry.save(update_fields=['current_objective'])
+        fire_setpieces()
+        # Final spine split with nothing left → finish the run (mirror stop_timer).
+        if action == 'split' and next_name == '' and timer and timer.is_running:
+            timer.accumulated_ms = timer.total_ms
+            timer.accumulated_seconds = timer.accumulated_ms // 1000
+            timer.started_at = None
+            timer.paused_at = None
+            timer.ended_at = timezone.now()
+            timer.save()
+            entry.finished_at = timezone.now()
+            entry.is_completed = True
+            entry.save(update_fields=['finished_at', 'is_completed'])
+        return Response({'action': action, 'objective_id': active.id})
+
+    if action == 'undo':
+        # Revert the last obtained spine objective back to outstanding.
+        last = next(
+            (o for o in reversed(route) if is_spine(o) and o.id in obtained),
+            None,
+        )
+        if last is None:
+            return Response(
+                {'detail': 'Nothing to undo.'}, status=status.HTTP_409_CONFLICT
+            )
+        models.ScheduleEntryObjective.objects.filter(
+            schedule_entry=entry, objective=last
+        ).delete()
+        entry.current_objective = last.name
+        entry.save(update_fields=['current_objective'])
+        fire_setpieces()
+        return Response({'action': action, 'objective_id': last.id})
+
+    # ── Dungeon-staple actions ───────────────────────────────────────────
+    staple = {
+        'collect-map': 'map',
+        'collect-compass': 'compass',
+        'collect-big-key': 'big-key',
+        'small-key-inc': 'small-key',
+        'small-key-dec': 'small-key',
+    }[action]
+    item = _staple_item(entry, staple)
+    if item is None:
+        return Response(
+            {'detail': f'No shared {staple} item for this game.'},
+            status=status.HTTP_409_CONFLICT,
+        )
+    delta = -1 if action == 'small-key-dec' else 1
+    if not _attribute_dungeon_item(entry, item, delta=delta, split_ms=now_ms):
+        return Response(
+            {'detail': 'No active dungeon to attribute this to. Enter a dungeon first.'},
+            status=status.HTTP_409_CONFLICT,
+        )
+    fire_setpieces()
+    row = models.CollectedItem.objects.filter(
+        schedule_entry=entry, item_id=item.id
+    ).first()
+    return Response({
+        'action': action,
+        'item_id': item.id,
+        'quantity': row.quantity if row else 0,
+    })
 
 
 @api_view(['GET', 'POST'])

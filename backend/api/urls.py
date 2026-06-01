@@ -47,6 +47,9 @@ router.register('activity-log', views.ActivityLogViewSet, basename='activity-log
 urlpatterns = [
     path('healthz/', views.healthz, name='api-healthz'),
     path('currently-playing/', views.currently_playing, name='currently-playing'),
+    # Server-side timer actions for an external macro pad / Stream Deck — works
+    # while the emulator (not the browser) holds OS focus. POST {"action": ...}.
+    path('timer-hotkey/', views.timer_hotkey, name='timer-hotkey'),
     path('tts/replay/', views.tts_replay, name='tts-replay'),
     path('tts/now-reading/', views.tts_now_reading, name='tts-now-reading'),
     path('donation-mute-reasons/', views.donation_mute_reasons, name='donation-mute-reasons'),
