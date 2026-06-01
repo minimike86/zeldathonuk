@@ -403,7 +403,9 @@ function ObjectiveLibrary({
     }
   };
 
-  // Renumber a reordered list to a contiguous run from its min order; optimistic
+  // Renumber a fully-ordered list to a contiguous run from its min order.
+  // Callers pass EVERY objective in global display order, so the run spans all
+  // sections and stays collision-free across section boundaries. Optimistic
   // override first, then persist only the rows that actually changed.
   const applyObjectiveOrder = (reordered: GameObjective[]) => {
     if (reordered.length === 0) return;
@@ -498,13 +500,21 @@ function ObjectiveLibrary({
     if (!finalKey) return;
     const sec = sections[Number(finalKey.slice('cont:'.length))];
     if (!sec) return;
-    const orderedItems = (w.get(finalKey) ?? [])
-      .map((id) => idToObj.get(id))
-      .filter((x): x is GameObjective => Boolean(x));
-    // Persist the final placement: section (group/category) then order within
-    // the target section.
+    // Persist the final placement: first the moved item's section
+    // (group/category), then a GLOBAL order reflow.
     applyFieldChange(aid, computeAssign(sec.label, sec.items));
-    applyObjectiveOrder(orderedItems);
+    // Renumber EVERY objective into one monotonic run, walking sections in
+    // display order and items in their post-drag order. Renumbering only the
+    // dropped section (using its own min as base) let sections whose order
+    // ranges overlapped collide — which interleaved chapters in the timer spine
+    // (e.g. Chapter 2.1 splits firing during Chapter 1). A global reflow keeps
+    // `order` strictly increasing across section boundaries.
+    const globalOrder = sections.flatMap((s) =>
+      (w.get(`cont:${s.idx}`) ?? s.items.map((o) => o.id))
+        .map((id) => idToObj.get(id))
+        .filter((x): x is GameObjective => Boolean(x)),
+    );
+    applyObjectiveOrder(globalOrder);
   };
 
   // Rename a group section: set the new group name on every objective in it

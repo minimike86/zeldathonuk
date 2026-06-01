@@ -1371,7 +1371,7 @@ def currently_playing(request: Request) -> Response:
 
 
 _HOTKEY_ACTIONS = {
-    'start', 'finish', 'reset',
+    'start', 'pause', 'finish', 'reset',
     'split', 'skip', 'undo',
     'collect-map', 'collect-compass', 'collect-big-key',
     'small-key-inc', 'small-key-dec',
@@ -1385,7 +1385,7 @@ def timer_hotkey(request: Request) -> Response:
     The /control/timer page binds Space=split / Backspace=undo, but those only
     fire when the browser tab has OS focus. While the runner plays an emulator
     the emulator owns focus, so the operator can't hit splits. This endpoint
-    mirrors the page's timer controls (start / finish / reset), split/skip/undo,
+    mirrors the page's timer controls (start / pause / finish / reset), split/skip/undo,
     and dungeon-staple collection so a Stream Deck button (static URL +
     ``{"action": ...}`` body) drives the live run from any focus state. It always
     targets the currently-playing entry.
@@ -1440,8 +1440,8 @@ def timer_hotkey(request: Request) -> Response:
         for ct in recompute_setpieces(entry):
             _fire_setpiece_clear(entry, ct)
 
-    # ── Timer-control actions (mirror start_timer / stop_timer / reset_timer) ──
-    if action in ('start', 'finish', 'reset'):
+    # ── Timer-control actions (mirror start / pause / stop / reset_timer) ──
+    if action in ('start', 'pause', 'finish', 'reset'):
         tr, _ = models.TimerRun.objects.get_or_create(schedule_entry=entry)
         now = timezone.now()
         if action == 'start':
@@ -1456,6 +1456,17 @@ def timer_hotkey(request: Request) -> Response:
             if not entry.started_at:
                 entry.started_at = now
                 entry.save(update_fields=['started_at'])
+        elif action == 'pause':
+            # Bank the live segment NOW and hold the clock (mirror pause_timer):
+            # total_ms then reads accumulated_ms while paused, so the display —
+            # centiseconds included — stays put. A no-op (not running) isn't an
+            # error for a macro pad; just report state. Start/Resume picks back up.
+            if tr.is_running and tr.started_at:
+                tr.accumulated_ms = tr.total_ms
+                tr.accumulated_seconds = tr.accumulated_ms // 1000
+                tr.started_at = None
+                tr.paused_at = now
+                tr.save()
         elif action == 'finish':
             if tr.is_running and tr.started_at:
                 tr.accumulated_ms = tr.total_ms
