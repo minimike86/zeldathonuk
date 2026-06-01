@@ -1809,10 +1809,16 @@
   font-family: var(--ob-font);
   font-weight: 700;
   font-size: 1rem;
+  /* Bright accent (gold by default) is the CTA, but on a light or busy
+   * lane background it washes out. A dark contrast chip behind it keeps
+   * the URL legible regardless of the lane's text/background colour, and
+   * a blurred shadow adds separation. */
   color: var(--obs-accent-bright, #ffd23a);
   letter-spacing: 0.04em;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
-  padding: 0 0.15rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  padding: 0.05em 0.4em;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.5);
 }
 
 /* ── Pre-stream upcoming-game card ────────────────────────────────────
