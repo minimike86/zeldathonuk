@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
+import { GameChip } from './_shared/GameChip';
 import { MarqueeOnOverflow } from './_shared/MarqueeOnOverflow';
+import { SectionChip } from './_shared/SectionChip';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 import type { GameObjective } from '@/lib/obsApi';
@@ -30,6 +32,8 @@ interface Row {
 
 interface Data {
   gameTitle: string;
+  /** Current game's box art (may be empty → chip shows a placeholder). */
+  boxArtUrl: string;
   /** Current run-section label (e.g. "Prologue", "Endgame"). Null
    *  when the active objectives have no group/category set, in which
    *  case the panel renders without a section chip. */
@@ -50,12 +54,13 @@ const tileStyle = (obtained: boolean): CSSProperties => ({
 function Panel({ data }: PanelProps<Data>) {
   return (
     <PanelRow tag="OBJECTIVES" arrow>
+      {/* Game identity + section label stay fixed at the left as cards;
+        * only the tile strip scrolls when it overflows the rail. The
+        * count sits outside the marquee, pinned hard-right. */}
+      <GameChip title={data.gameTitle} boxArtUrl={data.boxArtUrl} />
+      {data.sectionLabel && <SectionChip label={data.sectionLabel} />}
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <MarqueeOnOverflow>
-          <span className="ob-text-strong">{data.gameTitle}</span>
-          {data.sectionLabel && (
-            <span className="ob-text-muted">· {data.sectionLabel}</span>
-          )}
           {data.rows.map(({ objective, obtained, count }) => (
             <span
               key={objective.id}
@@ -72,11 +77,11 @@ function Panel({ data }: PanelProps<Data>) {
               {count != null && <span className="ob-text-strong">×{count}</span>}
             </span>
           ))}
-          <span className="ob-text-muted">
-            {data.obtainedCount} / {data.total} done
-          </span>
         </MarqueeOnOverflow>
       </div>
+      <span className="ob-text-muted ob-items-count">
+        {data.obtainedCount} / {data.total} done
+      </span>
     </PanelRow>
   );
 }
@@ -124,6 +129,7 @@ registerPanel<Data>({
     const counted = sectionObjectives.filter((o) => !isTally(o));
     return {
       gameTitle: entry.display_title,
+      boxArtUrl: entry.game.box_art_url,
       sectionLabel: targetGroup || null,
       rows,
       obtainedCount: counted.filter((o) => obtained.has(o.id)).length,

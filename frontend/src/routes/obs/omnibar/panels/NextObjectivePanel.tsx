@@ -1,3 +1,4 @@
+import { GameChip } from './_shared/GameChip';
 import { MarqueeOnOverflow } from './_shared/MarqueeOnOverflow';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
@@ -28,6 +29,11 @@ import type { GameObjective } from '@/lib/obsApi';
  */
 
 interface Data {
+  /** Current game's display title — surfaced as a compact chip so the
+   *  panel reads as "<game> → next objective". */
+  gameTitle: string;
+  /** Current game's box art (may be empty → chip shows a placeholder). */
+  boxArtUrl: string;
   /** The objective to highlight as "up next". */
   objective: GameObjective;
   /** Position in the run, 1-indexed (1 = first remaining). Useful for
@@ -43,6 +49,7 @@ function Panel({ data }: PanelProps<Data>) {
   const { objective, position, remaining } = data;
   return (
     <PanelRow tag="NEXT OBJECTIVE" arrow>
+      <GameChip title={data.gameTitle} boxArtUrl={data.boxArtUrl} />
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <MarqueeOnOverflow>
           {objective.image_url && (
@@ -51,11 +58,11 @@ function Panel({ data }: PanelProps<Data>) {
             </span>
           )}
           <span className="ob-text-strong">{objective.name}</span>
-          <span className="ob-text-muted">
-            #{position} of {remaining}
-          </span>
         </MarqueeOnOverflow>
       </div>
+      <span className="ob-text-muted ob-items-count">
+        #{position} of {remaining}
+      </span>
     </PanelRow>
   );
 }
@@ -89,6 +96,8 @@ registerPanel<Data>({
     // is obtained it becomes 2; etc.
     const position = active.findIndex((o) => o.id === objective.id) + 1;
     return {
+      gameTitle: entry.display_title,
+      boxArtUrl: entry.game.box_art_url,
       objective,
       position,
       remaining: active.length,

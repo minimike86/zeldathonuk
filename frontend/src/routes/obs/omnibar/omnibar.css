@@ -2069,3 +2069,261 @@
   color: color-mix(in srgb, currentColor 92%, transparent);
   white-space: nowrap;
 }
+
+/* ── Items-collected paged cascade ───────────────────────────────────
+ *
+ * The items-collected panel fills the lane with a row of styled item
+ * boxes (one "page"), each popping in left→right in a staggered
+ * cascade. The panel keys the page wrapper on the page index so this
+ * cascade replays on every flip (same keyed-remount trick as the
+ * upcoming-card carousel). The trailing "N / M collected" tally is a
+ * separate row-body child pinned hard-right via margin-left:auto so it
+ * stays put while the boxes cycle. */
+.omnibar--v2 .ob-item-page {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* One collected-item box — a compact card echoing the upcoming-card
+ * surface (lane-tinted fill + soft border) so the two panels read as
+ * one design language. Boxes flex to share the lane evenly and clip
+ * long names rather than pushing the row wider than the lane. */
+.omnibar--v2 .ob-item-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 0;
+  min-width: 0;
+  height: calc(var(--ob-lane-h) - 12px);
+  padding: 0 0.55rem 0 0.3rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  /* Staggered pop-in: each box's delay scales with its index (--i,
+   * set inline by the panel) so the row cascades left→right. The
+   * slight overshoot easing gives the boxes a lively "snap" rather
+   * than a flat fade. `both` holds the from-state through the delay
+   * so a box stays hidden until its turn. */
+  animation: ob-item-box-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1)
+    calc(var(--i, 0) * 90ms) both;
+}
+
+@keyframes ob-item-box-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.85); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Item thumbnail — fixed square, fills its box height. The inner
+ * <img> uses object-fit:contain (via the generic .omnibar--v2 img
+ * rule) so sprite art isn't cropped. */
+.omnibar--v2 .ob-item-box-art {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--ob-lane-h) - 18px);
+  height: calc(var(--ob-lane-h) - 18px);
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+}
+/* No-art fallback tile — keeps the box layout stable when an item has
+ * no sprite. Mirrors the upcoming-card placeholder colour recipe. */
+.omnibar--v2 .ob-item-box-art--placeholder {
+  font-family: var(--ob-font);
+  font-size: 0.8rem;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.omnibar--v2 .ob-item-box-name {
+  font-family: var(--ob-font);
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  color: inherit;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tally for countable items — sits inside the box, so it cascades in
+ * as one unit with the name (the old layout animated it separately). */
+.omnibar--v2 .ob-item-box-count {
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  font-size: 0.68rem;
+  line-height: 1;
+  flex-shrink: 0;
+  color: color-mix(in srgb, currentColor 92%, transparent);
+}
+
+/* Running tally — pinned hard-right and held static so it reads as a
+ * fixed counter rather than animating with each page flip. */
+.omnibar--v2 .ob-items-count {
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Game chip (current-game / next-objective / objective-checklist) ──
+ *
+ * Compact cover-art + title card that replaces the bare game-title
+ * text in the game-state panels. Slimmer single-line sibling of the
+ * pre-stream `.ob-upcoming-card` — same lane-tinted card surface, but
+ * sized to sit inline alongside other lane content without dominating
+ * the width. */
+.omnibar--v2 .ob-game-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  max-width: 22rem;
+  height: calc(var(--ob-lane-h) - 14px);
+  padding: 0 0.6rem 0 0.3rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.omnibar--v2 .ob-game-chip-art {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--ob-lane-h) - 22px);
+  height: calc(var(--ob-lane-h) - 22px);
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+.omnibar--v2 .ob-game-chip-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.omnibar--v2 .ob-game-chip-art--placeholder {
+  font-family: var(--ob-font);
+  font-size: 0.85rem;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* Two-row text stack: tiny series eyebrow over the full game name.
+ * Centres vertically so a name-only chip (no eyebrow) still sits
+ * mid-card. */
+.omnibar--v2 .ob-game-chip-body {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+/* "The Legend of Zelda" eyebrow — demoted to a small muted line so the
+ * implied series doesn't crowd out the game name below it. */
+.omnibar--v2 .ob-game-chip-series {
+  font-family: var(--ob-font);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.omnibar--v2 .ob-game-chip-title {
+  font-family: var(--ob-font);
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  color: inherit;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Section chip — the current run-section label (e.g. "Chapter 2.1 –
+ * Lost Woods…") held fixed beside the game chip so it doesn't scroll
+ * away with the objective tiles. Same lane-tinted card surface as the
+ * game chip, with a matching eyebrow-over-title stack. Width is
+ * constrained, so a long location name bounces within the card rather
+ * than widening it. */
+.omnibar--v2 .ob-section-chip {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.05rem;
+  flex-shrink: 0;
+  /* Constrained box: short labels shrink to fit, long location names
+   * cap here and ping-pong inside (see .ob-section-chip-title). */
+  width: 13rem;
+  max-width: 13rem;
+  height: calc(var(--ob-lane-h) - 14px);
+  padding: 0 0.7rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  overflow: hidden;
+}
+
+/* "Chapter 2.1" eyebrow — small muted line, mirrors the game chip's
+ * series eyebrow. */
+.omnibar--v2 .ob-section-chip-eyebrow {
+  font-family: var(--ob-font);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.omnibar--v2 .ob-section-chip-title {
+  font-family: var(--ob-font);
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  color: inherit;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ── Bounce-on-overflow (ping-pong) ──────────────────────────────────
+ *
+ * A single line clipped to its box; when the text overflows, the inner
+ * span ping-pongs left↔right with a pause at each end so the full label
+ * is readable without truncation. `--bounce-distance` (the measured
+ * overflow, negative) + the duration are set inline by `BounceText`. */
+.omnibar--v2 .ob-bounce {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.omnibar--v2 .ob-bounce-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+.omnibar--v2 .ob-bounce-text.is-bouncing {
+  /* Duration is overridden inline (animationDuration) by BounceText
+   * from the measured overflow; this is just the fallback. */
+  animation: ob-bounce-x 4000ms ease-in-out infinite alternate;
+}
+
+@keyframes ob-bounce-x {
+  /* Hold at the start, travel to the far end, hold there. `alternate`
+   * replays it in reverse for the return leg, so both ends pause. */
+  0%, 16%   { transform: translateX(0); }
+  84%, 100% { transform: translateX(var(--bounce-distance, 0)); }
+}
