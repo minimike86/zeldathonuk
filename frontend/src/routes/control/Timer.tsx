@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { GameObjective, ObjectiveStatus, ScheduleEntry } from '@/lib/obsApi';
+import { env } from '@/lib/env';
 
 /**
  * Playthrough timer — LiveSplit-style. Targets the schedule entry that's
@@ -152,7 +153,7 @@ export function TimerControl() {
       <div
         style={{
           fontFamily: '"Share Tech Mono", ui-monospace, monospace',
-          fontSize: '6rem',
+          fontSize: 'clamp(2.25rem, 12vw, 6rem)',
           textAlign: 'center',
           lineHeight: 1,
           color: '#fff',
@@ -255,6 +256,72 @@ export function TimerControl() {
 
       {editingRoute && (
         <RouteEditor entry={entry} onClose={() => setEditingRoute(false)} />
+      )}
+
+      <HotkeyHelp />
+    </div>
+  );
+}
+
+/** Reference card for the server-side timer hotkeys. The on-page Space/Backspace
+ *  shortcuts only work when the browser tab has focus — useless while the runner
+ *  plays an emulator that owns OS focus. These endpoints let a Stream Deck /
+ *  macro pad drive the live run regardless of focus: bind each button to an
+ *  HTTP POST of the URL + JSON body below (targets the currently-playing entry,
+ *  so the button never changes between games). */
+function HotkeyHelp() {
+  const [open, setOpen] = useState(false);
+  const url = new URL('/api/timer-hotkey/', env.VITE_API_URL).toString();
+  const rows: { action: string; label: string }[] = [
+    { action: 'split', label: 'Split active (advance)' },
+    { action: 'skip', label: 'Skip active split' },
+    { action: 'undo', label: 'Undo last split' },
+    { action: 'collect-map', label: 'Collect Map (active dungeon)' },
+    { action: 'collect-compass', label: 'Collect Compass (active dungeon)' },
+    { action: 'collect-big-key', label: 'Collect Big/Boss Key (active dungeon)' },
+    { action: 'small-key-inc', label: 'Small Key +1 (active dungeon)' },
+    { action: 'small-key-dec', label: 'Small Key −1 (active dungeon)' },
+  ];
+  return (
+    <div className="mt-3">
+      <button
+        className="btn btn-link btn-sm p-0 text-info"
+        onClick={() => setOpen((v) => !v)}
+      >
+        {open ? 'Hide Stream Deck hotkeys' : 'Stream Deck hotkeys…'}
+      </button>
+      {open && (
+        <div
+          className="mt-2 p-3"
+          style={{
+            background: 'rgba(0,0,0,0.25)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 8,
+          }}
+        >
+          <p className="small text-white-50 mt-0">
+            Space/Backspace only work when this tab has focus. For live splits
+            while the emulator is focused, bind a macro-pad button to an HTTP{' '}
+            <strong>POST</strong> to <code>{url}</code> with the JSON body shown.
+            Each action targets whatever is currently playing.
+          </p>
+          <table className="control-table">
+            <thead>
+              <tr>
+                <th>Button</th>
+                <th>Body</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.action}>
+                  <td>{r.label}</td>
+                  <td><code>{`{"action":"${r.action}"}`}</code></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
