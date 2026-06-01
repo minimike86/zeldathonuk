@@ -138,6 +138,10 @@ export interface GameObjective {
    *  state). Null when the objective isn't tied to an item. */
   linked_item: number | null;
   order: number;
+  /** How a linked dungeon item resolves when collected while a dungeon is
+   *  active: 'single' = obtained once; 'tally' = a per-dungeon count (small
+   *  keys). Only meaningful for items linked by more than one objective. */
+  link_mode: 'single' | 'tally';
   /** Role this objective plays in driving an omnibar setpiece (see
    *  recompute_setpieces on the backend). */
   setpiece_role: SetpieceRole;
@@ -322,6 +326,9 @@ export interface ScheduleEntry {
   /** {objective_id: cumulative run ms at split} for obtained objectives that
    *  have a stamped split time — the timer page renders these frozen splits. */
   objective_split_ms: Record<string, number>;
+  /** {objective_id: count} for link_mode=tally objectives with a per-dungeon
+   *  tally (e.g. small keys). Absent/zero means none collected. */
+  objective_counts: Record<string, number>;
   /** Read-only nested. The omnibar feed doesn't act on these (the
    *  backend SSE evaluator fires triggers server-side); the control
    *  panel reads them to render the per-entry editor. */
@@ -1271,6 +1278,7 @@ export const obsApi = {
     group?: string;
     linked_item?: number | null;
     order?: number;
+    link_mode?: 'single' | 'tally';
     setpiece_role?: SetpieceRole;
     setpiece_name?: string;
     clears_setpiece?: string;
@@ -1283,7 +1291,7 @@ export const obsApi = {
     patch: Partial<
       Pick<GameObjective,
         'name' | 'image_url' | 'category' | 'group' | 'linked_item' | 'order'
-        | 'setpiece_role' | 'setpiece_name' | 'clears_setpiece'
+        | 'link_mode' | 'setpiece_role' | 'setpiece_name' | 'clears_setpiece'
       >
     >,
   ) =>
@@ -1311,6 +1319,26 @@ export const obsApi = {
         body: {
           objective_id: objectiveId,
           status,
+          ...(splitMs != null ? { split_ms: Math.round(splitMs) } : {}),
+        },
+      },
+    ).then(withObjectivesBroadcast),
+  /** Adjust a link_mode=tally objective's per-dungeon count (e.g. small keys).
+   *  delta is usually +1/-1; the row is removed when it hits 0. Optionally
+   *  stamps the latest split. */
+  adjustObjectiveCount: (
+    entryId: number,
+    objectiveId: number,
+    delta: number,
+    splitMs?: number,
+  ) =>
+    api<{ objective_id: number; count: number }>(
+      `/api/schedule/${entryId}/set_objective_status/`,
+      {
+        method: 'POST',
+        body: {
+          objective_id: objectiveId,
+          count_delta: delta,
           ...(splitMs != null ? { split_ms: Math.round(splitMs) } : {}),
         },
       },

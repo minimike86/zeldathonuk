@@ -304,10 +304,92 @@ function SplitsPanel({
   const splitOf = (id: number): number | undefined =>
     entry.objective_split_ms[String(id)] ?? splitOverlay[id];
 
-  const active = route.find((o) => statusOf(o.id) === 'outstanding') ?? null;
-  const obtainedCount = route.filter((o) => statusOf(o.id) === 'obtained').length;
-  const skippedCount = route.filter((o) => statusOf(o.id) === 'skipped').length;
-  const activeTotal = route.filter((o) => statusOf(o.id) !== 'skipped').length;
+  // The dungeon whose setpiece is currently `active` — its run-section group is
+  // where shared dungeon items (Map/Compass/Key) attribute. Within this group
+  // the item splits are click-driven so they can be hit in any order.
+  const activeDungeonGroup = useMemo(() => {
+    const sp = (entry.setpieces ?? []).find(
+      (s) => s.kind === 'dungeon' && s.stage === 'active',
+    );
+    if (!sp) return null;
+    const enter = gameObjectives(entry).find(
+      (o) => o.setpiece_role === 'dungeon-enter' && o.setpiece_name === sp.name,
+    );
+    return enter ? enter.group.trim() : null;
+  }, [entry]);
+
+  // Item ids linked by more than one objective — the shared dungeon staples
+  // (Map/Compass/Key) attributed per active dungeon. Mirrors the backend gate
+  // so the timer treats exactly the same set as click-driven sub-splits.
+  const multiLinkedItemIds = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const o of gameObjectives(entry)) {
+      if (o.linked_item != null) {
+        counts.set(o.linked_item, (counts.get(o.linked_item) ?? 0) + 1);
+      }
+    }
+    return new Set([...counts].filter(([, n]) => n > 1).map(([id]) => id));
+  }, [entry]);
+
+  // A dungeon-item objective = a shared (multi-linked) staple inside the active
+  // dungeon group. `single` ones become reorderable click-to-split rows; `tally`
+  // ones (small keys) get +/- count controls. Single-linked rewards (e.g. the
+  // Pendant that clears the dungeon) stay on the normal Space-split spine.
+  const isDungeonItem = (o: GameObjective): boolean =>
+    activeDungeonGroup != null &&
+    o.linked_item != null &&
+    multiLinkedItemIds.has(o.linked_item) &&
+    o.group.trim() === activeDungeonGroup;
+
+  const isTally = (o: GameObjective): boolean => o.link_mode === 'tally';
+  // Spine splits = the linear Space-driven sequence: everything except tally
+  // objectives and the click-driven dungeon staples.
+  const isSpine = (o: GameObjective): boolean => !isTally(o) && !isDungeonItem(o);
+
+  const active = route.find((o) => isSpine(o) && statusOf(o.id) === 'outstanding') ?? null;
+  // Tally objectives never count toward "done / total"; they're informational.
+  const counted = route.filter((o) => !isTally(o));
+  const obtainedCount = counted.filter((o) => statusOf(o.id) === 'obtained').length;
+  const skippedCount = counted.filter((o) => statusOf(o.id) === 'skipped').length;
+  const activeTotal = counted.filter((o) => statusOf(o.id) !== 'skipped').length;
+
+  // Optimistic per-objective tally overlay so +/- feels instant; pruned once
+  // the poll reports the same count.
+  const [countOverlay, setCountOverlay] = useState<Record<number, number>>({});
+  useEffect(() => {
+    const srv = entry.objective_counts;
+    setCountOverlay((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const k of Object.keys(prev)) {
+        if ((srv[k] ?? 0) === prev[Number(k)]) {
+          delete next[Number(k)];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [entry]);
+  const countOf = (id: number): number =>
+    countOverlay[id] ?? entry.objective_counts[String(id)] ?? 0;
+
+  // Click a single dungeon-item split directly (out of order). Marks it
+  // obtained + stamps the current clock. Never finishes the run — dungeon
+  // staples aren't the end of the route; only the main spine Split does that.
+  const splitOne = (o: GameObjective) => {
+    if (statusOf(o.id) !== 'outstanding') return;
+    const ms = computeTimerMs(entry.timer);
+    setStatus(o.id, 'obtained', nextOutstandingName(o.id), ms);
+  };
+
+  // Adjust a tally dungeon-item count (small keys). Optimistic overlay + queued
+  // network call; stamps the latest split on increment.
+  const adjustCount = (o: GameObjective, delta: number) => {
+    const nextVal = Math.max(0, countOf(o.id) + delta);
+    setCountOverlay((prev) => ({ ...prev, [o.id]: nextVal }));
+    const ms = delta > 0 ? computeTimerMs(entry.timer) : undefined;
+    enqueue(() => obsApi.adjustObjectiveCount(entry.id, o.id, delta, ms));
+  };
 
   const running = entry.timer?.is_running ?? false;
 
@@ -337,8 +419,12 @@ function SplitsPanel({
     });
   };
 
+  // Next spine objective to surface as the omnibar "current objective" — skips
+  // tally + click-driven dungeon staples so the text tracks the linear route.
   const nextOutstandingName = (excludeId: number): string =>
-    route.find((o) => o.id !== excludeId && statusOf(o.id) === 'outstanding')?.name ?? '';
+    route.find(
+      (o) => o.id !== excludeId && isSpine(o) && statusOf(o.id) === 'outstanding',
+    )?.name ?? '';
 
   const split = () => {
     if (!active) return;
@@ -354,7 +440,11 @@ function SplitsPanel({
     setStatus(active.id, 'skipped', nextOutstandingName(active.id));
   };
   const undo = () => {
-    const last = [...route].reverse().find((o) => statusOf(o.id) === 'obtained');
+    // Reverse the last SPINE split only — tally counts and click-driven dungeon
+    // staples are managed by their own +/- and row clicks.
+    const last = [...route]
+      .reverse()
+      .find((o) => isSpine(o) && statusOf(o.id) === 'obtained');
     if (!last) return;
     // Reverting makes `last` the active split again (clears its frozen time).
     setStatus(last.id, 'outstanding', last.name);
@@ -422,12 +512,25 @@ function SplitsPanel({
             // (computeTimerMs returns the banked ms when not running).
             splitText = formatSplit(computeTimerMs(entry.timer));
           }
+          // Dungeon-item rows in the active dungeon are interactive out of order:
+          // single → click to split; tally → +/- count (small keys).
+          const dungeon = isDungeonItem(o);
+          const tally = dungeon && o.link_mode === 'tally';
+          const count = countOf(o.id);
+          const clickToSplit = dungeon && !tally && status === 'outstanding' && running;
           return (
             <Fragment key={o.id}>
               {group && group !== prevGroup && (
                 <li className="split-group-head">{group}</li>
               )}
-              <li className="split-row" data-status={status} data-active={isActive}>
+              <li
+                className="split-row"
+                data-status={status}
+                data-active={isActive || clickToSplit}
+                data-clickable={clickToSplit || undefined}
+                onClick={clickToSplit ? () => splitOne(o) : undefined}
+                title={clickToSplit ? 'Collect this dungeon item (any order)' : undefined}
+              >
                 <span className="split-icon">
                   {o.image_url ? (
                     <img src={o.image_url} alt="" />
@@ -435,11 +538,38 @@ function SplitsPanel({
                     <span className="split-placeholder">{o.name.slice(0, 2)}</span>
                   )}
                 </span>
-                <span className="split-name">{o.name}</span>
-                <span className="split-time" data-active={isActive}>{splitText}</span>
-                <span className="split-mark">
-                  {status === 'obtained' ? '✓' : status === 'skipped' ? '⏭' : isActive ? '▶' : ''}
+                <span className="split-name">
+                  {o.name}
+                  {tally && count > 0 && <span className="split-count"> ×{count}</span>}
                 </span>
+                <span className="split-time" data-active={isActive}>{splitText}</span>
+                {tally ? (
+                  <span className="split-tally" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      className="btn btn-outline-light btn-sm"
+                      disabled={count === 0}
+                      onClick={() => adjustCount(o, -1)}
+                      title="One fewer (e.g. used a small key)"
+                    >
+                      −
+                    </button>
+                    <span className="split-count-num">{count}</span>
+                    <button
+                      type="button"
+                      className="btn btn-outline-light btn-sm"
+                      disabled={!running}
+                      onClick={() => adjustCount(o, 1)}
+                      title="Collected one (e.g. a small key)"
+                    >
+                      +
+                    </button>
+                  </span>
+                ) : (
+                  <span className="split-mark">
+                    {status === 'obtained' ? '✓' : status === 'skipped' ? '⏭' : isActive ? '▶' : ''}
+                  </span>
+                )}
               </li>
             </Fragment>
           );

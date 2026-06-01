@@ -23,6 +23,9 @@ import type { GameObjective } from '@/lib/obsApi';
 interface Row {
   objective: GameObjective;
   obtained: boolean;
+  /** Per-dungeon tally for link_mode=tally objectives (e.g. small keys);
+   *  null for normal single objectives. Rendered as ×N on the tile. */
+  count: number | null;
 }
 
 interface Data {
@@ -53,8 +56,12 @@ function Panel({ data }: PanelProps<Data>) {
           {data.sectionLabel && (
             <span className="ob-text-muted">· {data.sectionLabel}</span>
           )}
-          {data.rows.map(({ objective, obtained }) => (
-            <span key={objective.id} style={tileStyle(obtained)} title={objective.name}>
+          {data.rows.map(({ objective, obtained, count }) => (
+            <span
+              key={objective.id}
+              style={tileStyle(count != null ? count > 0 : obtained)}
+              title={objective.name}
+            >
               {objective.image_url ? (
                 <span className="ob-item-icon" aria-hidden>
                   <img src={objective.image_url} alt="" />
@@ -62,6 +69,7 @@ function Panel({ data }: PanelProps<Data>) {
               ) : (
                 <span className="ob-text-strong">{objective.name}</span>
               )}
+              {count != null && <span className="ob-text-strong">×{count}</span>}
             </span>
           ))}
           <span className="ob-text-muted">
@@ -83,6 +91,8 @@ registerPanel<Data>({
     if (all.length === 0) return null;
     const obtained = new Set(entry.obtained_objective_ids);
     const skipped = new Set(entry.skipped_objective_ids);
+    const counts = entry.objective_counts ?? {};
+    const isTally = (o: GameObjective) => o.link_mode === 'tally';
     // Drop skipped objectives; they're not in play this run.
     const active = all
       .filter((o) => !skipped.has(o.id))
@@ -100,19 +110,24 @@ registerPanel<Data>({
     // has rolled into the next section automatically. If the whole
     // run is complete, fall back to the last section so the panel
     // still renders a 100%-green strip rather than disappearing.
-    const nextUp = active.find((o) => !obtained.has(o.id));
+    // Tally objectives (small keys) stay outstanding by nature, so they must
+    // not anchor the "next section" — skip them when picking the target group.
+    const nextUp = active.find((o) => !obtained.has(o.id) && !isTally(o));
     const targetGroup = nextUp ? groupKey(nextUp) : groupKey(active[active.length - 1]);
     const sectionObjectives = active.filter((o) => groupKey(o) === targetGroup);
     const rows = sectionObjectives.map((objective) => ({
       objective,
       obtained: obtained.has(objective.id),
+      count: isTally(objective) ? counts[String(objective.id)] ?? 0 : null,
     }));
+    // Tally objectives don't count toward the "N of M done" tally.
+    const counted = sectionObjectives.filter((o) => !isTally(o));
     return {
       gameTitle: entry.display_title,
       sectionLabel: targetGroup || null,
       rows,
-      obtainedCount: rows.filter((r) => r.obtained).length,
-      total: sectionObjectives.length,
+      obtainedCount: counted.filter((o) => obtained.has(o.id)).length,
+      total: counted.length,
     };
   },
   minDurationMs: 7000,

@@ -50,7 +50,7 @@ class GameObjectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.GameObjective
         fields = ['id', 'game', 'name', 'image_url', 'category', 'group',
-                  'linked_item', 'order',
+                  'linked_item', 'order', 'link_mode',
                   'setpiece_role', 'setpiece_name', 'clears_setpiece']
 
 
@@ -312,6 +312,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
     obtained_objective_ids = serializers.SerializerMethodField()
     skipped_objective_ids = serializers.SerializerMethodField()
     objective_split_ms = serializers.SerializerMethodField()
+    objective_counts = serializers.SerializerMethodField()
     setpieces = serializers.SerializerMethodField()
     order = serializers.IntegerField(required=False)
 
@@ -350,6 +351,15 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             str(s.objective_id): s.split_ms
             for s in obj.objective_statuses.all()
             if s.status == models.ObjectiveStatus.OBTAINED and s.split_ms is not None
+        }
+
+    def get_objective_counts(self, obj) -> dict:
+        # {objective_id: count} for link_mode=tally objectives with a per-dungeon
+        # tally (e.g. small keys). Timer / OBS render the number; omitted when 0.
+        return {
+            str(s.objective_id): s.count
+            for s in obj.objective_statuses.all()
+            if s.count
         }
 
     def get_setpieces(self, obj) -> list:
@@ -456,6 +466,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             'obtained_objective_ids',
             'skipped_objective_ids',
             'objective_split_ms',
+            'objective_counts',
             'sound_triggers',
         ]
 

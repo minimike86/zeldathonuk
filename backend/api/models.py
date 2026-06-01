@@ -517,6 +517,21 @@ class GameObjective(models.Model):
                   'objective obtained for the run, and marking the objective '
                   'obtained collects the item (kept in lockstep per run).',
     )
+    LINK_MODE_SINGLE = 'single'
+    LINK_MODE_TALLY = 'tally'
+    LINK_MODE_CHOICES = [
+        (LINK_MODE_SINGLE, 'Single (one per dungeon)'),
+        (LINK_MODE_TALLY, 'Tally (count per dungeon, e.g. small keys)'),
+    ]
+    link_mode = models.CharField(
+        max_length=8,
+        default=LINK_MODE_SINGLE,
+        choices=LINK_MODE_CHOICES,
+        help_text='How a linked dungeon item resolves when collected while a '
+                  'dungeon setpiece is active: "single" = obtained once; '
+                  '"tally" = a per-dungeon count (e.g. small keys). Only '
+                  'meaningful for items linked by more than one objective.',
+    )
     order = models.PositiveIntegerField(default=0)
 
     # ── Setpiece automation ───────────────────────────────────────────────
@@ -599,6 +614,12 @@ class ScheduleEntryObjective(models.Model):
         help_text='Cumulative run time (milliseconds) at the moment this '
                   'objective was split/obtained — the LiveSplit "split time". '
                   'Null for skipped/outstanding objectives.',
+    )
+    count = models.PositiveIntegerField(
+        default=0,
+        help_text='Per-dungeon tally for link_mode=tally objectives (e.g. small '
+                  'keys collected in this dungeon). 0 for single/normal '
+                  'objectives.',
     )
 
     class Meta:

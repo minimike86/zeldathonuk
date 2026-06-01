@@ -419,6 +419,160 @@ def recompute_setpieces(entry) -> list:
     return cleared_transitions
 
 
+def _fire_setpiece_clear(entry, ct) -> None:
+    """Emit the celebration PlaythroughEvent for a setpiece that just cleared."""
+    if ct['kind'] == 'boss':
+        result_kind = 'boss-defeated'
+    elif ct['kind'] == 'dungeon':
+        result_kind = 'dungeon-complete'
+    else:
+        result_kind = 'setpiece-cleared'
+    models.PlaythroughEvent.objects.create(
+        schedule_entry=entry,
+        kind=result_kind,
+        payload={'kind': ct['kind'], 'name': ct['name']},
+    )
+
+
+def _active_dungeon_group(entry) -> str | None:
+    """The ``group`` label of the dungeon whose setpiece is currently ``active``.
+
+    Dungeon staples (Map / Compass / Big Key / Small Key) are shared GameItems
+    linked by one objective per dungeon. To attribute a collection to the right
+    dungeon we look at which dungeon setpiece is live: the active auto dungeon
+    Setpiece's ``name`` is the ``setpiece_name`` of a ``dungeon-enter`` objective,
+    and that objective's ``group`` is the dungeon's run-section. Returns None when
+    no dungeon is active (then collections fall back to a plain tally bump).
+    """
+    if not entry.game_id:
+        return None
+    sp = (
+        models.Setpiece.objects.filter(
+            schedule_entry=entry,
+            is_auto=True,
+            kind='dungeon',
+            stage=models.Setpiece.STAGE_ACTIVE,
+        )
+        .order_by('-started_at')
+        .first()
+    )
+    if sp is None:
+        return None
+    enter = (
+        models.GameObjective.objects.filter(
+            game_id=entry.game_id,
+            setpiece_role=models.GameObjective.SETPIECE_ROLE_DUNGEON_ENTER,
+            setpiece_name=sp.name,
+        )
+        .first()
+    )
+    return enter.group if enter else None
+
+
+def _objectives_linking(entry, item_id) -> list:
+    """GameObjectives for this entry's game whose linked_item is ``item_id``."""
+    if not entry.game_id:
+        return []
+    return list(
+        models.GameObjective.objects.filter(game_id=entry.game_id, linked_item_id=item_id)
+    )
+
+
+def _recompute_shared_item_qty(entry, item) -> None:
+    """Derive a multi-linked item's CollectedItem.quantity from its objectives.
+
+    For dungeon staples the objectives are authoritative: the shared item tally
+    is just the aggregate of (obtained single-link objectives) + (Σ tally counts)
+    across every dungeon that links the item. Recomputed after each attribution
+    so the items grid / OBS aggregate stays correct and undo is reversible
+    without tracking individual units.
+    """
+    objectives = _objectives_linking(entry, item.id)
+    obj_ids = [o.id for o in objectives]
+    rows = {
+        r.objective_id: r
+        for r in models.ScheduleEntryObjective.objects.filter(
+            schedule_entry=entry, objective_id__in=obj_ids
+        )
+    }
+    total = 0
+    for o in objectives:
+        row = rows.get(o.id)
+        if row is None:
+            continue
+        if o.link_mode == models.GameObjective.LINK_MODE_TALLY:
+            total += row.count
+        elif row.status == models.ObjectiveStatus.OBTAINED:
+            total += 1
+    existing = models.CollectedItem.objects.filter(
+        schedule_entry=entry, item_id=item.id
+    ).first()
+    if total <= 0:
+        if existing:
+            existing.delete()
+    elif existing:
+        if existing.quantity != total:
+            existing.quantity = total
+            existing.save(update_fields=['quantity'])
+    else:
+        models.CollectedItem.objects.create(
+            schedule_entry=entry, item_id=item.id, quantity=total
+        )
+
+
+def _attribute_dungeon_item(entry, item, *, delta: int, split_ms=None) -> bool:
+    """Attribute a shared-item +/- to the active dungeon's objective.
+
+    Returns True when the collection was attributed to a dungeon objective
+    (caller then skips the raw tally bump and lets _recompute_shared_item_qty
+    derive the aggregate). False when there's no active dungeon or no matching
+    objective in it — caller falls back to the normal tally behaviour.
+    """
+    grp = _active_dungeon_group(entry)
+    if grp is None:
+        return False
+    obj = next(
+        (o for o in _objectives_linking(entry, item.id) if (o.group or '') == grp),
+        None,
+    )
+    if obj is None:
+        return False
+    if obj.link_mode == models.GameObjective.LINK_MODE_TALLY:
+        row, _ = models.ScheduleEntryObjective.objects.get_or_create(
+            schedule_entry=entry,
+            objective=obj,
+            defaults={'status': models.ObjectiveStatus.OBTAINED},
+        )
+        new_count = max(0, row.count + delta)
+        if new_count == 0:
+            row.delete()
+        else:
+            row.count = new_count
+            row.status = models.ObjectiveStatus.OBTAINED
+            if split_ms is not None:
+                row.split_ms = split_ms
+            row.obtained_at = timezone.now()
+            row.save(update_fields=['count', 'status', 'split_ms', 'obtained_at'])
+    else:
+        if delta > 0:
+            defaults = {
+                'status': models.ObjectiveStatus.OBTAINED,
+                'obtained_at': timezone.now(),
+            }
+            if split_ms is not None:
+                defaults['split_ms'] = split_ms
+            models.ScheduleEntryObjective.objects.update_or_create(
+                schedule_entry=entry, objective=obj, defaults=defaults,
+            )
+        else:
+            models.ScheduleEntryObjective.objects.filter(
+                schedule_entry=entry, objective=obj,
+                status=models.ObjectiveStatus.OBTAINED,
+            ).delete()
+    _recompute_shared_item_qty(entry, item)
+    return True
+
+
 class ScheduleEntryViewSet(viewsets.ModelViewSet):
     queryset = (
         models.ScheduleEntry.objects.all()
@@ -625,7 +779,13 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         """Mirror collected-item state into linked "item get" objectives:
         obtained when the linked item is collected, outstanding when not.
         Manually SKIPPED rows are left untouched. Called after any change to
-        this entry's collected items."""
+        this entry's collected items.
+
+        Only items linked by EXACTLY ONE objective are auto-synced here. Shared
+        dungeon staples (a Map/Compass/Key item linked by one objective per
+        dungeon) are driven explicitly by _attribute_dungeon_item against the
+        active dungeon — auto-syncing them would mark every dungeon's objective
+        obtained at once (the bug this fix addresses), so they're skipped."""
         if not entry.game_id:
             return
         collected_ids = set(
@@ -633,9 +793,17 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
                 schedule_entry=entry
             ).values_list('item_id', flat=True)
         )
+        # Item ids linked by more than one objective — these are dungeon staples
+        # driven by attribution, not by this stateless mirror.
+        link_counts = Counter(
+            models.GameObjective.objects.filter(
+                game_id=entry.game_id, linked_item__isnull=False
+            ).values_list('linked_item_id', flat=True)
+        )
+        multi_linked = {iid for iid, n in link_counts.items() if n > 1}
         linked = models.GameObjective.objects.filter(
             game_id=entry.game_id, linked_item__isnull=False
-        )
+        ).exclude(linked_item_id__in=multi_linked)
         for obj in linked:
             existing = models.ScheduleEntryObjective.objects.filter(
                 schedule_entry=entry, objective=obj
@@ -666,6 +834,17 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         item = models.GameItem.objects.filter(pk=item_id).first()
         if not item:
             return Response({'detail': 'item not found.'}, status=status.HTTP_404_NOT_FOUND)
+        # Shared dungeon staples (linked by >1 objective) attribute to the active
+        # dungeon's objective instead of a global toggle. Falls through to the
+        # normal toggle when no dungeon is active / no matching objective.
+        if len(_objectives_linking(entry, item.id)) > 1:
+            already = models.CollectedItem.objects.filter(
+                schedule_entry=entry, item_id=item_id
+            ).exists()
+            if _attribute_dungeon_item(entry, item, delta=(-1 if already else 1)):
+                return Response(
+                    {'collected': not already, 'item_ids': [item.id], 'attributed': True}
+                )
         already = models.CollectedItem.objects.filter(
             schedule_entry=entry, item_id=item_id
         ).exists()
@@ -703,6 +882,20 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             return Response(
                 {'detail': 'delta must be an integer.'}, status=status.HTTP_400_BAD_REQUEST
             )
+        item = models.GameItem.objects.filter(pk=item_id).first()
+        # Shared dungeon staples attribute the +/- to the active dungeon's
+        # objective (single → obtained/outstanding, tally → per-dungeon count);
+        # the aggregate quantity is then derived. Falls through when no dungeon
+        # is active so the operator can still adjust the raw tally.
+        if item and len(_objectives_linking(entry, item.id)) > 1:
+            if _attribute_dungeon_item(entry, item, delta=delta):
+                row = models.CollectedItem.objects.filter(
+                    schedule_entry=entry, item_id=item_id
+                ).first()
+                qty = row.quantity if row else 0
+                return Response(
+                    {'collected': qty > 0, 'quantity': qty, 'attributed': True}
+                )
         existing = models.CollectedItem.objects.filter(
             schedule_entry=entry, item_id=item_id
         ).first()
@@ -753,6 +946,10 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
         any row (the default state); the others upsert a ScheduleEntryObjective.
         Marking ``obtained`` stamps ``obtained_at`` so the omnibar can fire its
         pickup celebration on the false→true transition (it polls the entry).
+
+        For ``link_mode=tally`` objectives (e.g. per-dungeon small keys) pass
+        ``count_delta`` (usually +1/-1) instead of / alongside ``status`` to
+        bump the per-dungeon tally; the row is deleted when it reaches 0.
         """
         entry = self.get_object()
         objective_id = request.data.get('objective_id')
@@ -761,6 +958,57 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             return Response(
                 {'detail': 'objective_id required.'}, status=status.HTTP_400_BAD_REQUEST
             )
+        objective = (
+            models.GameObjective.objects.filter(pk=objective_id)
+            .select_related('linked_item')
+            .first()
+        )
+        if objective is None:
+            return Response({'detail': 'objective not found.'}, status=status.HTTP_404_NOT_FOUND)
+        multi_linked = bool(objective.linked_item_id) and (
+            len(_objectives_linking(entry, objective.linked_item_id)) > 1
+        )
+
+        def _stamp_split():
+            raw_split = request.data.get('split_ms')
+            try:
+                return int(raw_split) if raw_split is not None else None
+            except (TypeError, ValueError):
+                return None
+
+        # Tally path: adjust a per-dungeon count rather than a one-shot status.
+        if 'count_delta' in request.data:
+            try:
+                cd = int(request.data.get('count_delta'))
+            except (TypeError, ValueError):
+                return Response(
+                    {'detail': 'count_delta must be an integer.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            row = models.ScheduleEntryObjective.objects.filter(
+                schedule_entry=entry, objective_id=objective_id
+            ).first()
+            new_count = max(0, (row.count if row else 0) + cd)
+            if new_count == 0:
+                if row:
+                    row.delete()
+            else:
+                models.ScheduleEntryObjective.objects.update_or_create(
+                    schedule_entry=entry,
+                    objective_id=objective_id,
+                    defaults={
+                        'status': models.ObjectiveStatus.OBTAINED,
+                        'obtained_at': timezone.now(),
+                        'count': new_count,
+                        'split_ms': _stamp_split(),
+                    },
+                )
+            if multi_linked:
+                _recompute_shared_item_qty(entry, objective.linked_item)
+            for ct in recompute_setpieces(entry):
+                _fire_setpiece_clear(entry, ct)
+            return Response({'objective_id': int(objective_id), 'count': new_count})
+
         valid = {'outstanding', models.ObjectiveStatus.OBTAINED, models.ObjectiveStatus.SKIPPED}
         if new_status not in valid:
             return Response(
@@ -777,13 +1025,7 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             # The client sends what was on the clock so it matches exactly;
             # skipped rows leave it null.
             if new_status == models.ObjectiveStatus.OBTAINED:
-                raw_split = request.data.get('split_ms')
-                try:
-                    defaults['split_ms'] = (
-                        int(raw_split) if raw_split is not None else None
-                    )
-                except (TypeError, ValueError):
-                    defaults['split_ms'] = None
+                defaults['split_ms'] = _stamp_split()
             else:
                 defaults['split_ms'] = None
             models.ScheduleEntryObjective.objects.update_or_create(
@@ -792,45 +1034,34 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
                 defaults=defaults,
             )
         # Reverse link for "item get" objectives: keep the linked item's
-        # collected state in lockstep (skipped leaves the item alone). Writes
-        # CollectedItem rows directly — no recursion with the collect actions.
-        objective = (
-            models.GameObjective.objects.filter(pk=objective_id)
-            .select_related('linked_item')
-            .first()
-        )
+        # collected state in lockstep (skipped leaves the item alone). For
+        # shared dungeon staples (multi-linked) the item tally is a DERIVED
+        # aggregate of its objectives, so recompute it instead of toggling the
+        # shared row (which would falsely cascade to every dungeon).
         if (
-            objective
-            and objective.linked_item_id
+            objective.linked_item_id
             and new_status != models.ObjectiveStatus.SKIPPED
         ):
-            collected = new_status == models.ObjectiveStatus.OBTAINED
-            ids = self._collect_cascade_ids(objective.linked_item, collected=collected)
-            if collected:
-                for iid in ids:
-                    models.CollectedItem.objects.get_or_create(
-                        schedule_entry=entry, item_id=iid
-                    )
+            if multi_linked:
+                _recompute_shared_item_qty(entry, objective.linked_item)
             else:
-                models.CollectedItem.objects.filter(
-                    schedule_entry=entry, item_id__in=ids
-                ).delete()
-            self._sync_linked_objectives(entry)
+                collected = new_status == models.ObjectiveStatus.OBTAINED
+                ids = self._collect_cascade_ids(objective.linked_item, collected=collected)
+                if collected:
+                    for iid in ids:
+                        models.CollectedItem.objects.get_or_create(
+                            schedule_entry=entry, item_id=iid
+                        )
+                else:
+                    models.CollectedItem.objects.filter(
+                        schedule_entry=entry, item_id__in=ids
+                    ).delete()
+                self._sync_linked_objectives(entry)
         # Drive omnibar setpieces off objective completion: reconcile the
         # derived (auto) setpieces from the new status snapshot, then fire a
         # celebration PlaythroughEvent for each one that just cleared.
         for ct in recompute_setpieces(entry):
-            if ct['kind'] == 'boss':
-                result_kind = 'boss-defeated'
-            elif ct['kind'] == 'dungeon':
-                result_kind = 'dungeon-complete'
-            else:
-                result_kind = 'setpiece-cleared'
-            models.PlaythroughEvent.objects.create(
-                schedule_entry=entry,
-                kind=result_kind,
-                payload={'kind': ct['kind'], 'name': ct['name']},
-            )
+            _fire_setpiece_clear(entry, ct)
         return Response({'objective_id': int(objective_id), 'status': new_status})
 
     @action(detail=True, methods=['post'])

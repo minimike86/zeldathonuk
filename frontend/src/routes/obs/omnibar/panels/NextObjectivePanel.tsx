@@ -42,7 +42,7 @@ interface Data {
 function Panel({ data }: PanelProps<Data>) {
   const { objective, position, remaining } = data;
   return (
-    <PanelRow tag="NEXT UP" arrow>
+    <PanelRow tag="NEXT OBJECTIVE" arrow>
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <MarqueeOnOverflow>
           {objective.image_url && (
@@ -74,8 +74,10 @@ registerPanel<Data>({
     // panel uses — then walk it for the first still-outstanding
     // entry. Skipped objectives are dropped entirely; obtained ones
     // count toward `position` so the "#N of M" feels like progress.
+    // Tally objectives (small keys) are excluded — they stay outstanding by
+    // nature and shouldn't get stuck as the perpetual "next up".
     const active = all
-      .filter((o) => !skipped.has(o.id))
+      .filter((o) => !skipped.has(o.id) && o.link_mode !== 'tally')
       .slice()
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
     if (active.length === 0) return null;

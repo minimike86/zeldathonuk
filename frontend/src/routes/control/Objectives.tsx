@@ -945,6 +945,7 @@ function ObjectiveForm({
   const [category, setCategory] = useState(initial?.category || 'story');
   const [group, setGroup] = useState(initial?.group ?? '');
   const [linkedItem, setLinkedItem] = useState<number | null>(initial?.linked_item ?? null);
+  const [linkMode, setLinkMode] = useState<'single' | 'tally'>(initial?.link_mode ?? 'single');
   const [setpieceRole, setSetpieceRole] = useState<string>(initial?.setpiece_role ?? '');
   const [setpieceName, setSetpieceName] = useState(initial?.setpiece_name ?? '');
   const [clearsSetpiece, setClearsSetpiece] = useState(initial?.clears_setpiece ?? '');
@@ -1077,6 +1078,19 @@ function ObjectiveForm({
                     {it.name}
                   </option>
                 ))}
+            </select>
+          </div>
+        )}
+        {category === 'item-get' && linkedItem != null && (
+          <div style={{ minWidth: 220 }}>
+            <label className="d-block small text-white-50">Link mode</label>
+            <select
+              className="form-select form-select-sm"
+              value={linkMode}
+              onChange={(e) => setLinkMode(e.target.value as 'single' | 'tally')}
+            >
+              <option value="single">Single (one per dungeon)</option>
+              <option value="tally">Tally (count per dungeon, e.g. small keys)</option>
             </select>
           </div>
         )}

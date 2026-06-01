@@ -103,6 +103,18 @@ export function EventsControl() {
     }
   };
 
+  const deactivate = async (id: number) => {
+    // Turn the live event off so the OBS sources fall back to pre-stream
+    // (no active event). Plain PATCH — there's no demote action, and the
+    // serializer accepts is_active writes (same path EventForm uses).
+    try {
+      await api(`/api/events/${id}/`, { method: 'PATCH', body: { is_active: false } });
+      notifyEventChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
   return (
     <div className="control-card">
       <header className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
@@ -219,12 +231,20 @@ export function EventsControl() {
                 </td>
                 <td>
                   <div className="control-btn-row">
-                    {!e.is_active && (
+                    {!e.is_active ? (
                       <button
                         className="btn btn-sm btn-bloodmoon"
                         onClick={() => activate(e.id)}
                       >
                         Activate
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-sm btn-outline-warning"
+                        onClick={() => deactivate(e.id)}
+                        title="Turn this event off — OBS sources return to pre-stream"
+                      >
+                        Deactivate
                       </button>
                     )}
                     <button
