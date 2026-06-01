@@ -19,20 +19,25 @@
   container-type: size;
   container-name: ca;
 
-  /* All derived sizes hang off --ca-h. cqh covers modern browsers; a
-   * ResizeObserver in the component writes a px fallback for engines
-   * where container queries on the root element misbehave.
+  /* Sprite SIZES hang off --ca-h (container height). cqh covers modern
+   * browsers; a ResizeObserver in the component writes a px fallback for
+   * engines where container queries on the root element misbehave.
    *
    * The whole scene is intentionally compact relative to the container:
-   * hero ~35% of the height, chest ~29%, card ~18%, with the ground
-   * line lifted from the bottom. That leaves ~30% of vertical headroom
-   * above the card so the confetti burst stays inside the OBS capture
-   * rect — confetti that flies off the top of the source rect just
-   * looks like a glitch to viewers. */
+   * hero ~35% of the height, chest ~29%, card ~18%. The ground baseline,
+   * however, is pinned to a FIXED 95px above the bottom of the browser
+   * window (see --ca-ground) rather than a percentage, so the walking
+   * line sits at a constant height regardless of source size. On a tall
+   * (e.g. full-window) source this leaves ample headroom above the card
+   * for the confetti burst to stay inside the OBS capture rect; on very
+   * short capture rects the scene rides higher. */
   --ca-h: 100cqh;
   --ca-hero-px: calc(var(--ca-h) * 0.35);
   --ca-chest-px: calc(var(--ca-h) * 0.29);
-  --ca-ground-pct: 18%;
+  /* Walking line pinned 95px above the bottom of the browser window — the
+   * character's feet and the top of the ground stripe both sit here.
+   * Fixed px, unlike the sprite sizes which still scale with --ca-h. */
+  --ca-ground: 95px;
   --ca-card-w: min(calc(var(--ca-h) * 1.3), 80cqw);
   --ca-card-h: calc(var(--ca-h) * 0.24);
 }
@@ -97,7 +102,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(var(--ca-ground-pct) - 4px);
+  bottom: calc(var(--ca-ground) - 4px);
   height: 4px;
   background: var(--obs-accent-muted, rgba(231, 19, 71, 0.4));
   box-shadow: inset 0 1px 0 var(--obs-accent, #e71347);
@@ -123,7 +128,7 @@
  * (off-screen). Used to mirror the walk-cycle sprite.
  */
 .ca-hero {
-  bottom: var(--ca-ground-pct);
+  bottom: var(--ca-ground);
   width: var(--ca-hero-px);
   height: var(--ca-hero-px);
   left: var(--ca-hero-x, -20%);
@@ -180,7 +185,7 @@
  * `data-state` attribute drives which animation applies.
  */
 .ca-chest {
-  bottom: var(--ca-ground-pct);
+  bottom: var(--ca-ground);
   left: var(--ca-chest-x, 50%);
   width: var(--ca-chest-px);
   height: var(--ca-chest-px);
@@ -234,7 +239,7 @@
 .ca-chest-glow {
   position: absolute;
   left: var(--ca-chest-x, 50%);
-  bottom: calc(var(--ca-ground-pct) + var(--ca-chest-px) * 0.45);
+  bottom: calc(var(--ca-ground) + var(--ca-chest-px) * 0.45);
   width: calc(var(--ca-chest-px) * 1.6);
   height: calc(var(--ca-chest-px) * 0.7);
   transform: translateX(-50%) scale(0.3);
@@ -281,7 +286,7 @@
    * right edge is at chest-x + half-px. Nudge a touch further right
    * to clear the chest silhouette. */
   left: calc(var(--ca-chest-x, 50%) + var(--ca-chest-px) * 0.55);
-  bottom: calc(var(--ca-ground-pct) + var(--ca-chest-px) * 0.95);
+  bottom: calc(var(--ca-ground) + var(--ca-chest-px) * 0.95);
 
   font-family: 'Bungee', sans-serif;
   font-size: max(11px, calc(var(--ca-h) * 0.06));
@@ -321,7 +326,7 @@
   );
   /* Sit at the top of the hero's head — small overlap with the hero
    * sprite reads as the character holding the card overhead. */
-  bottom: calc(var(--ca-ground-pct) + var(--ca-hero-px) * 0.88);
+  bottom: calc(var(--ca-ground) + var(--ca-hero-px) * 0.88);
   transform: translateX(-50%);
   width: var(--ca-card-w);
   height: var(--ca-card-h);
