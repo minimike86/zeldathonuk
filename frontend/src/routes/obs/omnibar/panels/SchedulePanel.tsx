@@ -1,3 +1,4 @@
+import { GameChip } from './_shared/GameChip';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 import type { ScheduleEntry } from '@/lib/obsApi';
@@ -14,7 +15,7 @@ function Panel({ data }: PanelProps<Data>) {
   const runners = next.runners.map((r) => r.name).join(', ');
   return (
     <PanelRow tag={tag} arrow>
-      <span className="ob-text-strong">{next.display_title}</span>
+      <GameChip title={next.display_title} boxArtUrl={next.game?.box_art_url} />
       {next.game && (
         <span className="ob-meta-chip">
           {next.game.platform}
