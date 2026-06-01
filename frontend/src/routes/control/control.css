@@ -156,11 +156,70 @@
   );
 }
 
+/* Hamburger toggle for the collapsed mobile nav. Hidden on wide screens;
+ * the @media block below reveals it and collapses the link row. Styled like
+ * a nav link so it reads as part of the same chrome across themes. */
+.control-nav-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #fff;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 45%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+.control-nav-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.control-nav-toggle-caret {
+  transition: transform 0.15s ease;
+}
+.control-nav-toggle[aria-expanded='true'] .control-nav-toggle-caret {
+  transform: rotate(180deg);
+}
+
 .control-main {
   padding: 1.5rem;
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+}
+
+/* ── Narrow widths: collapse the 17-link nav behind the hamburger ──────────
+ * Above this the full wrapping link row (above) is unchanged. At/below 768px
+ * the header stays one row (title + Operator pill + toggle) and the links
+ * become a full-width dropdown revealed by the toggle. */
+@media (max-width: 768px) {
+  .control-header {
+    padding: 1rem 1rem 0.75rem;
+  }
+  .control-nav-toggle {
+    display: flex;
+  }
+  /* Hide the link row by default; reveal it (stacked) when open. */
+  .control-header nav.control-nav {
+    display: none;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+  .control-header nav.control-nav.is-open {
+    display: flex;
+  }
+  .control-nav-link {
+    display: block;
+    padding: 0.55rem 0.9rem;
+  }
 }
 
 .control-card {

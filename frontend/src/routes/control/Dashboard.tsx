@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { ControlOverview } from './Overview';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -31,6 +32,27 @@ export function ControlLayout() {
   useRouteTitle();
   const location = useLocation();
   const isRoot = location.pathname === '/control' || location.pathname === '/control/';
+  // Mobile nav (≤768px): the link row collapses behind a hamburger that shows
+  // the current section. CSS hides the toggle + shows the row on wide screens.
+  const [navOpen, setNavOpen] = useState(false);
+
+  // Collapse the dropdown whenever the route changes (incl. tapping the
+  // already-active section), so picking a section closes the menu.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
+
+  // Current section label for the collapsed toggle — longest matching `to`
+  // wins so a sub-path beats the `/control` Overview root. Mirrors NavLink's
+  // active rule (exact match for the `end` root, prefix match otherwise).
+  const path = location.pathname.replace(/\/$/, '') || '/control';
+  const current =
+    [...sections]
+      .filter((s) =>
+        s.end ? path === s.to.replace(/\/$/, '') : path.startsWith(s.to),
+      )
+      .sort((a, b) => b.to.length - a.to.length)[0] ?? null;
+  const currentLabel = current?.label ?? 'Menu';
 
   return (
     <div className="control-shell">
@@ -47,7 +69,21 @@ export function ControlLayout() {
             Operator
           </span>
         </div>
-        <nav>
+        {/* Hamburger toggle — only visible ≤768px (see control.css). Shows the
+          * current section so the collapsed state is still informative. */}
+        <button
+          type="button"
+          className="control-nav-toggle"
+          aria-expanded={navOpen}
+          aria-controls="control-nav"
+          onClick={() => setNavOpen((v) => !v)}
+        >
+          <span className="control-nav-toggle-label">
+            <span aria-hidden="true">☰</span> {currentLabel}
+          </span>
+          <span className="control-nav-toggle-caret" aria-hidden="true">▾</span>
+        </button>
+        <nav id="control-nav" className={`control-nav${navOpen ? ' is-open' : ''}`}>
           {sections.map((s) => (
             <NavLink
               key={s.to}
