@@ -334,11 +334,32 @@ function gameObjectives(entry: ScheduleEntry): GameObjective[] {
   );
 }
 
-/** The ordered route objectives. Falls back to all objectives when no custom
- *  route is configured (empty timer_segment_ids). */
+/** Cluster objectives so every member of a run-section (group) sits together,
+ *  with sections appearing in the order their first member does — mirroring how
+ *  the Objectives library (/control/objectives) groups them. Without this the
+ *  timer walked the raw order sequence and split a group whose `order` values
+ *  were interleaved with another's, surfacing a later chapter's header inside an
+ *  earlier one. A Map preserves insertion order, so within-section order (the
+ *  incoming order,name sort) is kept too. */
+function clusterByGroup(objs: GameObjective[]): GameObjective[] {
+  const buckets = new Map<string, GameObjective[]>();
+  for (const o of objs) {
+    // Same section key as the library: group, falling back to category for
+    // blank-group items (the timer just renders no header for those).
+    const key = o.group.trim() || `cat:${o.category}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(o);
+    else buckets.set(key, [o]);
+  }
+  return [...buckets.values()].flat();
+}
+
+/** The ordered route objectives. Falls back to all objectives (clustered by
+ *  group, like the library) when no custom route is configured (empty
+ *  timer_segment_ids); an explicit route keeps the operator's saved sequence. */
 function routeObjectives(entry: ScheduleEntry): GameObjective[] {
   const objs = gameObjectives(entry);
-  if (!entry.timer_segment_ids.length) return objs;
+  if (!entry.timer_segment_ids.length) return clusterByGroup(objs);
   return entry.timer_segment_ids
     .map((id) => objs.find((o) => o.id === id))
     .filter((o): o is GameObjective => Boolean(o));
