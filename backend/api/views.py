@@ -341,40 +341,57 @@ def recompute_setpieces(entry) -> list:
     obtained = _obtained_objective_ids(entry)
     index_of = {o.id: i for i, o in enumerate(route)}
 
-    # Build the named groups of driving objectives.
-    # name -> {kind, enter, defeat, clearers: []}
-    groups: dict = {}
+    # Build the driving objectives into OCCURRENCE groups keyed by
+    # (setpiece_name, run-section group) — NOT name alone. The same boss can
+    # recur across dungeons (e.g. "Armos Knights" in both Eastern Palace and
+    # Ganon's Tower); name-only keying collapsed them into one group whose
+    # enter/defeat slots overwrote each other, so neither occurrence drove its
+    # setpiece. Each occurrence uses its own objective's `group`.
+    # key (name, group) -> {name, kind, enter, defeat, clearers: []}
+    occurrences: dict = {}
 
-    def group_for(name: str, kind: str) -> dict:
-        return groups.setdefault(
-            name, {'kind': kind, 'enter': None, 'defeat': None, 'clearers': []}
+    def occ_for(name: str, group: str, kind: str) -> dict:
+        return occurrences.setdefault(
+            (name, group),
+            {'name': name, 'group': group, 'kind': kind,
+             'enter': None, 'defeat': None, 'clearers': []},
         )
 
     for o in route:
         nm = (o.setpiece_name or '').strip()
+        grp = (o.group or '').strip()
         role = o.setpiece_role
         if role == GO.SETPIECE_ROLE_DUNGEON_ENTER and nm:
-            g = group_for(nm, 'dungeon'); g['kind'] = 'dungeon'; g['enter'] = o
+            g = occ_for(nm, grp, 'dungeon'); g['kind'] = 'dungeon'; g['enter'] = o
         elif role == GO.SETPIECE_ROLE_BOSS_ENTER and nm:
-            g = group_for(nm, 'boss'); g['kind'] = 'boss'; g['enter'] = o
+            g = occ_for(nm, grp, 'boss'); g['kind'] = 'boss'; g['enter'] = o
         elif role == GO.SETPIECE_ROLE_BOSS_DEFEAT and nm:
-            g = group_for(nm, 'boss'); g['kind'] = 'boss'; g['defeat'] = o
+            g = occ_for(nm, grp, 'boss'); g['kind'] = 'boss'; g['defeat'] = o
         target = (o.clears_setpiece or '').strip()
         if target:
-            group_for(target, 'dungeon')['clearers'].append(o)
+            # A clearer closes the occurrence in its OWN run-section.
+            occ_for(target, grp, 'dungeon')['clearers'].append(o)
 
+    # Each occurrence drives its OWN auto Setpiece row, identified internally by
+    # source_key = name + run-section group. This keeps recurring boss names
+    # (e.g. "Armos Knights" in both Eastern Palace and Ganon's Tower) as
+    # independent setpieces — the row's display `name` stays clean, and an
+    # out-of-order completion in one dungeon never touches the other.
     existing_rows = {
-        sp.name: sp
+        sp.source_key: sp
         for sp in models.Setpiece.objects.filter(schedule_entry=entry, is_auto=True)
     }
     cleared_transitions = []
-    keep_names = set()
+    seen_keys = set()
 
-    for name, g in groups.items():
-        kind = g['kind']
-        enter = g['enter']
-        defeat = g['defeat']
-        clearers = g['clearers']
+    for occ in occurrences.values():
+        name = occ['name']
+        kind = occ['kind']
+        enter = occ['enter']
+        defeat = occ['defeat']
+        clearers = occ['clearers']
+        source_key = f"{name}\x1f{occ['group']}"
+        seen_keys.add(source_key)
 
         is_cleared = False
         if defeat is not None and defeat.id in obtained:
@@ -392,29 +409,29 @@ def recompute_setpieces(entry) -> list:
                 if idx is not None and idx > 0 and route[idx - 1].id in obtained:
                     derived = models.Setpiece.STAGE_IMMINENT
 
-        existing = existing_rows.get(name)
+        existing = existing_rows.get(source_key)
         if derived is not None:
-            keep_names.add(name)
             if existing is None:
                 models.Setpiece.objects.create(
                     schedule_entry=entry, kind=kind, name=name, stage=derived,
+                    source_key=source_key,
                     priority=models.Setpiece.default_priority_for(kind), is_auto=True,
                 )
-            elif existing.stage != derived or existing.kind != kind:
+            elif existing.stage != derived or existing.kind != kind or existing.name != name:
                 existing.stage = derived
                 existing.kind = kind
-                existing.save(update_fields=['stage', 'kind'])
+                existing.name = name
+                existing.save(update_fields=['stage', 'kind', 'name'])
         else:
             if existing is not None:
                 if is_cleared:
                     cleared_transitions.append({'kind': existing.kind, 'name': name})
                 existing.delete()
 
-    # Drop orphan auto rows whose driving group no longer exists at all (e.g.
-    # an objective's setpiece_name was edited away). Rows for names that ARE in
-    # `groups` were already kept or deleted above. Not a "clear" — no event.
-    for name, sp in existing_rows.items():
-        if name not in groups:
+    # Drop orphan auto rows whose driving occurrence no longer exists at all
+    # (e.g. an objective's setpiece_name/group was edited away). Not a "clear".
+    for key, sp in existing_rows.items():
+        if key not in seen_keys:
             sp.delete()
 
     return cleared_transitions

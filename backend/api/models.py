@@ -673,8 +673,16 @@ class Setpiece(models.Model):
     )
     name = models.CharField(
         max_length=120,
-        help_text='Display name (e.g. "Phantom Ganon"). For auto rows this also '
-                  'keys the setpiece to its driving objectives.',
+        help_text='Display name (e.g. "Phantom Ganon"). Shown on the omnibar.',
+    )
+    source_key = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        help_text='Internal identity for auto rows = setpiece name + driving '
+                  'run-section group, so the same display name can recur across '
+                  'dungeons (e.g. "Armos Knights" in two dungeons) as '
+                  'independent setpieces. Blank for bespoke operator rows.',
     )
     stage = models.CharField(max_length=16, choices=STAGE_CHOICES)
     priority = models.IntegerField(
@@ -693,9 +701,11 @@ class Setpiece(models.Model):
     class Meta:
         ordering = ['-priority', '-started_at']
         constraints = [
-            # Auto rows are keyed by (entry, name) so reconcile can upsert.
+            # Auto rows are keyed by (entry, source_key) so reconcile can upsert
+            # — source_key = name + run-section group, letting the same display
+            # name recur across dungeons as independent setpieces.
             models.UniqueConstraint(
-                fields=['schedule_entry', 'name'],
+                fields=['schedule_entry', 'source_key'],
                 condition=models.Q(is_auto=True),
                 name='uniq_auto_setpiece_per_entry',
             ),
