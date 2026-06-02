@@ -49,6 +49,13 @@ const LAYOUT_LABELS: Record<LayoutKey, string> = {
 
 const FALLBACK: LayoutKey = '16x9';
 
+/** The badge parks itself in each corner in turn so an operator can see what
+ *  sits behind it — useful when tuning the underlying layouts. Order walks the
+ *  perimeter clockwise from the top-left. */
+const CORNERS = ['tl', 'tr', 'br', 'bl'] as const;
+/** Seconds the badge dwells in each corner before hopping to the next. */
+const CORNER_DWELL_MS = 30000;
+
 export function UnifiedLayout() {
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 2000);
   const currentLayout = cp?.schedule_entry_detail?.game?.layout_type;
@@ -68,6 +75,17 @@ export function UnifiedLayout() {
 
   const Component = REGISTRY[renderedKey] ?? Widescreen;
 
+  // Walk the badge around the four corners on a timer so each corner of the
+  // broadcast is briefly unobscured for layout tuning.
+  const [cornerIndex, setCornerIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCornerIndex((i) => (i + 1) % CORNERS.length);
+    }, CORNER_DWELL_MS);
+    return () => clearInterval(id);
+  }, []);
+  const corner = CORNERS[cornerIndex];
+
   // The game whose layout drove the pick — shown as context on the badge so
   // the operator can tie the layout back to the entry on screen.
   const gameTitle = cp?.schedule_entry_detail?.game?.title;
@@ -79,7 +97,7 @@ export function UnifiedLayout() {
       <div className="obs-unified-stage" key={`${renderedKey}-${tick}`}>
         <Component />
       </div>
-      <div className="obs-unified-layout-badge">
+      <div className={`obs-unified-layout-badge obs-unified-layout-badge--${corner}`}>
         <span className="obs-unified-layout-tag">
           Layout{isFallback ? ' · Default' : ''}
         </span>
