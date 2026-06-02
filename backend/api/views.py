@@ -1,4 +1,5 @@
 """API views — DRF viewsets for the control panel + read endpoints for OBS sources."""
+import hmac
 import random
 import secrets
 from collections import Counter
@@ -11,8 +12,9 @@ from django.core.files.storage import default_storage
 from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, api_view, parser_classes
+from rest_framework.decorators import action, api_view, parser_classes, permission_classes
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -39,6 +41,25 @@ RAFFLE_CLOSE_BANNER_SECONDS = 20
 @api_view(['GET'])
 def healthz(_request: Request) -> Response:
     return Response({'status': 'ok'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def me(request: Request) -> Response:
+    """Return the authenticated user's local profile (identity + role).
+
+    The frontend calls this after Clerk sign-in to decide control-panel access.
+    The Profile is auto-created as a viewer on first authenticated request (see
+    api.authentication), so it always exists here.
+    """
+    profile = getattr(request.user, 'profile', None)
+    if profile is None:
+        return Response({'detail': 'No profile for user.'}, status=status.HTTP_404_NOT_FOUND)
+    return Response({
+        'clerk_user_id': profile.clerk_user_id,
+        'email': profile.email,
+        'role': profile.role,
+    })
 
 
 @api_view(['POST'])
@@ -1415,6 +1436,7 @@ _HOTKEY_ACTIONS = {
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def timer_hotkey(request: Request) -> Response:
     """Server-side timer actions for an external macro pad / Stream Deck.
 
@@ -1431,7 +1453,23 @@ def timer_hotkey(request: Request) -> Response:
     time. Mirrors the frontend SplitsPanel "spine" notion: the linear split
     sequence excludes tally objectives and the active dungeon's shared staples
     (those are driven per dungeon by the collect-* actions).
+
+    Auth: machine-driven (no Clerk login), so this endpoint is gated by the
+    ``X-Hotkey-Secret`` header matching ``settings.TIMER_HOTKEY_SECRET`` rather
+    than the operator role. The check is skipped only in DEBUG when no secret is
+    configured, so local dev keeps working out of the box.
     """
+    secret = models.AuthConfig.get().timer_hotkey_secret or getattr(
+        settings, 'TIMER_HOTKEY_SECRET', '',
+    )
+    if secret or not settings.DEBUG:
+        provided = request.headers.get('X-Hotkey-Secret', '')
+        if not secret or not hmac.compare_digest(provided, secret):
+            return Response(
+                {'detail': 'Invalid or missing hotkey secret.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
     action = (request.data.get('action') or '').strip()
     if action not in _HOTKEY_ACTIONS:
         return Response(

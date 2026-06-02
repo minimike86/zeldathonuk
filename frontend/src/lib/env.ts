@@ -20,14 +20,13 @@ function required(key: keyof ImportMetaEnv): string {
  *
  * To stop that misconfiguration silently breaking the live site, this
  * helper detects the mismatch — the page is served from a non-loopback
- * host, but the configured API points at a loopback / private host —
- * and falls back to same-origin requests instead. Logs a one-time
- * warning so the deployer sees the problem in DevTools.
- *
- * Same-origin fallback assumes the production stack proxies `/api/*`
- * (and any other paths the frontend hits) to the Django backend at
- * the edge (Nginx, Caddy, Cloud Run rewrites, etc.) — which is the
- * standard layout for a Vite-built SPA + Django backend pair.
+ * host, but the configured API points at a loopback / private host. This
+ * happens by design here: one Vite dev server is reached both locally
+ * (localhost:5173 → wants localhost:8000) and publicly via the Cloudflare
+ * tunnel (www.zeldathon.co.uk → wants api.zeldathon.co.uk). So when the page
+ * is public but VITE_API_URL is loopback, we switch to `VITE_PUBLIC_API_URL`
+ * (the public API origin). If that isn't set we fall back to same-origin
+ * requests (which assumes the edge proxies `/api/*`) and warn once.
  */
 function resolveApiUrl(): string {
   const raw = required('VITE_API_URL');
@@ -48,18 +47,20 @@ function resolveApiUrl(): string {
   const pageIsLoopback = isLoopback(pageHost);
   const targetIsLoopback = isLoopback(targetHost);
 
-  // The dangerous case: a real public domain trying to call back to
-  // localhost / 127.0.0.1 / a *.local / private RFC1918 IP.
+  // Public page, loopback API: served over the tunnel. Prefer the configured
+  // public API origin; only fall back to same-origin (+ warn) if it's unset.
   if (!pageIsLoopback && targetIsLoopback) {
+    const publicApi = import.meta.env.VITE_PUBLIC_API_URL;
+    if (publicApi) return publicApi;
     if (!warnedAboutMismatch) {
       warnedAboutMismatch = true;
       // eslint-disable-next-line no-console
       console.warn(
         `[env] VITE_API_URL is set to ${raw} but the page is served from `
-          + `${window.location.origin}. Falling back to same-origin requests `
-          + `so the public site doesn't try to reach a loopback address. `
-          + `Rebuild the frontend with VITE_API_URL pointing at the public `
-          + `API origin to remove this warning.`,
+          + `${window.location.origin}, and VITE_PUBLIC_API_URL is not set. `
+          + `Falling back to same-origin requests so the public site doesn't `
+          + `try to reach a loopback address. Set VITE_PUBLIC_API_URL to the `
+          + `public API origin (e.g. https://api.zeldathon.co.uk) to fix this.`,
       );
     }
     return window.location.origin;
@@ -96,6 +97,32 @@ function isLoopback(host: string): boolean {
   return false;
 }
 
+/** Optional env var — empty string when unset (don't throw; public pages and
+ *  OBS overlays must still boot when a key isn't configured). */
+function optional(key: keyof ImportMetaEnv): string {
+  return import.meta.env[key] ?? '';
+}
+
+/**
+ * Pick the Clerk publishable key by page host, mirroring resolveApiUrl(): one
+ * dev bundle serves both localhost (dev Clerk instance, pk_test_…) and the
+ * public tunnel domain (prod instance, pk_live_…).
+ *
+ * No cross-fallback on purpose: a production (pk_live) key throws on localhost
+ * ("Production Keys are only allowed for domain …") and a dev (pk_test) key
+ * won't work on the public domain — so a wrong-host key never produces a
+ * working state, only a crash. If the matching key is unset for this host we
+ * return '' (auth disabled here) rather than loading the wrong one.
+ */
+function resolveClerkKey(): string {
+  const localKey = optional('VITE_CLERK_PUBLISHABLE_KEY');
+  const publicKey = optional('VITE_PUBLIC_CLERK_PUBLISHABLE_KEY');
+  if (typeof window === 'undefined') return localKey || publicKey;
+  return isLoopback(window.location.hostname) ? localKey : publicKey;
+}
+
 export const env = {
   VITE_API_URL: resolveApiUrl(),
+  /** Resolved Clerk publishable key for this host. Empty => auth disabled. */
+  CLERK_PUBLISHABLE_KEY: resolveClerkKey(),
 } as const;

@@ -1006,6 +1006,14 @@ export interface CharitySlide {
 }
 
 export const obsApi = {
+  /** The authenticated user's local profile (identity + role). 401 when not
+   *  signed in. Drives control-panel access — see useMe / ControlLayout.
+   *  Pass the Clerk token explicitly to avoid a race with the ambient getter. */
+  me: (token?: string | null) =>
+    api<{ clerk_user_id: string; email: string; role: 'viewer' | 'operator' }>(
+      '/api/me/',
+      token === undefined ? undefined : { token },
+    ),
   // Reads
   games: () => api<Game[]>('/api/games/'),
   game: (id: number) => api<Game>(`/api/games/${id}/`),

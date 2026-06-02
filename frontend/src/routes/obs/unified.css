@@ -30,3 +30,57 @@
   width: var(--obs-stage-width, 1920px);
   height: var(--obs-omnibar-height, 96px);
 }
+
+/* Top-left "selected layout" badge. Styled after the active /control nav
+ * button — theme primary→secondary gradient with a bright theme border —
+ * so it reads as a piece of operator chrome riding over the broadcast. It
+ * sits above the stage; harmless on stream but mainly an operator cue. */
+.obs-unified-layout-badge {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 10px;
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #b92753),
+    var(--theme-secondary, #731c37)
+  );
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-primary-bright, rgba(255, 255, 255, 0.6)) 60%,
+    transparent
+  );
+  color: var(--theme-button-text, #fff);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* "LAYOUT" tag line — small Bungee caps, like the operator pill register. */
+.obs-unified-layout-tag {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.obs-unified-layout-name {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+/* Game title context line — sits under the layout name in muted button text. */
+.obs-unified-layout-game {
+  font-size: 0.82rem;
+  opacity: 0.8;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

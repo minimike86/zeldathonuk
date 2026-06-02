@@ -15,6 +15,8 @@ import { faAccessibleIcon } from '@fortawesome/free-brands-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import { cn } from '@/lib/utils';
 import { DonateButton } from '@/components/donations/DonateButton';
+import { NavAuth } from '@/components/auth/NavAuth';
+import { env } from '@/lib/env';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onThemeChanged } from '@/lib/themeBus';
 import { useAccentDeck } from '@/lib/accentDeck';
@@ -230,6 +232,10 @@ export function Navbar() {
                 />
               </div>
             )}
+            {/* Login / profile + operator Control link. Only when Clerk is
+              * configured (NavAuth uses Clerk hooks → must be inside the
+              * provider, which only wraps the app when a key is set). */}
+            {env.CLERK_PUBLISHABLE_KEY && <NavAuth />}
           </div>
         </div>
       </div>

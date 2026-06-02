@@ -3069,3 +3069,144 @@ class ActivityLog(models.Model):
 
     def __str__(self) -> str:
         return f'[{self.level}] {self.category}/{self.action} — {self.summary}'
+
+
+class Profile(models.Model):
+    """Local authorization record keyed to a Clerk identity.
+
+    Clerk owns *authentication* (who you are); this row owns *authorization*
+    (what you may do). A Django ``User`` + ``Profile`` pair is created lazily the
+    first time a valid Clerk token is presented (see ``api.authentication``),
+    defaulting to the read-only ``viewer`` role. An admin promotes operators in
+    the django-unfold admin — open Clerk sign-up never grants write access on
+    its own.
+
+    Roles are intentionally a simple choices field for now; the access checks go
+    through ``has_operator()`` so this can grow into Django Groups / per-feature
+    permissions later without touching every call site.
+    """
+
+    ROLE_VIEWER = 'viewer'
+    ROLE_OPERATOR = 'operator'
+    ROLE_CHOICES = [
+        (ROLE_VIEWER, 'Viewer'),
+        (ROLE_OPERATOR, 'Operator'),
+    ]
+
+    user = models.OneToOneField(
+        'auth.User', on_delete=models.CASCADE, related_name='profile',
+    )
+    clerk_user_id = models.CharField(max_length=255, unique=True, db_index=True)
+    # Clerk instance the user signed in from (the token `iss`). The same person
+    # has a distinct clerk_user_id per instance, so this disambiguates the
+    # dev vs prod profiles and selects the right secret key for Backend API calls.
+    clerk_issuer = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True)
+    role = models.CharField(max_length=32, choices=ROLE_CHOICES, default=ROLE_VIEWER)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['email', 'clerk_user_id']
+
+    def __str__(self) -> str:
+        return f'{self.email or self.clerk_user_id} ({self.role})'
+
+    def has_operator(self) -> bool:
+        """Whether this profile may perform mutating actions."""
+        return self.role == self.ROLE_OPERATOR
+
+
+class AuthConfig(models.Model):
+    """Singleton runtime configuration for authentication + cross-origin access.
+
+    Editable in the Django admin so the operator can rotate Clerk keys, add an
+    allowed origin, or change the Stream Deck secret without editing env files or
+    redeploying. Every field falls back to its Django setting (env-driven) when
+    left blank, so local dev works with zero admin setup and prod can override
+    live. Singleton (pk=1) — there is only ever one row.
+
+    Consumption (all per-request, so admin edits take effect immediately):
+      - Clerk params + hotkey secret are read on each authenticated request.
+      - ``web_origins`` powers CORS via the corsheaders ``check_request_enabled``
+        signal. (Django's CSRF_TRUSTED_ORIGINS, used only for the admin login,
+        stays env-driven in settings.)
+    """
+
+    # Clerk -------------------------------------------------------------------
+    clerk_issuers = models.TextField(
+        blank=True,
+        help_text='Trusted Clerk issuer URLs, one per line or comma-separated. '
+                  'List both the dev and prod instances so localhost and the '
+                  'public site both authenticate, e.g.\n'
+                  'https://your-app.clerk.accounts.dev\n'
+                  'https://clerk.zeldathon.co.uk\n'
+                  'The JWKS for each is derived as <issuer>/.well-known/jwks.json. '
+                  'Blank uses the CLERK_ISSUERS / CLERK_ISSUER env vars.',
+    )
+    clerk_authorized_parties = models.TextField(
+        blank=True,
+        help_text='Allowed azp claim values (the frontend origins), one per '
+                  'line or comma-separated. List every origin across instances, '
+                  'e.g. http://localhost:5173, https://www.zeldathon.co.uk',
+    )
+    clerk_secret_key = models.CharField(
+        max_length=255, blank=True,
+        help_text='Reserved for the Clerk Management API. Stored server-side; '
+                  'never exposed to the frontend.',
+    )
+
+    # Stream Deck -------------------------------------------------------------
+    timer_hotkey_secret = models.CharField(
+        max_length=255, blank=True,
+        help_text='Shared secret the Stream Deck sends as the X-Hotkey-Secret '
+                  'header to /api/timer-hotkey/.',
+    )
+
+    # CORS allowed origins (applied per-request via the corsheaders signal) ---
+    web_origins = models.TextField(
+        blank=True,
+        help_text='Full origins (scheme + host) allowed to call this API from a '
+                  'browser (CORS), one per line or comma-separated. e.g. '
+                  'https://www.zeldathon.co.uk. Added on top of the env-driven '
+                  'CORS_ALLOWED_ORIGINS; takes effect immediately (no restart).',
+    )
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Auth & access settings'
+        verbose_name_plural = 'Auth & access settings'
+
+    def __str__(self) -> str:
+        return 'Auth & access settings'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # enforce singleton
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls) -> 'AuthConfig':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @staticmethod
+    def _as_list(text: str) -> list[str]:
+        if not text:
+            return []
+        out: list[str] = []
+        for chunk in text.replace(',', '\n').splitlines():
+            value = chunk.strip()
+            if value:
+                out.append(value)
+        return out
+
+    def issuers_list(self) -> list[str]:
+        # Normalise trailing slashes so issuer comparisons are exact.
+        return [i.rstrip('/') for i in self._as_list(self.clerk_issuers)]
+
+    def authorized_parties_list(self) -> list[str]:
+        return self._as_list(self.clerk_authorized_parties)
+
+    def web_origins_list(self) -> list[str]:
+        return self._as_list(self.web_origins)

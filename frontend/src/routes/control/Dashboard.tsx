@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { NavLink, Navigate, Outlet, useLocation } from 'react-router';
+import { useAuth } from '@clerk/clerk-react';
 import { ControlOverview } from './Overview';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { HazardButton, UserBadge } from '@/components/auth/authControls';
 import { useRouteTitle } from '@/lib/usePageTitle';
+import { useMe } from '@/lib/useMe';
+import { env } from '@/lib/env';
 import './control.css';
 
 const sections = [
@@ -28,7 +32,56 @@ const sections = [
   { to: '/control/theme', label: 'Theme' },
 ];
 
+/**
+ * Route Component for /control. Pure guard wrapper (calls no hooks itself) so it
+ * can short-circuit before any Clerk hook runs when auth is disabled.
+ *
+ * Access model (operators only):
+ *   - Clerk not configured  → home ("/")
+ *   - not signed in         → /login
+ *   - signed in, not operator (viewer) → home ("/")
+ *   - signed in operator    → the control panel
+ */
 export function ControlLayout() {
+  if (!env.CLERK_PUBLISHABLE_KEY) {
+    return <Navigate to="/" replace />;
+  }
+  return <ControlGuard />;
+}
+
+function ControlGuard() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { me, loading, error } = useMe(isSignedIn === true);
+
+  if (!isLoaded || (isSignedIn && loading)) {
+    return <ControlGate message="Checking access…" />;
+  }
+  if (!isSignedIn) {
+    return <Navigate to="/login" replace />;
+  }
+  if (error) {
+    return <ControlGate message="Couldn’t verify your access. Try reloading." />;
+  }
+  if (me?.role !== 'operator') {
+    // Signed-in viewers (and any non-operator) aren't allowed in — send home.
+    return <Navigate to="/" replace />;
+  }
+  return <ControlShell />;
+}
+
+/** Minimal full-screen status panel shown while access is resolving / blocked. */
+function ControlGate({ message }: { message: string }) {
+  return (
+    <div className="control-shell">
+      <ThemeProvider renderBackgroundMedia />
+      <div className="control-gate" role="status">
+        {message}
+      </div>
+    </div>
+  );
+}
+
+function ControlShell() {
   useRouteTitle();
   const location = useLocation();
   const isRoot = location.pathname === '/control' || location.pathname === '/control/';
@@ -67,6 +120,15 @@ export function ControlLayout() {
           <h1>Control Panel</h1>
           <span className="control-operator-pill" aria-label="Operator access">
             Operator
+          </span>
+          {/* Right cluster mirrors the public navbar: a hazard HOME button
+            * (the counterpart of the home page's CONTROL button) to the left of
+            * the same UserBadge (avatar + name + "Operator" chip). */}
+          <span className="control-user-cluster">
+            <HazardButton to="/" title="Back to the public site">
+              Home
+            </HazardButton>
+            <UserBadge isOperator afterSignOutUrl="/" />
           </span>
         </div>
         {/* Hamburger toggle — only visible ≤768px (see control.css). Shows the

@@ -6,6 +6,9 @@ dj-database-url==2.3.0
 psycopg[binary]==3.2.4
 gunicorn==23.0.0
 requests==2.32.3
+# Verifies Clerk-issued RS256 JWTs against Clerk's JWKS (see api/authentication.py).
+# The [crypto] extra pulls in `cryptography` for RSA signature checks.
+PyJWT[crypto]==2.10.1
 whitenoise==6.8.2
 howlongtobeatpy==1.0.21
 django-unfold==0.81.0

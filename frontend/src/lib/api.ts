@@ -3,11 +3,25 @@ import { env } from '@/lib/env';
 type FetchOptions = Omit<RequestInit, 'body'> & {
   body?: unknown;
   /**
-   * Bearer token to attach as Authorization. Get it from
-   * Clerk's `useAuth().getToken()` and pass it through.
+   * Bearer token to attach as Authorization. Usually you don't need to pass
+   * this — once signed in, the Clerk token is attached automatically (see
+   * `setAuthTokenGetter`). Pass it explicitly only to override: a string forces
+   * that token, `null` forces an anonymous request.
    */
   token?: string | null;
 };
+
+/**
+ * Ambient source of the current auth token. Registered once by the Clerk
+ * bridge (`<ApiTokenBridge>`) so every `api()` call picks up the signed-in
+ * user's bearer token without each call site having to thread it through.
+ * `null` clears it (e.g. on sign-out / when Clerk is disabled).
+ */
+let tokenGetter: (() => Promise<string | null>) | null = null;
+
+export function setAuthTokenGetter(getter: (() => Promise<string | null>) | null): void {
+  tokenGetter = getter;
+}
 
 export class ApiError extends Error {
   // Explicit field declarations rather than constructor parameter properties:
@@ -105,13 +119,24 @@ function formatErrorBody(body: unknown): string {
 export async function api<T>(path: string, options: FetchOptions = {}): Promise<T> {
   const { body, token, headers, ...rest } = options;
 
+  // Explicit `token` wins (including an explicit `null` to force anonymous);
+  // otherwise fall back to the ambient Clerk token getter when registered.
+  let authToken: string | null = token ?? null;
+  if (token === undefined && tokenGetter) {
+    try {
+      authToken = await tokenGetter();
+    } catch {
+      authToken = null;
+    }
+  }
+
   const url = new URL(path, env.VITE_API_URL).toString();
   const init: RequestInit = {
     ...rest,
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...headers,
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

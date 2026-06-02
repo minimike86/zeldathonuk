@@ -70,3 +70,7 @@
   -webkit-text-fill-color: transparent;
   display: inline-block;
 }
+
+/* Operator auth controls (Control button, username + role pill) now live in
+ * components/auth/authControls.{tsx,css} so the navbar and the control panel
+ * share one implementation. */

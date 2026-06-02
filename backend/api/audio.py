@@ -75,7 +75,6 @@ def playlist(_request: Request) -> Response:
 
 
 @api_view(['PATCH'])
-@permission_classes([AllowAny])
 def update_track(request: Request, track_id: int) -> Response:
     """Edit a track in place (toggle enabled, rename, reorder, etc.)."""
     try:
@@ -90,7 +89,6 @@ def update_track(request: Request, track_id: int) -> Response:
 
 
 @api_view(['GET', 'PUT'])
-@permission_classes([AllowAny])
 def now_playing(request: Request) -> Response:
     """GET the active AudioTrack pointer; PUT to update.
 
