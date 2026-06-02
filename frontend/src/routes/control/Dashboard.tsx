@@ -11,6 +11,9 @@ import './control.css';
 
 const sections = [
   { to: '/control', label: 'Overview', end: true },
+  // Visual / branding
+  { to: '/control/layouts', label: 'Layouts' },
+  { to: '/control/theme', label: 'Theme' },
   // Pre-event setup
   { to: '/control/events', label: 'Events' },
   { to: '/control/charities', label: 'Charities' },
@@ -28,8 +31,6 @@ const sections = [
   { to: '/control/omnibar', label: 'Omnibar' },
   { to: '/control/chest-announcer', label: 'Chest announcer' },
   { to: '/control/logs', label: 'Logs & Queue' },
-  // Visual / branding
-  { to: '/control/theme', label: 'Theme' },
 ];
 
 /**

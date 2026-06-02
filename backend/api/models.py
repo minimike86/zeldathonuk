@@ -1185,6 +1185,68 @@ class TwitchOAuthToken(models.Model):
         return obj
 
 
+class LayoutPreset(models.Model):
+    """A named arrangement for one OBS game-layout aspect ratio.
+
+    /control/games assigns each Game a ``layout_type`` (16x9 / 4x3 / 3ds / …)
+    because games can only output at fixed aspect ratios. This model layers a
+    library of *presets* on top of each type: where the game capture sits and
+    which elements (items, death count, timer, runners, …) show in the freed
+    regions. /obs/full renders the **active** preset for the currently-playing
+    game's layout_type.
+
+    Activation is scoped **per layout_type** — exactly one preset is active for
+    each aspect ratio at a time (so flipping the active 4x3 preset doesn't touch
+    the active 16x9 one). This differs from ThemeSettings, where activation is
+    global. The shape of ``config`` is owned by the frontend
+    (useLayoutPresetConfig.parsePresetConfig); the backend stores it opaquely
+    and the parser drops unknown ids + clamps sizes to the 1920×984 stage.
+    """
+
+    name = models.CharField(
+        max_length=100,
+        help_text='Label shown in /control/layouts — purely cosmetic.',
+    )
+    layout_type = models.CharField(max_length=20, choices=LayoutType.choices)
+    is_active = models.BooleanField(
+        default=False,
+        help_text='One active preset per layout_type. The active row drives '
+                  '/obs/full for games of that aspect ratio.',
+    )
+    config = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Variant + per-region widths + per-region element lists. '
+                  'Shape owned by the frontend parser; unknown ids are dropped '
+                  'and over-budget widths clamped to the 1920×984 stage on read.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Layout preset'
+        verbose_name_plural = 'Layout presets'
+        ordering = ['layout_type', '-is_active', 'name']
+
+    def save(self, *args, **kwargs):
+        # Mirror ThemeSettings.save, but demote only siblings of the SAME
+        # layout_type so each aspect ratio keeps its own active preset.
+        super().save(*args, **kwargs)
+        if self.is_active:
+            LayoutPreset.objects.filter(
+                layout_type=self.layout_type, is_active=True,
+            ).exclude(pk=self.pk).update(is_active=False)
+
+    def __str__(self) -> str:
+        return f'{self.get_layout_type_display()} — {self.name}'
+
+    @classmethod
+    def active_for(cls, layout_type: str) -> 'LayoutPreset | None':
+        """The active preset for an aspect ratio, or None when none is set
+        (the frontend then falls back to its baked-in per-layout default)."""
+        return cls.objects.filter(layout_type=layout_type, is_active=True).first()
+
+
 class ThemeSettings(models.Model):
     """A row in the theme library.
 

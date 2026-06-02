@@ -157,12 +157,12 @@ export function AdPanel({ style }: { style: React.CSSProperties }) {
   );
 }
 
-function useCurrentEntry() {
+export function useCurrentEntry() {
   const { data } = usePolledQuery(obsApi.currentlyPlaying, 2000);
   return data?.schedule_entry_detail ?? null;
 }
 
-function useNow(intervalMs: number = 250): number {
+export function useNow(intervalMs: number = 250): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), intervalMs);
@@ -222,7 +222,7 @@ export function RunnerTimerCard({ style }: { style: React.CSSProperties }) {
   );
 }
 
-function RunnerChip({ runner }: { runner: Runner }) {
+export function RunnerChip({ runner }: { runner: Runner }) {
   const url = runner.channel_url.toLowerCase();
   const icon = url.includes('twitch')
     ? faTwitch
@@ -452,7 +452,7 @@ export function ItemsGrid({ entry }: { entry: ScheduleEntry | null }) {
 
 /* ── helpers ───────────────────────────────────────────────────────────── */
 
-function computeTimerSeconds(timer: TimerRun | null, now: number): number {
+export function computeTimerSeconds(timer: TimerRun | null, now: number): number {
   if (!timer) return 0;
   if (timer.is_running && timer.started_at) {
     const startedMs = Date.parse(timer.started_at);
@@ -461,7 +461,7 @@ function computeTimerSeconds(timer: TimerRun | null, now: number): number {
   return timer.accumulated_seconds;
 }
 
-function formatHms(totalSeconds: number): string {
+export function formatHms(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
@@ -476,13 +476,13 @@ function fmtClock(d: Date): string {
   });
 }
 
-function splitOnColon(title: string): [string, string?] {
+export function splitOnColon(title: string): [string, string?] {
   const idx = title.indexOf(':');
   if (idx < 0) return [title];
   return [title.slice(0, idx + 1), title.slice(idx + 1).trim()];
 }
 
-function parseBadges(notes: string): string[] {
+export function parseBadges(notes: string): string[] {
   if (!notes) return [];
   return notes
     .split(',')
@@ -490,7 +490,7 @@ function parseBadges(notes: string): string[] {
     .filter(Boolean);
 }
 
-function fmtEta(minutes: number): string {
+export function fmtEta(minutes: number): string {
   if (!minutes) return '—';
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;

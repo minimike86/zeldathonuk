@@ -10,12 +10,21 @@ import { notifyRafflesChanged } from '@/lib/raffleBus';
 import { notifyItemsChanged } from '@/lib/itemsBus';
 import { notifyObjectivesChanged } from '@/lib/objectiveBus';
 import { notifyThemeChanged } from '@/lib/themeBus';
+import { notifyLayoutChanged } from '@/lib/layoutBus';
 
 /** Pass-through `.then()` callback that fires a theme-changed broadcast
  *  and returns the response unchanged. Use on any mutation that can
  *  affect what /api/theme/ returns so other tabs re-fetch instantly. */
 function withThemeBroadcast<T>(value: T): T {
   notifyThemeChanged();
+  return value;
+}
+
+/** Same pattern but for LayoutPreset mutations. Activating/editing a preset
+ *  bumps any open /obs/full so a live capture-position swap lands in roughly
+ *  one render frame instead of waiting on the 2s poll. */
+function withLayoutBroadcast<T>(value: T): T {
+  notifyLayoutChanged();
   return value;
 }
 
@@ -63,6 +72,24 @@ function withObjectivesBroadcast<T>(value: T): T {
 }
 
 export type LayoutKey = '16x9' | '4x3' | '3ds' | 'ds-top' | 'ds-both' | 'fsa-split';
+
+/** A named arrangement for one OBS game-layout aspect ratio. The control panel
+ *  manages a library of these per layout type, with exactly one `is_active`
+ *  per type (scoped activation, Theme-style). /obs/full renders the active
+ *  preset for the currently-playing game's layout_type. `config` is parsed +
+ *  clamped by `useLayoutPresetConfig` — see that module for the shape. */
+export interface LayoutPreset {
+  id: number;
+  name: string;
+  layout_type: LayoutKey;
+  /** Human-readable aspect-ratio label (e.g. "4:3 standard"). */
+  layout_type_display: string;
+  is_active: boolean;
+  /** Opaque to the API layer; shaped + validated by useLayoutPresetConfig. */
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Game {
   id: number;
@@ -1163,6 +1190,41 @@ export const obsApi = {
   themeDuplicate: (id: number) =>
     api<ThemeSettings>(`/api/themes/${id}/duplicate/`, { method: 'POST' }).then(
       withThemeBroadcast,
+    ),
+
+  // OBS layout presets — library managed in /control/layouts, consumed live by
+  // /obs/full. Mutations broadcast via layoutBus so an open browser source
+  // re-fetches the moment a preset is activated/edited. Pass `?layout_type` to
+  // narrow the list to one aspect ratio for the editor.
+  layoutPresets: (layoutType?: LayoutKey) =>
+    api<LayoutPreset[]>(
+      layoutType ? `/api/layout-presets/?layout_type=${layoutType}` : '/api/layout-presets/',
+    ),
+  createLayoutPreset: (body: {
+    name: string;
+    layout_type: LayoutKey;
+    config?: Record<string, unknown>;
+    is_active?: boolean;
+  }) =>
+    api<LayoutPreset>('/api/layout-presets/', { method: 'POST', body }).then(
+      withLayoutBroadcast,
+    ),
+  updateLayoutPreset: (
+    id: number,
+    patch: Partial<Pick<LayoutPreset, 'name' | 'config' | 'is_active'>>,
+  ) =>
+    api<LayoutPreset>(`/api/layout-presets/${id}/`, { method: 'PATCH', body: patch }).then(
+      withLayoutBroadcast,
+    ),
+  deleteLayoutPreset: (id: number) =>
+    api<void>(`/api/layout-presets/${id}/`, { method: 'DELETE' }).then(withLayoutBroadcast),
+  activateLayoutPreset: (id: number) =>
+    api<LayoutPreset>(`/api/layout-presets/${id}/activate/`, { method: 'POST' }).then(
+      withLayoutBroadcast,
+    ),
+  duplicateLayoutPreset: (id: number) =>
+    api<LayoutPreset>(`/api/layout-presets/${id}/duplicate/`, { method: 'POST' }).then(
+      withLayoutBroadcast,
     ),
   donations: (eventId?: number) =>
     api<Donation[]>(eventId ? `/api/donations/?event=${eventId}` : '/api/donations/'),

@@ -14,6 +14,7 @@ router.register('schedule', views.ScheduleEntryViewSet)
 router.register('donations', views.DonationViewSet)
 router.register('donation-pages', views.DonationPageViewSet)
 router.register('themes', views.ThemeSettingsViewSet)
+router.register('layout-presets', views.LayoutPresetViewSet)
 router.register('brb', views.BrbTimerViewSet)
 # Omnibar v2 streams
 router.register('playthrough-events', views.PlaythroughEventViewSet)

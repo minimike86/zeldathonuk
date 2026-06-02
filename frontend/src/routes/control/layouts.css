@@ -1,0 +1,176 @@
+/* /control/layouts — OBS layout-preset editor. Leans on the shared control
+ * surface (.control-card, .btn-*) and only adds the bits specific to the
+ * region/element editor + the to-scale stage preview. */
+
+.layouts-type-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.layouts-soon {
+  opacity: 0.7;
+  font-size: 0.8em;
+}
+
+.layouts-preset.is-active {
+  border-color: color-mix(in srgb, #5fd38a 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, #5fd38a 35%, transparent) inset;
+}
+
+.layouts-preset-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.layouts-name-input {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+  color: #fff;
+  padding: 0.3rem 0.6rem;
+  min-width: 200px;
+}
+
+.layouts-active-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(95, 211, 138, 0.18);
+  border: 1px solid rgba(95, 211, 138, 0.55);
+  color: #8ff0b4;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.layouts-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layouts-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.layouts-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.85rem;
+}
+.layouts-field--inline {
+  margin-bottom: 0;
+}
+.layouts-field small {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.layouts-region {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.layouts-region-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+.layouts-region-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.layouts-element-list {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.layouts-element-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+}
+.layouts-element-name {
+  font-size: 0.95rem;
+}
+
+.layouts-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+/* ── To-scale preview ──────────────────────────────────────────────────── */
+.layouts-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.layouts-preview-stage {
+  position: relative;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 8px, transparent 8px 16px),
+    rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.layouts-preview-capture,
+.layouts-preview-region {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-align: center;
+  overflow: hidden;
+}
+
+.layouts-preview-capture {
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 35%, transparent);
+  border: 1px solid var(--theme-primary, #b92753);
+  color: #fff;
+}
+
+.layouts-preview-region {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.85);
+}
+.layouts-preview-region small {
+  font-family: inherit;
+  font-size: 0.6rem;
+  opacity: 0.7;
+}

@@ -1880,6 +1880,47 @@ class ThemeSettingsViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(clone).data, status=status.HTTP_201_CREATED)
 
 
+class LayoutPresetViewSet(viewsets.ModelViewSet):
+    """Library of OBS game-layout presets. CRUD + `activate` (scoped per
+    layout_type) + `duplicate`, mirroring ThemeSettingsViewSet.
+
+    Optional `?layout_type=4x3` filter narrows the list to one aspect ratio
+    for the /control/layouts editor; /obs/full just fetches the whole list and
+    picks the active row for the currently-playing game's layout_type.
+    """
+
+    queryset = models.LayoutPreset.objects.all()
+    serializer_class = serializers.LayoutPresetSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        layout_type = self.request.query_params.get('layout_type')
+        if layout_type:
+            qs = qs.filter(layout_type=layout_type)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request: Request, pk=None) -> Response:
+        preset = self.get_object()
+        if not preset.is_active:
+            preset.is_active = True
+            preset.save()  # The model's save() demotes siblings of the same type.
+        return Response(self.get_serializer(preset).data)
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request: Request, pk=None) -> Response:
+        """Clone the row into a new inactive preset of the same layout_type —
+        a starting point for a variant of an existing arrangement."""
+        source = self.get_object()
+        clone = models.LayoutPreset.objects.create(
+            name=f'{source.name} (copy)',
+            layout_type=source.layout_type,
+            is_active=False,
+            config=source.config,
+        )
+        return Response(self.get_serializer(clone).data, status=status.HTTP_201_CREATED)
+
+
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────
 
 

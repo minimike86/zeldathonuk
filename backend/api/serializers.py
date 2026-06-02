@@ -659,6 +659,21 @@ class ThemeSettingsSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class LayoutPresetSerializer(serializers.ModelSerializer):
+    # Human-readable aspect-ratio label for the control-panel selector.
+    layout_type_display = serializers.CharField(
+        source='get_layout_type_display', read_only=True,
+    )
+
+    class Meta:
+        model = models.LayoutPreset
+        fields = [
+            'id', 'name', 'layout_type', 'layout_type_display',
+            'is_active', 'config', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────
 
 class PlaythroughEventSerializer(serializers.ModelSerializer):

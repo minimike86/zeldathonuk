@@ -382,6 +382,17 @@ class ThemeSettingsAdmin(ModelAdmin):
     list_editable = ['is_active']
 
 
+@admin.register(models.LayoutPreset)
+class LayoutPresetAdmin(ModelAdmin):
+    """Library of OBS game-layout presets. One row per layout_type is
+    `is_active` (scoped demotion on save); the active row drives /obs/full for
+    games of that aspect ratio."""
+    list_display = ['__str__', 'layout_type', 'is_active', 'updated_at']
+    list_filter = ['layout_type', 'is_active']
+    readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['is_active']
+
+
 @admin.register(models.TwitchOAuthToken)
 class TwitchOAuthTokenAdmin(ModelAdmin):
     """Singleton row — Twitch user OAuth token + refresh metadata.

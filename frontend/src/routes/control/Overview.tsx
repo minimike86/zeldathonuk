@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
-import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { obsApi, usePolledQuery, type LayoutKey } from '@/lib/obsApi';
 
 export function ControlOverview() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 5000);
@@ -45,6 +46,8 @@ export function ControlOverview() {
         </div>
       </div>
 
+      <LayoutQuickSwitch layoutType={entry?.game?.layout_type ?? null} />
+
       <div className="control-card">
         <h2>OBS browser sources</h2>
         <p>
@@ -86,6 +89,73 @@ export function ControlOverview() {
         </ul>
       </div>
     </>
+  );
+}
+
+/**
+ * Compact live switcher for the active layout preset. Scoped to the
+ * currently-playing game's aspect ratio (the only one on screen), so the
+ * operator can flip the capture position mid-game with one click — /obs/full
+ * follows within ~2s. Full authoring lives in /control/layouts.
+ */
+function LayoutQuickSwitch({ layoutType }: { layoutType: LayoutKey | null }) {
+  const [bump, setBump] = useState(0);
+  const { data: presets } = usePolledQuery(
+    () => (layoutType ? obsApi.layoutPresets(layoutType) : Promise.resolve([])),
+    3000,
+    [bump, layoutType],
+  );
+  const [busy, setBusy] = useState(false);
+
+  const list = (presets ?? []).slice().sort((a, b) => a.name.localeCompare(b.name));
+
+  const activate = async (id: number) => {
+    setBusy(true);
+    try {
+      await obsApi.activateLayoutPreset(id);
+      setBump((b) => b + 1);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="control-card">
+      <h2>Layout preset</h2>
+      {!layoutType ? (
+        <p className="text-white-50">
+          No game on screen — set a currently-playing game to switch its layout.
+          Manage presets in <Link to="/control/layouts" className="text-warning">Layouts</Link>.
+        </p>
+      ) : list.length === 0 ? (
+        <p className="text-white-50">
+          No presets for the <code>{layoutType}</code> layout.{' '}
+          <Link to="/control/layouts" className="text-warning">Create one</Link>.
+        </p>
+      ) : (
+        <>
+          <p className="text-white-50">
+            Active arrangement for the on-screen <code>{layoutType}</code> game —
+            switches <code>/obs/full</code> live. Edit in{' '}
+            <Link to="/control/layouts" className="text-warning">Layouts</Link>.
+          </p>
+          <div className="control-btn-row" style={{ flexWrap: 'wrap' }}>
+            {list.map((p) => (
+              <button
+                key={p.id}
+                className={`btn btn-sm ${p.is_active ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+                disabled={busy || p.is_active}
+                onClick={() => activate(p.id)}
+                aria-current={p.is_active ? 'true' : undefined}
+              >
+                {p.name}
+                {p.is_active && ' ✓'}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

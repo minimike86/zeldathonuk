@@ -533,3 +533,134 @@
   pointer-events: none;
   z-index: 1;
 }
+
+/* ── Preset-driven layout regions ─────────────────────────────────────────
+ * A region is an absolutely-positioned column (sized + placed by
+ * useLayoutPresetConfig.computeGeometry) that stacks the operator-chosen
+ * elements. Visual register matches the legacy side panel so a preset reads
+ * as the same OBS chrome, and re-skins with the active theme via --obs-accent. */
+.obs-stage .obs-region {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--obs-bg-to, #2b1b25), var(--obs-bg-from, #4c1324));
+}
+
+.obs-stage .obs-region-block {
+  /* Inherits .panel-block; reset the bottom margin the title carries so
+   * stacked blocks space evenly via the column gap. */
+  flex: 0 0 auto;
+}
+
+.obs-stage .obs-region-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--theme-text, #fff);
+}
+
+.obs-stage .obs-region-badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.obs-stage .obs-region-cover {
+  display: flex;
+  justify-content: center;
+}
+
+.obs-stage .obs-region-cover img {
+  max-width: 70%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.obs-stage .obs-region-runners {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: 'Bungee', sans-serif;
+  text-align: center;
+}
+
+.obs-stage .obs-region-objectives {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.obs-stage .obs-region-objective {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.obs-stage .obs-region-objective-mark {
+  flex: 0 0 auto;
+  width: 1.1em;
+  text-align: center;
+}
+
+.obs-stage .obs-region-objective[data-state='obtained'] {
+  color: #7fff7f;
+}
+.obs-stage .obs-region-objective[data-state='obtained'] .obs-region-objective-name {
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+.obs-stage .obs-region-objective[data-state='skipped'] {
+  color: rgba(255, 255, 255, 0.4);
+}
+.obs-stage .obs-region-objective[data-state='outstanding'] {
+  color: var(--theme-text, #fff);
+}
+
+.obs-stage .obs-region-next-objective {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.05rem;
+}
+.obs-stage .obs-region-next-objective img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.obs-stage .obs-region-deaths {
+  font-family: 'VT323', monospace;
+  font-size: 2.5rem;
+  text-align: center;
+  color: var(--theme-text, #fff);
+  text-shadow: 0 0 8px var(--obs-accent, #e71347);
+}
+
+.obs-stage .obs-region-camera {
+  width: 100%;
+  border-radius: 6px;
+}
+
+.obs-stage .obs-region-ad {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+}
