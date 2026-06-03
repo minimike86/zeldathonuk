@@ -199,6 +199,21 @@ export const SHELL_SCALE_MIN = 0.3;
 export const SHELL_SCALE_MAX = 5;
 export const SHELL_OFFSET_MAX = 1920;
 
+/** Per-screen size/position override for the multi-screen layouts (3DS / DS),
+ *  so each screen capture can be nudged + resized to line up with the shell
+ *  image's holes — or placed arbitrarily. `scale` zooms uniformly (aspect kept);
+ *  `offsetX/Y` nudge it (stage px). The result is always clamped to the free
+ *  (non-panel) area, so a screen can never stray into a panel zone or off-stage. */
+export interface ScreenAdjust {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+export const DEFAULT_SCREEN_ADJUST: ScreenAdjust = { scale: 1, offsetX: 0, offsetY: 0 };
+export const SCREEN_SCALE_MIN = 0.3;
+export const SCREEN_SCALE_MAX = 3;
+export const SCREEN_OFFSET_MAX = 1920;
+
 /** Extra inputs passed to a variant's capture builder at geometry time. */
 interface CaptureOpts {
   fsa: FsaParams;
@@ -212,6 +227,9 @@ export interface VariantDef {
   hasShell?: boolean;
   /** When true, the editor exposes the Four Swords TV/GBA tuning controls. */
   usesFsaParams?: boolean;
+  /** When true, the editor exposes per-screen size/position controls (3DS / DS),
+   *  one per capture. */
+  usesScreenAdjust?: boolean;
   /** Element zones, carved off the stage edges IN ORDER (see computeGeometry). */
   regions: RegionSlot[];
   /** Places the screen capture(s) (+ optional shell) in the space left after
@@ -371,10 +389,10 @@ const THREE_DS_SCREENS: ScreenSpec[] = [
 /** Dual-screen arrangements: screens stacked (column zone) or side-by-side
  *  (strip zone), on either side / top-bottom. */
 const dualScreenVariants = (screens: ScreenSpec[]): VariantDef[] => [
-  { id: 'stacked-left', label: 'Stacked, panels right', hasShell: true, regions: [col('right', 'right', 760)], buildCaptures: stackV(screens, true) },
-  { id: 'stacked-right', label: 'Stacked, panels left', hasShell: true, regions: [col('left', 'left', 760)], buildCaptures: stackV(screens, true) },
-  { id: 'sidebyside-top', label: 'Side by side, panels below', hasShell: true, regions: [strip('bottom', 'bottom', 260)], buildCaptures: stackH(screens, true) },
-  { id: 'sidebyside-bottom', label: 'Side by side, panels above', hasShell: true, regions: [strip('top', 'top', 260)], buildCaptures: stackH(screens, true) },
+  { id: 'stacked-left', label: 'Stacked, panels right', hasShell: true, usesScreenAdjust: true, regions: [col('right', 'right', 760)], buildCaptures: stackV(screens, true) },
+  { id: 'stacked-right', label: 'Stacked, panels left', hasShell: true, usesScreenAdjust: true, regions: [col('left', 'left', 760)], buildCaptures: stackV(screens, true) },
+  { id: 'sidebyside-top', label: 'Side by side, panels below', hasShell: true, usesScreenAdjust: true, regions: [strip('bottom', 'bottom', 260)], buildCaptures: stackH(screens, true) },
+  { id: 'sidebyside-bottom', label: 'Side by side, panels above', hasShell: true, usesScreenAdjust: true, regions: [strip('top', 'top', 260)], buildCaptures: stackH(screens, true) },
 ];
 
 export const LAYOUT_VARIANTS: Record<LayoutKey, VariantDef[]> = {
@@ -413,6 +431,9 @@ export interface PresetConfig {
   shellImageUrl: string;
   /** Zoom + nudge for the shell image so its screen holes align to the captures. */
   shellTransform: ShellTransform;
+  /** Per-screen size/position overrides, keyed by capture index ("0", "1", …).
+   *  Only meaningful for usesScreenAdjust variants. */
+  screens: Record<string, ScreenAdjust>;
 }
 
 // A `type` (not interface) so it carries an implicit index signature and is
@@ -424,6 +445,7 @@ export type PresetConfigJson = {
   fsa: FsaParams;
   shellImageUrl: string;
   shellTransform: ShellTransform;
+  screens: Record<string, ScreenAdjust>;
 };
 
 /** Build a default JSON config for a specific arrangement — used by the seed
@@ -448,6 +470,7 @@ export function defaultConfigForVariant(variant: VariantDef): PresetConfigJson {
     fsa: { ...DEFAULT_FSA_PARAMS },
     shellImageUrl: '',
     shellTransform: { ...DEFAULT_SHELL_TRANSFORM },
+    screens: {},
   };
 }
 
@@ -464,6 +487,7 @@ export function defaultPresetConfig(layoutType: LayoutKey): PresetConfig {
     fsa: cfg.fsa,
     shellImageUrl: cfg.shellImageUrl,
     shellTransform: cfg.shellTransform,
+    screens: cfg.screens,
   };
 }
 
@@ -541,11 +565,30 @@ export function parsePresetConfig(raw: unknown, layoutType: LayoutKey): PresetCo
   const capture = parseAlign(rawCapture);
   const fsa = parseFsa((obj as { fsa?: unknown }).fsa);
   const shellTransform = parseShellTransform((obj as { shellTransform?: unknown }).shellTransform);
+  const screens = parseScreens((obj as { screens?: unknown }).screens);
   const shellImageUrl =
     typeof (obj as { shellImageUrl?: unknown }).shellImageUrl === 'string'
       ? ((obj as { shellImageUrl: string }).shellImageUrl)
       : fallback.shellImageUrl;
-  return { variant, regions, capture, fsa, shellImageUrl, shellTransform };
+  return { variant, regions, capture, fsa, shellImageUrl, shellTransform, screens };
+}
+
+/** Validate stored per-screen overrides, clamping each. Keyed by capture index. */
+function parseScreens(raw: unknown): Record<string, ScreenAdjust> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, ScreenAdjust> = {};
+  for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+    if (!val || typeof val !== 'object') continue;
+    const r = val as { scale?: unknown; offsetX?: unknown; offsetY?: unknown };
+    const num = (v: unknown, fb: number, lo: number, hi: number) =>
+      typeof v === 'number' && Number.isFinite(v) ? clamp(v, lo, hi) : fb;
+    out[key] = {
+      scale: num(r.scale, DEFAULT_SCREEN_ADJUST.scale, SCREEN_SCALE_MIN, SCREEN_SCALE_MAX),
+      offsetX: num(r.offsetX, 0, -SCREEN_OFFSET_MAX, SCREEN_OFFSET_MAX),
+      offsetY: num(r.offsetY, 0, -SCREEN_OFFSET_MAX, SCREEN_OFFSET_MAX),
+    };
+  }
+  return out;
 }
 
 /** Validate a stored shell-transform blob, clamping + defaulting each field. */
@@ -676,6 +719,21 @@ function transformShell(b: Box, t: ShellTransform): Box {
   };
 }
 
+/** Apply a per-screen override to a capture box: zoom uniformly (aspect kept,
+ *  capped so it still fits `bounds`) about its centre, nudge, then clamp the
+ *  position so the box stays entirely inside `bounds` (the free, non-panel area). */
+function adjustScreen(base: Box, adj: ScreenAdjust, bounds: Box): Box {
+  const maxScale = Math.min(bounds.width / base.width, bounds.height / base.height);
+  const scale = clamp(adj.scale, SCREEN_SCALE_MIN, Math.max(SCREEN_SCALE_MIN, maxScale));
+  const w = base.width * scale;
+  const h = base.height * scale;
+  let left = base.left + (base.width - w) / 2 + adj.offsetX;
+  let top = base.top + (base.height - h) / 2 + adj.offsetY;
+  left = clamp(left, bounds.left, bounds.left + bounds.width - w);
+  top = clamp(top, bounds.top, bounds.top + bounds.height - h);
+  return { left, top, width: w, height: h };
+}
+
 /** Offset to move a box of `size` within `slack` per a 3-way alignment. */
 function alignOffset(slack: number, align: 'left' | 'center' | 'right' | 'top' | 'bottom'): number {
   if (slack <= 0) return 0;
@@ -729,7 +787,15 @@ export function computeGeometry(config: PresetConfig): LayoutGeometry {
   const dx = alignOffset(slackX, config.capture.x);
   const dy = alignOffset(slackY, config.capture.y);
 
-  const captures = built.captures.map((c) => ({ ...shift(c, dx, dy), label: c.label }));
+  // Shift each capture by the cluster alignment, then apply any per-screen
+  // override (zoom + nudge), clamped to the free area so a screen can't slip
+  // into a panel zone or off-stage.
+  const captures = built.captures.map((c, i) => {
+    const shifted = shift(c, dx, dy);
+    const adj = config.screens[String(i)];
+    const box = adj ? adjustScreen(shifted, adj, remaining) : shifted;
+    return { ...round(box), label: c.label };
+  });
   // Shell follows the capture shift, then the operator's zoom + nudge so the
   // PNG's screen holes can be lined up with the capture boxes.
   const shell = built.shell

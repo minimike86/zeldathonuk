@@ -14,6 +14,10 @@ import {
   SHELL_SCALE_MIN,
   SHELL_SCALE_MAX,
   SHELL_OFFSET_MAX,
+  SCREEN_SCALE_MIN,
+  SCREEN_SCALE_MAX,
+  SCREEN_OFFSET_MAX,
+  DEFAULT_SCREEN_ADJUST,
   computeGeometry,
   defaultConfigForVariant,
   parsePresetConfig,
@@ -29,6 +33,7 @@ import {
   type LayoutGeometry,
   type FsaParams,
   type ShellTransform,
+  type ScreenAdjust,
 } from '@/routes/obs/layouts/useLayoutPresetConfig';
 import './layouts.css';
 
@@ -181,12 +186,15 @@ interface Draft {
   fsa: FsaParams;
   shellImageUrl: string;
   shellTransform: ShellTransform;
+  screens: Record<string, ScreenAdjust>;
 }
 
 function seedDraft(preset: LayoutPreset): Draft {
   const parsed = parsePresetConfig(preset.config, preset.layout_type);
   const regions: Record<string, RegionDraft> = {};
   for (const [rid, r] of Object.entries(parsed.regions)) regions[rid] = { ...r };
+  const screens: Record<string, ScreenAdjust> = {};
+  for (const [k, s] of Object.entries(parsed.screens)) screens[k] = { ...s };
   return {
     name: preset.name,
     variantId: parsed.variant.id,
@@ -195,6 +203,7 @@ function seedDraft(preset: LayoutPreset): Draft {
     fsa: { ...parsed.fsa },
     shellImageUrl: parsed.shellImageUrl,
     shellTransform: { ...parsed.shellTransform },
+    screens,
   };
 }
 
@@ -261,6 +270,13 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
   const setShell = (mut: Partial<ShellTransform>) =>
     edit((d) => ({ ...d, shellTransform: { ...d.shellTransform, ...mut } }));
 
+  const setScreen = (i: number, mut: Partial<ScreenAdjust>) =>
+    edit((d) => {
+      const key = String(i);
+      d.screens[key] = { ...DEFAULT_SCREEN_ADJUST, ...d.screens[key], ...mut };
+      return d;
+    });
+
   const draftToConfig = () => {
     const regions: Record<string, RegionDraft> = {};
     for (const slot of variant.regions) {
@@ -283,6 +299,7 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
       fsa: draft.fsa,
       shellImageUrl: draft.shellImageUrl,
       shellTransform: draft.shellTransform,
+      screens: draft.screens,
     };
   };
 
@@ -390,6 +407,16 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
           ))}
 
           {variant.usesFsaParams && <FsaControls fsa={draft.fsa} onChange={setFsa} />}
+
+          {variant.usesScreenAdjust &&
+            geometry.captures.map((cap, i) => (
+              <ScreenAdjustControls
+                key={i}
+                label={cap.label ?? `Screen ${i + 1}`}
+                adjust={draft.screens[String(i)] ?? DEFAULT_SCREEN_ADJUST}
+                onChange={(mut) => setScreen(i, mut)}
+              />
+            ))}
 
           <CapturePosition align={draft.captureAlign} onChange={setCaptureAlign} />
 
@@ -596,7 +623,6 @@ function ShellControls({
   onUrl: (url: string) => void;
   onTransform: (mut: Partial<ShellTransform>) => void;
 }) {
-  const NUDGE = 10;
   return (
     <div className="layouts-region">
       <div className="layouts-region-head">
@@ -618,52 +644,114 @@ function ShellControls({
       </label>
 
       {url && (
-        <>
-          <label className="layouts-field">
-            <small>Zoom — {Math.round(transform.scale * 100)}%</small>
-            <input
-              type="range"
-              min={SHELL_SCALE_MIN}
-              max={SHELL_SCALE_MAX}
-              step={0.01}
-              value={transform.scale}
-              onChange={(e) => onTransform({ scale: Number(e.target.value) })}
-            />
-          </label>
-          <div className="layouts-add-row" style={{ marginBottom: '0.6rem' }}>
-            <label className="layouts-field layouts-field--inline">
-              <small>Offset X (px)</small>
-              <input
-                type="number"
-                min={-SHELL_OFFSET_MAX}
-                max={SHELL_OFFSET_MAX}
-                value={transform.offsetX}
-                onChange={(e) => onTransform({ offsetX: Number(e.target.value) })}
-                style={{ width: 90 }}
-              />
-            </label>
-            <label className="layouts-field layouts-field--inline">
-              <small>Offset Y (px)</small>
-              <input
-                type="number"
-                min={-SHELL_OFFSET_MAX}
-                max={SHELL_OFFSET_MAX}
-                value={transform.offsetY}
-                onChange={(e) => onTransform({ offsetY: Number(e.target.value) })}
-                style={{ width: 90 }}
-              />
-            </label>
-          </div>
-          <div className="layouts-add-row">
-            <small className="text-white-50 align-self-center">Nudge:</small>
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetX: transform.offsetX - NUDGE })} aria-label="Nudge left">←</button>
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetX: transform.offsetX + NUDGE })} aria-label="Nudge right">→</button>
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetY: transform.offsetY - NUDGE })} aria-label="Nudge up">↑</button>
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetY: transform.offsetY + NUDGE })} aria-label="Nudge down">↓</button>
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ scale: 1, offsetX: 0, offsetY: 0 })}>Reset</button>
-          </div>
-        </>
+        <TransformControls
+          value={transform}
+          onChange={onTransform}
+          scaleMin={SHELL_SCALE_MIN}
+          scaleMax={SHELL_SCALE_MAX}
+          offsetMax={SHELL_OFFSET_MAX}
+        />
       )}
+    </div>
+  );
+}
+
+interface XformValue {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+/** Shared zoom slider + offset inputs + nudge/reset row — used by the shell
+ *  image and per-screen controls. */
+function TransformControls({
+  value,
+  onChange,
+  scaleMin,
+  scaleMax,
+  offsetMax,
+}: {
+  value: XformValue;
+  onChange: (mut: Partial<XformValue>) => void;
+  scaleMin: number;
+  scaleMax: number;
+  offsetMax: number;
+}) {
+  const NUDGE = 10;
+  return (
+    <>
+      <label className="layouts-field">
+        <small>Zoom — {Math.round(value.scale * 100)}%</small>
+        <input
+          type="range"
+          min={scaleMin}
+          max={scaleMax}
+          step={0.01}
+          value={value.scale}
+          onChange={(e) => onChange({ scale: Number(e.target.value) })}
+        />
+      </label>
+      <div className="layouts-add-row" style={{ marginBottom: '0.6rem' }}>
+        <label className="layouts-field layouts-field--inline">
+          <small>Offset X (px)</small>
+          <input
+            type="number"
+            min={-offsetMax}
+            max={offsetMax}
+            value={value.offsetX}
+            onChange={(e) => onChange({ offsetX: Number(e.target.value) })}
+            style={{ width: 90 }}
+          />
+        </label>
+        <label className="layouts-field layouts-field--inline">
+          <small>Offset Y (px)</small>
+          <input
+            type="number"
+            min={-offsetMax}
+            max={offsetMax}
+            value={value.offsetY}
+            onChange={(e) => onChange({ offsetY: Number(e.target.value) })}
+            style={{ width: 90 }}
+          />
+        </label>
+      </div>
+      <div className="layouts-add-row">
+        <small className="text-white-50 align-self-center">Nudge:</small>
+        <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onChange({ offsetX: value.offsetX - NUDGE })} aria-label="Nudge left">←</button>
+        <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onChange({ offsetX: value.offsetX + NUDGE })} aria-label="Nudge right">→</button>
+        <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onChange({ offsetY: value.offsetY - NUDGE })} aria-label="Nudge up">↑</button>
+        <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onChange({ offsetY: value.offsetY + NUDGE })} aria-label="Nudge down">↓</button>
+        <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onChange({ scale: 1, offsetX: 0, offsetY: 0 })}>Reset</button>
+      </div>
+    </>
+  );
+}
+
+/** Per-screen size/position control (3DS / DS top+bottom screens), one per
+ *  capture. Moves/zooms the screen within the free (non-panel) area to align it
+ *  with the shell image's holes. */
+function ScreenAdjustControls({
+  label,
+  adjust,
+  onChange,
+}: {
+  label: string;
+  adjust: ScreenAdjust;
+  onChange: (mut: Partial<ScreenAdjust>) => void;
+}) {
+  return (
+    <div className="layouts-region">
+      <div className="layouts-region-head">
+        <h3>{label}</h3>
+        <small className="text-white-50">position &amp; size</small>
+      </div>
+      <TransformControls
+        value={adjust}
+        onChange={onChange}
+        scaleMin={SCREEN_SCALE_MIN}
+        scaleMax={SCREEN_SCALE_MAX}
+        offsetMax={SCREEN_OFFSET_MAX}
+      />
     </div>
   );
 }
