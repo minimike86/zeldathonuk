@@ -98,7 +98,14 @@ export function resolveMediaUrl(value: string | null | undefined): string {
   try {
     parsed = new URL(value);
   } catch {
-    // Relative path — media lives on the API host, so resolve against it.
+    // Relative path. Two kinds live here and they're served by *different*
+    // hosts:
+    //   • `/assets/…` are frontend-bundled static files (Vite `public/`,
+    //     e.g. the brand logo) — served by the page host. Leave them relative
+    //     so they resolve against the current origin (www), NOT the API host.
+    //   • everything else (notably `/media/…` uploads) lives on the API host,
+    //     so resolve against the API origin.
+    if (value.startsWith('/assets/')) return value;
     if (value.startsWith('/')) {
       try {
         return new URL(value, apiOrigin).toString();
