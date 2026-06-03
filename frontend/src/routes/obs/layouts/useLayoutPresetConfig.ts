@@ -655,6 +655,11 @@ export interface LayoutGeometry {
   regions: Record<string, Box>;
   /** Console-shell image box (DS/3DS), when the variant frames the screens. */
   shell?: Box;
+  /** The free (non-panel) area the captures + shell live in, after the edge
+   *  zones are carved off. The shell PNG is clipped to this so a zoomed/nudged
+   *  shell can't bleed opaque plastic over a panel zone (e.g. a transparent
+   *  camera element). */
+  captureArea: Box;
   /** Gap zones available around the capture(s), per the current alignment. */
   gaps: GapSlot[];
 }
@@ -825,7 +830,7 @@ export function computeGeometry(config: PresetConfig): LayoutGeometry {
     if ((config.regions[g.id]?.elements.length ?? 0) > 0) regions[g.id] = g.box;
   }
 
-  return { captures, shell, regions, gaps };
+  return { captures, shell, captureArea: round(remaining), regions, gaps };
 }
 
 /**

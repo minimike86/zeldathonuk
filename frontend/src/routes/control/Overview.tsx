@@ -116,6 +116,7 @@ function LayoutQuickSwitch({ gameLayoutType }: { gameLayoutType: LayoutKey | nul
   const [busy, setBusy] = useState(false);
 
   const forced: LayoutKey | '' = guide?.forced_layout_type ?? '';
+  const guideOn = guide?.show_guide ?? false;
   // What /obs/full actually renders: the forced type wins, else the on-screen
   // game's type. The preset list is scoped to this so it always matches screen.
   const effectiveType: LayoutKey | null = forced || gameLayoutType;
@@ -141,6 +142,16 @@ function LayoutQuickSwitch({ gameLayoutType }: { gameLayoutType: LayoutKey | nul
     setBusy(true);
     try {
       await obsApi.activateLayoutPreset(id);
+      setBump((b) => b + 1);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleGuide = async () => {
+    setBusy(true);
+    try {
+      await obsApi.setLayoutGuide(!guideOn);
       setBump((b) => b + 1);
     } finally {
       setBusy(false);
@@ -223,6 +234,27 @@ function LayoutQuickSwitch({ gameLayoutType }: { gameLayoutType: LayoutKey | nul
           </div>
         </>
       )}
+
+      {/* Capture-alignment guides for OBS — global toggle that affects every
+          layout page. Lives here so the operator can flip it from the dashboard. */}
+      <h3 style={{ marginTop: '1rem' }}>Capture guides</h3>
+      <div className="d-flex flex-wrap align-items-center gap-3">
+        <button
+          type="button"
+          className={`btn btn-sm ${guideOn ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+          disabled={busy}
+          aria-pressed={guideOn}
+          onClick={toggleGuide}
+        >
+          Capture guides: {guideOn ? 'On' : 'Off'}
+        </button>
+        <small className="text-white-50" style={{ flex: 1, minWidth: 220 }}>
+          Draws a hashed border + device label on each capture box in the OBS
+          layout pages so you can align the OBS capture sources. Turn off for the
+          live scene. Applies to <code>/obs/full</code> and{' '}
+          <code>/obs/layout/&lt;type&gt;</code>.
+        </small>
+      </div>
     </div>
   );
 }

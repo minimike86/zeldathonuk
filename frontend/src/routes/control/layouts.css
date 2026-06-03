@@ -215,6 +215,12 @@
   overflow: hidden;
 }
 
+/* Clip box (free capture area) — crops the shell preview at the panel boundary,
+ * mirroring the OBS .obs-region-shell-clip so the operator previews the crop. */
+.layouts-preview-shell-clip {
+  position: absolute;
+  overflow: hidden;
+}
 .layouts-preview-shell {
   position: absolute;
   border: 1px dashed color-mix(in srgb, var(--theme-primary, #b92753) 55%, transparent);

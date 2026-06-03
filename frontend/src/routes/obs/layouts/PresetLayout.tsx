@@ -53,20 +53,33 @@ export function PresetLayout({ layoutType }: { layoutType: LayoutKey }) {
 
   return (
     <Stage>
-      {/* Operator console shell image (DS/3DS) — framing the screen cutouts. */}
+      {/* Operator console shell image (DS/3DS) — framing the screen cutouts.
+          Clipped to the free capture area so a zoomed/nudged shell that creeps
+          past the screens is cropped at the panel boundary, leaving panel zones
+          (e.g. a transparent camera) uncovered. */}
       {config.shellImageUrl && geometry.shell && (
-        <img
-          className="obs-region-shell"
-          src={config.shellImageUrl}
-          alt=""
+        <div
+          className="obs-region-shell-clip"
           aria-hidden
           style={{
-            left: `${geometry.shell.left}px`,
-            top: `${geometry.shell.top}px`,
-            width: `${geometry.shell.width}px`,
-            height: `${geometry.shell.height}px`,
+            left: `${geometry.captureArea.left}px`,
+            top: `${geometry.captureArea.top}px`,
+            width: `${geometry.captureArea.width}px`,
+            height: `${geometry.captureArea.height}px`,
           }}
-        />
+        >
+          <img
+            className="obs-region-shell"
+            src={config.shellImageUrl}
+            alt=""
+            style={{
+              left: `${geometry.shell.left - geometry.captureArea.left}px`,
+              top: `${geometry.shell.top - geometry.captureArea.top}px`,
+              width: `${geometry.shell.width}px`,
+              height: `${geometry.shell.height}px`,
+            }}
+          />
+        </div>
       )}
 
       {/* Transparent game-capture windows — OBS sources sit behind them. */}

@@ -66,17 +66,6 @@ export function LayoutsControl() {
   const [selectedType, setSelectedType] = useState<LayoutKey>('4x3');
   const [busy, setBusy] = useState(false);
 
-  const guideOn = guide?.show_guide ?? false;
-  const toggleGuide = async () => {
-    setBusy(true);
-    try {
-      await obsApi.setLayoutGuide(!guideOn);
-      refresh();
-    } finally {
-      setBusy(false);
-    }
-  };
-
   // Which aspect ratio /obs/full renders. Empty = auto (follow the playing
   // game's layout_type); a LayoutKey forces that type regardless of what's live.
   const forcedType: LayoutKey | '' = guide?.forced_layout_type ?? '';
@@ -132,24 +121,6 @@ export function LayoutsControl() {
           activate another. Games keep their aspect ratio in{' '}
           <code>/control/games</code>.
         </p>
-
-        <div className="layouts-guide-row">
-          <button
-            type="button"
-            className={`btn btn-sm ${guideOn ? 'btn-bloodmoon' : 'btn-outline-light'}`}
-            disabled={busy}
-            aria-pressed={guideOn}
-            onClick={toggleGuide}
-          >
-            Capture guides: {guideOn ? 'On' : 'Off'}
-          </button>
-          <small className="text-white-50">
-            Draws a hashed border + device label on each capture box in the OBS
-            layout pages so you can align the OBS capture sources. Turn off for the
-            live scene. Applies to <code>/obs/full</code> and{' '}
-            <code>/obs/layout/&lt;type&gt;</code>.
-          </small>
-        </div>
 
         <nav className="layouts-type-tabs" aria-label="Layout type">
           {LAYOUT_TYPE_OPTIONS.map((t) => (
@@ -878,13 +849,21 @@ function PresetPreview({ config, geometry }: { config: PresetConfig; geometry: L
         style={{ width: PREVIEW_W, height: STAGE_HEIGHT * scale }}
       >
         {geometry.shell && (
+          // Clip the shell to the free capture area, mirroring the OBS render so
+          // the operator sees exactly where a zoomed/nudged shell gets cropped
+          // at a panel boundary.
           <div
-            className="layouts-preview-shell"
-            style={{ left: px(geometry.shell.left), top: px(geometry.shell.top), width: px(geometry.shell.width), height: px(geometry.shell.height) }}
+            className="layouts-preview-shell-clip"
+            style={{ left: px(geometry.captureArea.left), top: px(geometry.captureArea.top), width: px(geometry.captureArea.width), height: px(geometry.captureArea.height) }}
           >
-            {config.shellImageUrl && (
-              <img className="layouts-preview-shell-img" src={config.shellImageUrl} alt="" />
-            )}
+            <div
+              className="layouts-preview-shell"
+              style={{ left: px(geometry.shell.left - geometry.captureArea.left), top: px(geometry.shell.top - geometry.captureArea.top), width: px(geometry.shell.width), height: px(geometry.shell.height) }}
+            >
+              {config.shellImageUrl && (
+                <img className="layouts-preview-shell-img" src={config.shellImageUrl} alt="" />
+              )}
+            </div>
           </div>
         )}
         {geometry.captures.map((cap, i) => (

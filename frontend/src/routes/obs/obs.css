@@ -1176,11 +1176,19 @@
 /* Operator-supplied console shell (DS/3DS) framing the screen captures. The PNG
  * should have transparent screen holes so the OBS game sources show through; we
  * just position + scale it. pointer-events none so it never blocks anything. */
+/* Clip box for the console shell PNG — the free (non-panel) capture area. Its
+ * overflow:hidden crops a zoomed/nudged shell at the panel boundary so opaque
+ * plastic never covers a panel zone (e.g. a transparent camera element). */
+.obs-stage .obs-region-shell-clip {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
 .obs-stage .obs-region-shell {
   position: absolute;
   object-fit: contain;
   pointer-events: none;
-  z-index: 0;
 }
 
 /* ── Fundraising / run-info elements ───────────────────────────────────────
