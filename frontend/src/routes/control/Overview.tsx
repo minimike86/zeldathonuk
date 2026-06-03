@@ -46,7 +46,7 @@ export function ControlOverview() {
         </div>
       </div>
 
-      <LayoutQuickSwitch layoutType={entry?.game?.layout_type ?? null} />
+      <LayoutQuickSwitch gameLayoutType={entry?.game?.layout_type ?? null} />
 
       <div className="control-card">
         <h2>OBS browser sources</h2>
@@ -92,22 +92,50 @@ export function ControlOverview() {
   );
 }
 
+/** Compact aspect-ratio labels for the override chips. */
+const LAYOUT_TYPE_CHIPS: { value: LayoutKey; label: string }[] = [
+  { value: '4x3', label: '4:3' },
+  { value: '16x9', label: '16:9' },
+  { value: '3ds', label: '3DS' },
+  { value: 'ds-top', label: 'DS top' },
+  { value: 'ds-both', label: 'DS both' },
+  { value: 'fsa-split', label: 'FSA' },
+];
+
 /**
- * Compact live switcher for the active layout preset. Scoped to the
- * currently-playing game's aspect ratio (the only one on screen), so the
- * operator can flip the capture position mid-game with one click — /obs/full
- * follows within ~2s. Full authoring lives in /control/layouts.
+ * Live layout control for /obs/full. Two levels:
+ *   1. Aspect-ratio TYPE — Auto (follow the on-screen game) or a forced type
+ *      that overrides it (LayoutGuideSettings.forced_layout_type).
+ *   2. The active PRESET within whatever type is actually live, so the operator
+ *      can flip the capture position mid-game with one click.
+ * Both drive /obs/full within ~2s. Full authoring lives in /control/layouts.
  */
-function LayoutQuickSwitch({ layoutType }: { layoutType: LayoutKey | null }) {
+function LayoutQuickSwitch({ gameLayoutType }: { gameLayoutType: LayoutKey | null }) {
   const [bump, setBump] = useState(0);
-  const { data: presets } = usePolledQuery(
-    () => (layoutType ? obsApi.layoutPresets(layoutType) : Promise.resolve([])),
-    3000,
-    [bump, layoutType],
-  );
+  const { data: guide } = usePolledQuery(() => obsApi.layoutGuide(), 3000, [bump]);
   const [busy, setBusy] = useState(false);
 
+  const forced: LayoutKey | '' = guide?.forced_layout_type ?? '';
+  // What /obs/full actually renders: the forced type wins, else the on-screen
+  // game's type. The preset list is scoped to this so it always matches screen.
+  const effectiveType: LayoutKey | null = forced || gameLayoutType;
+
+  const { data: presets } = usePolledQuery(
+    () => (effectiveType ? obsApi.layoutPresets(effectiveType) : Promise.resolve([])),
+    3000,
+    [bump, effectiveType],
+  );
   const list = (presets ?? []).slice().sort((a, b) => a.name.localeCompare(b.name));
+
+  const setForced = async (type: LayoutKey | '') => {
+    setBusy(true);
+    try {
+      await obsApi.setForcedLayoutType(type);
+      setBump((b) => b + 1);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const activate = async (id: number) => {
     setBusy(true);
@@ -121,21 +149,61 @@ function LayoutQuickSwitch({ layoutType }: { layoutType: LayoutKey | null }) {
 
   return (
     <div className="control-card">
-      <h2>Layout preset</h2>
-      {!layoutType ? (
-        <p className="text-white-50">
-          No game on screen — set a currently-playing game to switch its layout.
-          Manage presets in <Link to="/control/layouts" className="text-warning">Layouts</Link>.
+      <h2>Layout</h2>
+
+      {/* Aspect-ratio override: Auto follows the on-screen game; a forced type
+          overrides it on /obs/full regardless of what's playing. */}
+      <p className="text-white-50 mb-1">
+        Aspect ratio on <code>/obs/full</code> — <strong>Auto</strong> follows the
+        on-screen game; force one to override it.
+      </p>
+      <div className="control-btn-row" style={{ flexWrap: 'wrap' }}>
+        <button
+          className={`btn btn-sm ${!forced ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+          disabled={busy || !forced}
+          onClick={() => setForced('')}
+          aria-current={!forced ? 'true' : undefined}
+        >
+          Auto{!forced && gameLayoutType ? ` (${gameLayoutType})` : ''}
+          {!forced && ' ✓'}
+        </button>
+        {LAYOUT_TYPE_CHIPS.map((t) => (
+          <button
+            key={t.value}
+            className={`btn btn-sm ${forced === t.value ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+            disabled={busy || forced === t.value}
+            onClick={() => setForced(t.value)}
+            aria-current={forced === t.value ? 'true' : undefined}
+          >
+            {t.label}
+            {forced === t.value && ' ✓'}
+          </button>
+        ))}
+      </div>
+      {forced && forced !== gameLayoutType && (
+        <p className="small text-warning mt-1 mb-0">
+          Forcing <code>{forced}</code> — on-screen game is{' '}
+          <code>{gameLayoutType ?? 'none'}</code>.
+        </p>
+      )}
+
+      {/* Preset switcher, scoped to whatever type is actually live. */}
+      <h3 style={{ marginTop: '1rem' }}>Preset</h3>
+      {!effectiveType ? (
+        <p className="text-white-50 mb-0">
+          No game on screen and no forced type — pick an aspect ratio above or set a
+          currently-playing game. Manage presets in{' '}
+          <Link to="/control/layouts" className="text-warning">Layouts</Link>.
         </p>
       ) : list.length === 0 ? (
-        <p className="text-white-50">
-          No presets for the <code>{layoutType}</code> layout.{' '}
+        <p className="text-white-50 mb-0">
+          No presets for the <code>{effectiveType}</code> layout.{' '}
           <Link to="/control/layouts" className="text-warning">Create one</Link>.
         </p>
       ) : (
         <>
           <p className="text-white-50">
-            Active arrangement for the on-screen <code>{layoutType}</code> game —
+            Active arrangement for the live <code>{effectiveType}</code> layout —
             switches <code>/obs/full</code> live. Edit in{' '}
             <Link to="/control/layouts" className="text-warning">Layouts</Link>.
           </p>
