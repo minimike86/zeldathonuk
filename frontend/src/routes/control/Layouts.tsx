@@ -14,6 +14,7 @@ import {
   SHELL_SCALE_MIN,
   SHELL_SCALE_MAX,
   SHELL_OFFSET_MAX,
+  SHELL_HUE_MAX,
   SCREEN_SCALE_MIN,
   SCREEN_SCALE_MAX,
   SCREEN_OFFSET_MAX,
@@ -672,13 +673,28 @@ function ShellControls({
       </label>
 
       {url && (
-        <TransformControls
-          value={transform}
-          onChange={onTransform}
-          scaleMin={SHELL_SCALE_MIN}
-          scaleMax={SHELL_SCALE_MAX}
-          offsetMax={SHELL_OFFSET_MAX}
-        />
+        <>
+          <TransformControls
+            value={transform}
+            onChange={onTransform}
+            scaleMin={SHELL_SCALE_MIN}
+            scaleMax={SHELL_SCALE_MAX}
+            offsetMax={SHELL_OFFSET_MAX}
+          />
+          {/* Colour: hue-rotate the shell PNG on the fly (shell-only; the
+              captures are transparent OBS windows). */}
+          <label className="layouts-field">
+            <small>Hue — {Math.round(transform.hue)}°</small>
+            <input
+              type="range"
+              min={0}
+              max={SHELL_HUE_MAX}
+              step={1}
+              value={transform.hue}
+              onChange={(e) => onTransform({ hue: Number(e.target.value) })}
+            />
+          </label>
+        </>
       )}
     </div>
   );
@@ -861,7 +877,16 @@ function PresetPreview({ config, geometry }: { config: PresetConfig; geometry: L
               style={{ left: px(geometry.shell.left - geometry.captureArea.left), top: px(geometry.shell.top - geometry.captureArea.top), width: px(geometry.shell.width), height: px(geometry.shell.height) }}
             >
               {config.shellImageUrl && (
-                <img className="layouts-preview-shell-img" src={config.shellImageUrl} alt="" />
+                <img
+                  className="layouts-preview-shell-img"
+                  src={config.shellImageUrl}
+                  alt=""
+                  style={
+                    config.shellTransform.hue
+                      ? { filter: `hue-rotate(${config.shellTransform.hue}deg)` }
+                      : undefined
+                  }
+                />
               )}
             </div>
           </div>

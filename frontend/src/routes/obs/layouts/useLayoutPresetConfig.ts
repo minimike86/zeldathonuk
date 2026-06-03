@@ -186,18 +186,22 @@ export const FSA_GAP_MAX = 240;
 /** Console-shell image fine-tuning. The geometry derives a base box from the
  *  capture bounding box; `scale` zooms it (about its centre) and `offsetX/Y`
  *  nudge it (stage px) so the operator can line the PNG's transparent screen
- *  holes up with the capture boxes. */
+ *  holes up with the capture boxes. `hue` rotates the PNG's colours (CSS
+ *  `hue-rotate`, degrees) so its shell colour can be recoloured on the fly. */
 export interface ShellTransform {
   scale: number;
   offsetX: number;
   offsetY: number;
+  hue: number;
 }
-export const DEFAULT_SHELL_TRANSFORM: ShellTransform = { scale: 1, offsetX: 0, offsetY: 0 };
+export const DEFAULT_SHELL_TRANSFORM: ShellTransform = { scale: 1, offsetX: 0, offsetY: 0, hue: 0 };
 export const SHELL_SCALE_MIN = 0.3;
 // Headroom: a full console PNG's screen holes are a fraction of the image, so
 // aligning them to the capture bbox often needs a big zoom-up.
 export const SHELL_SCALE_MAX = 5;
 export const SHELL_OFFSET_MAX = 1920;
+// hue-rotate wraps at 360°, so that's the full range.
+export const SHELL_HUE_MAX = 360;
 
 /** Per-screen size/position override for the multi-screen layouts (3DS / DS),
  *  so each screen capture can be nudged + resized to line up with the shell
@@ -593,13 +597,14 @@ function parseScreens(raw: unknown): Record<string, ScreenAdjust> {
 
 /** Validate a stored shell-transform blob, clamping + defaulting each field. */
 function parseShellTransform(raw: unknown): ShellTransform {
-  const r = (raw ?? {}) as { scale?: unknown; offsetX?: unknown; offsetY?: unknown };
+  const r = (raw ?? {}) as { scale?: unknown; offsetX?: unknown; offsetY?: unknown; hue?: unknown };
   const num = (v: unknown, fallback: number, lo: number, hi: number) =>
     typeof v === 'number' && Number.isFinite(v) ? clamp(v, lo, hi) : fallback;
   return {
     scale: num(r.scale, DEFAULT_SHELL_TRANSFORM.scale, SHELL_SCALE_MIN, SHELL_SCALE_MAX),
     offsetX: num(r.offsetX, 0, -SHELL_OFFSET_MAX, SHELL_OFFSET_MAX),
     offsetY: num(r.offsetY, 0, -SHELL_OFFSET_MAX, SHELL_OFFSET_MAX),
+    hue: num(r.hue, DEFAULT_SHELL_TRANSFORM.hue, 0, SHELL_HUE_MAX),
   };
 }
 

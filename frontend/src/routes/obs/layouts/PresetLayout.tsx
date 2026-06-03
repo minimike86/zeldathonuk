@@ -77,6 +77,9 @@ export function PresetLayout({ layoutType }: { layoutType: LayoutKey }) {
               top: `${geometry.shell.top - geometry.captureArea.top}px`,
               width: `${geometry.shell.width}px`,
               height: `${geometry.shell.height}px`,
+              ...(config.shellTransform.hue
+                ? { filter: `hue-rotate(${config.shellTransform.hue}deg)` }
+                : {}),
             }}
           />
         </div>
