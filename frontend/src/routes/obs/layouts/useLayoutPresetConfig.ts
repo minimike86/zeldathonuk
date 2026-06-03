@@ -167,17 +167,40 @@ interface ScreenSpec {
   weight?: number;
 }
 
+/** Four Swords tuning — how the TV (4:3) and the four GBA screens (3:2) relate.
+ *  `tvScale` is the TV's share of the layout's primary axis (height for the
+ *  row arrangement, width for the column ones). `gbaGap` is the spacing between
+ *  the TV and the GBA cluster (and between the GBAs). `gbaSpread` lifts the
+ *  "fit the GBAs to the TV's span" restriction so they use the full available
+ *  span instead. */
+export interface FsaParams {
+  tvScale: number;
+  gbaGap: number;
+  gbaSpread: boolean;
+}
+export const DEFAULT_FSA_PARAMS: FsaParams = { tvScale: 0.62, gbaGap: 16, gbaSpread: false };
+export const FSA_TV_SCALE_MIN = 0.3;
+export const FSA_TV_SCALE_MAX = 0.85;
+export const FSA_GAP_MAX = 240;
+
+/** Extra inputs passed to a variant's capture builder at geometry time. */
+interface CaptureOpts {
+  fsa: FsaParams;
+}
+
 export interface VariantDef {
   id: string;
   label: string;
   /** When true, the editor exposes a shell-image URL field; the renderer draws
    *  the operator's console image at `geometry.shell`. */
   hasShell?: boolean;
+  /** When true, the editor exposes the Four Swords TV/GBA tuning controls. */
+  usesFsaParams?: boolean;
   /** Element zones, carved off the stage edges IN ORDER (see computeGeometry). */
   regions: RegionSlot[];
   /** Places the screen capture(s) (+ optional shell) in the space left after
    *  the zones are carved off the stage. */
-  buildCaptures: (remaining: Box) => { captures: CaptureBox[]; shell?: Box };
+  buildCaptures: (remaining: Box, opts: CaptureOpts) => { captures: CaptureBox[]; shell?: Box };
 }
 
 /** Axis a zone resizes along, derived from its edge. */
@@ -185,7 +208,7 @@ export const regionAxis = (edge: RegionEdge): 'width' | 'height' =>
   edge === 'left' || edge === 'right' ? 'width' : 'height';
 
 // ── Capture builders ────────────────────────────────────────────────────────
-const singleScreen = (aspect: number, shell: boolean) => (rem: Box) => {
+const singleScreen = (aspect: number, shell: boolean) => (rem: Box, _opts: CaptureOpts) => {
   const cap = round(fitBox(rem, aspect));
   const out: { captures: CaptureBox[]; shell?: Box } = { captures: [cap] };
   if (shell) out.shell = round(inflate(cap, cap.width * 0.12, cap.height * 0.16));
@@ -193,7 +216,7 @@ const singleScreen = (aspect: number, shell: boolean) => (rem: Box) => {
 };
 
 /** Screens stacked vertically (each fills a height band, centred). */
-const stackV = (items: ScreenSpec[], shell: boolean) => (rem: Box) => {
+const stackV = (items: ScreenSpec[], shell: boolean) => (rem: Box, _opts: CaptureOpts) => {
   const gap = 24;
   const wsum = items.reduce((a, s) => a + (s.weight ?? 1), 0);
   const avail = rem.height - gap * (items.length - 1);
@@ -210,7 +233,7 @@ const stackV = (items: ScreenSpec[], shell: boolean) => (rem: Box) => {
 };
 
 /** Screens side-by-side (each fills a width band, centred). */
-const stackH = (items: ScreenSpec[], shell: boolean) => (rem: Box) => {
+const stackH = (items: ScreenSpec[], shell: boolean) => (rem: Box, _opts: CaptureOpts) => {
   const gap = 24;
   const wsum = items.reduce((a, s) => a + (s.weight ?? 1), 0);
   const avail = rem.width - gap * (items.length - 1);
@@ -226,39 +249,73 @@ const stackH = (items: ScreenSpec[], shell: boolean) => (rem: Box) => {
   return out;
 };
 
-/** FSA: TV (4:3) on top, four GBA (3:2) in a row spanning the TV's width. */
-const tvWithGbaRow = () => (rem: Box) => {
-  const gap = 16;
-  const tvH = rem.height * 0.62;
-  const tv = round(fitBox({ ...rem, height: tvH }, 4 / 3));
-  const bandTop = rem.top + tvH + gap;
-  const bandH = rem.height - tvH - gap;
-  const cellW = (tv.width - gap * 3) / 4;
+/** FSA: TV (4:3) on top, four GBA (3:2) in a row beneath. The GBA band is sized
+ *  to the GBAs' actual height (no wasted vertical strip), and the whole cluster
+ *  is centred in `rem`. `tvScale` sets the TV's height share; `gbaGap` the
+ *  spacing; `gbaSpread` lets the GBAs use the full width instead of the TV's. */
+const tvWithGbaRow = () => (rem: Box, { fsa }: CaptureOpts) => {
+  const gap = clamp(fsa.gbaGap, 0, FSA_GAP_MAX);
+  const tvScale = clamp(fsa.tvScale, FSA_TV_SCALE_MIN, FSA_TV_SCALE_MAX);
+
+  let tvH = rem.height * tvScale;
+  let tvW = (tvH * 4) / 3;
+  if (tvW > rem.width) {
+    tvW = rem.width;
+    tvH = (tvW * 3) / 4;
+  }
+  const spanW = fsa.gbaSpread ? rem.width : tvW;
+  const cellW = (spanW - gap * 3) / 4;
+  const gbaH = (cellW * 2) / 3; // 3:2 → height = width × 2/3
+
+  const clusterH = Math.min(rem.height, tvH + gap + gbaH);
+  const clusterTop = rem.top + (rem.height - clusterH) / 2;
+  const tvLeft = rem.left + (rem.width - tvW) / 2;
+  const tv: CaptureBox = { left: tvLeft, top: clusterTop, width: tvW, height: tvH, label: 'TV' };
+
+  const gbaRowW = cellW * 4 + gap * 3;
+  const gbaLeft = rem.left + (rem.width - gbaRowW) / 2;
+  const bandTop = clusterTop + tvH + gap;
   const gbas: CaptureBox[] = [];
   for (let i = 0; i < 4; i++) {
-    const cell: Box = { left: tv.left + i * (cellW + gap), top: bandTop, width: cellW, height: bandH };
-    gbas.push({ ...round(fitBox(cell, 3 / 2)), label: `GBA ${i + 1}` });
+    gbas.push(round({ left: gbaLeft + i * (cellW + gap), top: bandTop, width: cellW, height: gbaH }));
+    gbas[i].label = `GBA ${i + 1}`;
   }
-  return { captures: [{ ...tv, label: 'TV' }, ...gbas] };
+  return { captures: [round(tv), ...gbas] };
 };
 
-/** FSA: TV (4:3) with four GBA (3:2) stacked in a column on `side`. */
-const tvWithGbaColumn = (side: 'left' | 'right') => (rem: Box) => {
-  const gap = 16;
-  const cellH = (rem.height - gap * 3) / 4;
-  const colW = cellH * (3 / 2);
-  const colLeft = side === 'left' ? rem.left : rem.left + rem.width - colW;
+/** FSA: TV (4:3) beside a column of four GBA (3:2) on `side`. The column is
+ *  sized to the GBAs' actual width, and the TV + column cluster is centred.
+ *  `tvScale` sets the TV's width share; `gbaGap` the spacing; `gbaSpread` lets
+ *  the GBA column span the full height instead of just the TV's. */
+const tvWithGbaColumn = (side: 'left' | 'right') => (rem: Box, { fsa }: CaptureOpts) => {
+  const gap = clamp(fsa.gbaGap, 0, FSA_GAP_MAX);
+  const tvScale = clamp(fsa.tvScale, FSA_TV_SCALE_MIN, FSA_TV_SCALE_MAX);
+
+  let tvW = rem.width * tvScale;
+  let tvH = (tvW * 3) / 4;
+  if (tvH > rem.height) {
+    tvH = rem.height;
+    tvW = (tvH * 4) / 3;
+  }
+  const spanH = fsa.gbaSpread ? rem.height : tvH;
+  const cellH = (spanH - gap * 3) / 4;
+  const colW = (cellH * 3) / 2; // 3:2 → width = height × 3/2
+
+  const clusterW = Math.min(rem.width, tvW + gap + colW);
+  const clusterLeft = rem.left + (rem.width - clusterW) / 2;
+  const tvLeft = side === 'left' ? clusterLeft + colW + gap : clusterLeft;
+  const colLeft = side === 'left' ? clusterLeft : clusterLeft + tvW + gap;
+  const tvTop = rem.top + (rem.height - tvH) / 2;
+  const tv: CaptureBox = { left: tvLeft, top: tvTop, width: tvW, height: tvH, label: 'TV' };
+
+  const colH = cellH * 4 + gap * 3;
+  const colTop = rem.top + (rem.height - colH) / 2;
   const gbas: CaptureBox[] = [];
   for (let i = 0; i < 4; i++) {
-    const cell: Box = { left: colLeft, top: rem.top + i * (cellH + gap), width: colW, height: cellH };
-    gbas.push({ ...round(fitBox(cell, 3 / 2)), label: `GBA ${i + 1}` });
+    gbas.push(round({ left: colLeft, top: colTop + i * (cellH + gap), width: colW, height: cellH }));
+    gbas[i].label = `GBA ${i + 1}`;
   }
-  const tvRem: Box =
-    side === 'left'
-      ? { left: rem.left + colW + gap, top: rem.top, width: rem.width - colW - gap, height: rem.height }
-      : { left: rem.left, top: rem.top, width: rem.width - colW - gap, height: rem.height };
-  const tv = round(fitBox(tvRem, 4 / 3));
-  return { captures: [{ ...tv, label: 'TV' }, ...gbas] };
+  return { captures: [round(tv), ...gbas] };
 };
 
 // ── Zone slot helpers ─────────────────────────────────────────────────────────
@@ -311,9 +368,9 @@ export const LAYOUT_VARIANTS: Record<LayoutKey, VariantDef[]> = {
   '3ds': dualScreenVariants(THREE_DS_SCREENS),
   'ds-both': dualScreenVariants(DS_SCREENS),
   'fsa-split': [
-    { id: 'gbas-under', label: 'GBAs under TV', regions: [col('right', 'right', 420)], buildCaptures: tvWithGbaRow() },
-    { id: 'gbas-left', label: 'GBAs left of TV', regions: [strip('bottom', 'bottom', 200)], buildCaptures: tvWithGbaColumn('left') },
-    { id: 'gbas-right', label: 'GBAs right of TV', regions: [strip('bottom', 'bottom', 200)], buildCaptures: tvWithGbaColumn('right') },
+    { id: 'gbas-under', label: 'GBAs under TV', usesFsaParams: true, regions: [col('right', 'right', 420)], buildCaptures: tvWithGbaRow() },
+    { id: 'gbas-left', label: 'GBAs left of TV', usesFsaParams: true, regions: [strip('bottom', 'bottom', 200)], buildCaptures: tvWithGbaColumn('left') },
+    { id: 'gbas-right', label: 'GBAs right of TV', usesFsaParams: true, regions: [strip('bottom', 'bottom', 200)], buildCaptures: tvWithGbaColumn('right') },
   ],
 };
 
@@ -334,6 +391,8 @@ export interface PresetConfig {
   /** Where the capture(s) sit within their available space — the freed slack
    *  becomes gap zones (see computeGeometry). */
   capture: CaptureAlign;
+  /** Four Swords TV/GBA tuning (only meaningful for usesFsaParams variants). */
+  fsa: FsaParams;
   /** Operator-supplied console shell image (DS/3DS variants). Empty = none. */
   shellImageUrl: string;
 }
@@ -344,6 +403,7 @@ export type PresetConfigJson = {
   variant: string;
   regions: Record<string, RegionConfig>;
   capture: CaptureAlign;
+  fsa: FsaParams;
   shellImageUrl: string;
 };
 
@@ -362,7 +422,13 @@ export function defaultConfigForVariant(variant: VariantDef): PresetConfigJson {
         : [...DEFAULT_SIDE],
     };
   });
-  return { variant: variant.id, regions, capture: { ...DEFAULT_CAPTURE_ALIGN }, shellImageUrl: '' };
+  return {
+    variant: variant.id,
+    regions,
+    capture: { ...DEFAULT_CAPTURE_ALIGN },
+    fsa: { ...DEFAULT_FSA_PARAMS },
+    shellImageUrl: '',
+  };
 }
 
 /** Per-layout fallback used when a preset is missing/blank/corrupt, so the
@@ -371,7 +437,7 @@ export function defaultPresetConfig(layoutType: LayoutKey): PresetConfig {
   const variants = LAYOUT_VARIANTS[layoutType] ?? LAYOUT_VARIANTS['4x3'];
   const variant = variants.find((v) => v.id === 'game-center') ?? variants[0];
   const cfg = defaultConfigForVariant(variant);
-  return { variant, regions: cfg.regions, capture: cfg.capture, shellImageUrl: cfg.shellImageUrl };
+  return { variant, regions: cfg.regions, capture: cfg.capture, fsa: cfg.fsa, shellImageUrl: cfg.shellImageUrl };
 }
 
 function clamp(n: number, lo: number, hi: number): number {
@@ -446,11 +512,27 @@ export function parsePresetConfig(raw: unknown, layoutType: LayoutKey): PresetCo
 
   const rawCapture = (obj as { capture?: unknown }).capture;
   const capture = parseAlign(rawCapture);
+  const fsa = parseFsa((obj as { fsa?: unknown }).fsa);
   const shellImageUrl =
     typeof (obj as { shellImageUrl?: unknown }).shellImageUrl === 'string'
       ? ((obj as { shellImageUrl: string }).shellImageUrl)
       : fallback.shellImageUrl;
-  return { variant, regions, capture, shellImageUrl };
+  return { variant, regions, capture, fsa, shellImageUrl };
+}
+
+/** Validate a stored Four Swords tuning blob, clamping + defaulting each field. */
+function parseFsa(raw: unknown): FsaParams {
+  const r = (raw ?? {}) as { tvScale?: unknown; gbaGap?: unknown; gbaSpread?: unknown };
+  const tvScale =
+    typeof r.tvScale === 'number' && Number.isFinite(r.tvScale)
+      ? clamp(r.tvScale, FSA_TV_SCALE_MIN, FSA_TV_SCALE_MAX)
+      : DEFAULT_FSA_PARAMS.tvScale;
+  const gbaGap =
+    typeof r.gbaGap === 'number' && Number.isFinite(r.gbaGap)
+      ? clamp(Math.round(r.gbaGap), 0, FSA_GAP_MAX)
+      : DEFAULT_FSA_PARAMS.gbaGap;
+  const gbaSpread = typeof r.gbaSpread === 'boolean' ? r.gbaSpread : DEFAULT_FSA_PARAMS.gbaSpread;
+  return { tvScale, gbaGap, gbaSpread };
 }
 
 /** Validate a stored capture-alignment blob, defaulting unknown values to centre. */
@@ -585,7 +667,7 @@ export function computeGeometry(config: PresetConfig): LayoutGeometry {
     }
   }
 
-  const built = config.variant.buildCaptures(remaining);
+  const built = config.variant.buildCaptures(remaining, { fsa: config.fsa });
 
   // The builders centre the capture(s) in `remaining`. Re-position per the
   // operator's alignment, then tile the freed slack into gap zones around them.

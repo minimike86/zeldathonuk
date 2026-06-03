@@ -95,6 +95,15 @@
   line-height: 1.1;
 }
 
+/* Raw layout key line — monospace so the operator can verify exactly what the
+ * auto-pick read (and, on fallback, the game's stored layout_type). */
+.obs-unified-layout-key {
+  font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
 /* Game title context line — sits under the layout name in muted button text. */
 .obs-unified-layout-game {
   font-size: 0.82rem;

@@ -8,6 +8,9 @@ import {
   REGION_MAX_WIDTH,
   STAGE_WIDTH,
   STAGE_HEIGHT,
+  FSA_TV_SCALE_MIN,
+  FSA_TV_SCALE_MAX,
+  FSA_GAP_MAX,
   computeGeometry,
   defaultConfigForVariant,
   parsePresetConfig,
@@ -21,6 +24,7 @@ import {
   type GapSlot,
   type PresetConfig,
   type LayoutGeometry,
+  type FsaParams,
 } from '@/routes/obs/layouts/useLayoutPresetConfig';
 import './layouts.css';
 
@@ -170,6 +174,7 @@ interface Draft {
   variantId: string;
   regions: Record<string, RegionDraft>;
   captureAlign: CaptureAlign;
+  fsa: FsaParams;
   shellImageUrl: string;
 }
 
@@ -182,6 +187,7 @@ function seedDraft(preset: LayoutPreset): Draft {
     variantId: parsed.variant.id,
     regions,
     captureAlign: { ...parsed.capture },
+    fsa: { ...parsed.fsa },
     shellImageUrl: parsed.shellImageUrl,
   };
 }
@@ -243,6 +249,9 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
   const setCaptureAlign = (mut: Partial<CaptureAlign>) =>
     edit((d) => ({ ...d, captureAlign: { ...d.captureAlign, ...mut } }));
 
+  const setFsa = (mut: Partial<FsaParams>) =>
+    edit((d) => ({ ...d, fsa: { ...d.fsa, ...mut } }));
+
   const draftToConfig = () => {
     const regions: Record<string, RegionDraft> = {};
     for (const slot of variant.regions) {
@@ -262,6 +271,7 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
       variant: variant.id,
       regions,
       capture: draft.captureAlign,
+      fsa: draft.fsa,
       shellImageUrl: draft.shellImageUrl,
     };
   };
@@ -375,6 +385,8 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
               onMove={(id, dir) => moveElement(slot.id, id, dir)}
             />
           ))}
+
+          {variant.usesFsaParams && <FsaControls fsa={draft.fsa} onChange={setFsa} />}
 
           <CapturePosition align={draft.captureAlign} onChange={setCaptureAlign} />
 
@@ -564,6 +576,54 @@ function CapturePosition({
           }),
         )}
       </div>
+    </div>
+  );
+}
+
+/** Four Swords tuning: TV size, TV↔GBA gap, and whether the GBAs are
+ *  constrained to the TV's span or spread across the full available space. */
+function FsaControls({
+  fsa,
+  onChange,
+}: {
+  fsa: FsaParams;
+  onChange: (mut: Partial<FsaParams>) => void;
+}) {
+  return (
+    <div className="layouts-region">
+      <div className="layouts-region-head">
+        <h3>TV &amp; GBA screens</h3>
+      </div>
+      <label className="layouts-field">
+        <small>TV size — {Math.round(fsa.tvScale * 100)}%</small>
+        <input
+          type="range"
+          min={FSA_TV_SCALE_MIN}
+          max={FSA_TV_SCALE_MAX}
+          step={0.01}
+          value={fsa.tvScale}
+          onChange={(e) => onChange({ tvScale: Number(e.target.value) })}
+        />
+      </label>
+      <label className="layouts-field layouts-field--inline" style={{ marginBottom: '0.85rem' }}>
+        <small>TV ↔ GBA gap (px)</small>
+        <input
+          type="number"
+          min={0}
+          max={FSA_GAP_MAX}
+          value={fsa.gbaGap}
+          onChange={(e) => onChange({ gbaGap: Number(e.target.value) })}
+          style={{ width: 90 }}
+        />
+      </label>
+      <label className="layouts-field layouts-field--inline" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.4rem' }}>
+        <input
+          type="checkbox"
+          checked={fsa.gbaSpread}
+          onChange={(e) => onChange({ gbaSpread: e.target.checked })}
+        />
+        <small>Spread GBAs to full space (don't constrain to the TV)</small>
+      </label>
     </div>
   );
 }

@@ -75,6 +75,12 @@ export function UnifiedLayout() {
   // Distinguish an explicit per-game layout from the safety fallback.
   const isFallback = !(currentLayout && LAYOUT_LABELS[currentLayout]);
 
+  // Name the LIVE resolved layout (not the crossfade-delayed `renderedKey`), so
+  // the debug badge updates the instant the playing game's layout_type changes
+  // rather than waiting on the fade. Show the raw key + the game's stored
+  // layout_type too, so it's unambiguous what the auto-pick actually read.
+  const rawLayout = currentLayout ?? '—';
+
   return (
     <div className="obs-unified" aria-hidden>
       <div className="obs-unified-stage" key={`${renderedKey}-${tick}`}>
@@ -84,7 +90,11 @@ export function UnifiedLayout() {
         <span className="obs-unified-layout-tag">
           Layout{isFallback ? ' · Default' : ''}
         </span>
-        <span className="obs-unified-layout-name">{LAYOUT_LABELS[renderedKey]}</span>
+        <span className="obs-unified-layout-name">{LAYOUT_LABELS[layoutKey]}</span>
+        <span className="obs-unified-layout-key">
+          {layoutKey}
+          {isFallback ? ` · game: ${rawLayout}` : ''}
+        </span>
         {gameTitle && <span className="obs-unified-layout-game">{gameTitle}</span>}
       </div>
       <div className="obs-unified-omnibar">
