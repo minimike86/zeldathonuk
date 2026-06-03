@@ -359,6 +359,18 @@ export function ItemsControl() {
     }
   };
 
+  const toggleSetOverlay = async (set: GameItemSet) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.updateItemSet(set.id, { show_in_overlay: !set.show_in_overlay });
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const removeSet = async (set: GameItemSet) => {
     if (
       !confirm(
@@ -894,6 +906,7 @@ export function ItemsControl() {
                             onMoveNext={() => moveSet(sec.sectionSets, set, 1)}
                             onRename={renameSet}
                             onRemove={removeSet}
+                            onToggleOverlay={toggleSetOverlay}
                           />
                           <DroppableContainer id={contKey}>
                             <div className="link-cluster-body">
@@ -1305,6 +1318,7 @@ function SetClusterHead({
   busy,
   onRename,
   onRemove,
+  onToggleOverlay,
   canMovePrev,
   canMoveNext,
   onMovePrev,
@@ -1314,6 +1328,7 @@ function SetClusterHead({
   busy: boolean;
   onRename: (set: GameItemSet, name: string, kind: ItemSetKind) => void | Promise<void>;
   onRemove: (set: GameItemSet) => void | Promise<void>;
+  onToggleOverlay: (set: GameItemSet) => void | Promise<void>;
   canMovePrev: boolean;
   canMoveNext: boolean;
   onMovePrev: () => void;
@@ -1403,6 +1418,17 @@ function SetClusterHead({
         </button>
         <button type="button" className="set-head-action" title="Rename set" onClick={() => setEditing(true)}>
           ✎
+        </button>
+        <button
+          type="button"
+          className="set-head-action"
+          title={set.show_in_overlay ? 'Shown in /obs overlay — click to hide' : 'Hidden from /obs overlay — click to show'}
+          aria-pressed={set.show_in_overlay}
+          disabled={busy}
+          onClick={() => void onToggleOverlay(set)}
+          style={{ opacity: set.show_in_overlay ? 1 : 0.4 }}
+        >
+          {set.show_in_overlay ? '👁' : '🚫'}
         </button>
         <button
           type="button"

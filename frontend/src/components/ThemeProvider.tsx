@@ -26,8 +26,15 @@ export const THEME_CSS_KEY = 'zeldathon-theme-css';
  */
 export function ThemeProvider({
   renderBackgroundMedia = false,
+  pollMs = 30000,
 }: {
   renderBackgroundMedia?: boolean;
+  /** Theme re-fetch interval. The default 30s suits same-browser surfaces
+   *  (control panel / public site) that already get an instant BroadcastChannel
+   *  push on change. OBS browser sources are a SEPARATE browser, so the bus
+   *  never reaches them — ObsLayout passes a short interval so theme switches
+   *  land on the overlays within a couple of seconds, not up to 30. */
+  pollMs?: number;
 } = {}) {
   // Bumping this state restarts the polled-query effect, which triggers
   // an immediate fetch. Other tabs notify via BroadcastChannel after a
@@ -36,10 +43,7 @@ export function ThemeProvider({
   const [bump, setBump] = useState(0);
   useEffect(() => onThemeChanged(() => setBump((b) => b + 1)), []);
 
-  // 30s, not 3s: themeBus pushes same-browser changes instantly (the `bump`
-  // dep), so this poll is just the cross-device fallback for a near-static
-  // singleton — no need to hammer it.
-  const { data: theme } = usePolledQuery(obsApi.themeSettings, 30000, [bump], {
+  const { data: theme } = usePolledQuery(obsApi.themeSettings, pollMs, [bump], {
     cacheKey: 'zeldathon-theme',
   });
 

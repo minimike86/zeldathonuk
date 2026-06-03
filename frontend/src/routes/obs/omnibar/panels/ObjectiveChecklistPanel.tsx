@@ -5,6 +5,7 @@ import { SectionChip } from './_shared/SectionChip';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 import type { GameObjective } from '@/lib/obsApi';
+import { selectObjectiveSection } from '@/routes/obs/objectiveSection';
 
 /**
  * Live objectives checklist for the current game, scoped to the
@@ -92,48 +93,14 @@ registerPanel<Data>({
   selectData: (feed) => {
     const entry = feed.currentlyPlaying?.schedule_entry_detail;
     if (!entry || !entry.game) return null;
-    const all = entry.game.objectives ?? [];
-    if (all.length === 0) return null;
-    const obtained = new Set(entry.obtained_objective_ids);
-    const skipped = new Set(entry.skipped_objective_ids);
-    const counts = entry.objective_counts ?? {};
-    const isTally = (o: GameObjective) => o.link_mode === 'tally';
-    // Drop skipped objectives; they're not in play this run.
-    const active = all
-      .filter((o) => !skipped.has(o.id))
-      .slice()
-      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
-    if (active.length === 0) return null;
-    // Group key: `group` is the primary section label; `category`
-    // is the documented fallback when group is blank; '' (empty
-    // string) groups all label-less objectives together so they at
-    // least render as one cohort instead of one-per-tile.
-    const groupKey = (o: GameObjective): string =>
-      o.group?.trim() || o.category?.trim() || '';
-    // Pick the section to show: the one containing the next
-    // outstanding objective. Once that section is done the runner
-    // has rolled into the next section automatically. If the whole
-    // run is complete, fall back to the last section so the panel
-    // still renders a 100%-green strip rather than disappearing.
-    // Tally objectives (small keys) stay outstanding by nature, so they must
-    // not anchor the "next section" — skip them when picking the target group.
-    const nextUp = active.find((o) => !obtained.has(o.id) && !isTally(o));
-    const targetGroup = nextUp ? groupKey(nextUp) : groupKey(active[active.length - 1]);
-    const sectionObjectives = active.filter((o) => groupKey(o) === targetGroup);
-    const rows = sectionObjectives.map((objective) => ({
-      objective,
-      obtained: obtained.has(objective.id),
-      count: isTally(objective) ? counts[String(objective.id)] ?? 0 : null,
-    }));
-    // Tally objectives don't count toward the "N of M done" tally.
-    const counted = sectionObjectives.filter((o) => !isTally(o));
+    // Section selection (group scoping + tally handling) is shared with the
+    // layout objective-checklist so the two never drift — see objectiveSection.
+    const section = selectObjectiveSection(entry);
+    if (!section) return null;
     return {
       gameTitle: entry.display_title,
       boxArtUrl: entry.game.box_art_url,
-      sectionLabel: targetGroup || null,
-      rows,
-      obtainedCount: counted.filter((o) => obtained.has(o.id)).length,
-      total: counted.length,
+      ...section,
     };
   },
   minDurationMs: 7000,

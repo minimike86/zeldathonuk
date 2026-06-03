@@ -392,6 +392,12 @@ class GameItemSet(models.Model):
                   'trade sequence, or an unordered related set.',
     )
     order = models.PositiveIntegerField(default=0)
+    show_in_overlay = models.BooleanField(
+        default=True,
+        help_text='When false, this set (and items whose only sets are hidden) '
+                  'is omitted from the /obs/full items element — e.g. bottle '
+                  'contents that the broadcast doesn\'t need to surface.',
+    )
 
     class Meta:
         ordering = ['game', 'order', 'name']

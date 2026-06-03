@@ -20,7 +20,7 @@ class RunnerSerializer(serializers.ModelSerializer):
 class GameItemSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.GameItemSet
-        fields = ['id', 'game', 'name', 'kind', 'order']
+        fields = ['id', 'game', 'name', 'kind', 'order', 'show_in_overlay']
 
 
 class GameItemSerializer(serializers.ModelSerializer):

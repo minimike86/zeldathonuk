@@ -29,9 +29,7 @@ export const STAGE_HEIGHT = 984;
 // Ids placeable into a layout region. The capture itself is implicit (driven
 // by the variant), so it is not in this list.
 export const ELEMENT_IDS = [
-  'game-title',
-  'cover-art',
-  'game-meta',
+  'game-info',
   'runners',
   'timer',
   'items-collected',
@@ -45,12 +43,21 @@ export type ElementId = (typeof ELEMENT_IDS)[number];
 
 const KNOWN_ELEMENTS = new Set<string>(ELEMENT_IDS);
 
+/** Legacy element ids folded into the combined `game-info` card. Translated on
+ *  read so presets authored before the merge keep working — and a region that
+ *  listed all three collapses to a single `game-info` (see the de-dupe in
+ *  `parsePresetConfig`). Mirrors the omnibar's `objective → custom-objective`
+ *  rename in `useLayoutConfig.ts`. */
+const LEGACY_ELEMENT_ALIASES: Record<string, ElementId> = {
+  'game-title': 'game-info',
+  'cover-art': 'game-info',
+  'game-meta': 'game-info',
+};
+
 /** Operator-facing label + hint for each element, surfaced in the
  *  /control/layouts editor (mirrors the omnibar's PANEL_DESCRIPTIONS). */
 export const ELEMENT_META: Record<ElementId, { label: string; hint: string }> = {
-  'game-title': { label: 'Game title', hint: 'Current game / entry title, split on a colon onto two lines.' },
-  'cover-art': { label: 'Cover art', hint: 'Box-art image for the current game. Hidden when the game has none.' },
-  'game-meta': { label: 'Platform · year · ETA', hint: 'Platform, release year, and estimated time-to-complete row.' },
+  'game-info': { label: 'Game info', hint: 'Stylised card: cover art dimmed behind the title with a compact platform · year · ETA line. Adapts to the region width.' },
   'runners': { label: 'Runner(s)', hint: 'Runner names with their platform icon. Shows a dash when none are set.' },
   'timer': { label: 'Run timer', hint: 'Live play time for the current run (HH:MM:SS).' },
   'items-collected': { label: 'Items collected', hint: 'Sprite grid of the game items; collected ones glow. Hidden when the game has no items.' },
@@ -110,7 +117,7 @@ export interface PresetConfig {
 }
 
 // ── Defaults ────────────────────────────────────────────────────────────────
-const DEFAULT_NARROW_LEFT: ElementId[] = ['game-title', 'cover-art', 'runners', 'timer'];
+const DEFAULT_NARROW_LEFT: ElementId[] = ['game-info', 'runners', 'timer'];
 const DEFAULT_NARROW_RIGHT: ElementId[] = ['items-collected', 'next-objective', 'death-count'];
 
 // Region widths that let a true 4:3 capture reach the full 984px stage height:
@@ -153,6 +160,19 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
+/** Translate legacy element ids to their current id, drop unknowns, and
+ *  de-dupe (preserving first-seen order) — so a region that listed the old
+ *  game-title + cover-art + game-meta collapses to a single `game-info`. */
+function normaliseElements(raw: unknown[]): ElementId[] {
+  const out: ElementId[] = [];
+  for (const e of raw) {
+    if (typeof e !== 'string') continue;
+    const id = (LEGACY_ELEMENT_ALIASES[e] ?? e) as ElementId;
+    if (KNOWN_ELEMENTS.has(id) && !out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
 // ── Parser ──────────────────────────────────────────────────────────────────
 /**
  * Validate a raw `LayoutPreset.config` into a `PresetConfig`. Falls back to the
@@ -189,9 +209,7 @@ export function parsePresetConfig(raw: unknown, layoutType: LayoutKey): PresetCo
         ? clamp(Math.round(rr.widthPx), REGION_MIN_WIDTH, REGION_MAX_WIDTH)
         : fallbackRegion.widthPx;
     const elements = Array.isArray(rr.elements)
-      ? (rr.elements.filter(
-          (e): e is ElementId => typeof e === 'string' && KNOWN_ELEMENTS.has(e),
-        ) as ElementId[])
+      ? normaliseElements(rr.elements)
       : fallbackRegion.elements;
     regions[rid] = { widthPx, elements };
   }

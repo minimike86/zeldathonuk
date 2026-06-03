@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onLayoutChanged } from '@/lib/layoutBus';
-import { Stage, GameFrame } from './Layout';
+import { Stage, GameFrame, useCurrentEntry } from './Layout';
 import { RegionRenderer } from './RegionRenderer';
 import { useLayoutPresetConfig } from './useLayoutPresetConfig';
 
@@ -19,9 +19,14 @@ export function Standard() {
   // activated/edited in another tab so a live capture-position swap lands fast.
   const [bump, setBump] = useState(0);
   useEffect(() => onLayoutChanged(() => setBump((b) => b + 1)), []);
-  const { data: presets } = usePolledQuery(() => obsApi.layoutPresets('4x3'), 2000, [bump]);
+  const { data: presets } = usePolledQuery(() => obsApi.layoutPresets('4x3'), 5000, [bump]);
 
   const { config, geometry } = useLayoutPresetConfig(presets, '4x3');
+
+  // Fetch the currently-playing entry ONCE here and pass it to every region /
+  // element — see RegionRenderer's note on why per-element polling is a perf
+  // trap.
+  const entry = useCurrentEntry();
 
   return (
     <Stage>
@@ -37,7 +42,12 @@ export function Standard() {
         const box = geometry.regions[rid];
         if (!box) return null;
         return (
-          <RegionRenderer key={rid} box={box} elements={config.regions[rid].elements} />
+          <RegionRenderer
+            key={rid}
+            box={box}
+            elements={config.regions[rid].elements}
+            entry={entry}
+          />
         );
       })}
     </Stage>

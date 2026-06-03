@@ -13,11 +13,8 @@ from django.db import migrations
 
 # Element defaults per region. Kept deliberately modest — operators tune the
 # rest in /control/layouts. Ids must match useLayoutPresetConfig.ELEMENT_IDS.
-_WIDE_SIDE = [
-    'game-title', 'cover-art', 'game-meta',
-    'runners', 'timer', 'items-collected',
-]
-_NARROW_LEFT = ['game-title', 'cover-art', 'runners', 'timer']
+_WIDE_SIDE = ['game-info', 'runners', 'timer', 'items-collected']
+_NARROW_LEFT = ['game-info', 'runners', 'timer']
 _NARROW_RIGHT = ['items-collected', 'next-objective', 'death-count']
 
 # Region widths that let a true 4:3 capture fill the full 984px stage height:

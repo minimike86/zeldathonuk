@@ -122,6 +122,9 @@ export interface GameItemSet {
   name: string;
   kind: ItemSetKind;
   order: number;
+  /** When false, the set (and items whose only sets are hidden) is omitted from
+   *  the /obs/full items element — e.g. bottle contents. Defaults true. */
+  show_in_overlay: boolean;
 }
 
 export interface GameItem {
@@ -1334,7 +1337,7 @@ export const obsApi = {
     api<GameItemSet>('/api/game-item-sets/', { method: 'POST', body }).then(withItemsBroadcast),
   updateItemSet: (
     id: number,
-    patch: Partial<Pick<GameItemSet, 'name' | 'kind' | 'order'>>,
+    patch: Partial<Pick<GameItemSet, 'name' | 'kind' | 'order' | 'show_in_overlay'>>,
   ) =>
     api<GameItemSet>(`/api/game-item-sets/${id}/`, { method: 'PATCH', body: patch }).then(
       withItemsBroadcast,

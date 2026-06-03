@@ -468,6 +468,29 @@ export function formatHms(totalSeconds: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+/** Live timer value in milliseconds (centisecond-accurate). Mirrors the
+ *  /control/timer clock so the layout play-time reads identically. */
+export function computeTimerMs(timer: TimerRun | null): number {
+  if (!timer) return 0;
+  if (timer.is_running && timer.started_at) {
+    const startedMs = Date.parse(timer.started_at);
+    return timer.accumulated_ms + Math.max(0, Date.now() - startedMs);
+  }
+  // Paused / stopped: show the banked ms exactly (centiseconds preserved).
+  return timer.accumulated_ms;
+}
+
+/** HH:MM:SS.cc (centiseconds) — same format as the /control/timer big clock. */
+export function formatHmsCs(totalMs: number): string {
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const cs = Math.floor((totalMs % 1000) / 10);
+  return `${pad2(h)}:${pad2(m)}:${pad2(s)}.${pad2(cs)}`;
+}
+
 function fmtClock(d: Date): string {
   return d.toLocaleTimeString('en-GB', {
     hour: '2-digit',
