@@ -74,6 +74,7 @@ class GameSerializer(serializers.ModelSerializer):
             'release_year',
             'asset_slug',
             'omnibar_layout',
+            'item_group_order',
             'items',
             'objectives',
             'item_sets',

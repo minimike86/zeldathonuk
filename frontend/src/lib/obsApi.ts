@@ -104,6 +104,10 @@ export interface Game {
    *  Event.omnibar_layout. Wins over the event-level layout while
    *  this game is the active playthrough; empty falls back to event. */
   omnibar_layout: Record<string, unknown>;
+  /** Ordered list of item GROUP labels (the /control/items section headers).
+   *  Drives section order on the control grid + the /obs items overlay; labels
+   *  not listed fall back to first-appearance order after the listed ones. */
+  item_group_order: string[];
   items: GameItem[];
   objectives: GameObjective[];
   /** Per-game item-set library (families like "Medallions", "Magic Items"). */
@@ -1322,6 +1326,13 @@ export const obsApi = {
     >,
   ) =>
     api<GameItem>(`/api/game-items/${id}/`, { method: 'PATCH', body: patch }).then(
+      withItemsBroadcast,
+    ),
+  /** Patch a game-level field — currently used for `item_group_order` (the
+   *  /control/items section order). Broadcasts via itemsBus so the overlay
+   *  re-fetches. */
+  updateGame: (id: number, patch: Partial<Pick<Game, 'item_group_order'>>) =>
+    api<Game>(`/api/games/${id}/`, { method: 'PATCH', body: patch }).then(
       withItemsBroadcast,
     ),
   deleteGameItem: (id: number) =>

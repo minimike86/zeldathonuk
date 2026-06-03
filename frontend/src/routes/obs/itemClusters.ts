@@ -1,19 +1,18 @@
 /**
- * Builds the clustered, de-redundant item view for the /obs/full items element.
+ * Builds the /obs/full items view, mirroring the /control/items grid exactly:
+ * group SECTIONS (ordered by the game's item_group_order, else first-appearance)
+ * → set CLUSTERS (by set.order) + a standalone bucket → item slots.
  *
- * Rules (see the layout items plan):
- *  - Cluster items by their item SET (Pendants, Bottles, Medallions…), mirroring
- *    how /control/items groups them, so related items appear together.
+ *  - Sections + labels come from the shared `itemGrouping` rules so the overlay
+ *    and the control grid can't drift.
  *  - Sets flagged `show_in_overlay === false` are omitted; an item whose ONLY
- *    sets are hidden is dropped entirely (this hides bottle contents).
- *  - Ordered sets (`upgrade`/`trade`) collapse to a SINGLE slot = the current
- *    (highest-collected) tier, so lower tiers don't pile up. For capacity chains
- *    (`"40 to 45 Arrows"`) the number is parsed from the name and surfaced as a
- *    badge, since those tiers all share one icon.
- *  - Unordered sets + loose (set-less) items render one slot per member, greyed
- *    when uncollected, with a ×N badge for countable items (keys/maps).
+ *    sets are hidden is dropped (hides bottle contents).
+ *  - Ordered sets (`upgrade`/`trade`) collapse to a single slot = the current
+ *    (highest-collected) tier, with the parsed capacity number for numeric
+ *    chains whose icons are otherwise identical.
  */
 import type { Game, GameItem, GameItemSet } from '@/lib/obsApi';
+import { groupLabelOf, orderGroupLabels } from '@/lib/itemGrouping';
 
 export interface ItemSlot {
   key: string;
@@ -28,11 +27,15 @@ export interface ItemSlot {
 }
 
 export interface ItemCluster {
-  /** Set or group name shown as the cluster label. */
-  label: string;
+  /** Set name, or null for the section's standalone (set-less) items. */
+  label: string | null;
   slots: ItemSlot[];
-  /** Sort key — the min item order in the cluster. */
-  order: number;
+}
+
+export interface ItemSection {
+  /** Group label (the /control/items section header). */
+  label: string;
+  clusters: ItemCluster[];
 }
 
 const isOrdered = (kind: string) => kind === 'upgrade' || kind === 'trade';
@@ -43,31 +46,33 @@ function parseCapacity(name: string): number | undefined {
   return nums ? Math.max(...nums.map(Number)) : undefined;
 }
 
-const bySetOrder = (a: GameItemSet, b: GameItemSet) =>
-  a.order - b.order || a.name.localeCompare(b.name);
 const byItemOrder = (a: GameItem, b: GameItem) =>
   a.order - b.order || a.name.localeCompare(b.name);
 
-export function buildItemClusters(
-  game: Pick<Game, 'items' | 'item_sets'>,
+export function buildItemSections(
+  game: Pick<Game, 'items' | 'item_sets' | 'item_group_order'>,
   collected: Set<number>,
   counts: Record<string, number>,
-): ItemCluster[] {
-  const items = game.items ?? [];
-  const visibleSets = (game.item_sets ?? [])
-    .filter((s) => s.show_in_overlay !== false)
-    .sort(bySetOrder);
+): ItemSection[] {
+  const allItems = (game.items ?? []).slice().sort(byItemOrder);
+  const sets = game.item_sets ?? [];
+  const setById = new Map<number, GameItemSet>(sets.map((s) => [s.id, s]));
+  const isVisible = (s: GameItemSet) => s.show_in_overlay !== false;
 
-  // First visible set per item (by set order) — dedupes items that belong to
-  // several visible sets into a single cluster.
-  const firstVisibleSet = new Map<number, number>();
-  for (const set of visibleSets) {
-    for (const it of items) {
-      if (it.set_ids.includes(set.id) && !firstVisibleSet.has(it.id)) {
-        firstVisibleSet.set(it.id, set.id);
+  // Primary VISIBLE set of an item = lowest-order visible set it belongs to
+  // (tie-broken by id). Mirrors the control grid's primarySetOf, but only over
+  // sets the overlay shows.
+  const primaryVisibleSet = (it: GameItem): GameItemSet | null => {
+    let best: GameItemSet | null = null;
+    for (const sid of it.set_ids) {
+      const s = setById.get(sid);
+      if (!s || !isVisible(s)) continue;
+      if (!best || s.order < best.order || (s.order === best.order && s.id < best.id)) {
+        best = s;
       }
     }
-  }
+    return best;
+  };
 
   const slotForItem = (it: GameItem): ItemSlot => ({
     key: `item-${it.id}`,
@@ -77,61 +82,75 @@ export function buildItemClusters(
     count: it.countable ? counts[String(it.id)] ?? 0 : undefined,
   });
 
-  const clusters: ItemCluster[] = [];
-
-  // One cluster per visible set.
-  for (const set of visibleSets) {
-    const members = items
-      .filter((it) => firstVisibleSet.get(it.id) === set.id)
-      .sort(byItemOrder);
-    if (members.length === 0) continue;
-    const order = Math.min(...members.map((m) => m.order));
-
-    if (isOrdered(set.kind)) {
-      // Collapse to the current (highest-collected) tier, else the base tier.
-      const collectedMembers = members.filter((m) => collected.has(m.id));
-      const current = collectedMembers.length
-        ? collectedMembers[collectedMembers.length - 1]
-        : members[0];
-      const capacity = parseCapacity(current.name);
-      clusters.push({
-        label: set.name,
-        order,
-        slots: [
-          {
-            key: `set-${set.id}`,
-            // Numeric chains label by set name (+ capacity badge); named chains
-            // (Sword → Master Sword) label by the current tier's name.
-            name: capacity != null ? set.name : current.name,
-            imageUrl: current.image_url,
-            collected: collectedMembers.length > 0,
-            capacity,
-          },
-        ],
-      });
+  // Group items into sections (first-appearance order), then bucket each
+  // section's items by primary visible set / standalone.
+  interface Bucket {
+    sets: Map<number, GameItem[]>;
+    standalone: GameItem[];
+  }
+  const sections = new Map<string, Bucket>();
+  for (const it of allItems) {
+    const ps = primaryVisibleSet(it);
+    // Item with set(s) but none visible → dropped (e.g. bottle contents).
+    if (!ps && it.set_ids.some((sid) => setById.has(sid))) continue;
+    const label = groupLabelOf(it.group, it.category);
+    let bucket = sections.get(label);
+    if (!bucket) {
+      bucket = { sets: new Map(), standalone: [] };
+      sections.set(label, bucket);
+    }
+    if (ps) {
+      const arr = bucket.sets.get(ps.id);
+      if (arr) arr.push(it);
+      else bucket.sets.set(ps.id, [it]);
     } else {
-      clusters.push({ label: set.name, order, slots: members.map(slotForItem) });
+      bucket.standalone.push(it);
     }
   }
 
-  // Loose items: no sets at all → grouped by `group`/`category`. Items that have
-  // sets but all of them hidden are intentionally dropped (not loose).
-  const looseGroups = new Map<string, GameItem[]>();
-  for (const it of items) {
-    if (it.set_ids.length > 0) continue;
-    const key = it.group?.trim() || it.category?.trim() || 'Items';
-    const arr = looseGroups.get(key);
-    if (arr) arr.push(it);
-    else looseGroups.set(key, [it]);
-  }
-  for (const [label, members] of looseGroups) {
-    members.sort(byItemOrder);
-    clusters.push({
-      label,
-      order: Math.min(...members.map((m) => m.order)),
-      slots: members.map(slotForItem),
-    });
-  }
+  const orderedLabels = orderGroupLabels([...sections.keys()], game.item_group_order ?? []);
 
-  return clusters.sort((a, b) => a.order - b.order);
+  const result: ItemSection[] = [];
+  for (const label of orderedLabels) {
+    const bucket = sections.get(label);
+    if (!bucket) continue;
+    // Set clusters by set.order, then the standalone bucket last.
+    const setIds = [...bucket.sets.keys()].sort((a, b) => {
+      const sa = setById.get(a);
+      const sb = setById.get(b);
+      return (sa?.order ?? 0) - (sb?.order ?? 0) || (sa?.name ?? '').localeCompare(sb?.name ?? '');
+    });
+    const clusters: ItemCluster[] = [];
+    for (const sid of setIds) {
+      const set = setById.get(sid);
+      if (!set) continue;
+      const members = (bucket.sets.get(sid) ?? []).slice().sort(byItemOrder);
+      if (isOrdered(set.kind)) {
+        const collectedMembers = members.filter((m) => collected.has(m.id));
+        const current = collectedMembers.length
+          ? collectedMembers[collectedMembers.length - 1]
+          : members[0];
+        const capacity = parseCapacity(current.name);
+        clusters.push({
+          label: set.name,
+          slots: [
+            {
+              key: `set-${set.id}`,
+              name: capacity != null ? set.name : current.name,
+              imageUrl: current.image_url,
+              collected: collectedMembers.length > 0,
+              capacity,
+            },
+          ],
+        });
+      } else {
+        clusters.push({ label: set.name, slots: members.map(slotForItem) });
+      }
+    }
+    if (bucket.standalone.length > 0) {
+      clusters.push({ label: null, slots: bucket.standalone.map(slotForItem) });
+    }
+    if (clusters.length > 0) result.push({ label, clusters });
+  }
+  return result;
 }

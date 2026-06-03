@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSkull } from '@fortawesome/free-solid-svg-icons';
 import type { ScheduleEntry } from '@/lib/obsApi';
 import { selectObjectiveSection } from '@/routes/obs/objectiveSection';
-import { buildItemClusters } from '@/routes/obs/itemClusters';
+import { buildItemSections } from '@/routes/obs/itemClusters';
 import type { Box, ElementId } from './useLayoutPresetConfig';
 import {
   AdPanel,
@@ -189,41 +189,51 @@ function TimerElement({ entry }: { entry: ScheduleEntry | null }) {
   );
 }
 
-/** Collected-items board, clustered by item set (Pendants, Bottles, …) with
- *  upgrade chains collapsed to the current tier + capacity numbers, and
- *  operator-hidden sets (bottle contents) omitted. See buildItemClusters. */
+/** Collected-items board mirroring /control/items exactly: group sections →
+ *  set clusters (+ a standalone bucket) → item slots. Upgrade chains collapse to
+ *  the current tier with capacity numbers, operator-hidden sets (bottle
+ *  contents) are omitted. See buildItemSections. */
 function ItemsElement({ entry }: { entry: ScheduleEntry | null }) {
   const game = entry?.game;
   if (!game || game.items.length === 0) return null;
   const collected = new Set(entry?.collected_item_ids ?? []);
   const counts = entry?.collected_item_counts ?? {};
-  const clusters = buildItemClusters(game, collected, counts);
-  if (clusters.length === 0) return null;
+  const sections = buildItemSections(game, collected, counts);
+  if (sections.length === 0) return null;
   return (
     <Block title="Items">
-      <div className="obs-region-itemsets">
-        {clusters.map((cluster) => (
-          <div key={cluster.label} className="obs-region-itemset">
-            <div className="obs-region-itemset-label">{cluster.label}</div>
-            <div className="obs-region-itemset-row">
-              {cluster.slots.map((slot) => (
-                <div
-                  key={slot.key}
-                  className="obs-item"
-                  data-collected={slot.collected}
-                  title={slot.name}
-                >
-                  {slot.imageUrl ? (
-                    <img src={slot.imageUrl} alt={slot.name} />
-                  ) : (
-                    <span className="obs-item-fallback">{slot.name.slice(0, 2)}</span>
+      <div className="obs-region-itemsections">
+        {sections.map((section) => (
+          <div key={section.label} className="obs-region-itemsection">
+            <div className="obs-region-itemsection-label">{section.label}</div>
+            <div className="obs-region-itemsets">
+              {section.clusters.map((cluster, ci) => (
+                <div key={cluster.label ?? `standalone-${ci}`} className="obs-region-itemset">
+                  {cluster.label && (
+                    <div className="obs-region-itemset-label">{cluster.label}</div>
                   )}
-                  {slot.capacity != null && slot.collected && (
-                    <span className="obs-item-capacity">{slot.capacity}</span>
-                  )}
-                  {slot.count != null && slot.count > 0 && (
-                    <span className="obs-item-tally">×{slot.count}</span>
-                  )}
+                  <div className="obs-region-itemset-row">
+                    {cluster.slots.map((slot) => (
+                      <div
+                        key={slot.key}
+                        className="obs-item"
+                        data-collected={slot.collected}
+                        title={slot.name}
+                      >
+                        {slot.imageUrl ? (
+                          <img src={slot.imageUrl} alt={slot.name} />
+                        ) : (
+                          <span className="obs-item-fallback">{slot.name.slice(0, 2)}</span>
+                        )}
+                        {slot.capacity != null && slot.collected && (
+                          <span className="obs-item-capacity">{slot.capacity}</span>
+                        )}
+                        {slot.count != null && slot.count > 0 && (
+                          <span className="obs-item-tally">×{slot.count}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

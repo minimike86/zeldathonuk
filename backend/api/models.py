@@ -69,6 +69,14 @@ class Game(models.Model):
                   'playthrough, its lane configs win over the event-level '
                   'layout. Blank dict → fall back to the event layout.',
     )
+    item_group_order = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Ordered list of item GROUP labels (the section headers on '
+                  '/control/items). Drives section order on the control grid and '
+                  'the /obs items overlay. Labels not present fall back to '
+                  'first-appearance order after the listed ones.',
+    )
 
     class Meta:
         ordering = ['title']

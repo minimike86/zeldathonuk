@@ -202,6 +202,24 @@
  * cluster; reuses the .obs-item lit/greyed treatment. Upgrade chains collapse
  * to one slot (see buildItemClusters), with a capacity number badge for the
  * numeric chains whose icons are otherwise identical. */
+/* Group sections (mirroring the /control/items section headers): each stacks a
+ * label + the section's masonry of set clusters. */
+.obs-stage .obs-region-itemsections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.obs-stage .obs-region-itemsection-label {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--obs-accent, #e71347) 45%, transparent);
+  color: color-mix(in srgb, currentColor 88%, transparent);
+}
+
 /* Each set sizes to its own content and they wrap left-to-right, so a 1-item
  * set takes a sliver and several small sets share a row — packing far more sets
  * into the panel than fixed-width columns. A wide set (many slots) shrinks and
