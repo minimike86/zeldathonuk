@@ -40,6 +40,7 @@ def _ingest(
     donated_at: Any | None = None,
     gift_aid_amount: Decimal | None = None,
     image_url: str = '',
+    source_channel: str = '',
 ) -> models.Donation | None:
     event = _active_event()
     if not event:
@@ -56,6 +57,7 @@ def _ingest(
             'donated_at': donated_at or timezone.now(),
             'gift_aid_amount': gift_aid_amount,
             'image_url': image_url or '',
+            'source_channel': source_channel or '',
         },
     )
     return donation

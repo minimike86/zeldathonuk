@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type DragEvent } from 'react';
 import { env, resolveMediaUrl } from '@/lib/env';
+import { getAuthToken } from '@/lib/api';
 
 /**
  * Drag-and-drop image upload with a URL fallback input.
@@ -39,12 +40,22 @@ export function ImageDropzone({
       // env.VITE_API_URL is the *resolved* origin (loopback→public swap from
       // lib/env), not the raw baked-in value — so uploads from the public site
       // hit api.zeldathon.co.uk instead of localhost:8000.
+      //
+      // Attach the Clerk bearer token manually: this endpoint requires the
+      // operator role (ReadOnlyOrOperator), and we bypass the `api()` helper
+      // (which would normally attach it) because the body is multipart FormData.
+      // Don't set Content-Type — the browser must add the multipart boundary.
+      const token = await getAuthToken();
       const res = await fetch(
         new URL(
           `/api/uploads/image/?folder=${encodeURIComponent(folder)}`,
           env.VITE_API_URL,
         ).toString(),
-        { method: 'POST', body: fd },
+        {
+          method: 'POST',
+          body: fd,
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
       );
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

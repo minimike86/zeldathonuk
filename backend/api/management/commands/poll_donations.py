@@ -118,36 +118,47 @@ class Command(BaseCommand):
         from api import twitch
         from api.eventsub import _charity_amount, _upsert_charity_campaign
 
-        try:
-            campaign = twitch.fetch_active_charity_campaign()
-        except twitch.TwitchAuthError as exc:
-            self.stderr.write(f'Twitch charity: {exc}')
-            return
-        if not campaign:
-            self.stdout.write('Twitch charity: no active campaign; skipping.')
-            return
-        # Mirror Twitch's own running total / target into the campaign row so
-        # the goal display stays fresh even between EventSub progress pushes.
-        _upsert_charity_campaign(
-            campaign, 'channel.charity_campaign.progress', timezone.now()
-        )
-        donations = twitch.fetch_charity_donations(str(campaign.get('id') or ''))
-        count = 0
-        for d in donations:
-            amount = _charity_amount(d.get('amount'))
-            if amount is None or amount <= 0:
+        # Poll the primary broadcaster plus every active extra channel. Each
+        # needs its OWN token (Twitch charity endpoints are per-broadcaster).
+        for label, tok, bid in twitch.charity_poll_sources():
+            try:
+                campaign = twitch.fetch_active_charity_campaign(tok=tok, broadcaster_id=bid)
+            except twitch.TwitchAuthError as exc:
+                self.stderr.write(f'Twitch charity [{label}]: {exc}')
                 continue
-            currency = ((d.get('amount') or {}).get('currency') or 'GBP')[:3].upper()
-            donation = _ingest(
-                platform=models.DonationPlatform.TWITCH_CHARITY,
-                external_id=str(d.get('id') or ''),
-                donor_name=d.get('user_name', 'Anonymous') or 'Anonymous',
-                amount=amount,
-                currency=currency,
+            if not campaign:
+                self.stdout.write(f'Twitch charity [{label}]: no active campaign; skipping.')
+                continue
+            # Mirror Twitch's own running total / target into the campaign row so
+            # the goal display stays fresh even between EventSub progress pushes.
+            _upsert_charity_campaign(
+                campaign, 'channel.charity_campaign.progress', timezone.now()
             )
-            if donation:
-                count += 1
-        self.stdout.write(self.style.SUCCESS(f'Twitch charity: ingested {count} donations'))
+            # Tag every donation from this source with the campaign's channel so
+            # they merge into one total while staying attributable.
+            source_channel = (campaign.get('broadcaster_login') or '').strip().lower()
+            donations = twitch.fetch_charity_donations(
+                str(campaign.get('id') or ''), tok=tok, broadcaster_id=bid,
+            )
+            count = 0
+            for d in donations:
+                amount = _charity_amount(d.get('amount'))
+                if amount is None or amount <= 0:
+                    continue
+                currency = ((d.get('amount') or {}).get('currency') or 'GBP')[:3].upper()
+                donation = _ingest(
+                    platform=models.DonationPlatform.TWITCH_CHARITY,
+                    external_id=str(d.get('id') or ''),
+                    donor_name=d.get('user_name', 'Anonymous') or 'Anonymous',
+                    amount=amount,
+                    currency=currency,
+                    source_channel=source_channel,
+                )
+                if donation:
+                    count += 1
+            self.stdout.write(self.style.SUCCESS(
+                f'Twitch charity [{label}]: ingested {count} donations'
+            ))
 
 
 def _parse_iso(value: str | None):

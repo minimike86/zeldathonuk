@@ -124,6 +124,48 @@ def _request(method: str, url: str, **kwargs) -> requests.Response:
     return resp
 
 
+def valid_token_for(tok) -> str:
+    """Return a valid access token for ANY token-bearing row — the primary
+    ``TwitchOAuthToken`` singleton or a ``TwitchCharityChannel`` — refreshing
+    when within ``REFRESH_LEEWAY`` of expiry. Both models share the field names
+    ``_refresh`` reads/writes, so it works on either."""
+    if not (tok.access_token or tok.refresh_token):
+        raise TwitchAuthError('No token stored for this channel.')
+    expiring = (
+        tok.expires_at is not None
+        and tok.expires_at <= timezone.now() + REFRESH_LEEWAY
+    )
+    if expiring:
+        _refresh(tok)
+    return tok.access_token
+
+
+def _token_headers(token_str: str) -> dict[str, str]:
+    return {
+        'Authorization': f'Bearer {token_str}',
+        'Client-Id': settings.TWITCH_CLIENT_ID,
+        'Content-Type': 'application/json',
+    }
+
+
+def _request_as(tok, method: str, url: str, **kwargs) -> requests.Response:
+    """Helix request signed with a SPECIFIC token row; refresh + retry once on 401.
+
+    The ``_request`` above implicitly uses the primary singleton; this variant
+    lets the poller read an additional channel's charity data with that
+    channel's own token (Twitch requires the broadcaster's own token + matching
+    broadcaster_id for charity endpoints)."""
+    resp = requests.request(
+        method, url, headers=_token_headers(valid_token_for(tok)), timeout=15, **kwargs,
+    )
+    if resp.status_code == 401:
+        _refresh(tok)
+        resp = requests.request(
+            method, url, headers=_token_headers(tok.access_token), timeout=15, **kwargs,
+        )
+    return resp
+
+
 def _broadcaster_id() -> str:
     return getattr(settings, 'TWITCH_BROADCASTER_ID', '')
 
@@ -311,19 +353,24 @@ def fetch_stream(login: str) -> dict | None:
     return data[0] if data else None
 
 
-def fetch_active_charity_campaign() -> dict | None:
-    """Return the broadcaster's active Twitch Charity campaign, or None.
+def fetch_active_charity_campaign(tok=None, broadcaster_id: str = '') -> dict | None:
+    """Return a channel's active Twitch Charity campaign, or None.
 
     Helix ``GET /charity/campaigns`` returns the single in-progress campaign for
-    the authenticated broadcaster (the endpoint is empty when none is running).
-    Needs the ``channel:read:charity`` scope on the user token; the broadcaster
-    id is resolved from that token.
+    that broadcaster (empty when none is running). Defaults to the PRIMARY
+    broadcaster (singleton token, id auto-resolved); pass an explicit ``tok``
+    (e.g. a ``TwitchCharityChannel``) + ``broadcaster_id`` to read an additional
+    channel. Needs ``channel:read:charity`` on the token used.
     """
-    bid = resolve_broadcaster_id()
-    if not bid:
+    if tok is None:
+        tok = models.TwitchOAuthToken.get()
+        if not broadcaster_id:
+            broadcaster_id = resolve_broadcaster_id()
+    if not broadcaster_id:
         return None
-    resp = _request(
-        'GET', f'{HELIX}/charity/campaigns', params={'broadcaster_id': bid}
+    resp = _request_as(
+        tok, 'GET', f'{HELIX}/charity/campaigns',
+        params={'broadcaster_id': broadcaster_id},
     )
     if not resp.ok:
         return None
@@ -331,24 +378,31 @@ def fetch_active_charity_campaign() -> dict | None:
     return data[0] if data else None
 
 
-def fetch_charity_donations(campaign_id: str, page_limit: int = 20) -> list[dict]:
-    """All donations for a charity campaign via Helix ``GET /charity/donations``.
+def fetch_charity_donations(
+    campaign_id: str = '', tok=None, broadcaster_id: str = '', page_limit: int = 20,
+) -> list[dict]:
+    """All donations for a channel's active charity campaign via Helix
+    ``GET /charity/donations``.
 
-    Paginates (100/page) up to ``page_limit`` pages as a sanity cap. Needs the
-    ``channel:read:charity`` scope. Each item carries a stable ``id`` we use as
-    the Donation ``external_id`` — the same id the EventSub donate event sends —
-    so polled and pushed rows dedupe against each other.
+    Paginates (100/page) up to ``page_limit`` pages as a sanity cap. Defaults to
+    the primary broadcaster; pass ``tok`` + ``broadcaster_id`` for an additional
+    channel. Each item carries a stable ``id`` we use as the Donation
+    ``external_id`` — the same id the EventSub donate event sends — so polled and
+    pushed rows dedupe against each other.
     """
-    bid = resolve_broadcaster_id()
-    if not bid:
+    if tok is None:
+        tok = models.TwitchOAuthToken.get()
+        if not broadcaster_id:
+            broadcaster_id = resolve_broadcaster_id()
+    if not broadcaster_id:
         return []
     out: list[dict] = []
     cursor = None
     for _ in range(page_limit):
-        params = {'broadcaster_id': bid, 'first': 100}
+        params = {'broadcaster_id': broadcaster_id, 'first': 100}
         if cursor:
             params['after'] = cursor
-        resp = _request('GET', f'{HELIX}/charity/donations', params=params)
+        resp = _request_as(tok, 'GET', f'{HELIX}/charity/donations', params=params)
         if not resp.ok:
             break
         body = resp.json()
@@ -357,6 +411,23 @@ def fetch_charity_donations(campaign_id: str, page_limit: int = 20) -> list[dict
         if not cursor:
             break
     return out
+
+
+def charity_poll_sources() -> list[tuple[str, object, str]]:
+    """Every channel whose charity donations we poll: the primary broadcaster
+    plus each active ``TwitchCharityChannel``. Returns
+    ``(label, token_row, broadcaster_id)`` tuples — the label is only for log
+    output; the real source-channel tag is taken from each campaign's
+    ``broadcaster_login`` at ingest time.
+    """
+    sources: list[tuple[str, object, str]] = []
+    primary = models.TwitchOAuthToken.get()
+    if primary.access_token or primary.refresh_token:
+        sources.append(('primary', primary, resolve_broadcaster_id()))
+    for ch in models.TwitchCharityChannel.objects.filter(is_active=True):
+        if ch.broadcaster_id:
+            sources.append((ch.login, ch, ch.broadcaster_id))
+    return sources
 
 
 @api_view(['GET'])

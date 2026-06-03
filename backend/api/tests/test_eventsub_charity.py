@@ -62,6 +62,7 @@ class CharityEventSubTests(TestCase):
                 'id': donation_id,
                 'campaign_id': 'camp-1',
                 'broadcaster_id': '123',
+                'broadcaster_login': 'zeldathonuk',
                 'user_id': '456',
                 'user_name': 'TestDonor',
                 'charity_name': 'SpecialEffect',
@@ -83,6 +84,16 @@ class CharityEventSubTests(TestCase):
         self.assertEqual(donation.donor_name, 'TestDonor')
         self.assertEqual(donation.currency, 'GBP')
         self.assertEqual(donation.event_id, self.event.id)
+        self.assertEqual(donation.source_channel, 'zeldathonuk')
+
+    def test_donate_tags_source_channel(self):
+        # A second channel's donation merges into the same event but is tagged.
+        payload = self._donate_payload(donation_id='don-msec')
+        payload['event']['broadcaster_login'] = 'MSec'  # mixed case from Twitch
+        self._post(payload)
+        donation = models.Donation.objects.get(external_id='don-msec')
+        self.assertEqual(donation.source_channel, 'msec')  # normalised lowercase
+        self.assertEqual(donation.event_id, self.event.id)  # same combined total
 
     def test_redelivery_dedupes(self):
         # Same donation id, different message id (a real Twitch retry) → still one row.

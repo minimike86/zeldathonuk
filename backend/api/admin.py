@@ -438,6 +438,19 @@ class TwitchCharityCampaignAdmin(ModelAdmin):
         return False
 
 
+@admin.register(models.TwitchCharityChannel)
+class TwitchCharityChannelAdmin(ModelAdmin):
+    """Additional Twitch channels whose charity donations we ingest. Tokens are
+    minted via `manage.py twitch_login --channel <login>`; toggle `is_active` to
+    stop polling/registering a channel without deleting its token."""
+    list_display = ['login', 'display_name', 'broadcaster_id', 'is_active',
+                    'expires_at', 'updated_at']
+    list_filter = ['is_active']
+    list_editable = ['is_active']
+    search_fields = ['login', 'display_name', 'broadcaster_id']
+    readonly_fields = ['expires_at', 'scopes', 'created_at', 'updated_at']
+
+
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────
 
 

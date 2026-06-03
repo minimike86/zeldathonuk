@@ -55,9 +55,9 @@ export function ControlLayout() {
 
 function ControlGuard() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { me, loading, error } = useMe(isSignedIn === true);
+  const { me, error } = useMe(isSignedIn === true);
 
-  if (!isLoaded || (isSignedIn && loading)) {
+  if (!isLoaded) {
     return <ControlGate message="Checking access…" />;
   }
   if (!isSignedIn) {
@@ -66,7 +66,14 @@ function ControlGuard() {
   if (error) {
     return <ControlGate message="Couldn’t verify your access. Try reloading." />;
   }
-  if (me?.role !== 'operator') {
+  // Signed in but the profile hasn't resolved yet — keep waiting rather than
+  // evicting. `me` is the source of truth for the redirect below: redirecting
+  // on a transient null would bounce operators home during the render window
+  // after isSignedIn flips true but before useMe's fetch completes.
+  if (!me) {
+    return <ControlGate message="Checking access…" />;
+  }
+  if (me.role !== 'operator') {
     // Signed-in viewers (and any non-operator) aren't allowed in — send home.
     return <Navigate to="/" replace />;
   }

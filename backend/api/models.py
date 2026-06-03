@@ -894,6 +894,15 @@ class Donation(models.Model):
         max_digits=10, decimal_places=2, null=True, blank=True
     )
     image_url = models.URLField(blank=True)
+    source_channel = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text='For multi-channel platforms (Twitch Charity), the broadcaster '
+                  'login the donation came through (e.g. "zeldathonuk", "msec"). '
+                  'Blank for single-source platforms. Donations still merge into '
+                  'the same event total; this tags which channel raised them.',
+    )
     mute_reason = models.CharField(
         max_length=32,
         choices=MuteReason.choices,
@@ -1243,6 +1252,52 @@ class TwitchCharityCampaign(models.Model):
     @classmethod
     def active(cls) -> 'TwitchCharityCampaign | None':
         return cls.objects.filter(is_active=True).order_by('-started_at').first()
+
+
+class TwitchCharityChannel(models.Model):
+    """An *additional* Twitch channel whose charity donations we ingest, beyond
+    the primary broadcaster (whose token lives in TwitchOAuthToken).
+
+    Twitch's charity API is per-broadcaster and token-gated: reading a channel's
+    charity campaign/donations requires THAT channel's own user OAuth token with
+    the ``channel:read:charity`` scope (the broadcaster_id in the request must
+    match the token's user id). So each extra channel stores its own token here,
+    minted via ``manage.py twitch_login --channel <login>`` (the broadcaster
+    authorises the app once). Same field shape as TwitchOAuthToken so the
+    refresh helper in twitch.py works on either.
+
+    EventSub also needs that one-time authorisation; once present,
+    ``manage.py twitch_eventsub`` registers the charity subscriptions for this
+    channel's broadcaster id against the shared callback.
+    """
+
+    login = models.CharField(
+        max_length=50, unique=True,
+        help_text='Twitch channel login (lowercase, the bit after twitch.tv/).',
+    )
+    broadcaster_id = models.CharField(
+        max_length=64, blank=True,
+        help_text='Numeric Twitch user id, resolved from the token at login.',
+    )
+    display_name = models.CharField(max_length=100, blank=True)
+    access_token = models.CharField(max_length=200, blank=True)
+    refresh_token = models.CharField(max_length=200, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    scopes = models.TextField(blank=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Uncheck to stop polling / registering EventSub for this '
+                  'channel without deleting its token.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['login']
+        verbose_name = 'Twitch charity channel'
+
+    def __str__(self) -> str:
+        return f'{self.display_name or self.login} ({"active" if self.is_active else "off"})'
 
 
 class LayoutPreset(models.Model):

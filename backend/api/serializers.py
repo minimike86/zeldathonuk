@@ -520,6 +520,7 @@ class DonationSerializer(serializers.ModelSerializer):
             'external_id',
             'gift_aid_amount',
             'image_url',
+            'source_channel',
             'mute_reason',
             'is_muted',
         ]

@@ -208,6 +208,13 @@ def _ingest_charity_donation(event: dict, occurred_at) -> bool:
         return False
     currency = ((event.get('amount') or {}).get('currency') or 'GBP')[:3].upper()
     donor = (event.get('user_name') or '').strip() or 'Anonymous'
+    # Which channel raised it — charity events name the broadcaster. (Charity
+    # events use broadcaster_login; tolerate the broadcaster_user_login spelling
+    # other event types use too.) Lets multi-channel donations merge into one
+    # total while staying attributable.
+    source_channel = (
+        event.get('broadcaster_login') or event.get('broadcaster_user_login') or ''
+    ).strip().lower()
     # Prefer Twitch's stable donation id for dedupe; fall back to a composite so
     # retries of an id-less event don't pile up. Must match the external_id the
     # Helix poller uses so EventSub + polled rows dedupe against each other.
@@ -227,6 +234,7 @@ def _ingest_charity_donation(event: dict, occurred_at) -> bool:
         amount=amount,
         currency=currency,
         donated_at=occurred_at,
+        source_channel=source_channel,
     )
     if donation is None:
         return False
@@ -234,10 +242,14 @@ def _ingest_charity_donation(event: dict, occurred_at) -> bool:
         log_activity(
             category='webhook',
             action='donation.twitch_charity',
-            summary=f'Twitch Charity donation: {donor} {currency} {amount}',
+            summary=f'Twitch Charity donation: {donor} {currency} {amount}'
+                    + (f' via {source_channel}' if source_channel else ''),
             source='twitch',
             target=donation,
-            detail={'campaign_id': str(event.get('campaign_id') or '')},
+            detail={
+                'campaign_id': str(event.get('campaign_id') or ''),
+                'source_channel': source_channel,
+            },
         )
     return True
 
