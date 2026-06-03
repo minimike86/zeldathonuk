@@ -1140,3 +1140,227 @@
 .obs-stage .obs-region .obs-item[data-collected='true'] {
   box-shadow: none;
 }
+
+/* ── Fundraising / run-info elements ───────────────────────────────────────
+ * All text inherits the theme-paired region colour; accents + bars use
+ * --obs-accent. No fixed light/dark so they stay readable on any theme. */
+
+/* Total raised */
+.obs-stage .obs-region-total {
+  font-family: 'Share Tech Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-align: center;
+}
+.obs-stage .obs-region-total-cur {
+  opacity: 0.8;
+  margin-right: 0.05em;
+}
+.obs-stage .obs-region-total-sub {
+  margin-top: 0.2rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+/* Donation reel */
+.obs-stage .obs-region-donations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.obs-stage .obs-region-donation {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+}
+.obs-stage .obs-region-donation-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.obs-stage .obs-region-donation-amt {
+  flex: 0 0 auto;
+  font-family: 'Share Tech Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--obs-accent-bright, var(--obs-accent, #e71347));
+}
+
+/* Incentives + milestones — labelled progress bars */
+.obs-stage .obs-region-goals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.obs-stage .obs-region-goal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+.obs-stage .obs-region-goal-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.obs-stage .obs-region-goal-amt {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}
+.obs-stage .obs-region-progress {
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  overflow: hidden;
+}
+.obs-stage .obs-region-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--obs-accent-bright, #da4471), var(--obs-accent, #e71347));
+}
+
+/* Raffle */
+.obs-stage .obs-region-raffle-name {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1rem;
+  text-align: center;
+}
+.obs-stage .obs-region-raffle-sub {
+  margin-top: 0.15rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+/* Up next */
+.obs-stage .obs-region-upnext {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.obs-stage .obs-region-upnext-art {
+  width: 46px;
+  height: auto;
+  flex: 0 0 auto;
+  border-radius: 4px;
+}
+.obs-stage .obs-region-upnext-body {
+  min-width: 0;
+}
+.obs-stage .obs-region-upnext-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+.obs-stage .obs-region-upnext-meta {
+  font-size: 0.74rem;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+/* Custom objective */
+.obs-stage .obs-region-customobj {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1rem;
+  line-height: 1.15;
+  text-align: center;
+}
+
+/* Setpiece banner */
+.obs-stage .obs-region-setpiece {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+.obs-stage .obs-region-setpiece-name {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.05;
+}
+.obs-stage .obs-region-setpiece-stage {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--obs-accent-bright, #da4471), var(--obs-accent, #e71347));
+  color: #fff;
+}
+.obs-stage .obs-region-setpiece[data-stage='imminent'] .obs-region-setpiece-stage {
+  background: color-mix(in srgb, currentColor 25%, transparent);
+  color: inherit;
+}
+
+/* Clocks (local time, total play time, countdown) */
+.obs-stage .obs-region-clock {
+  font-family: 'Share Tech Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  text-align: center;
+  line-height: 1;
+}
+
+/* Event info */
+.obs-stage .obs-region-event-name {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1.1;
+}
+.obs-stage .obs-region-event-day {
+  margin-top: 0.15rem;
+  text-align: center;
+  font-size: 0.74rem;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+/* Bid war */
+.obs-stage .obs-region-bidwar-name {
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+.obs-stage .obs-region-bidwar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.obs-stage .obs-region-bidwar-opt {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+.obs-stage .obs-region-bidwar-opt[data-leading='true'] {
+  background: color-mix(in srgb, var(--obs-accent, #e71347) 28%, transparent);
+}
+.obs-stage .obs-region-bidwar-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.obs-stage .obs-region-bidwar-amt {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}

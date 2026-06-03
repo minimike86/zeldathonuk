@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onLayoutChanged } from '@/lib/layoutBus';
 import { Stage, GameFrame, useCurrentEntry } from './Layout';
 import { RegionRenderer } from './RegionRenderer';
 import { useLayoutPresetConfig } from './useLayoutPresetConfig';
+import { neededSources, useRegionFeed } from './useRegionFeed';
 
 /**
  * 4:3 standard layout. The game capture's position (left / middle / right) and
@@ -28,6 +29,14 @@ export function Standard() {
   // trap.
   const entry = useCurrentEntry();
 
+  // Same idea for event-level data: poll only the sources the active preset's
+  // elements actually use, once, and thread the feed down.
+  const needed = useMemo(() => {
+    const all = config.variant.regions.flatMap((rid) => config.regions[rid].elements);
+    return neededSources(all);
+  }, [config]);
+  const feed = useRegionFeed(needed);
+
   return (
     <Stage>
       <GameFrame
@@ -47,6 +56,7 @@ export function Standard() {
             box={box}
             elements={config.regions[rid].elements}
             entry={entry}
+            feed={feed}
           />
         );
       })}

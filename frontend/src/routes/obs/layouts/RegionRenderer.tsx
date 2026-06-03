@@ -9,18 +9,21 @@
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSkull } from '@fortawesome/free-solid-svg-icons';
-import type { ScheduleEntry } from '@/lib/obsApi';
+import { topSetpiece, type ScheduleEntry } from '@/lib/obsApi';
 import { selectObjectiveSection } from '@/routes/obs/objectiveSection';
 import { buildItemSections } from '@/routes/obs/itemClusters';
 import type { Box, ElementId } from './useLayoutPresetConfig';
+import type { RegionFeed } from './useRegionFeed';
 import {
   AdPanel,
   RunnerChip,
   computeTimerMs,
   fmtEta,
+  formatHms,
   formatHmsCs,
   parseBadges,
   splitOnColon,
+  useNow,
 } from './Layout';
 
 /**
@@ -34,10 +37,12 @@ export function RegionRenderer({
   box,
   elements,
   entry,
+  feed,
 }: {
   box: Box;
   elements: ElementId[];
   entry: ScheduleEntry | null;
+  feed: RegionFeed;
 }) {
   if (elements.length === 0) return null;
   return (
@@ -46,7 +51,7 @@ export function RegionRenderer({
       style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
     >
       {elements.map((id) => (
-        <LayoutElement key={id} id={id} entry={entry} />
+        <LayoutElement key={id} id={id} entry={entry} feed={feed} />
       ))}
       {/* Flex-grow filler so the panel background extends to the bottom of the
        * stage. It's a SIBLING of the elements (incl. the camera), so the camera
@@ -57,7 +62,15 @@ export function RegionRenderer({
   );
 }
 
-function LayoutElement({ id, entry }: { id: ElementId; entry: ScheduleEntry | null }) {
+function LayoutElement({
+  id,
+  entry,
+  feed,
+}: {
+  id: ElementId;
+  entry: ScheduleEntry | null;
+  feed: RegionFeed;
+}) {
   switch (id) {
     case 'game-info':
       return <GameInfoElement entry={entry} />;
@@ -77,6 +90,35 @@ function LayoutElement({ id, entry }: { id: ElementId; entry: ScheduleEntry | nu
       return <CameraElement />;
     case 'charity-ad':
       return <CharityAdElement />;
+    // Fundraising
+    case 'total-raised':
+      return <TotalRaisedElement feed={feed} />;
+    case 'donation-reel':
+      return <DonationReelElement feed={feed} />;
+    case 'incentives':
+      return <IncentivesElement feed={feed} />;
+    case 'milestones':
+      return <MilestonesElement feed={feed} />;
+    case 'raffle':
+      return <RaffleElement feed={feed} />;
+    // Run / stream info
+    case 'schedule-next':
+      return <ScheduleNextElement entry={entry} feed={feed} />;
+    case 'custom-objective':
+      return <CustomObjectiveElement entry={entry} />;
+    case 'setpiece':
+      return <SetpieceElement entry={entry} />;
+    case 'local-time':
+      return <LocalTimeElement />;
+    case 'total-playtime':
+      return <TotalPlaytimeElement feed={feed} />;
+    // Media / misc
+    case 'pre-stream':
+      return <PreStreamElement entry={entry} feed={feed} />;
+    case 'event-info':
+      return <EventInfoElement feed={feed} />;
+    case 'bid-war':
+      return <BidWarElement feed={feed} />;
     default:
       return null;
   }
@@ -368,5 +410,255 @@ function CharityAdElement() {
     <div className="obs-region-ad">
       <AdPanel style={{ position: 'relative', width: '100%', height: '100%' }} />
     </div>
+  );
+}
+
+// ── Fundraising elements ────────────────────────────────────────────────────
+
+const cur = (feed: RegionFeed) => feed.event?.currency_symbol || '£';
+
+function TotalRaisedElement({ feed }: { feed: RegionFeed }) {
+  if (!feed.totals) return null;
+  return (
+    <Block title="Raised">
+      <div className="obs-region-total">
+        <span className="obs-region-total-cur">{cur(feed)}</span>
+        {feed.totals.grand_total}
+      </div>
+      <div className="obs-region-total-sub">{feed.totals.donation_count} donations</div>
+    </Block>
+  );
+}
+
+function DonationReelElement({ feed }: { feed: RegionFeed }) {
+  const donations = feed.donations;
+  if (!donations || donations.length === 0) return null;
+  const recent = donations
+    .slice()
+    .sort((a, b) => Date.parse(b.donated_at) - Date.parse(a.donated_at))
+    .slice(0, 5);
+  return (
+    <Block title="Recent donations">
+      <ul className="obs-region-donations">
+        {recent.map((d) => (
+          <li key={d.id} className="obs-region-donation">
+            <span className="obs-region-donation-name">{d.donor_name || 'Anonymous'}</span>
+            <span className="obs-region-donation-amt">{cur(feed)}{d.amount}</span>
+          </li>
+        ))}
+      </ul>
+    </Block>
+  );
+}
+
+function ProgressBar({ pct }: { pct: number }) {
+  return (
+    <div className="obs-region-progress">
+      <div className="obs-region-progress-bar" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+    </div>
+  );
+}
+
+function IncentivesElement({ feed }: { feed: RegionFeed }) {
+  const list = (feed.incentives ?? []).filter((i) => i.is_active && !i.is_reached);
+  if (list.length === 0) return null;
+  return (
+    <Block title="Incentives">
+      <ul className="obs-region-goals">
+        {list.slice(0, 4).map((i) => (
+          <li key={i.id} className="obs-region-goal">
+            <div className="obs-region-goal-head">
+              <span className="obs-region-goal-name">{i.name}</span>
+              <span className="obs-region-goal-amt">
+                {cur(feed)}{i.current_amount} / {cur(feed)}{i.goal_amount}
+              </span>
+            </div>
+            <ProgressBar pct={i.progress_pct} />
+          </li>
+        ))}
+      </ul>
+    </Block>
+  );
+}
+
+function MilestonesElement({ feed }: { feed: RegionFeed }) {
+  const next = (feed.milestones ?? [])
+    .filter((m) => !m.is_reached)
+    .sort((a, b) => a.order - b.order || Number(a.threshold_amount) - Number(b.threshold_amount))[0];
+  if (!next) return null;
+  const raised = feed.totals ? Number(feed.totals.grand_total) : null;
+  const threshold = Number(next.threshold_amount);
+  const pct = raised != null && threshold > 0 ? (raised / threshold) * 100 : null;
+  return (
+    <Block title="Next milestone">
+      <div className="obs-region-goal-head">
+        <span className="obs-region-goal-name">{next.name}</span>
+        <span className="obs-region-goal-amt">{cur(feed)}{next.threshold_amount}</span>
+      </div>
+      {pct != null && <ProgressBar pct={pct} />}
+    </Block>
+  );
+}
+
+function RaffleElement({ feed }: { feed: RegionFeed }) {
+  const open = (feed.raffles ?? []).filter((r) => r.is_open);
+  if (open.length === 0) return null;
+  const r = open[0];
+  return (
+    <Block title="Raffle">
+      <div className="obs-region-raffle-name">{r.name}</div>
+      <div className="obs-region-raffle-sub">{r.entrant_count} entries</div>
+    </Block>
+  );
+}
+
+// ── Run / stream info elements ──────────────────────────────────────────────
+
+function ScheduleNextElement({ entry, feed }: { entry: ScheduleEntry | null; feed: RegionFeed }) {
+  const schedule = feed.schedule;
+  if (!schedule) return null;
+  const upcoming = schedule
+    .filter((s) => s.parent_entry == null && s.slot_type === 'game' && !s.is_completed)
+    .sort((a, b) => a.order - b.order);
+  const next = entry ? upcoming.find((s) => s.order > entry.order) ?? null : upcoming[0] ?? null;
+  if (!next) return null;
+  return (
+    <Block title="Up next">
+      <div className="obs-region-upnext">
+        {next.game?.box_art_url && (
+          <img className="obs-region-upnext-art" src={next.game.box_art_url} alt="" aria-hidden />
+        )}
+        <div className="obs-region-upnext-body">
+          <div className="obs-region-upnext-title">{next.display_title || next.title}</div>
+          {next.game && (
+            <div className="obs-region-upnext-meta">
+              {next.game.platform.replace('Nintendo', '').trim()}
+              {next.game.release_year ? ` · ${next.game.release_year}` : ''}
+            </div>
+          )}
+        </div>
+      </div>
+    </Block>
+  );
+}
+
+function CustomObjectiveElement({ entry }: { entry: ScheduleEntry | null }) {
+  const text = entry?.current_objective?.trim();
+  if (!text) return null;
+  return (
+    <Block title="Objective">
+      <div className="obs-region-customobj">{text}</div>
+    </Block>
+  );
+}
+
+function SetpieceElement({ entry }: { entry: ScheduleEntry | null }) {
+  const sp = topSetpiece(entry?.setpieces);
+  if (!sp) return null;
+  return (
+    <Block title={sp.kind || 'Setpiece'}>
+      <div className="obs-region-setpiece" data-stage={sp.stage}>
+        <span className="obs-region-setpiece-name">{sp.name}</span>
+        <span className="obs-region-setpiece-stage">{sp.stage}</span>
+      </div>
+    </Block>
+  );
+}
+
+function LocalTimeElement() {
+  const now = useNow(1000);
+  const t = new Date(now).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  return (
+    <Block title="Local time">
+      <div className="obs-region-clock">{t}</div>
+    </Block>
+  );
+}
+
+function TotalPlaytimeElement({ feed }: { feed: RegionFeed }) {
+  const now = useNow(1000);
+  if (!feed.event) return null;
+  const secs = Math.max(0, Math.floor((now - Date.parse(feed.event.start_time)) / 1000));
+  return (
+    <Block title="Total play time">
+      <div className="obs-region-clock">{formatHms(secs)}</div>
+    </Block>
+  );
+}
+
+// ── Media / misc elements ───────────────────────────────────────────────────
+
+/** Countdown as `Nd HH:MM:SS` (days only when non-zero). */
+function formatCountdown(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const d = Math.floor(s / 86400);
+  const hms = formatHms(s % 86400);
+  return d > 0 ? `${d}d ${hms}` : hms;
+}
+
+function PreStreamElement({ entry, feed }: { entry: ScheduleEntry | null; feed: RegionFeed }) {
+  const now = useNow(1000);
+  if (!feed.event || entry) return null; // hide once a game is live
+  const delta = Date.parse(feed.event.start_time) - now;
+  return (
+    <Block title="Starts in">
+      <div className="obs-region-clock">
+        {delta > 0 ? formatCountdown(delta / 1000) : 'Setting up…'}
+      </div>
+    </Block>
+  );
+}
+
+function EventInfoElement({ feed }: { feed: RegionFeed }) {
+  const now = useNow(60000);
+  const ev = feed.event;
+  if (!ev) return null;
+  const start = Date.parse(ev.start_time);
+  const dayNum = Math.floor((now - start) / 86400000) + 1;
+  return (
+    <Block title="Event">
+      <div className="obs-region-event-name">{ev.name}</div>
+      {now >= start && <div className="obs-region-event-day">Day {Math.max(1, dayNum)}</div>}
+    </Block>
+  );
+}
+
+function BidWarElement({ feed }: { feed: RegionFeed }) {
+  const candidate = (feed.incentives ?? []).find((i) => {
+    if (!i.is_active || i.is_reached) return false;
+    const opts = (i.payload as { options?: unknown }).options;
+    return Array.isArray(opts) && opts.length >= 2;
+  });
+  if (!candidate) return null;
+  const raw = ((candidate.payload as { options: unknown[] }).options ?? []) as Array<{
+    id?: string;
+    name?: string;
+    votes?: number | string;
+  }>;
+  const options = raw
+    .filter((o) => o && typeof o.name === 'string')
+    .map((o, i) => ({
+      id: o.id ?? String(i),
+      name: o.name as string,
+      votes: typeof o.votes === 'number' ? o.votes : Number(o.votes) || 0,
+    }))
+    .sort((a, b) => b.votes - a.votes);
+  if (options.length < 2) return null;
+  return (
+    <Block title="Bid war">
+      <div className="obs-region-bidwar-name">{candidate.name}</div>
+      <ul className="obs-region-bidwar">
+        {options.slice(0, 5).map((o, i) => (
+          <li key={o.id} className="obs-region-bidwar-opt" data-leading={i === 0}>
+            <span className="obs-region-bidwar-label">{o.name}</span>
+            <span className="obs-region-bidwar-amt">{cur(feed)}{o.votes.toFixed(2)}</span>
+          </li>
+        ))}
+      </ul>
+    </Block>
   );
 }

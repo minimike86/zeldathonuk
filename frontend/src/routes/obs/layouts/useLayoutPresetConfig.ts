@@ -38,6 +38,22 @@ export const ELEMENT_IDS = [
   'death-count',
   'camera',
   'charity-ad',
+  // Fundraising
+  'total-raised',
+  'donation-reel',
+  'incentives',
+  'milestones',
+  'raffle',
+  // Run / stream info
+  'schedule-next',
+  'custom-objective',
+  'setpiece',
+  'local-time',
+  'total-playtime',
+  // Media / misc
+  'pre-stream',
+  'event-info',
+  'bid-war',
 ] as const;
 export type ElementId = (typeof ELEMENT_IDS)[number];
 
@@ -66,6 +82,22 @@ export const ELEMENT_META: Record<ElementId, { label: string; hint: string }> = 
   'death-count': { label: 'Death count', hint: 'Deaths for the current game (bumped from the Stream Deck).' },
   'camera': { label: 'Camera', hint: 'Transparent webcam reservation frame — an OBS camera source sits behind it.' },
   'charity-ad': { label: 'Charity / sponsor', hint: 'Rotating SpecialEffect / GameBlast logo over charity imagery.' },
+  // Fundraising
+  'total-raised': { label: 'Total raised', hint: 'The running fundraising total + donation count for the active event.' },
+  'donation-reel': { label: 'Donation reel', hint: 'A short list of the most recent donors + amounts. Hidden when there are no donations.' },
+  'incentives': { label: 'Incentives', hint: 'Open donation goals with progress bars. Hidden when none are active.' },
+  'milestones': { label: 'Milestones', hint: 'The next un-reached fundraising milestone + progress toward it.' },
+  'raffle': { label: 'Raffle', hint: 'Active raffle name + entrant count. Hidden when no raffle is open.' },
+  // Run / stream info
+  'schedule-next': { label: 'Up next', hint: 'The next scheduled game after the current one. Hidden once the lineup is empty.' },
+  'custom-objective': { label: 'Custom objective', hint: 'The operator\'s free-text "current objective" from the live entry. Hidden when blank.' },
+  'setpiece': { label: 'Setpiece', hint: 'Current boss / dungeon setpiece banner. Hidden unless one is in progress.' },
+  'local-time': { label: 'Local time', hint: 'Wall-clock time — always shown.' },
+  'total-playtime': { label: 'Total play time', hint: 'Cumulative time since the event start.' },
+  // Media / misc
+  'pre-stream': { label: 'Pre-stream countdown', hint: 'Counts down to the event start; auto-hides once a game is live.' },
+  'event-info': { label: 'Event info', hint: 'Event name + day counter for the active event.' },
+  'bid-war': { label: 'Bid war', hint: 'Bid-war option stack. Hidden unless an incentive carries ≥2 options.' },
 };
 
 // ── Variants ────────────────────────────────────────────────────────────────
