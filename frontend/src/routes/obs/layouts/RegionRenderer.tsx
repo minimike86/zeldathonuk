@@ -206,36 +206,33 @@ function ItemsElement({ entry }: { entry: ScheduleEntry | null }) {
         {sections.map((section) => (
           <div key={section.label} className="obs-region-itemsection">
             <div className="obs-region-itemsection-label">{section.label}</div>
-            <div className="obs-region-itemsets">
-              {section.clusters.map((cluster, ci) => (
-                <div key={cluster.label ?? `standalone-${ci}`} className="obs-region-itemset">
-                  {cluster.label && (
-                    <div className="obs-region-itemset-label">{cluster.label}</div>
-                  )}
-                  <div className="obs-region-itemset-row">
-                    {cluster.slots.map((slot) => (
-                      <div
-                        key={slot.key}
-                        className="obs-item"
-                        data-collected={slot.collected}
-                        title={slot.name}
-                      >
-                        {slot.imageUrl ? (
-                          <img src={slot.imageUrl} alt={slot.name} />
-                        ) : (
-                          <span className="obs-item-fallback">{slot.name.slice(0, 2)}</span>
-                        )}
-                        {slot.capacity != null && slot.collected && (
-                          <span className="obs-item-capacity">{slot.capacity}</span>
-                        )}
-                        {slot.count != null && slot.count > 0 && (
-                          <span className="obs-item-tally">×{slot.count}</span>
-                        )}
-                      </div>
-                    ))}
+            {/* All of the section's slots flow into ONE continuous grid (set
+              * order preserved by clusters → slots), so icons tessellate
+              * edge-to-edge instead of each set forming its own ragged block.
+              * Set names drop to the per-slot tooltip. */}
+            <div className="obs-region-itemgrid">
+              {section.clusters
+                .flatMap((cluster) => cluster.slots)
+                .map((slot) => (
+                  <div
+                    key={slot.key}
+                    className="obs-item"
+                    data-collected={slot.collected}
+                    title={slot.name}
+                  >
+                    {slot.imageUrl ? (
+                      <img src={slot.imageUrl} alt={slot.name} />
+                    ) : (
+                      <span className="obs-item-fallback">{slot.name.slice(0, 2)}</span>
+                    )}
+                    {slot.capacity != null && slot.collected && (
+                      <span className="obs-item-capacity">{slot.capacity}</span>
+                    )}
+                    {slot.count != null && slot.count > 0 && (
+                      <span className="obs-item-tally">×{slot.count}</span>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         ))}

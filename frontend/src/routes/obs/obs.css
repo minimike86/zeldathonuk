@@ -202,12 +202,19 @@
  * cluster; reuses the .obs-item lit/greyed treatment. Upgrade chains collapse
  * to one slot (see buildItemClusters), with a capacity number badge for the
  * numeric chains whose icons are otherwise identical. */
-/* Group sections (mirroring the /control/items section headers): each stacks a
- * label + the section's masonry of set clusters. */
+/* Group sections (mirroring the /control/items section headers): each is a
+ * label + a continuous icon grid. Sections flow down TWO masonry columns so
+ * short sections (Maidens, Bottles) pair up beside each other and fill the
+ * vertical whitespace instead of each claiming a full-width band. */
 .obs-stage .obs-region-itemsections {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
+  columns: 2;
+  column-gap: 1rem;
+}
+.obs-stage .obs-region-itemsection {
+  /* Keep a whole section in one column — never split its grid across the
+   * column break. */
+  break-inside: avoid;
+  margin-bottom: 0.7rem;
 }
 .obs-stage .obs-region-itemsection-label {
   font-family: 'Bungee', sans-serif;
@@ -217,43 +224,26 @@
   margin-bottom: 0.35rem;
   padding-bottom: 0.15rem;
   border-bottom: 1px solid color-mix(in srgb, var(--obs-accent, #e71347) 45%, transparent);
-  color: color-mix(in srgb, currentColor 88%, transparent);
+  /* Exactly the theme-paired lane TEXT colour the panel fill is designed against
+   * (dark on a light theme's lane, light on the dark steel default), at full
+   * opacity — no alpha muting that washed it out on light themes (SNES). */
+  color: var(--theme-omnibar-bottom-lane-text, #fff);
 }
 
-/* Each set sizes to its own content and they wrap left-to-right, so a 1-item
- * set takes a sliver and several small sets share a row — packing far more sets
- * into the panel than fixed-width columns. A wide set (many slots) shrinks and
- * wraps its own slot row when space runs out. */
-.obs-stage .obs-region-itemsets {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  align-content: flex-start;
-  gap: 0.6rem 0.85rem;
-}
-.obs-stage .obs-region-itemset {
-  /* Allow the set to shrink below its slot-row's natural width so the slots
-   * wrap (rather than overflowing) in tight space. */
-  min-width: 0;
-}
-.obs-stage .obs-region-itemset-label {
-  font-family: 'Bungee', sans-serif;
-  font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
-  color: color-mix(in srgb, currentColor 65%, transparent);
-}
-.obs-stage .obs-region-itemset-row {
-  display: flex;
-  flex-wrap: wrap;
+/* One continuous auto-fill grid per section: every slot (across all the
+ * section's sets, in set order) packs edge-to-edge so only the final row can
+ * be short — no per-set ragged-right gaps. The cell `1fr` lets icons stretch
+ * to fill the column evenly. */
+.obs-stage .obs-region-itemgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
   gap: 4px;
 }
-/* Fixed slot size so .obs-item's aspect-ratio:1 has a basis in the flex row,
- * and a positioning context for the corner badges. */
-.obs-stage .obs-region-itemset-row .obs-item {
+/* The grid cell sizes the slot now (aspect-ratio:1 keeps it square); the
+ * relative position anchors the capacity / tally corner badges. */
+.obs-stage .obs-region-itemgrid .obs-item {
   position: relative;
-  width: 40px;
+  width: auto;
 }
 .obs-stage .obs-item-capacity {
   position: absolute;
@@ -1072,9 +1062,10 @@
   .obs-stage .obs-region-objective::before {
     left: 12px;
   }
-  /* Shrink item slots so more fit per row in the narrow centre-variant regions. */
-  .obs-stage .obs-region-itemset-row .obs-item {
-    width: 34px;
+  /* Tighten the grid's min track so more icons fit per row in the narrow
+   * centre-variant regions (the two masonry columns already halve the width). */
+  .obs-stage .obs-region-itemgrid {
+    grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
   }
 }
 
