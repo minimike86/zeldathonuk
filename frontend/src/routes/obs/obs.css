@@ -265,7 +265,14 @@
   font-size: 0.6rem;
   line-height: 1.25;
   color: #fff;
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.85));
+  /* Black outline (4-corner text-shadow) so the number reads over any icon
+   * without needing a backing strip. */
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 0 2px #000;
 }
 .obs-stage .obs-item-tally {
   position: absolute;
@@ -633,12 +640,12 @@
    * element (the camera frame) lets an OBS camera source behind this browser
    * source show through. Each element paints its own background instead. */
   background: transparent;
-  /* Mirror the omnibar's pairing: body text = the lane text colour, which on
-   * dark themes is --theme-text (light) over the dark steel fill below, and on
-   * bright themes is the theme's lane-text (dark) over its light lane bg. The
-   * bg + text are the SAME designed pair the omnibar uses, so they always
-   * contrast — no light-on-light / dark-on-dark. */
-  color: var(--theme-omnibar-bottom-lane-text, var(--theme-text, #fff));
+  /* Pair the text with the PANEL fill, not the page. The panel below defaults
+   * to the dark steel lane fill (when a theme doesn't set --theme-omnibar-lane-bg),
+   * so the text must default to light — NOT to --theme-text, which tracks the
+   * page bg and would go dark-on-dark on a bright theme that leaves the lane
+   * overrides blank. A theme that customises the lane sets both vars as a pair. */
+  color: var(--theme-omnibar-bottom-lane-text, #fff);
   /* Establish a size-query container so width-adaptive elements (game-info)
    * can respond to THIS region's width via @container, not the viewport. */
   container-type: inline-size;
