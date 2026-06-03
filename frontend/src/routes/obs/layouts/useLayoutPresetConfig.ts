@@ -183,6 +183,22 @@ export const FSA_TV_SCALE_MIN = 0.3;
 export const FSA_TV_SCALE_MAX = 0.85;
 export const FSA_GAP_MAX = 240;
 
+/** Console-shell image fine-tuning. The geometry derives a base box from the
+ *  capture bounding box; `scale` zooms it (about its centre) and `offsetX/Y`
+ *  nudge it (stage px) so the operator can line the PNG's transparent screen
+ *  holes up with the capture boxes. */
+export interface ShellTransform {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+export const DEFAULT_SHELL_TRANSFORM: ShellTransform = { scale: 1, offsetX: 0, offsetY: 0 };
+export const SHELL_SCALE_MIN = 0.3;
+// Headroom: a full console PNG's screen holes are a fraction of the image, so
+// aligning them to the capture bbox often needs a big zoom-up.
+export const SHELL_SCALE_MAX = 5;
+export const SHELL_OFFSET_MAX = 1920;
+
 /** Extra inputs passed to a variant's capture builder at geometry time. */
 interface CaptureOpts {
   fsa: FsaParams;
@@ -395,6 +411,8 @@ export interface PresetConfig {
   fsa: FsaParams;
   /** Operator-supplied console shell image (DS/3DS variants). Empty = none. */
   shellImageUrl: string;
+  /** Zoom + nudge for the shell image so its screen holes align to the captures. */
+  shellTransform: ShellTransform;
 }
 
 // A `type` (not interface) so it carries an implicit index signature and is
@@ -405,6 +423,7 @@ export type PresetConfigJson = {
   capture: CaptureAlign;
   fsa: FsaParams;
   shellImageUrl: string;
+  shellTransform: ShellTransform;
 };
 
 /** Build a default JSON config for a specific arrangement — used by the seed
@@ -428,6 +447,7 @@ export function defaultConfigForVariant(variant: VariantDef): PresetConfigJson {
     capture: { ...DEFAULT_CAPTURE_ALIGN },
     fsa: { ...DEFAULT_FSA_PARAMS },
     shellImageUrl: '',
+    shellTransform: { ...DEFAULT_SHELL_TRANSFORM },
   };
 }
 
@@ -437,7 +457,14 @@ export function defaultPresetConfig(layoutType: LayoutKey): PresetConfig {
   const variants = LAYOUT_VARIANTS[layoutType] ?? LAYOUT_VARIANTS['4x3'];
   const variant = variants.find((v) => v.id === 'game-center') ?? variants[0];
   const cfg = defaultConfigForVariant(variant);
-  return { variant, regions: cfg.regions, capture: cfg.capture, fsa: cfg.fsa, shellImageUrl: cfg.shellImageUrl };
+  return {
+    variant,
+    regions: cfg.regions,
+    capture: cfg.capture,
+    fsa: cfg.fsa,
+    shellImageUrl: cfg.shellImageUrl,
+    shellTransform: cfg.shellTransform,
+  };
 }
 
 function clamp(n: number, lo: number, hi: number): number {
@@ -513,11 +540,24 @@ export function parsePresetConfig(raw: unknown, layoutType: LayoutKey): PresetCo
   const rawCapture = (obj as { capture?: unknown }).capture;
   const capture = parseAlign(rawCapture);
   const fsa = parseFsa((obj as { fsa?: unknown }).fsa);
+  const shellTransform = parseShellTransform((obj as { shellTransform?: unknown }).shellTransform);
   const shellImageUrl =
     typeof (obj as { shellImageUrl?: unknown }).shellImageUrl === 'string'
       ? ((obj as { shellImageUrl: string }).shellImageUrl)
       : fallback.shellImageUrl;
-  return { variant, regions, capture, fsa, shellImageUrl };
+  return { variant, regions, capture, fsa, shellImageUrl, shellTransform };
+}
+
+/** Validate a stored shell-transform blob, clamping + defaulting each field. */
+function parseShellTransform(raw: unknown): ShellTransform {
+  const r = (raw ?? {}) as { scale?: unknown; offsetX?: unknown; offsetY?: unknown };
+  const num = (v: unknown, fallback: number, lo: number, hi: number) =>
+    typeof v === 'number' && Number.isFinite(v) ? clamp(v, lo, hi) : fallback;
+  return {
+    scale: num(r.scale, DEFAULT_SHELL_TRANSFORM.scale, SHELL_SCALE_MIN, SHELL_SCALE_MAX),
+    offsetX: num(r.offsetX, 0, -SHELL_OFFSET_MAX, SHELL_OFFSET_MAX),
+    offsetY: num(r.offsetY, 0, -SHELL_OFFSET_MAX, SHELL_OFFSET_MAX),
+  };
 }
 
 /** Validate a stored Four Swords tuning blob, clamping + defaulting each field. */
@@ -624,6 +664,18 @@ function shift(b: Box, dx: number, dy: number): Box {
   return { left: b.left + dx, top: b.top + dy, width: b.width, height: b.height };
 }
 
+/** Zoom (about centre) + nudge a box per a shell transform. */
+function transformShell(b: Box, t: ShellTransform): Box {
+  const w = b.width * t.scale;
+  const h = b.height * t.scale;
+  return {
+    left: b.left + t.offsetX - (w - b.width) / 2,
+    top: b.top + t.offsetY - (h - b.height) / 2,
+    width: w,
+    height: h,
+  };
+}
+
 /** Offset to move a box of `size` within `slack` per a 3-way alignment. */
 function alignOffset(slack: number, align: 'left' | 'center' | 'right' | 'top' | 'bottom'): number {
   if (slack <= 0) return 0;
@@ -678,7 +730,11 @@ export function computeGeometry(config: PresetConfig): LayoutGeometry {
   const dy = alignOffset(slackY, config.capture.y);
 
   const captures = built.captures.map((c) => ({ ...shift(c, dx, dy), label: c.label }));
-  const shell = built.shell ? shift(built.shell, dx, dy) : undefined;
+  // Shell follows the capture shift, then the operator's zoom + nudge so the
+  // PNG's screen holes can be lined up with the capture boxes.
+  const shell = built.shell
+    ? round(transformShell(shift(built.shell, dx, dy), config.shellTransform))
+    : undefined;
 
   // Tile the leftover around the (shifted) capture bounding box. Side gaps own
   // the full-height outer columns; top/bottom gaps own the vertical slack inside

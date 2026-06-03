@@ -199,6 +199,15 @@
   border-radius: 5px;
   background: color-mix(in srgb, var(--theme-primary, #b92753) 8%, transparent);
 }
+/* The actual shell PNG, scaled to the preview so the operator can align its
+ * screen holes to the capture boxes. object-fit: contain mirrors the OBS render
+ * (.obs-region-shell). */
+.layouts-preview-shell-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 
 .layouts-preview-capture,
 .layouts-preview-region {

@@ -11,6 +11,9 @@ import {
   FSA_TV_SCALE_MIN,
   FSA_TV_SCALE_MAX,
   FSA_GAP_MAX,
+  SHELL_SCALE_MIN,
+  SHELL_SCALE_MAX,
+  SHELL_OFFSET_MAX,
   computeGeometry,
   defaultConfigForVariant,
   parsePresetConfig,
@@ -25,6 +28,7 @@ import {
   type PresetConfig,
   type LayoutGeometry,
   type FsaParams,
+  type ShellTransform,
 } from '@/routes/obs/layouts/useLayoutPresetConfig';
 import './layouts.css';
 
@@ -176,6 +180,7 @@ interface Draft {
   captureAlign: CaptureAlign;
   fsa: FsaParams;
   shellImageUrl: string;
+  shellTransform: ShellTransform;
 }
 
 function seedDraft(preset: LayoutPreset): Draft {
@@ -189,6 +194,7 @@ function seedDraft(preset: LayoutPreset): Draft {
     captureAlign: { ...parsed.capture },
     fsa: { ...parsed.fsa },
     shellImageUrl: parsed.shellImageUrl,
+    shellTransform: { ...parsed.shellTransform },
   };
 }
 
@@ -252,6 +258,9 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
   const setFsa = (mut: Partial<FsaParams>) =>
     edit((d) => ({ ...d, fsa: { ...d.fsa, ...mut } }));
 
+  const setShell = (mut: Partial<ShellTransform>) =>
+    edit((d) => ({ ...d, shellTransform: { ...d.shellTransform, ...mut } }));
+
   const draftToConfig = () => {
     const regions: Record<string, RegionDraft> = {};
     for (const slot of variant.regions) {
@@ -273,6 +282,7 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
       capture: draft.captureAlign,
       fsa: draft.fsa,
       shellImageUrl: draft.shellImageUrl,
+      shellTransform: draft.shellTransform,
     };
   };
 
@@ -356,19 +366,12 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
           </div>
 
           {variant.hasShell && (
-            <label className="layouts-field">
-              <small>Console shell image URL (optional)</small>
-              <input
-                type="text"
-                value={draft.shellImageUrl}
-                placeholder="/assets/img/obs-shells/ds.png"
-                onChange={(e) => edit((d) => ({ ...d, shellImageUrl: e.target.value }))}
-              />
-              <small className="text-white-50">
-                A transparent-screen console PNG drawn around the captures. Align its
-                screen holes to the capture boxes in the preview.
-              </small>
-            </label>
+            <ShellControls
+              url={draft.shellImageUrl}
+              transform={draft.shellTransform}
+              onUrl={(url) => edit((d) => ({ ...d, shellImageUrl: url }))}
+              onTransform={setShell}
+            />
           )}
 
           {variant.regions.length === 0 && (
@@ -580,6 +583,91 @@ function CapturePosition({
   );
 }
 
+/** Console shell image: URL + zoom/nudge so the operator can line the PNG's
+ *  screen holes up with the capture boxes (rendered live in the preview). */
+function ShellControls({
+  url,
+  transform,
+  onUrl,
+  onTransform,
+}: {
+  url: string;
+  transform: ShellTransform;
+  onUrl: (url: string) => void;
+  onTransform: (mut: Partial<ShellTransform>) => void;
+}) {
+  const NUDGE = 10;
+  return (
+    <div className="layouts-region">
+      <div className="layouts-region-head">
+        <h3>Console shell image</h3>
+      </div>
+      <label className="layouts-field">
+        <small>Image URL (optional)</small>
+        <input
+          type="text"
+          value={url}
+          placeholder="https://…/3ds-shell.png"
+          onChange={(e) => onUrl(e.target.value)}
+        />
+        <small className="text-white-50">
+          A transparent-screen console PNG drawn around the captures. Use the zoom +
+          nudge below to line its screen holes up with the capture boxes in the
+          preview.
+        </small>
+      </label>
+
+      {url && (
+        <>
+          <label className="layouts-field">
+            <small>Zoom — {Math.round(transform.scale * 100)}%</small>
+            <input
+              type="range"
+              min={SHELL_SCALE_MIN}
+              max={SHELL_SCALE_MAX}
+              step={0.01}
+              value={transform.scale}
+              onChange={(e) => onTransform({ scale: Number(e.target.value) })}
+            />
+          </label>
+          <div className="layouts-add-row" style={{ marginBottom: '0.6rem' }}>
+            <label className="layouts-field layouts-field--inline">
+              <small>Offset X (px)</small>
+              <input
+                type="number"
+                min={-SHELL_OFFSET_MAX}
+                max={SHELL_OFFSET_MAX}
+                value={transform.offsetX}
+                onChange={(e) => onTransform({ offsetX: Number(e.target.value) })}
+                style={{ width: 90 }}
+              />
+            </label>
+            <label className="layouts-field layouts-field--inline">
+              <small>Offset Y (px)</small>
+              <input
+                type="number"
+                min={-SHELL_OFFSET_MAX}
+                max={SHELL_OFFSET_MAX}
+                value={transform.offsetY}
+                onChange={(e) => onTransform({ offsetY: Number(e.target.value) })}
+                style={{ width: 90 }}
+              />
+            </label>
+          </div>
+          <div className="layouts-add-row">
+            <small className="text-white-50 align-self-center">Nudge:</small>
+            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetX: transform.offsetX - NUDGE })} aria-label="Nudge left">←</button>
+            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetX: transform.offsetX + NUDGE })} aria-label="Nudge right">→</button>
+            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetY: transform.offsetY - NUDGE })} aria-label="Nudge up">↑</button>
+            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ offsetY: transform.offsetY + NUDGE })} aria-label="Nudge down">↓</button>
+            <button type="button" className="btn btn-sm btn-outline-light" onClick={() => onTransform({ scale: 1, offsetX: 0, offsetY: 0 })}>Reset</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Four Swords tuning: TV size, TV↔GBA gap, and whether the GBAs are
  *  constrained to the TV's span or spread across the full available space. */
 function FsaControls({
@@ -648,7 +736,11 @@ function PresetPreview({ config, geometry }: { config: PresetConfig; geometry: L
           <div
             className="layouts-preview-shell"
             style={{ left: px(geometry.shell.left), top: px(geometry.shell.top), width: px(geometry.shell.width), height: px(geometry.shell.height) }}
-          />
+          >
+            {config.shellImageUrl && (
+              <img className="layouts-preview-shell-img" src={config.shellImageUrl} alt="" />
+            )}
+          </div>
         )}
         {geometry.captures.map((cap, i) => (
           <div
