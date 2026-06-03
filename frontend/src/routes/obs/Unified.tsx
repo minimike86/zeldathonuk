@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { ComponentType } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { LayoutKey } from '@/lib/obsApi';
-import { Widescreen } from './layouts/Widescreen';
-import { Standard } from './layouts/Standard';
-import { ThreeDs } from './layouts/ThreeDs';
-import { DsTop } from './layouts/DsTop';
-import { DsBoth } from './layouts/DsBoth';
-import { FsaSplit } from './layouts/FsaSplit';
+import { PresetLayout } from './layouts/PresetLayout';
 import { Omnibar } from './omnibar/Omnibar';
 import './unified.css';
 
@@ -26,15 +20,6 @@ import './unified.css';
  * Streamers can drop ONE source pointing at /obs/full and the scene
  * follows the schedule automatically as games swap.
  */
-
-const REGISTRY: Record<LayoutKey, ComponentType> = {
-  '16x9': Widescreen,
-  '4x3': Standard,
-  '3ds': ThreeDs,
-  'ds-top': DsTop,
-  'ds-both': DsBoth,
-  'fsa-split': FsaSplit,
-};
 
 /** Human-readable names for each layout key, surfaced on the corner badge so
  *  operators can see at a glance which game layout the scene auto-picked. */
@@ -60,7 +45,7 @@ export function UnifiedLayout() {
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 2000);
   const currentLayout = cp?.schedule_entry_detail?.game?.layout_type;
   const layoutKey: LayoutKey =
-    currentLayout && REGISTRY[currentLayout] ? currentLayout : FALLBACK;
+    currentLayout && LAYOUT_LABELS[currentLayout] ? currentLayout : FALLBACK;
 
   // Crossfade on layout change — give the wrapper a `key` that swaps so
   // React unmounts the old layout and CSS fade-in plays on mount.
@@ -72,8 +57,6 @@ export function UnifiedLayout() {
       setTick((t) => t + 1);
     }
   }, [layoutKey, renderedKey]);
-
-  const Component = REGISTRY[renderedKey] ?? Widescreen;
 
   // Walk the badge around the four corners on a timer so each corner of the
   // broadcast is briefly unobscured for layout tuning.
@@ -90,12 +73,12 @@ export function UnifiedLayout() {
   // the operator can tie the layout back to the entry on screen.
   const gameTitle = cp?.schedule_entry_detail?.game?.title;
   // Distinguish an explicit per-game layout from the safety fallback.
-  const isFallback = !(currentLayout && REGISTRY[currentLayout]);
+  const isFallback = !(currentLayout && LAYOUT_LABELS[currentLayout]);
 
   return (
     <div className="obs-unified" aria-hidden>
       <div className="obs-unified-stage" key={`${renderedKey}-${tick}`}>
-        <Component />
+        <PresetLayout layoutType={renderedKey} />
       </div>
       <div className={`obs-unified-layout-badge obs-unified-layout-badge--${corner}`}>
         <span className="obs-unified-layout-tag">

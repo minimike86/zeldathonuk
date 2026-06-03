@@ -1,26 +1,21 @@
 import { useParams, Navigate } from 'react-router';
-import { Widescreen } from './layouts/Widescreen';
-import { Standard } from './layouts/Standard';
-import { ThreeDs } from './layouts/ThreeDs';
-import { DsTop } from './layouts/DsTop';
-import { DsBoth } from './layouts/DsBoth';
-import { FsaSplit } from './layouts/FsaSplit';
+import type { LayoutKey } from '@/lib/obsApi';
+import { PresetLayout } from './layouts/PresetLayout';
 
-const REGISTRY: Record<string, () => React.JSX.Element> = {
-  '16x9': Widescreen,
-  '4x3': Standard,
-  '3ds': ThreeDs,
-  'ds-top': DsTop,
-  'ds-both': DsBoth,
-  'fsa-split': FsaSplit,
-};
+const VALID: ReadonlySet<string> = new Set<LayoutKey>([
+  '16x9',
+  '4x3',
+  '3ds',
+  'ds-top',
+  'ds-both',
+  'fsa-split',
+]);
 
 export function ObsLayoutRoute() {
   const { layout } = useParams<{ layout: string }>();
   const key = layout ?? '';
-  const Component = REGISTRY[key];
-  if (!Component) {
+  if (!VALID.has(key)) {
     return <Navigate to="/obs" replace />;
   }
-  return <Component />;
+  return <PresetLayout layoutType={key as LayoutKey} />;
 }

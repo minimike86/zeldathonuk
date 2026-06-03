@@ -77,6 +77,12 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+.layouts-arrangement-name {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.05rem;
+  color: #fff;
+}
+
 .layouts-region {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
@@ -142,6 +148,13 @@
   border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.2));
   border-radius: 4px;
   overflow: hidden;
+}
+
+.layouts-preview-shell {
+  position: absolute;
+  border: 1px dashed color-mix(in srgb, var(--theme-primary, #b92753) 55%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 8%, transparent);
 }
 
 .layouts-preview-capture,

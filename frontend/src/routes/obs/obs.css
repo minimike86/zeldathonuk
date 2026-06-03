@@ -1141,6 +1141,16 @@
   box-shadow: none;
 }
 
+/* Operator-supplied console shell (DS/3DS) framing the screen captures. The PNG
+ * should have transparent screen holes so the OBS game sources show through; we
+ * just position + scale it. pointer-events none so it never blocks anything. */
+.obs-stage .obs-region-shell {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* ── Fundraising / run-info elements ───────────────────────────────────────
  * All text inherits the theme-paired region colour; accents + bars use
  * --obs-accent. No fixed light/dark so they stay readable on any theme. */

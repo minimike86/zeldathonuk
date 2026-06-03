@@ -1,65 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { obsApi, usePolledQuery } from '@/lib/obsApi';
-import { onLayoutChanged } from '@/lib/layoutBus';
-import { Stage, GameFrame, useCurrentEntry } from './Layout';
-import { RegionRenderer } from './RegionRenderer';
-import { useLayoutPresetConfig } from './useLayoutPresetConfig';
-import { neededSources, useRegionFeed } from './useRegionFeed';
+import { PresetLayout } from './PresetLayout';
 
-/**
- * 4:3 standard layout. The game capture's position (left / middle / right) and
- * the elements shown in the freed region(s) come from the **active 4x3 layout
- * preset** (managed in /control/layouts). Geometry is clamped to the 1920×984
- * stage by `useLayoutPresetConfig` so a preset can never push content
- * off-screen. Falls back to a sensible capture-centre arrangement when no
- * preset is active.
- */
+/** 4:3 standard layout — now the generic preset-driven renderer. Kept as a
+ *  named export for the layout registries. */
 export function Standard() {
-  // Self-fetch presets so this works both inside /obs/full and via the
-  // standalone /obs/layout/4x3 route. Bump the poll the instant a preset is
-  // activated/edited in another tab so a live capture-position swap lands fast.
-  const [bump, setBump] = useState(0);
-  useEffect(() => onLayoutChanged(() => setBump((b) => b + 1)), []);
-  const { data: presets } = usePolledQuery(() => obsApi.layoutPresets('4x3'), 5000, [bump]);
-
-  const { config, geometry } = useLayoutPresetConfig(presets, '4x3');
-
-  // Fetch the currently-playing entry ONCE here and pass it to every region /
-  // element — see RegionRenderer's note on why per-element polling is a perf
-  // trap.
-  const entry = useCurrentEntry();
-
-  // Same idea for event-level data: poll only the sources the active preset's
-  // elements actually use, once, and thread the feed down.
-  const needed = useMemo(() => {
-    const all = config.variant.regions.flatMap((rid) => config.regions[rid].elements);
-    return neededSources(all);
-  }, [config]);
-  const feed = useRegionFeed(needed);
-
-  return (
-    <Stage>
-      <GameFrame
-        style={{
-          left: `${geometry.capture.left}px`,
-          top: `${geometry.capture.top}px`,
-          width: `${geometry.capture.width}px`,
-          height: `${geometry.capture.height}px`,
-        }}
-      />
-      {config.variant.regions.map((rid) => {
-        const box = geometry.regions[rid];
-        if (!box) return null;
-        return (
-          <RegionRenderer
-            key={rid}
-            box={box}
-            elements={config.regions[rid].elements}
-            entry={entry}
-            feed={feed}
-          />
-        );
-      })}
-    </Stage>
-  );
+  return <PresetLayout layoutType="4x3" />;
 }

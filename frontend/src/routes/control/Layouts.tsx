@@ -9,10 +9,12 @@ import {
   STAGE_WIDTH,
   STAGE_HEIGHT,
   computeGeometry,
-  defaultRegionWidth,
+  defaultConfigForVariant,
   parsePresetConfig,
+  regionAxis,
   type ElementId,
-  type RegionId,
+  type RegionSlot,
+  type VariantDef,
 } from '@/routes/obs/layouts/useLayoutPresetConfig';
 import './layouts.css';
 
@@ -27,13 +29,13 @@ import './layouts.css';
  * renderer — the other types are editable but won't change /obs/full yet.
  */
 
-const LAYOUT_TYPE_OPTIONS: { value: LayoutKey; label: string; wired: boolean }[] = [
-  { value: '4x3', label: '4:3 standard', wired: true },
-  { value: '16x9', label: '16:9 widescreen', wired: false },
-  { value: '3ds', label: 'Nintendo 3DS', wired: false },
-  { value: 'ds-top', label: 'DS — top screen', wired: false },
-  { value: 'ds-both', label: 'DS — both screens', wired: false },
-  { value: 'fsa-split', label: 'Four Swords split', wired: false },
+const LAYOUT_TYPE_OPTIONS: { value: LayoutKey; label: string }[] = [
+  { value: '4x3', label: '4:3 standard' },
+  { value: '16x9', label: '16:9 widescreen' },
+  { value: '3ds', label: 'Nintendo 3DS' },
+  { value: 'ds-top', label: 'DS — top screen' },
+  { value: 'ds-both', label: 'DS — both screens' },
+  { value: 'fsa-split', label: 'Four Swords split' },
 ];
 
 export function LayoutsControl() {
@@ -52,19 +54,16 @@ export function LayoutsControl() {
     [presets, selectedType],
   );
 
-  const typeMeta = LAYOUT_TYPE_OPTIONS.find((t) => t.value === selectedType);
-
-  const createPreset = async () => {
+  // Each arrangement is its own preset — creating one seeds a populated default
+  // config for that arrangement (no in-preset variant dropdown). Switch
+  // arrangements by activating a different preset.
+  const createPreset = async (variant: VariantDef) => {
     setBusy(true);
     try {
-      const variant = LAYOUT_VARIANTS[selectedType][0];
-      const width = defaultRegionWidth(variant.regions.length);
-      const regions: Record<string, { widthPx: number; elements: ElementId[] }> = {};
-      for (const rid of variant.regions) regions[rid] = { widthPx: width, elements: [] };
       await obsApi.createLayoutPreset({
-        name: 'New preset',
+        name: variant.label,
         layout_type: selectedType,
-        config: { variant: variant.id, regions },
+        config: defaultConfigForVariant(variant),
       });
       refresh();
     } finally {
@@ -94,23 +93,22 @@ export function LayoutsControl() {
               onClick={() => setSelectedType(t.value)}
             >
               {t.label}
-              {!t.wired && <span className="layouts-soon" title="Not yet wired into /obs/full"> · soon</span>}
             </button>
           ))}
         </nav>
 
-        {typeMeta && !typeMeta.wired && (
-          <p className="text-warning" style={{ marginTop: '0.75rem' }}>
-            Heads up: the <strong>{typeMeta.label}</strong> renderer isn't wired into{' '}
-            <code>/obs/full</code> yet — you can author presets here, but they won't
-            change the live overlay until the renderer adopts this layout.
-          </p>
-        )}
-
-        <div className="control-btn-row" style={{ marginTop: '1rem' }}>
-          <button className="btn btn-bloodmoon" disabled={busy} onClick={createPreset}>
-            New {typeMeta?.label} preset
-          </button>
+        <div className="layouts-add-row" style={{ marginTop: '1rem' }}>
+          <small className="text-white-50 align-self-center">New preset:</small>
+          {LAYOUT_VARIANTS[selectedType].map((v) => (
+            <button
+              key={v.id}
+              className="btn btn-sm btn-bloodmoon"
+              disabled={busy}
+              onClick={() => createPreset(v)}
+            >
+              + {v.label}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -134,18 +132,19 @@ interface RegionDraft {
 interface Draft {
   name: string;
   variantId: string;
-  regions: Record<RegionId, RegionDraft>;
+  regions: Record<string, RegionDraft>;
+  shellImageUrl: string;
 }
 
 function seedDraft(preset: LayoutPreset): Draft {
   const parsed = parsePresetConfig(preset.config, preset.layout_type);
+  const regions: Record<string, RegionDraft> = {};
+  for (const [rid, r] of Object.entries(parsed.regions)) regions[rid] = { ...r };
   return {
     name: preset.name,
     variantId: parsed.variant.id,
-    regions: {
-      left: { ...parsed.regions.left },
-      right: { ...parsed.regions.right },
-    },
+    regions,
+    shellImageUrl: parsed.shellImageUrl,
   };
 }
 
@@ -169,24 +168,33 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
     setDirty(true);
   };
 
-  const setRegionWidth = (rid: RegionId, widthPx: number) =>
+  // Ensure a draft region entry exists, seeded at the slot's default size.
+  const ensureRegion = (d: Draft, rid: string): RegionDraft => {
+    if (!d.regions[rid]) {
+      const slot = variant.regions.find((s) => s.id === rid);
+      d.regions[rid] = { widthPx: slot?.defaultSize ?? REGION_MIN_WIDTH, elements: [] };
+    }
+    return d.regions[rid];
+  };
+
+  const setRegionWidth = (rid: string, widthPx: number) =>
     edit((d) => {
-      d.regions[rid].widthPx = widthPx;
+      ensureRegion(d, rid).widthPx = widthPx;
       return d;
     });
 
-  const toggleElement = (rid: RegionId, id: ElementId) =>
+  const toggleElement = (rid: string, id: ElementId) =>
     edit((d) => {
-      const els = d.regions[rid].elements;
-      d.regions[rid].elements = els.includes(id)
-        ? els.filter((e) => e !== id)
-        : [...els, id];
+      const reg = ensureRegion(d, rid);
+      reg.elements = reg.elements.includes(id)
+        ? reg.elements.filter((e) => e !== id)
+        : [...reg.elements, id];
       return d;
     });
 
-  const moveElement = (rid: RegionId, id: ElementId, dir: -1 | 1) =>
+  const moveElement = (rid: string, id: ElementId, dir: -1 | 1) =>
     edit((d) => {
-      const els = d.regions[rid].elements;
+      const els = ensureRegion(d, rid).elements;
       const i = els.indexOf(id);
       const j = i + dir;
       if (i < 0 || j < 0 || j >= els.length) return d;
@@ -196,8 +204,13 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
 
   const draftToConfig = () => {
     const regions: Record<string, RegionDraft> = {};
-    for (const rid of variant.regions) regions[rid] = draft.regions[rid];
-    return { variant: variant.id, regions };
+    for (const slot of variant.regions) {
+      regions[slot.id] = draft.regions[slot.id] ?? {
+        widthPx: slot.defaultSize,
+        elements: [],
+      };
+    }
+    return { variant: variant.id, regions, shellImageUrl: draft.shellImageUrl };
   };
 
   const save = async () => {
@@ -269,38 +282,44 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
 
       <div className="layouts-editor-grid">
         <div>
-          <label className="layouts-field">
-            <small>Capture position</small>
-            <select
-              value={variant.id}
-              onChange={(e) => edit((d) => ({ ...d, variantId: e.target.value }))}
-            >
-              {variants.map((v) => (
-                <option key={v.id} value={v.id}>{v.label}</option>
-              ))}
-            </select>
-          </label>
+          <div className="layouts-field">
+            <small>Arrangement</small>
+            <span className="layouts-arrangement-name">{variant.label}</span>
+          </div>
 
-          {variant.regions.length === 0 && (
-            <p className="text-white-50">This layout has no editable regions yet.</p>
+          {variant.hasShell && (
+            <label className="layouts-field">
+              <small>Console shell image URL (optional)</small>
+              <input
+                type="text"
+                value={draft.shellImageUrl}
+                placeholder="/assets/img/obs-shells/ds.png"
+                onChange={(e) => edit((d) => ({ ...d, shellImageUrl: e.target.value }))}
+              />
+              <small className="text-white-50">
+                A transparent-screen console PNG drawn around the captures. Align its
+                screen holes to the capture boxes in the preview.
+              </small>
+            </label>
           )}
 
-          {variant.regions.map((rid) => (
+          {variant.regions.length === 0 && (
+            <p className="text-white-50">This variant has no editable regions.</p>
+          )}
+
+          {variant.regions.map((slot) => (
             <RegionEditor
-              key={rid}
-              rid={rid}
-              region={draft.regions[rid]}
-              onWidth={(w) => setRegionWidth(rid, w)}
-              onToggle={(id) => toggleElement(rid, id)}
-              onMove={(id, dir) => moveElement(rid, id, dir)}
+              key={slot.id}
+              slot={slot}
+              region={draft.regions[slot.id] ?? { widthPx: slot.defaultSize, elements: [] }}
+              onWidth={(w) => setRegionWidth(slot.id, w)}
+              onToggle={(id) => toggleElement(slot.id, id)}
+              onMove={(id, dir) => moveElement(slot.id, id, dir)}
             />
           ))}
         </div>
 
-        <PresetPreview
-          layoutType={preset.layout_type}
-          configJson={draftToConfig()}
-        />
+        <PresetPreview layoutType={preset.layout_type} configJson={draftToConfig()} />
       </div>
 
       <div className="control-btn-row" style={{ marginTop: '1rem' }}>
@@ -316,14 +335,21 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
   );
 }
 
+const REGION_LABELS: Record<string, string> = {
+  left: 'Left panel',
+  right: 'Right panel',
+  top: 'Top panel',
+  bottom: 'Bottom panel',
+};
+
 function RegionEditor({
-  rid,
+  slot,
   region,
   onWidth,
   onToggle,
   onMove,
 }: {
-  rid: RegionId;
+  slot: RegionSlot;
   region: RegionDraft;
   onWidth: (w: number) => void;
   onToggle: (id: ElementId) => void;
@@ -331,21 +357,25 @@ function RegionEditor({
 }) {
   const selected = region.elements;
   const unselected = ELEMENT_IDS.filter((e) => !selected.includes(e));
+  // Side panels (left/right) resize by width; top/bottom strips by height.
+  const sizeLabel = regionAxis(slot.edge) === 'width' ? 'Width (px)' : 'Height (px)';
   return (
     <div className="layouts-region">
       <div className="layouts-region-head">
-        <h3>{rid === 'left' ? 'Left region' : 'Right region'}</h3>
-        <label className="layouts-field layouts-field--inline">
-          <small>Width (px)</small>
-          <input
-            type="number"
-            min={REGION_MIN_WIDTH}
-            max={REGION_MAX_WIDTH}
-            value={region.widthPx}
-            onChange={(e) => onWidth(Number(e.target.value))}
-            style={{ width: 90 }}
-          />
-        </label>
+        <h3>{REGION_LABELS[slot.id] ?? `${slot.id} panel`}</h3>
+        {slot.resizable && (
+          <label className="layouts-field layouts-field--inline">
+            <small>{sizeLabel}</small>
+            <input
+              type="number"
+              min={REGION_MIN_WIDTH}
+              max={REGION_MAX_WIDTH}
+              value={region.widthPx}
+              onChange={(e) => onWidth(Number(e.target.value))}
+              style={{ width: 90 }}
+            />
+          </label>
+        )}
       </div>
 
       <ol className="layouts-element-list">
@@ -398,7 +428,7 @@ function PresetPreview({
   const PREVIEW_W = 380;
   const scale = PREVIEW_W / STAGE_WIDTH;
   const config = parsePresetConfig(configJson, layoutType);
-  const geo = computeGeometry(config, layoutType);
+  const geo = computeGeometry(config);
   const px = (n: number) => `${n * scale}px`;
 
   return (
@@ -407,23 +437,32 @@ function PresetPreview({
         className="layouts-preview-stage"
         style={{ width: PREVIEW_W, height: STAGE_HEIGHT * scale }}
       >
-        <div
-          className="layouts-preview-capture"
-          style={{ left: px(geo.capture.left), top: px(geo.capture.top), width: px(geo.capture.width), height: px(geo.capture.height) }}
-        >
-          CAPTURE
-        </div>
-        {config.variant.regions.map((rid) => {
-          const box = geo.regions[rid];
+        {geo.shell && (
+          <div
+            className="layouts-preview-shell"
+            style={{ left: px(geo.shell.left), top: px(geo.shell.top), width: px(geo.shell.width), height: px(geo.shell.height) }}
+          />
+        )}
+        {geo.captures.map((cap, i) => (
+          <div
+            key={i}
+            className="layouts-preview-capture"
+            style={{ left: px(cap.left), top: px(cap.top), width: px(cap.width), height: px(cap.height) }}
+          >
+            {cap.label ?? 'CAPTURE'}
+          </div>
+        ))}
+        {config.variant.regions.map((slot) => {
+          const box = geo.regions[slot.id];
           if (!box) return null;
           return (
             <div
-              key={rid}
+              key={slot.id}
               className="layouts-preview-region"
               style={{ left: px(box.left), top: px(box.top), width: px(box.width), height: px(box.height) }}
             >
-              <span>{rid}</span>
-              <small>{config.regions[rid].elements.length} elem</small>
+              <span>{slot.id}</span>
+              <small>{config.regions[slot.id]?.elements.length ?? 0} elem</small>
             </div>
           );
         })}
