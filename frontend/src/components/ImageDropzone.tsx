@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type DragEvent } from 'react';
+import { env, resolveMediaUrl } from '@/lib/env';
 
 /**
  * Drag-and-drop image upload with a URL fallback input.
@@ -35,8 +36,14 @@ export function ImageDropzone({
     try {
       const fd = new FormData();
       fd.append('file', file);
+      // env.VITE_API_URL is the *resolved* origin (loopback→public swap from
+      // lib/env), not the raw baked-in value — so uploads from the public site
+      // hit api.zeldathon.co.uk instead of localhost:8000.
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL ?? ''}/api/uploads/image/?folder=${encodeURIComponent(folder)}`,
+        new URL(
+          `/api/uploads/image/?folder=${encodeURIComponent(folder)}`,
+          env.VITE_API_URL,
+        ).toString(),
         { method: 'POST', body: fd },
       );
       if (!res.ok) {
@@ -88,7 +95,7 @@ export function ImageDropzone({
           <div className="small text-white-50">Uploading…</div>
         ) : value ? (
           <div className="d-flex align-items-center gap-3 justify-content-center flex-wrap">
-            <img src={value} alt="" style={{ ...previewStyle, objectFit: 'cover' }} />
+            <img src={resolveMediaUrl(value)} alt="" style={{ ...previewStyle, objectFit: 'cover' }} />
             <div className="small text-white-50">
               <div>Drop a new file to replace, or</div>
               <div>

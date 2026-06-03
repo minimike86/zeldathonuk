@@ -91,9 +91,13 @@ export interface LayoutPreset {
   updated_at: string;
 }
 
-/** Global toggle for the OBS layout capture-alignment guide (singleton). */
+/** Global OBS-layout settings (singleton): the capture-alignment guide toggle
+ *  and the manual /obs/full layout-type override. `forced_layout_type` is empty
+ *  for "auto" (follow the playing game) or a LayoutKey to force that aspect
+ *  ratio regardless of what's playing. */
 export interface LayoutGuideSettings {
   show_guide: boolean;
+  forced_layout_type: LayoutKey | '';
   updated_at: string;
 }
 
@@ -1222,6 +1226,14 @@ export const obsApi = {
     api<LayoutGuideSettings>('/api/layout-guide/', {
       method: 'PATCH',
       body: { show_guide: show },
+    }).then(withLayoutBroadcast),
+  // Manual /obs/full layout-type override. Pass a LayoutKey to force that aspect
+  // ratio, or '' to return to auto (follow the playing game). Shares the
+  // layout-guide singleton + layoutBus so an open OBS source reflects it fast.
+  setForcedLayoutType: (layoutType: LayoutKey | '') =>
+    api<LayoutGuideSettings>('/api/layout-guide/', {
+      method: 'PATCH',
+      body: { forced_layout_type: layoutType },
     }).then(withLayoutBroadcast),
   createLayoutPreset: (body: {
     name: string;

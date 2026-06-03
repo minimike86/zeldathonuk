@@ -77,6 +77,24 @@ export function LayoutsControl() {
     }
   };
 
+  // Which aspect ratio /obs/full renders. Empty = auto (follow the playing
+  // game's layout_type); a LayoutKey forces that type regardless of what's live.
+  const forcedType: LayoutKey | '' = guide?.forced_layout_type ?? '';
+  const setForced = async (type: LayoutKey | '') => {
+    setBusy(true);
+    try {
+      await obsApi.setForcedLayoutType(type);
+      refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const selectedLabel =
+    LAYOUT_TYPE_OPTIONS.find((t) => t.value === selectedType)?.label ?? selectedType;
+  const forcedLabel = forcedType
+    ? LAYOUT_TYPE_OPTIONS.find((t) => t.value === forcedType)?.label ?? forcedType
+    : '';
+
   const forType = useMemo(
     () =>
       (presets ?? [])
@@ -142,9 +160,48 @@ export function LayoutsControl() {
               onClick={() => setSelectedType(t.value)}
             >
               {t.label}
+              {t.value === forcedType && (
+                <span className="layouts-tab-live" title="Forced on /obs/full"> ● live</span>
+              )}
             </button>
           ))}
         </nav>
+
+        <div className="layouts-obsfull-row">
+          <div className="layouts-obsfull-status">
+            <small className="text-white-50">/obs/full is showing:</small>{' '}
+            {forcedType ? (
+              <strong>Forced — {forcedLabel}</strong>
+            ) : (
+              <strong>Auto (follows the playing game)</strong>
+            )}
+          </div>
+          <div className="control-btn-row">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-success"
+              disabled={busy || forcedType === selectedType}
+              title={`Make /obs/full render the ${selectedLabel} layout regardless of the playing game`}
+              onClick={() => setForced(selectedType)}
+            >
+              Use {selectedLabel} on /obs/full
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-light"
+              disabled={busy || !forcedType}
+              title="Let /obs/full follow the currently-playing game's layout_type"
+              onClick={() => setForced('')}
+            >
+              Back to auto
+            </button>
+          </div>
+          <small className="text-white-50">
+            Auto picks the aspect ratio from the live game. Force a type to preview
+            or lock <code>/obs/full</code> to it; the active preset for that type
+            (below) is what renders.
+          </small>
+        </div>
 
         <div className="layouts-add-row" style={{ marginTop: '1rem' }}>
           <small className="text-white-50 align-self-center">New preset:</small>

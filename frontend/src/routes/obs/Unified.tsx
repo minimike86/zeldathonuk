@@ -43,9 +43,17 @@ const CORNER_DWELL_MS = 30000;
 
 export function UnifiedLayout() {
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 2000);
+  // Operator override (set in /control/layouts). When a valid layout type is
+  // forced, it wins over the playing game's layout_type; blank = follow the
+  // schedule. Polled here so /obs/full switches type the moment it's set.
+  const { data: guide } = usePolledQuery(() => obsApi.layoutGuide(), 2000);
+  const forced = guide?.forced_layout_type;
+  const isForced = !!(forced && LAYOUT_LABELS[forced]);
+
   const currentLayout = cp?.schedule_entry_detail?.game?.layout_type;
-  const layoutKey: LayoutKey =
+  const autoLayout: LayoutKey =
     currentLayout && LAYOUT_LABELS[currentLayout] ? currentLayout : FALLBACK;
+  const layoutKey: LayoutKey = isForced ? forced : autoLayout;
 
   // Crossfade on layout change — give the wrapper a `key` that swaps so
   // React unmounts the old layout and CSS fade-in plays on mount.
@@ -72,8 +80,10 @@ export function UnifiedLayout() {
   // The game whose layout drove the pick — shown as context on the badge so
   // the operator can tie the layout back to the entry on screen.
   const gameTitle = cp?.schedule_entry_detail?.game?.title;
-  // Distinguish an explicit per-game layout from the safety fallback.
-  const isFallback = !(currentLayout && LAYOUT_LABELS[currentLayout]);
+  // Distinguish an operator-forced layout, an explicit per-game layout, and the
+  // safety fallback — only "auto with no game layout" counts as a fallback.
+  const isFallback = !isForced && !(currentLayout && LAYOUT_LABELS[currentLayout]);
+  const tagSuffix = isForced ? ' · Forced' : isFallback ? ' · Default' : '';
 
   // Name the LIVE resolved layout (not the crossfade-delayed `renderedKey`), so
   // the debug badge updates the instant the playing game's layout_type changes
@@ -88,12 +98,12 @@ export function UnifiedLayout() {
       </div>
       <div className={`obs-unified-layout-badge obs-unified-layout-badge--${corner}`}>
         <span className="obs-unified-layout-tag">
-          Layout{isFallback ? ' · Default' : ''}
+          Layout{tagSuffix}
         </span>
         <span className="obs-unified-layout-name">{LAYOUT_LABELS[layoutKey]}</span>
         <span className="obs-unified-layout-key">
           {layoutKey}
-          {isFallback ? ` · game: ${rawLayout}` : ''}
+          {isForced || isFallback ? ` · game: ${rawLayout}` : ''}
         </span>
         {gameTitle && <span className="obs-unified-layout-game">{gameTitle}</span>}
       </div>

@@ -8,6 +8,7 @@ import type {
   EventModel,
 } from '@/lib/obsApi';
 import { api } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/env';
 import { notifyEventChanged } from '@/lib/eventBus';
 import { ImageDropzone } from '@/components/ImageDropzone';
 
@@ -172,7 +173,7 @@ export function EventsControl() {
                 <td>
                   {e.logo_url ? (
                     <img
-                      src={e.logo_url}
+                      src={resolveMediaUrl(e.logo_url)}
                       alt={`${e.name} logo`}
                       width={48}
                       height={48}
@@ -1091,10 +1092,10 @@ function EventCharitiesEditor({ event }: { event: EventModel }) {
               >
                 {l.charity_detail.logo_thumbnail_url || l.charity_detail.logo_url ? (
                   <img
-                    src={
+                    src={resolveMediaUrl(
                       l.charity_detail.logo_thumbnail_url ||
-                      l.charity_detail.logo_url
-                    }
+                        l.charity_detail.logo_url,
+                    )}
                     alt=""
                     width={40}
                     height={40}

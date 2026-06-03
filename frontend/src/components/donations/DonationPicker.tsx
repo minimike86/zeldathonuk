@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { DonationPage } from '@/lib/obsApi';
 import { useAccentDeck } from '@/lib/accentDeck';
+import { resolveMediaUrl } from '@/lib/env';
 import { PLATFORM_META } from './platforms';
 
 /**
@@ -167,7 +168,7 @@ function DonationRow({
             * fall back to the built-in FontAwesome glyph when none is set. */}
           {page.logo_url ? (
             <img
-              src={page.logo_url}
+              src={resolveMediaUrl(page.logo_url)}
               alt={`${title} logo`}
               style={{ maxWidth: 36, maxHeight: 36, objectFit: 'contain' }}
             />

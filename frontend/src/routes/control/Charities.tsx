@@ -1,5 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { resolveMediaUrl } from '@/lib/env';
 import type {
   Charity,
   CharityImage,
@@ -226,7 +227,7 @@ export function CharitiesControl() {
                 <td>
                   {c.logo_thumbnail_url || c.logo_url ? (
                     <img
-                      src={c.logo_thumbnail_url || c.logo_url}
+                      src={resolveMediaUrl(c.logo_thumbnail_url || c.logo_url)}
                       alt={`${c.name} logo`}
                       width={48}
                       height={48}
@@ -875,7 +876,7 @@ function ImpactTiersEditor({ charity }: { charity: Charity }) {
               >
                 {t.image_url ? (
                   <img
-                    src={t.image_url}
+                    src={resolveMediaUrl(t.image_url)}
                     alt={t.alt_text}
                     style={{
                       width: 56,
@@ -1817,7 +1818,7 @@ function ImagesEditor({ charity }: { charity: Charity }) {
                 }}
               >
                 <img
-                  src={img.image_url}
+                  src={resolveMediaUrl(img.image_url)}
                   alt={img.alt_text}
                   style={{
                     width: '100%',

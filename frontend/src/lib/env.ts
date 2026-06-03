@@ -71,6 +71,66 @@ function resolveApiUrl(): string {
 
 let warnedAboutMismatch = false;
 
+/**
+ * Resolve a stored media/branding URL to something the *current* page can
+ * actually fetch.
+ *
+ * Branding fields (theme logo, favicon, event/charity logos, background
+ * media) are persisted server-side and rendered verbatim into `<img src>` /
+ * CSS `url(...)`. Unlike API calls they never pass through `resolveApiUrl`,
+ * so a value written by `request.build_absolute_uri` during a *localhost* dev
+ * upload (e.g. `http://localhost:8000/media/…`) gets served to the public
+ * site unchanged — where the browser blocks it as a loopback / Private
+ * Network Access violation.
+ *
+ * This applies the same loopback→public swap `resolveApiUrl` does:
+ *   • absolute URL on a loopback host, page is public → re-point at the API
+ *     origin (keeps the `/media/…` path, swaps host)
+ *   • bare relative path (`/media/…`) → join onto the API origin (media is
+ *     served by the API host, not the page host / Vite dev server)
+ *   • anything else (public absolute URL, data: URI, blank) → returned as-is.
+ */
+export function resolveMediaUrl(value: string | null | undefined): string {
+  if (!value) return '';
+  const apiOrigin = env.VITE_API_URL;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    // Relative path — media lives on the API host, so resolve against it.
+    if (value.startsWith('/')) {
+      try {
+        return new URL(value, apiOrigin).toString();
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+
+  // Absolute, but points at a loopback host while we're on a public page:
+  // swap the host for the resolved API origin, preserving path + query.
+  if (typeof window !== 'undefined'
+      && !isLoopback(window.location.hostname)
+      && isLoopback(parsed.hostname)) {
+    try {
+      const api = new URL(apiOrigin);
+      parsed.protocol = api.protocol;
+      // Set hostname + port separately: the `.host` setter leaves the
+      // existing port intact when the new value omits one, which would
+      // turn `localhost:8000` into `api.zeldathon.co.uk:8000`.
+      parsed.hostname = api.hostname;
+      parsed.port = api.port;
+      return parsed.toString();
+    } catch {
+      return value;
+    }
+  }
+
+  return value;
+}
+
 /** Local / loopback / private hostnames the browser refuses to let a
  *  public-origin page reach without an explicit Private Network Access
  *  preflight. Covers IPv4 loopback / RFC1918, IPv6 loopback / link-local,

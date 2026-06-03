@@ -1262,14 +1262,20 @@ class LayoutPreset(models.Model):
 
 
 class LayoutGuideSettings(models.Model):
-    """Singleton toggle for the OBS layout *capture alignment guide*.
+    """Singleton for OBS layout *global* settings: the capture alignment guide
+    and the manual layout-type override for /obs/full.
 
-    When on, the /obs/layout/<type> + /obs/full game-capture boxes render a
-    semi-transparent hashed border + device label so the operator can line each
-    OBS capture source up with its reserved box. The control lives in
+    Capture guide: when on, the /obs/layout/<type> + /obs/full game-capture boxes
+    render a semi-transparent hashed border + device label so the operator can
+    line each OBS capture source up with its reserved box. The control lives in
     /control/layouts but the guide draws inside the OBS browser source — a
     different browser context — so the flag is stored here and polled by the OBS
     page (the same singleton-polled pattern as ChestAnnouncerSettings).
+
+    Forced layout type: by default /obs/full auto-picks its aspect ratio from the
+    currently-playing game's layout_type. ``forced_layout_type`` lets the operator
+    override that — when set, /obs/full renders that type's active preset
+    regardless of the playing game; blank means "auto (follow the schedule)".
 
     Pinned to pk=1.
     """
@@ -1279,6 +1285,15 @@ class LayoutGuideSettings(models.Model):
         help_text='When true, OBS layout pages draw the capture alignment guide '
                   '(hashed border + device label). Toggled from /control/layouts; '
                   'leave off for the live scene.',
+    )
+    forced_layout_type = models.CharField(
+        max_length=20,
+        choices=LayoutType.choices,
+        blank=True,
+        default='',
+        help_text='When set, /obs/full forces this aspect ratio instead of '
+                  'following the currently-playing game. Blank = auto (follow '
+                  'the schedule). Set from /control/layouts.',
     )
     updated_at = models.DateTimeField(auto_now=True)
 

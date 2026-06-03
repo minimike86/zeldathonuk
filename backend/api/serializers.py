@@ -817,11 +817,12 @@ class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
 
 
 class LayoutGuideSettingsSerializer(serializers.ModelSerializer):
-    """Singleton toggle for the OBS layout capture-alignment guide."""
+    """Singleton: OBS layout capture-alignment guide + /obs/full layout-type
+    override."""
 
     class Meta:
         model = models.LayoutGuideSettings
-        fields = ['show_guide', 'updated_at']
+        fields = ['show_guide', 'forced_layout_type', 'updated_at']
         read_only_fields = ['updated_at']
 
 

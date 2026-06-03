@@ -26,6 +26,28 @@
   font-size: 0.8em;
 }
 
+/* "● live" marker on the type tab that's currently forced onto /obs/full. */
+.layouts-tab-live {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: #6dffa6;
+}
+
+/* Row controlling which aspect ratio /obs/full renders (auto vs forced). */
+.layouts-obsfull-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.layouts-obsfull-status {
+  min-width: 220px;
+}
+.layouts-obsfull-row > small {
+  flex: 1 1 100%;
+}
+
 .layouts-preset.is-active {
   border-color: color-mix(in srgb, #5fd38a 60%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, #5fd38a 35%, transparent) inset;
