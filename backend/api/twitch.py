@@ -311,6 +311,54 @@ def fetch_stream(login: str) -> dict | None:
     return data[0] if data else None
 
 
+def fetch_active_charity_campaign() -> dict | None:
+    """Return the broadcaster's active Twitch Charity campaign, or None.
+
+    Helix ``GET /charity/campaigns`` returns the single in-progress campaign for
+    the authenticated broadcaster (the endpoint is empty when none is running).
+    Needs the ``channel:read:charity`` scope on the user token; the broadcaster
+    id is resolved from that token.
+    """
+    bid = resolve_broadcaster_id()
+    if not bid:
+        return None
+    resp = _request(
+        'GET', f'{HELIX}/charity/campaigns', params={'broadcaster_id': bid}
+    )
+    if not resp.ok:
+        return None
+    data = resp.json().get('data') or []
+    return data[0] if data else None
+
+
+def fetch_charity_donations(campaign_id: str, page_limit: int = 20) -> list[dict]:
+    """All donations for a charity campaign via Helix ``GET /charity/donations``.
+
+    Paginates (100/page) up to ``page_limit`` pages as a sanity cap. Needs the
+    ``channel:read:charity`` scope. Each item carries a stable ``id`` we use as
+    the Donation ``external_id`` — the same id the EventSub donate event sends —
+    so polled and pushed rows dedupe against each other.
+    """
+    bid = resolve_broadcaster_id()
+    if not bid:
+        return []
+    out: list[dict] = []
+    cursor = None
+    for _ in range(page_limit):
+        params = {'broadcaster_id': bid, 'first': 100}
+        if cursor:
+            params['after'] = cursor
+        resp = _request('GET', f'{HELIX}/charity/donations', params=params)
+        if not resp.ok:
+            break
+        body = resp.json()
+        out.extend(body.get('data', []) or [])
+        cursor = (body.get('pagination') or {}).get('cursor')
+        if not cursor:
+            break
+    return out
+
+
 @api_view(['GET'])
 def stream_status(request: Request) -> Response:
     """Return whether a Twitch channel is currently live.

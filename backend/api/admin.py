@@ -423,6 +423,21 @@ class TwitchOAuthTokenAdmin(ModelAdmin):
         self.message_user(request, 'Twitch token refreshed.', level=messages.SUCCESS)
 
 
+@admin.register(models.TwitchCharityCampaign)
+class TwitchCharityCampaignAdmin(ModelAdmin):
+    """Twitch's own charity campaign total + goal, mirrored from EventSub /
+    Helix. Read-only mirror — the money we report comes from Donation rows, so
+    this is a goal/progress reference only."""
+    list_display = ['charity_name', 'is_active', 'current_amount',
+                    'target_amount', 'currency', 'started_at', 'updated_at']
+    list_filter = ['is_active', 'currency']
+    search_fields = ['charity_name', 'campaign_id']
+    readonly_fields = ['updated_at']
+
+    def has_add_permission(self, request):
+        return False
+
+
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────
 
 

@@ -1394,6 +1394,18 @@ class BrbTimerViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(active).data)
 
 
+@api_view(['GET'])
+def twitch_charity_campaign(_request: Request) -> Response:
+    """Active Twitch Charity campaign (Twitch's own running total + target),
+    or null when none is running. Public read, like ``currently_playing`` —
+    drives the omnibar goal display. The campaign total is Twitch's figure for
+    a goal bar only; our reported money comes from the Donation rows."""
+    campaign = models.TwitchCharityCampaign.active()
+    if not campaign:
+        return Response(None)
+    return Response(serializers.TwitchCharityCampaignSerializer(campaign).data)
+
+
 @api_view(['GET', 'PUT'])
 def currently_playing(request: Request) -> Response:
     if request.method == 'GET':

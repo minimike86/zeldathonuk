@@ -1199,6 +1199,52 @@ class TwitchOAuthToken(models.Model):
         return obj
 
 
+class TwitchCharityCampaign(models.Model):
+    """The state of a Twitch Charity campaign, mirrored from EventSub
+    (``channel.charity_campaign.start`` / ``.progress`` / ``.stop``) and the
+    Helix ``/charity/campaigns`` poll.
+
+    Keyed by Twitch's ``campaign_id`` (not a singleton) so past campaigns
+    persist for history; ``active()`` returns the live one. This row tracks
+    Twitch's *own* running total (``current_amount``) and target — used only as
+    a goal/progress display. It is NOT summed into our donation totals: every
+    individual Twitch Charity donation is also ingested as a ``Donation`` row,
+    which remains the source of truth for the money we report.
+    """
+
+    campaign_id = models.CharField(max_length=200, unique=True)
+    broadcaster_id = models.CharField(max_length=64, blank=True)
+    charity_name = models.CharField(max_length=200, blank=True)
+    charity_logo_url = models.URLField(blank=True)
+    charity_website = models.URLField(blank=True)
+    charity_description = models.TextField(blank=True)
+    # Twitch's own figures. Stored at 2dp after converting from the minor-unit
+    # integer Twitch sends (value=1234, decimal_places=2 → 12.34).
+    target_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    current_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal('0.00'),
+    )
+    currency = models.CharField(max_length=3, default='GBP')
+    is_active = models.BooleanField(default=True, db_index=True)
+    started_at = models.DateTimeField(default=timezone.now)
+    stopped_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-started_at']
+        verbose_name = 'Twitch charity campaign'
+
+    def __str__(self) -> str:
+        state = 'active' if self.is_active else 'ended'
+        return f'{self.charity_name or self.campaign_id} ({state})'
+
+    @classmethod
+    def active(cls) -> 'TwitchCharityCampaign | None':
+        return cls.objects.filter(is_active=True).order_by('-started_at').first()
+
+
 class LayoutPreset(models.Model):
     """A named arrangement for one OBS game-layout aspect ratio.
 

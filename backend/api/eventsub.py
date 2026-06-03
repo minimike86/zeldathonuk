@@ -38,11 +38,14 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from . import models
+from .activity import log_activity
+from .webhooks import _ingest
 
 
 HEADER_MSG_ID = 'twitch-eventsub-message-id'
@@ -95,6 +98,9 @@ def _already_seen(msg_id: str) -> bool:
 
 @csrf_exempt
 @api_view(['POST'])
+@permission_classes([AllowAny])  # Twitch authenticates via the HMAC signature,
+# not a Clerk JWT. Without this, the default ReadOnlyOrOperator rejects every
+# anonymous EventSub delivery with 403 and intake never fires.
 def eventsub_webhook(request: Request) -> Response:
     if not _verify_signature(request):
         return Response({'detail': 'Bad signature.'}, status=status.HTTP_403_FORBIDDEN)
@@ -132,13 +138,29 @@ def eventsub_webhook(request: Request) -> Response:
     if not sub_type:
         return Response({'detail': 'Missing subscription.type.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    occurred_at = _parse_iso(body.get('occurred_at')) or timezone.now()
+    # EventSub notification bodies carry no top-level occurred_at — the only
+    # timestamp on the delivery is the message-timestamp header.
+    occurred_at = (
+        _parse_iso(request.META.get(_meta_key(HEADER_TIMESTAMP), ''))
+        or timezone.now()
+    )
 
     # Twitch Charity donations are funnelled into the normal donation pipeline
     # (totals / milestones / donation reel) rather than an omnibar takeover —
     # they become a Donation row, not an ExternalEvent.
     if sub_type == 'channel.charity_campaign.donate':
         _ingest_charity_donation(event, occurred_at)
+        return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
+
+    # Charity campaign lifecycle (start / progress / stop) is campaign *state*,
+    # not a donation and not an omnibar moment — mirror it into the
+    # TwitchCharityCampaign row so the overlay can show Twitch's own goal/total.
+    if sub_type in (
+        'channel.charity_campaign.start',
+        'channel.charity_campaign.progress',
+        'channel.charity_campaign.stop',
+    ):
+        _upsert_charity_campaign(event, sub_type, occurred_at)
         return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
 
     payload = dict(event)
@@ -158,47 +180,100 @@ def eventsub_webhook(request: Request) -> Response:
     return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
 
 
-def _ingest_charity_donation(event: dict, occurred_at) -> bool:
-    """Create a Donation from a channel.charity_campaign.donate event so Twitch
-    Charity money counts toward the same total / milestones / donation reel as
-    every other platform — no separate omnibar moment. Deduped by
-    (platform, external_id) via the model's unique_together. Returns False when
-    there's no active event to attach the donation to."""
-    active = models.Event.objects.filter(is_active=True).first()
-    if not active:
-        return False
-    amount_obj = event.get('amount') or {}
+def _charity_amount(amount_obj) -> Decimal | None:
+    """Convert a Twitch money object — ``{value, decimal_places, currency}`` in
+    minor units (value=1234, decimal_places=2 → 12.34) — to a 2dp Decimal.
+    Returns None when the shape is missing or unparseable."""
+    if not isinstance(amount_obj, dict):
+        return None
     try:
         value = int(amount_obj.get('value', 0))
         places = int(amount_obj.get('decimal_places', 2))
     except (TypeError, ValueError):
-        return False
-    if value <= 0:
-        return False
-    # Twitch sends the amount in minor units (value=1234, decimal_places=2 →
-    # 12.34). Quantise to the Donation field's 2dp.
-    amount = (Decimal(value) / (Decimal(10) ** places)).quantize(
+        return None
+    return (Decimal(value) / (Decimal(10) ** places)).quantize(
         Decimal('0.01'), rounding=ROUND_HALF_UP,
     )
-    currency = (amount_obj.get('currency') or 'GBP')[:3].upper()
+
+
+def _ingest_charity_donation(event: dict, occurred_at) -> bool:
+    """Create a Donation from a channel.charity_campaign.donate event so Twitch
+    Charity money counts toward the same total / milestones / donation reel as
+    every other platform — no separate omnibar moment. Goes through the shared
+    webhooks._ingest path (update_or_create, active-event check, milestone
+    signal). Deduped by (platform, external_id) via the model's unique_together.
+    Returns False when there's no active event or the amount is unusable."""
+    amount = _charity_amount(event.get('amount'))
+    if amount is None or amount <= 0:
+        return False
+    currency = ((event.get('amount') or {}).get('currency') or 'GBP')[:3].upper()
     donor = (event.get('user_name') or '').strip() or 'Anonymous'
     # Prefer Twitch's stable donation id for dedupe; fall back to a composite so
-    # retries of an id-less event don't pile up.
+    # retries of an id-less event don't pile up. Must match the external_id the
+    # Helix poller uses so EventSub + polled rows dedupe against each other.
     ext_id = str(event.get('id') or '').strip() or (
-        f"{event.get('campaign_id', '')}:{event.get('user_id', '')}:{value}"
+        f"{event.get('campaign_id', '')}:{event.get('user_id', '')}:{amount}"
     )
-    models.Donation.objects.get_or_create(
+    # Only the first delivery of a given donation should write an audit row;
+    # Twitch can re-deliver, and _ingest's update_or_create is silent about
+    # whether it created. Check first (small race, acceptable for logging).
+    is_new = not models.Donation.objects.filter(
+        platform=models.DonationPlatform.TWITCH_CHARITY, external_id=ext_id,
+    ).exists()
+    donation = _ingest(
         platform=models.DonationPlatform.TWITCH_CHARITY,
         external_id=ext_id,
-        defaults={
-            'event': active,
-            'donor_name': donor,
-            'amount': amount,
-            'currency': currency,
-            'donated_at': occurred_at,
-        },
+        donor_name=donor,
+        amount=amount,
+        currency=currency,
+        donated_at=occurred_at,
     )
+    if donation is None:
+        return False
+    if is_new:
+        log_activity(
+            category='webhook',
+            action='donation.twitch_charity',
+            summary=f'Twitch Charity donation: {donor} {currency} {amount}',
+            source='twitch',
+            target=donation,
+            detail={'campaign_id': str(event.get('campaign_id') or '')},
+        )
     return True
+
+
+def _upsert_charity_campaign(event: dict, sub_type: str, occurred_at) -> None:
+    """Mirror a charity_campaign.start/progress/stop event into the
+    TwitchCharityCampaign row so the overlay can show Twitch's own goal/total.
+    Campaign state only — never a Donation, never an omnibar takeover."""
+    campaign_id = str(event.get('id') or event.get('campaign_id') or '').strip()
+    if not campaign_id:
+        return
+    current = _charity_amount(event.get('current_amount'))
+    target = _charity_amount(event.get('target_amount'))
+    money = event.get('current_amount') or event.get('target_amount') or {}
+    currency = (money.get('currency') if isinstance(money, dict) else None) or 'GBP'
+    stopping = sub_type == 'channel.charity_campaign.stop'
+    defaults = {
+        'broadcaster_id': str(
+            event.get('broadcaster_id') or event.get('broadcaster_user_id') or ''
+        ),
+        'charity_name': event.get('charity_name') or '',
+        'charity_logo_url': event.get('charity_logo') or '',
+        'charity_website': event.get('charity_website') or '',
+        'charity_description': event.get('charity_description') or '',
+        'currency': currency[:3].upper(),
+        'is_active': not stopping,
+    }
+    if current is not None:
+        defaults['current_amount'] = current
+    if target is not None:
+        defaults['target_amount'] = target
+    if stopping:
+        defaults['stopped_at'] = occurred_at
+    models.TwitchCharityCampaign.objects.update_or_create(
+        campaign_id=campaign_id, defaults=defaults,
+    )
 
 
 def _normalise_kind(twitch_type: str) -> str:

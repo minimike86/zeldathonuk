@@ -626,6 +626,16 @@ class CurrentlyPlayingSerializer(serializers.ModelSerializer):
         fields = ['schedule_entry', 'schedule_entry_detail', 'updated_at']
 
 
+class TwitchCharityCampaignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.TwitchCharityCampaign
+        fields = [
+            'campaign_id', 'charity_name', 'charity_logo_url', 'charity_website',
+            'charity_description', 'target_amount', 'current_amount', 'currency',
+            'is_active', 'started_at', 'stopped_at', 'updated_at',
+        ]
+
+
 class ThemeSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ThemeSettings

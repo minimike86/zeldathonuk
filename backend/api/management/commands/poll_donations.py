@@ -24,13 +24,16 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--tiltify', action='store_true', help='Only poll Tiltify')
         parser.add_argument('--justgiving', action='store_true', help='Only poll JustGiving')
+        parser.add_argument('--twitch', action='store_true', help='Only poll Twitch Charity')
 
     def handle(self, *args, **options):
-        both = not options['tiltify'] and not options['justgiving']
+        both = not (options['tiltify'] or options['justgiving'] or options['twitch'])
         if both or options['tiltify']:
             self._tiltify()
         if both or options['justgiving']:
             self._justgiving()
+        if both or options['twitch']:
+            self._twitch()
 
     # ──────────────────────────────────────────────────────────────────────
     # Tiltify v5 — campaign donations endpoint
@@ -103,6 +106,48 @@ class Command(BaseCommand):
             if donation:
                 count += 1
         self.stdout.write(self.style.SUCCESS(f'JustGiving: ingested {count} donations'))
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Twitch Charity — Helix /charity/campaigns + /charity/donations
+    # Fallback for when the EventSub webhook can't be reached (no public
+    # HTTPS callback). Uses the broadcaster's user OAuth token.
+    # ──────────────────────────────────────────────────────────────────────
+    def _twitch(self) -> None:
+        # Imported lazily so the command still runs (Tiltify/JustGiving) even
+        # if the Twitch helpers fail to import for any reason.
+        from api import twitch
+        from api.eventsub import _charity_amount, _upsert_charity_campaign
+
+        try:
+            campaign = twitch.fetch_active_charity_campaign()
+        except twitch.TwitchAuthError as exc:
+            self.stderr.write(f'Twitch charity: {exc}')
+            return
+        if not campaign:
+            self.stdout.write('Twitch charity: no active campaign; skipping.')
+            return
+        # Mirror Twitch's own running total / target into the campaign row so
+        # the goal display stays fresh even between EventSub progress pushes.
+        _upsert_charity_campaign(
+            campaign, 'channel.charity_campaign.progress', timezone.now()
+        )
+        donations = twitch.fetch_charity_donations(str(campaign.get('id') or ''))
+        count = 0
+        for d in donations:
+            amount = _charity_amount(d.get('amount'))
+            if amount is None or amount <= 0:
+                continue
+            currency = ((d.get('amount') or {}).get('currency') or 'GBP')[:3].upper()
+            donation = _ingest(
+                platform=models.DonationPlatform.TWITCH_CHARITY,
+                external_id=str(d.get('id') or ''),
+                donor_name=d.get('user_name', 'Anonymous') or 'Anonymous',
+                amount=amount,
+                currency=currency,
+            )
+            if donation:
+                count += 1
+        self.stdout.write(self.style.SUCCESS(f'Twitch charity: ingested {count} donations'))
 
 
 def _parse_iso(value: str | None):

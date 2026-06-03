@@ -88,7 +88,11 @@ def sandbox_donation(request: Request) -> Response:
     """Create a synthetic Donation row against the active event.
 
     Body shape: ``{ "donor_name": "TestDonor", "amount": "5.00",
-                   "message": "Thanks for streaming!", "muted": false }``
+                   "message": "Thanks for streaming!", "muted": false,
+                   "platform": "direct" }``
+
+    ``platform`` is optional (defaults to ``direct``); pass ``twitch`` to
+    rehearse a Twitch Charity donation through the same omnibar path.
 
     Triggers the live-donation panel on the omnibar via the existing
     donation poll — no special wiring needed.
@@ -105,6 +109,12 @@ def sandbox_donation(request: Request) -> Response:
     amount_str = str(request.data.get('amount') or '5.00')
     message = (request.data.get('message') or '').strip()
     muted = bool(request.data.get('muted', False))
+    platform = (request.data.get('platform') or models.DonationPlatform.DIRECT).strip()
+    if platform not in models.DonationPlatform.values:
+        return Response(
+            {'detail': f'Unknown platform: {platform}.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     try:
         amount = Decimal(amount_str)
     except Exception:
@@ -120,7 +130,7 @@ def sandbox_donation(request: Request) -> Response:
     )
     donation = models.Donation.objects.create(
         event=event,
-        platform=models.DonationPlatform.DIRECT,
+        platform=platform,
         donor_name=donor_name,
         amount=amount,
         currency=event.currency_symbol == '£' and 'GBP' or 'USD',
@@ -131,7 +141,51 @@ def sandbox_donation(request: Request) -> Response:
     )
     return Response(
         {'id': donation.id, 'donor_name': donation.donor_name,
+         'platform': donation.platform,
          'amount': str(donation.amount), 'message': donation.message},
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(['POST'])
+def sandbox_charity_campaign(request: Request) -> Response:
+    """Seed/advance a synthetic TwitchCharityCampaign for rehearsing the goal
+    bar without a live Twitch campaign.
+
+    Body shape: ``{ "charity_name": "SpecialEffect", "current_amount": "1234.50",
+                   "target_amount": "10000.00", "currency": "GBP",
+                   "active": true }``
+
+    Upserts a single sandbox campaign row (stable campaign_id) so repeated POSTs
+    advance the same goal rather than piling up rows.
+    """
+    early = _disabled_in_prod()
+    if early:
+        return early
+    try:
+        current = Decimal(str(request.data.get('current_amount') or '0'))
+        target = Decimal(str(request.data.get('target_amount') or '10000'))
+    except Exception:
+        return Response(
+            {'detail': 'Invalid amount.'}, status=status.HTTP_400_BAD_REQUEST,
+        )
+    active = bool(request.data.get('active', True))
+    campaign, _ = models.TwitchCharityCampaign.objects.update_or_create(
+        campaign_id='sandbox-charity-campaign',
+        defaults={
+            'charity_name': (request.data.get('charity_name') or 'Sandbox Charity').strip(),
+            'current_amount': current,
+            'target_amount': target,
+            'currency': (request.data.get('currency') or 'GBP')[:3].upper(),
+            'is_active': active,
+            'stopped_at': None if active else timezone.now(),
+        },
+    )
+    return Response(
+        {'campaign_id': campaign.campaign_id, 'charity_name': campaign.charity_name,
+         'current_amount': str(campaign.current_amount),
+         'target_amount': str(campaign.target_amount),
+         'is_active': campaign.is_active},
         status=status.HTTP_201_CREATED,
     )
 
