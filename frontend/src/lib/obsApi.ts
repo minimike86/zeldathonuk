@@ -91,6 +91,12 @@ export interface LayoutPreset {
   updated_at: string;
 }
 
+/** Global toggle for the OBS layout capture-alignment guide (singleton). */
+export interface LayoutGuideSettings {
+  show_guide: boolean;
+  updated_at: string;
+}
+
 export interface Game {
   id: number;
   title: string;
@@ -1207,6 +1213,16 @@ export const obsApi = {
     api<LayoutPreset[]>(
       layoutType ? `/api/layout-presets/?layout_type=${layoutType}` : '/api/layout-presets/',
     ),
+  // Capture alignment guide (global singleton). The OBS layout pages poll the
+  // GET; /control/layouts flips it via PATCH. Broadcast on the layoutBus so a
+  // /control + /obs pair in the SAME browser updates instantly; the OBS browser
+  // source (separate context) catches it on its next poll.
+  layoutGuide: () => api<LayoutGuideSettings>('/api/layout-guide/'),
+  setLayoutGuide: (show: boolean) =>
+    api<LayoutGuideSettings>('/api/layout-guide/', {
+      method: 'PATCH',
+      body: { show_guide: show },
+    }).then(withLayoutBroadcast),
   createLayoutPreset: (body: {
     name: string;
     layout_type: LayoutKey;

@@ -15,6 +15,14 @@ import { neededSources, useRegionFeed } from './useRegionFeed';
  *   - the freed regions and the elements placed in each.
  * Geometry is clamped to the 1920×984 stage by useLayoutPresetConfig.
  */
+/** Fallback device label for single-capture layouts (multi-capture builders set
+ *  their own per-screen labels). Shown in the alignment guide overlay. */
+const CAPTURE_DEVICE_LABEL: Partial<Record<LayoutKey, string>> = {
+  '4x3': '4:3 Capture',
+  '16x9': '16:9 Capture',
+  'ds-top': 'DS — Top Screen',
+};
+
 export function PresetLayout({ layoutType }: { layoutType: LayoutKey }) {
   // Self-fetch presets so this works both in /obs/full and the standalone
   // /obs/layout/<type> route. Bump on layoutBus so an activate/edit lands fast.
@@ -26,13 +34,19 @@ export function PresetLayout({ layoutType }: { layoutType: LayoutKey }) {
     [bump, layoutType],
   );
 
+  // Global capture-alignment guide, toggled from /control/layouts. Polled here
+  // (separate browser context from control) + bumped on the layoutBus so a
+  // same-browser toggle reflects immediately.
+  const { data: guideData } = usePolledQuery(() => obsApi.layoutGuide(), 5000, [bump]);
+  const guide = guideData?.show_guide ?? false;
+
   const { config, geometry } = useLayoutPresetConfig(presets, layoutType);
 
   // Fetch the currently-playing entry + the event-level feed ONCE and thread
   // them down — see RegionRenderer's note on the per-element polling trap.
   const entry = useCurrentEntry();
   const needed = useMemo(
-    () => neededSources(config.variant.regions.flatMap((slot) => config.regions[slot.id]?.elements ?? [])),
+    () => neededSources(Object.values(config.regions).flatMap((r) => r.elements)),
     [config],
   );
   const feed = useRegionFeed(needed);
@@ -59,6 +73,8 @@ export function PresetLayout({ layoutType }: { layoutType: LayoutKey }) {
       {geometry.captures.map((cap, i) => (
         <GameFrame
           key={i}
+          guide={guide}
+          label={cap.label ?? CAPTURE_DEVICE_LABEL[layoutType] ?? 'Capture'}
           style={{
             left: `${cap.left}px`,
             top: `${cap.top}px`,
@@ -68,20 +84,17 @@ export function PresetLayout({ layoutType }: { layoutType: LayoutKey }) {
         />
       ))}
 
-      {/* Freed regions with the operator's chosen elements. */}
-      {config.variant.regions.map((slot) => {
-        const box = geometry.regions[slot.id];
-        if (!box) return null;
-        return (
-          <RegionRenderer
-            key={slot.id}
-            box={box}
-            elements={config.regions[slot.id]?.elements ?? []}
-            entry={entry}
-            feed={feed}
-          />
-        );
-      })}
+      {/* Freed regions with the operator's chosen elements — carved edge zones
+          plus any gap zones the operator filled (both live in geometry.regions). */}
+      {Object.entries(geometry.regions).map(([rid, box]) => (
+        <RegionRenderer
+          key={rid}
+          box={box}
+          elements={config.regions[rid]?.elements ?? []}
+          entry={entry}
+          feed={feed}
+        />
+      ))}
     </Stage>
   );
 }

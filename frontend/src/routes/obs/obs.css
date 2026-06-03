@@ -99,6 +99,38 @@
   background: transparent;
 }
 
+/* Alignment guide (toggled on /obs/layout/<type>): a semi-transparent hashed
+ * border + diagonal hatch + centred device label, so the operator can line the
+ * underlying OBS capture source up with the reserved box. Off = fully
+ * transparent (rule above), so nothing bleeds onto the live stream. */
+.obs-stage .game-frame--guide {
+  border: 2px dashed rgba(255, 255, 255, 0.65);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.07) 0,
+      rgba(255, 255, 255, 0.07) 10px,
+      rgba(0, 0, 0, 0.07) 10px,
+      rgba(0, 0, 0, 0.07) 20px
+    );
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-frame-guide-label {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.3em 0.7em;
+  border-radius: 6px;
+  pointer-events: none;
+  text-align: center;
+}
+
 .obs-stage .side-panel {
   position: absolute;
   display: flex;

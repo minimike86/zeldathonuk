@@ -1832,6 +1832,22 @@ def chest_announcer_settings(request: Request) -> Response:
     return Response(ser.data)
 
 
+@api_view(['GET', 'PATCH'])
+def layout_guide_settings(request: Request) -> Response:
+    """Returns / updates the singleton OBS layout capture-alignment guide flag.
+
+    GET is polled by the OBS layout pages (PresetLayout) to decide whether to
+    draw the hashed capture guides. PATCH is hit by the /control/layouts toggle.
+    """
+    obj = models.LayoutGuideSettings.get()
+    if request.method == 'GET':
+        return Response(serializers.LayoutGuideSettingsSerializer(obj).data)
+    ser = serializers.LayoutGuideSettingsSerializer(obj, data=request.data, partial=True)
+    ser.is_valid(raise_exception=True)
+    ser.save()
+    return Response(ser.data)
+
+
 class ThemeSettingsViewSet(viewsets.ModelViewSet):
     """Library of themes. CRUD + an `activate` action that mirrors the
     Event activation pattern (sets `is_active=True` here, demotes the

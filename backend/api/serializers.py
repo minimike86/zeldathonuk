@@ -816,6 +816,15 @@ class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
         read_only_fields = ['updated_at']
 
 
+class LayoutGuideSettingsSerializer(serializers.ModelSerializer):
+    """Singleton toggle for the OBS layout capture-alignment guide."""
+
+    class Meta:
+        model = models.LayoutGuideSettings
+        fields = ['show_guide', 'updated_at']
+        read_only_fields = ['updated_at']
+
+
 class ChestAnnouncerSoundTriggerSerializer(serializers.ModelSerializer):
     """Per-rule sound mapping for the chest announcer."""
 

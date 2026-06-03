@@ -17,5 +17,7 @@ export function ObsLayoutRoute() {
   if (!VALID.has(key)) {
     return <Navigate to="/obs" replace />;
   }
+  // The capture alignment guide is a global flag toggled from /control/layouts
+  // and polled inside PresetLayout, so there's nothing route-specific here.
   return <PresetLayout layoutType={key as LayoutKey} />;
 }

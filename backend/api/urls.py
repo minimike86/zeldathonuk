@@ -58,6 +58,7 @@ urlpatterns = [
     path('tts/now-reading/', views.tts_now_reading, name='tts-now-reading'),
     path('donation-mute-reasons/', views.donation_mute_reasons, name='donation-mute-reasons'),
     path('theme/', views.theme_settings, name='theme-settings'),
+    path('layout-guide/', views.layout_guide_settings, name='layout-guide-settings'),
     path(
         'chest-announcer/settings/',
         views.chest_announcer_settings,

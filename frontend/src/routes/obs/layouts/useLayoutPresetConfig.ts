@@ -122,6 +122,27 @@ export interface RegionConfig {
   elements: ElementId[];
 }
 
+// ── Capture alignment + gap zones ───────────────────────────────────────────
+// A fit capture touches its available box on one axis and leaves slack on the
+// other. The operator can push the capture to an edge/corner (instead of the
+// default centre); the freed slack tiles into up to four GAP zones around the
+// capture(s) — clean rectangles, no L-shape — which can hold panels just like
+// the carved edge zones.
+export type AlignX = 'left' | 'center' | 'right';
+export type AlignY = 'top' | 'center' | 'bottom';
+export interface CaptureAlign {
+  x: AlignX;
+  y: AlignY;
+}
+export const DEFAULT_CAPTURE_ALIGN: CaptureAlign = { x: 'center', y: 'center' };
+
+/** Gap-zone ids, by the side of the capture they occupy. Stored in
+ *  `config.regions` (elements only — geometry is derived from the capture fit). */
+export const GAP_IDS = ['gap-left', 'gap-right', 'gap-top', 'gap-bottom'] as const;
+export type GapId = (typeof GAP_IDS)[number];
+/** A gap must be at least this big along its axis to be worth offering. */
+const GAP_MIN = 200;
+
 // ── Variants (arrangements) ──────────────────────────────────────────────────
 // Each variant is a distinct ARRANGEMENT (its own preset — no in-preset variant
 // dropdown). It declares the element ZONES carved off the stage edges (the free
@@ -310,15 +331,25 @@ export function defaultRegionWidth(regionCount: number): number {
 export interface PresetConfig {
   variant: VariantDef;
   regions: Record<string, RegionConfig>;
+  /** Where the capture(s) sit within their available space — the freed slack
+   *  becomes gap zones (see computeGeometry). */
+  capture: CaptureAlign;
   /** Operator-supplied console shell image (DS/3DS variants). Empty = none. */
   shellImageUrl: string;
 }
 
+// A `type` (not interface) so it carries an implicit index signature and is
+// assignable to the API's `Record<string, unknown>` config field.
+export type PresetConfigJson = {
+  variant: string;
+  regions: Record<string, RegionConfig>;
+  capture: CaptureAlign;
+  shellImageUrl: string;
+};
+
 /** Build a default JSON config for a specific arrangement — used by the seed
  *  + the editor's "New preset" picker so a fresh preset starts populated. */
-export function defaultConfigForVariant(
-  variant: VariantDef,
-): { variant: string; regions: Record<string, RegionConfig>; shellImageUrl: string } {
+export function defaultConfigForVariant(variant: VariantDef): PresetConfigJson {
   const regions: Record<string, RegionConfig> = {};
   const two = variant.regions.length === 2;
   variant.regions.forEach((slot, i) => {
@@ -331,7 +362,7 @@ export function defaultConfigForVariant(
         : [...DEFAULT_SIDE],
     };
   });
-  return { variant: variant.id, regions, shellImageUrl: '' };
+  return { variant: variant.id, regions, capture: { ...DEFAULT_CAPTURE_ALIGN }, shellImageUrl: '' };
 }
 
 /** Per-layout fallback used when a preset is missing/blank/corrupt, so the
@@ -340,7 +371,7 @@ export function defaultPresetConfig(layoutType: LayoutKey): PresetConfig {
   const variants = LAYOUT_VARIANTS[layoutType] ?? LAYOUT_VARIANTS['4x3'];
   const variant = variants.find((v) => v.id === 'game-center') ?? variants[0];
   const cfg = defaultConfigForVariant(variant);
-  return { variant, regions: cfg.regions, shellImageUrl: cfg.shellImageUrl };
+  return { variant, regions: cfg.regions, capture: cfg.capture, shellImageUrl: cfg.shellImageUrl };
 }
 
 function clamp(n: number, lo: number, hi: number): number {
@@ -401,11 +432,33 @@ export function parsePresetConfig(raw: unknown, layoutType: LayoutKey): PresetCo
       : fallbackRegion.elements;
     regions[rid] = { widthPx, elements };
   }
+
+  // Gap zones (elements only — geometry is derived from the capture fit). Kept
+  // even though they aren't in `variant.regions`; computeGeometry only surfaces
+  // the ones that actually fit, but we never want to silently drop the
+  // operator's element choices for a gap that's momentarily too small.
+  for (const gid of GAP_IDS) {
+    const rawRegion = rawRegions[gid];
+    if (!rawRegion || typeof rawRegion !== 'object') continue;
+    const els = (rawRegion as { elements?: unknown }).elements;
+    if (Array.isArray(els)) regions[gid] = { widthPx: 0, elements: normaliseElements(els) };
+  }
+
+  const rawCapture = (obj as { capture?: unknown }).capture;
+  const capture = parseAlign(rawCapture);
   const shellImageUrl =
     typeof (obj as { shellImageUrl?: unknown }).shellImageUrl === 'string'
       ? ((obj as { shellImageUrl: string }).shellImageUrl)
       : fallback.shellImageUrl;
-  return { variant, regions, shellImageUrl };
+  return { variant, regions, capture, shellImageUrl };
+}
+
+/** Validate a stored capture-alignment blob, defaulting unknown values to centre. */
+function parseAlign(raw: unknown): CaptureAlign {
+  const r = (raw ?? {}) as { x?: unknown; y?: unknown };
+  const x: AlignX = r.x === 'left' || r.x === 'right' ? r.x : 'center';
+  const y: AlignY = r.y === 'top' || r.y === 'bottom' ? r.y : 'center';
+  return { x, y };
 }
 
 // ── Geometry ────────────────────────────────────────────────────────────────
@@ -421,13 +474,24 @@ export interface CaptureBox extends Box {
   label?: string;
 }
 
+/** A gap zone left around the capture(s) after alignment — offered in the
+ *  editor as a place to add panels, whether or not it currently holds any. */
+export interface GapSlot {
+  id: GapId;
+  edge: RegionEdge;
+  box: Box;
+}
+
 export interface LayoutGeometry {
   /** Transparent game-capture window(s); OBS sources sit behind them. */
   captures: CaptureBox[];
-  /** Positioned content regions, keyed by region id. */
+  /** Positioned content regions (carved edge zones + filled gap zones), keyed
+   *  by region id. */
   regions: Record<string, Box>;
   /** Console-shell image box (DS/3DS), when the variant frames the screens. */
   shell?: Box;
+  /** Gap zones available around the capture(s), per the current alignment. */
+  gaps: GapSlot[];
 }
 
 function round(b: Box): Box {
@@ -473,6 +537,19 @@ function inflate(b: Box, padX: number, padY: number): Box {
   return { left, top, width: right - left, height: bot - top };
 }
 
+/** Translate a box by (dx, dy). */
+function shift(b: Box, dx: number, dy: number): Box {
+  return { left: b.left + dx, top: b.top + dy, width: b.width, height: b.height };
+}
+
+/** Offset to move a box of `size` within `slack` per a 3-way alignment. */
+function alignOffset(slack: number, align: 'left' | 'center' | 'right' | 'top' | 'bottom'): number {
+  if (slack <= 0) return 0;
+  if (align === 'left' || align === 'top') return -slack / 2; // builders centre, so undo half then go to start
+  if (align === 'right' || align === 'bottom') return slack / 2;
+  return 0; // center — already centred by the builders
+}
+
 /**
  * Edge-carving geometry: starting from the full 1920×984 stage, carve each zone
  * off its edge (a strip of the configured size — width for left/right, height for
@@ -509,7 +586,42 @@ export function computeGeometry(config: PresetConfig): LayoutGeometry {
   }
 
   const built = config.variant.buildCaptures(remaining);
-  return { captures: built.captures, shell: built.shell, regions };
+
+  // The builders centre the capture(s) in `remaining`. Re-position per the
+  // operator's alignment, then tile the freed slack into gap zones around them.
+  const cb = bbox(built.captures);
+  const slackX = remaining.width - cb.width;
+  const slackY = remaining.height - cb.height;
+  const dx = alignOffset(slackX, config.capture.x);
+  const dy = alignOffset(slackY, config.capture.y);
+
+  const captures = built.captures.map((c) => ({ ...shift(c, dx, dy), label: c.label }));
+  const shell = built.shell ? shift(built.shell, dx, dy) : undefined;
+
+  // Tile the leftover around the (shifted) capture bounding box. Side gaps own
+  // the full-height outer columns; top/bottom gaps own the vertical slack inside
+  // the capture's column — so the four never overlap, even when both axes have
+  // slack (e.g. FSA's TV+GBA column).
+  const c2 = bbox(captures);
+  const left = remaining.left;
+  const top = remaining.top;
+  const right = remaining.left + remaining.width;
+  const bottom = remaining.top + remaining.height;
+  const candidates: GapSlot[] = [
+    { id: 'gap-left', edge: 'left', box: round({ left, top, width: c2.left - left, height: remaining.height }) },
+    { id: 'gap-right', edge: 'right', box: round({ left: c2.left + c2.width, top, width: right - (c2.left + c2.width), height: remaining.height }) },
+    { id: 'gap-top', edge: 'top', box: round({ left: c2.left, top, width: c2.width, height: c2.top - top }) },
+    { id: 'gap-bottom', edge: 'bottom', box: round({ left: c2.left, top: c2.top + c2.height, width: c2.width, height: bottom - (c2.top + c2.height) }) },
+  ];
+  const axisSize = (g: GapSlot) => (g.edge === 'left' || g.edge === 'right' ? g.box.width : g.box.height);
+  const gaps = candidates.filter((g) => axisSize(g) >= GAP_MIN);
+
+  // Surface gap zones that the operator has actually filled as live regions.
+  for (const g of gaps) {
+    if ((config.regions[g.id]?.elements.length ?? 0) > 0) regions[g.id] = g.box;
+  }
+
+  return { captures, shell, regions, gaps };
 }
 
 /**

@@ -9,6 +9,18 @@
   margin-top: 0.75rem;
 }
 
+.layouts-guide-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.layouts-guide-row small {
+  flex: 1;
+  min-width: 220px;
+}
+
 .layouts-soon {
   opacity: 0.7;
   font-size: 0.8em;
@@ -132,6 +144,37 @@
   align-items: center;
 }
 
+/* Gap zones (whitespace freed by the capture position) read as a dashed,
+ * tinted variant of the carved-zone editor. */
+.layouts-region--gap {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 7%, rgba(255, 255, 255, 0.03));
+}
+
+/* 3×3 capture-position picker. */
+.layouts-align-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  width: 96px;
+  aspect-ratio: 1920 / 984;
+}
+.layouts-align-cell {
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.25));
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  padding: 0;
+}
+.layouts-align-cell:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.layouts-align-cell.is-active {
+  background: var(--theme-primary, #b92753);
+  border-color: var(--theme-primary, #b92753);
+}
+
 /* ── To-scale preview ──────────────────────────────────────────────────── */
 .layouts-preview {
   display: flex;
@@ -186,4 +229,11 @@
   font-family: inherit;
   font-size: 0.6rem;
   opacity: 0.7;
+}
+
+/* An unfilled gap zone in the preview — fainter, to read as "available". */
+.layouts-preview-gap {
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 12%, transparent);
+  border-style: dotted;
+  color: rgba(255, 255, 255, 0.6);
 }

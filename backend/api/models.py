@@ -1261,6 +1261,40 @@ class LayoutPreset(models.Model):
         return cls.objects.filter(layout_type=layout_type, is_active=True).first()
 
 
+class LayoutGuideSettings(models.Model):
+    """Singleton toggle for the OBS layout *capture alignment guide*.
+
+    When on, the /obs/layout/<type> + /obs/full game-capture boxes render a
+    semi-transparent hashed border + device label so the operator can line each
+    OBS capture source up with its reserved box. The control lives in
+    /control/layouts but the guide draws inside the OBS browser source — a
+    different browser context — so the flag is stored here and polled by the OBS
+    page (the same singleton-polled pattern as ChestAnnouncerSettings).
+
+    Pinned to pk=1.
+    """
+
+    show_guide = models.BooleanField(
+        default=False,
+        help_text='When true, OBS layout pages draw the capture alignment guide '
+                  '(hashed border + device label). Toggled from /control/layouts; '
+                  'leave off for the live scene.',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Layout guide settings'
+        verbose_name_plural = 'Layout guide settings'
+
+    def __str__(self) -> str:
+        return f'Layout guide: {"on" if self.show_guide else "off"}'
+
+    @classmethod
+    def get(cls) -> 'LayoutGuideSettings':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class ThemeSettings(models.Model):
     """A row in the theme library.
 

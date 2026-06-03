@@ -35,16 +35,23 @@ export function Stage({
 }
 
 /** Transparent rectangle that reserves space for the OBS game-capture
- * source positioned underneath this browser source. */
+ * source positioned underneath this browser source. When `guide` is on it
+ * draws a semi-transparent hashed border + a device label so the operator can
+ * line the capture source up; off, it returns to fully transparent. */
 export function GameFrame({
   style,
   src,
+  guide,
+  label,
 }: {
   style: React.CSSProperties;
   src?: string | null;
+  guide?: boolean;
+  label?: string;
 }) {
   return (
-    <div className="game-frame" style={style}>
+    <div className={`game-frame${guide ? ' game-frame--guide' : ''}`} style={style}>
+      {guide && label && <span className="game-frame-guide-label">{label}</span>}
       {src ? (
         <iframe
           src={src}

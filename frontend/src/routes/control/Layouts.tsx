@@ -15,6 +15,12 @@ import {
   type ElementId,
   type RegionSlot,
   type VariantDef,
+  type CaptureAlign,
+  type AlignX,
+  type AlignY,
+  type GapSlot,
+  type PresetConfig,
+  type LayoutGeometry,
 } from '@/routes/obs/layouts/useLayoutPresetConfig';
 import './layouts.css';
 
@@ -41,10 +47,22 @@ const LAYOUT_TYPE_OPTIONS: { value: LayoutKey; label: string }[] = [
 export function LayoutsControl() {
   const [bump, setBump] = useState(0);
   const { data: presets } = usePolledQuery(() => obsApi.layoutPresets(), 5000, [bump]);
+  const { data: guide } = usePolledQuery(() => obsApi.layoutGuide(), 5000, [bump]);
   const refresh = () => setBump((b) => b + 1);
 
   const [selectedType, setSelectedType] = useState<LayoutKey>('4x3');
   const [busy, setBusy] = useState(false);
+
+  const guideOn = guide?.show_guide ?? false;
+  const toggleGuide = async () => {
+    setBusy(true);
+    try {
+      await obsApi.setLayoutGuide(!guideOn);
+      refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const forType = useMemo(
     () =>
@@ -83,6 +101,24 @@ export function LayoutsControl() {
           activate another. Games keep their aspect ratio in{' '}
           <code>/control/games</code>.
         </p>
+
+        <div className="layouts-guide-row">
+          <button
+            type="button"
+            className={`btn btn-sm ${guideOn ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+            disabled={busy}
+            aria-pressed={guideOn}
+            onClick={toggleGuide}
+          >
+            Capture guides: {guideOn ? 'On' : 'Off'}
+          </button>
+          <small className="text-white-50">
+            Draws a hashed border + device label on each capture box in the OBS
+            layout pages so you can align the OBS capture sources. Turn off for the
+            live scene. Applies to <code>/obs/full</code> and{' '}
+            <code>/obs/layout/&lt;type&gt;</code>.
+          </small>
+        </div>
 
         <nav className="layouts-type-tabs" aria-label="Layout type">
           {LAYOUT_TYPE_OPTIONS.map((t) => (
@@ -133,6 +169,7 @@ interface Draft {
   name: string;
   variantId: string;
   regions: Record<string, RegionDraft>;
+  captureAlign: CaptureAlign;
   shellImageUrl: string;
 }
 
@@ -144,6 +181,7 @@ function seedDraft(preset: LayoutPreset): Draft {
     name: preset.name,
     variantId: parsed.variant.id,
     regions,
+    captureAlign: { ...parsed.capture },
     shellImageUrl: parsed.shellImageUrl,
   };
 }
@@ -202,6 +240,9 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
       return d;
     });
 
+  const setCaptureAlign = (mut: Partial<CaptureAlign>) =>
+    edit((d) => ({ ...d, captureAlign: { ...d.captureAlign, ...mut } }));
+
   const draftToConfig = () => {
     const regions: Record<string, RegionDraft> = {};
     for (const slot of variant.regions) {
@@ -210,8 +251,25 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
         elements: [],
       };
     }
-    return { variant: variant.id, regions, shellImageUrl: draft.shellImageUrl };
+    // Persist gap zones the operator filled (keyed gap-*). Geometry for them is
+    // derived from the capture fit, so only the elements matter.
+    for (const [rid, r] of Object.entries(draft.regions)) {
+      if (rid.startsWith('gap-') && r.elements.length > 0) {
+        regions[rid] = { widthPx: 0, elements: r.elements };
+      }
+    }
+    return {
+      variant: variant.id,
+      regions,
+      capture: draft.captureAlign,
+      shellImageUrl: draft.shellImageUrl,
+    };
   };
+
+  // Resolve geometry once for both the gap editors and the preview, so the
+  // editor's gap list can't drift from what the renderer will produce.
+  const parsedConfig = parsePresetConfig(draftToConfig(), preset.layout_type);
+  const geometry = computeGeometry(parsedConfig);
 
   const save = async () => {
     setBusy(true);
@@ -317,9 +375,21 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
               onMove={(id, dir) => moveElement(slot.id, id, dir)}
             />
           ))}
+
+          <CapturePosition align={draft.captureAlign} onChange={setCaptureAlign} />
+
+          {geometry.gaps.map((gap) => (
+            <GapEditor
+              key={gap.id}
+              gap={gap}
+              elements={draft.regions[gap.id]?.elements ?? []}
+              onToggle={(id) => toggleElement(gap.id, id)}
+              onMove={(id, dir) => moveElement(gap.id, id, dir)}
+            />
+          ))}
         </div>
 
-        <PresetPreview layoutType={preset.layout_type} configJson={draftToConfig()} />
+        <PresetPreview config={parsedConfig} geometry={geometry} />
       </div>
 
       <div className="control-btn-row" style={{ marginTop: '1rem' }}>
@@ -340,44 +410,26 @@ const REGION_LABELS: Record<string, string> = {
   right: 'Right panel',
   top: 'Top panel',
   bottom: 'Bottom panel',
+  'gap-left': 'Left gap',
+  'gap-right': 'Right gap',
+  'gap-top': 'Top gap',
+  'gap-bottom': 'Bottom gap',
 };
 
-function RegionEditor({
-  slot,
-  region,
-  onWidth,
+/** The selected-element list + an "add" palette — shared by carved-zone and
+ *  gap editors. */
+function ElementList({
+  selected,
   onToggle,
   onMove,
 }: {
-  slot: RegionSlot;
-  region: RegionDraft;
-  onWidth: (w: number) => void;
+  selected: ElementId[];
   onToggle: (id: ElementId) => void;
   onMove: (id: ElementId, dir: -1 | 1) => void;
 }) {
-  const selected = region.elements;
   const unselected = ELEMENT_IDS.filter((e) => !selected.includes(e));
-  // Side panels (left/right) resize by width; top/bottom strips by height.
-  const sizeLabel = regionAxis(slot.edge) === 'width' ? 'Width (px)' : 'Height (px)';
   return (
-    <div className="layouts-region">
-      <div className="layouts-region-head">
-        <h3>{REGION_LABELS[slot.id] ?? `${slot.id} panel`}</h3>
-        {slot.resizable && (
-          <label className="layouts-field layouts-field--inline">
-            <small>{sizeLabel}</small>
-            <input
-              type="number"
-              min={REGION_MIN_WIDTH}
-              max={REGION_MAX_WIDTH}
-              value={region.widthPx}
-              onChange={(e) => onWidth(Number(e.target.value))}
-              style={{ width: 90 }}
-            />
-          </label>
-        )}
-      </div>
-
+    <>
       <ol className="layouts-element-list">
         {selected.length === 0 && (
           <li className="text-white-50" style={{ listStyle: 'none' }}>No elements — add some below.</li>
@@ -411,25 +463,120 @@ function RegionEditor({
           ))}
         </div>
       )}
+    </>
+  );
+}
+
+function RegionEditor({
+  slot,
+  region,
+  onWidth,
+  onToggle,
+  onMove,
+}: {
+  slot: RegionSlot;
+  region: RegionDraft;
+  onWidth: (w: number) => void;
+  onToggle: (id: ElementId) => void;
+  onMove: (id: ElementId, dir: -1 | 1) => void;
+}) {
+  // Side panels (left/right) resize by width; top/bottom strips by height.
+  const sizeLabel = regionAxis(slot.edge) === 'width' ? 'Width (px)' : 'Height (px)';
+  return (
+    <div className="layouts-region">
+      <div className="layouts-region-head">
+        <h3>{REGION_LABELS[slot.id] ?? `${slot.id} panel`}</h3>
+        {slot.resizable && (
+          <label className="layouts-field layouts-field--inline">
+            <small>{sizeLabel}</small>
+            <input
+              type="number"
+              min={REGION_MIN_WIDTH}
+              max={REGION_MAX_WIDTH}
+              value={region.widthPx}
+              onChange={(e) => onWidth(Number(e.target.value))}
+              style={{ width: 90 }}
+            />
+          </label>
+        )}
+      </div>
+      <ElementList selected={region.elements} onToggle={onToggle} onMove={onMove} />
+    </div>
+  );
+}
+
+/** Editor for a whitespace gap left around the capture(s). Its size is derived
+ *  from the capture fit (shown read-only), so there's no size input. */
+function GapEditor({
+  gap,
+  elements,
+  onToggle,
+  onMove,
+}: {
+  gap: GapSlot;
+  elements: ElementId[];
+  onToggle: (id: ElementId) => void;
+  onMove: (id: ElementId, dir: -1 | 1) => void;
+}) {
+  return (
+    <div className="layouts-region layouts-region--gap">
+      <div className="layouts-region-head">
+        <h3>{REGION_LABELS[gap.id] ?? 'Gap'}</h3>
+        <small className="text-white-50">{gap.box.width}×{gap.box.height}px free</small>
+      </div>
+      <ElementList selected={elements} onToggle={onToggle} onMove={onMove} />
+    </div>
+  );
+}
+
+const ALIGN_XS: AlignX[] = ['left', 'center', 'right'];
+const ALIGN_YS: AlignY[] = ['top', 'center', 'bottom'];
+
+/** 3×3 grid to position the capture within its available space. Pushing it to
+ *  an edge/corner frees whitespace that becomes a gap panel zone. */
+function CapturePosition({
+  align,
+  onChange,
+}: {
+  align: CaptureAlign;
+  onChange: (mut: Partial<CaptureAlign>) => void;
+}) {
+  return (
+    <div className="layouts-region">
+      <div className="layouts-region-head">
+        <h3>Capture position</h3>
+        <small className="text-white-50">Push the capture to free space for panels</small>
+      </div>
+      <div className="layouts-align-grid" role="group" aria-label="Capture position">
+        {ALIGN_YS.map((y) =>
+          ALIGN_XS.map((x) => {
+            const on = align.x === x && align.y === y;
+            return (
+              <button
+                key={`${x}-${y}`}
+                type="button"
+                className={`layouts-align-cell${on ? ' is-active' : ''}`}
+                aria-label={`${y} ${x}`}
+                aria-pressed={on}
+                onClick={() => onChange({ x, y })}
+              />
+            );
+          }),
+        )}
+      </div>
     </div>
   );
 }
 
 /** Scaled schematic of the stage so the operator can see where the capture and
- *  regions land before activating. Uses the same `computeGeometry` the OBS
- *  renderer uses, so the preview can't drift from reality. */
-function PresetPreview({
-  layoutType,
-  configJson,
-}: {
-  layoutType: LayoutKey;
-  configJson: { variant: string; regions: Record<string, RegionDraft> };
-}) {
+ *  regions land before activating. Driven by the same `computeGeometry` the OBS
+ *  renderer uses, so the preview can't drift from reality. Empty gap zones show
+ *  as faint dashed placeholders the operator can fill. */
+function PresetPreview({ config, geometry }: { config: PresetConfig; geometry: LayoutGeometry }) {
   const PREVIEW_W = 380;
   const scale = PREVIEW_W / STAGE_WIDTH;
-  const config = parsePresetConfig(configJson, layoutType);
-  const geo = computeGeometry(config);
   const px = (n: number) => `${n * scale}px`;
+  const filled = new Set(Object.keys(geometry.regions));
 
   return (
     <div className="layouts-preview">
@@ -437,13 +584,13 @@ function PresetPreview({
         className="layouts-preview-stage"
         style={{ width: PREVIEW_W, height: STAGE_HEIGHT * scale }}
       >
-        {geo.shell && (
+        {geometry.shell && (
           <div
             className="layouts-preview-shell"
-            style={{ left: px(geo.shell.left), top: px(geo.shell.top), width: px(geo.shell.width), height: px(geo.shell.height) }}
+            style={{ left: px(geometry.shell.left), top: px(geometry.shell.top), width: px(geometry.shell.width), height: px(geometry.shell.height) }}
           />
         )}
-        {geo.captures.map((cap, i) => (
+        {geometry.captures.map((cap, i) => (
           <div
             key={i}
             className="layouts-preview-capture"
@@ -452,20 +599,28 @@ function PresetPreview({
             {cap.label ?? 'CAPTURE'}
           </div>
         ))}
-        {config.variant.regions.map((slot) => {
-          const box = geo.regions[slot.id];
-          if (!box) return null;
-          return (
+        {Object.entries(geometry.regions).map(([rid, box]) => (
+          <div
+            key={rid}
+            className="layouts-preview-region"
+            style={{ left: px(box.left), top: px(box.top), width: px(box.width), height: px(box.height) }}
+          >
+            <span>{REGION_LABELS[rid] ?? rid}</span>
+            <small>{config.regions[rid]?.elements.length ?? 0} elem</small>
+          </div>
+        ))}
+        {geometry.gaps
+          .filter((g) => !filled.has(g.id))
+          .map((g) => (
             <div
-              key={slot.id}
-              className="layouts-preview-region"
-              style={{ left: px(box.left), top: px(box.top), width: px(box.width), height: px(box.height) }}
+              key={g.id}
+              className="layouts-preview-region layouts-preview-gap"
+              style={{ left: px(g.box.left), top: px(g.box.top), width: px(g.box.width), height: px(g.box.height) }}
             >
-              <span>{slot.id}</span>
-              <small>{config.regions[slot.id]?.elements.length ?? 0} elem</small>
+              <span>gap</span>
+              <small>add panels</small>
             </div>
-          );
-        })}
+          ))}
       </div>
       <small className="text-white-50">Stage {STAGE_WIDTH}×{STAGE_HEIGHT} (to scale)</small>
     </div>
