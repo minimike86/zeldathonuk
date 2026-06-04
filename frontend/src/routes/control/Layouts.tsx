@@ -405,59 +405,63 @@ function PresetEditor({ preset, onChanged }: { preset: LayoutPreset; onChanged: 
       </div>
 
       <div className="layouts-editor-grid">
-        <div>
-          <div className="layouts-field">
-            <small>Arrangement</small>
-            <span className="layouts-arrangement-name">{variant.label}</span>
+        <div className="layouts-controls">
+          {/* Arrangement caption sits above the masonry so it doesn't flow in
+              as a column item. */}
+          <div className="layouts-arrangement-bar">
+            Arrangement:{' '}
+            <strong className="layouts-arrangement-name">{variant.label}</strong>
           </div>
 
-          {variant.hasShell && (
-            <ShellControls
-              url={draft.shellImageUrl}
-              transform={draft.shellTransform}
-              onUrl={(url) => edit((d) => ({ ...d, shellImageUrl: url }))}
-              onTransform={setShell}
-            />
-          )}
+          <div className="layouts-controls-grid">
+            {variant.hasShell && (
+              <ShellControls
+                url={draft.shellImageUrl}
+                transform={draft.shellTransform}
+                onUrl={(url) => edit((d) => ({ ...d, shellImageUrl: url }))}
+                onTransform={setShell}
+              />
+            )}
 
-          {variant.regions.length === 0 && (
-            <p className="text-white-50">This variant has no editable regions.</p>
-          )}
+            {variant.regions.length === 0 && (
+              <p className="text-white-50">This variant has no editable regions.</p>
+            )}
 
-          {variant.regions.map((slot) => (
-            <RegionEditor
-              key={slot.id}
-              slot={slot}
-              region={draft.regions[slot.id] ?? { widthPx: slot.defaultSize, elements: [] }}
-              onWidth={(w) => setRegionWidth(slot.id, w)}
-              onToggle={(id) => toggleElement(slot.id, id)}
-              onMove={(id, dir) => moveElement(slot.id, id, dir)}
-            />
-          ))}
-
-          {variant.usesFsaParams && <FsaControls fsa={draft.fsa} onChange={setFsa} />}
-
-          {variant.usesScreenAdjust &&
-            geometry.captures.map((cap, i) => (
-              <ScreenAdjustControls
-                key={i}
-                label={cap.label ?? `Screen ${i + 1}`}
-                adjust={draft.screens[String(i)] ?? DEFAULT_SCREEN_ADJUST}
-                onChange={(mut) => setScreen(i, mut)}
+            {variant.regions.map((slot) => (
+              <RegionEditor
+                key={slot.id}
+                slot={slot}
+                region={draft.regions[slot.id] ?? { widthPx: slot.defaultSize, elements: [] }}
+                onWidth={(w) => setRegionWidth(slot.id, w)}
+                onToggle={(id) => toggleElement(slot.id, id)}
+                onMove={(id, dir) => moveElement(slot.id, id, dir)}
               />
             ))}
 
-          <CapturePosition align={draft.captureAlign} onChange={setCaptureAlign} />
+            {variant.usesFsaParams && <FsaControls fsa={draft.fsa} onChange={setFsa} />}
 
-          {geometry.gaps.map((gap) => (
-            <GapEditor
-              key={gap.id}
-              gap={gap}
-              elements={draft.regions[gap.id]?.elements ?? []}
-              onToggle={(id) => toggleElement(gap.id, id)}
-              onMove={(id, dir) => moveElement(gap.id, id, dir)}
-            />
-          ))}
+            {variant.usesScreenAdjust &&
+              geometry.captures.map((cap, i) => (
+                <ScreenAdjustControls
+                  key={i}
+                  label={cap.label ?? `Screen ${i + 1}`}
+                  adjust={draft.screens[String(i)] ?? DEFAULT_SCREEN_ADJUST}
+                  onChange={(mut) => setScreen(i, mut)}
+                />
+              ))}
+
+            <CapturePosition align={draft.captureAlign} onChange={setCaptureAlign} />
+
+            {geometry.gaps.map((gap) => (
+              <GapEditor
+                key={gap.id}
+                gap={gap}
+                elements={draft.regions[gap.id]?.elements ?? []}
+                onToggle={(id) => toggleElement(gap.id, id)}
+                onMove={(id, dir) => moveElement(gap.id, id, dir)}
+              />
+            ))}
+          </div>
         </div>
 
         <PresetPreview config={parsedConfig} geometry={geometry} />
@@ -520,19 +524,24 @@ function ElementList({
       </ol>
 
       {unselected.length > 0 && (
-        <div className="layouts-add-row">
-          <small className="text-white-50">Add:</small>
+        // Compact add-control: one dropdown instead of a wall of ~22 buttons.
+        // Resets to the placeholder after each pick (value stays "").
+        <select
+          className="form-select form-select-sm layouts-add-select"
+          value=""
+          aria-label="Add element"
+          onChange={(e) => {
+            const id = e.target.value as ElementId;
+            if (id) onToggle(id);
+          }}
+        >
+          <option value="">+ Add element…</option>
           {unselected.map((id) => (
-            <button
-              key={id}
-              className="btn btn-sm btn-outline-light"
-              title={ELEMENT_META[id].hint}
-              onClick={() => onToggle(id)}
-            >
-              + {ELEMENT_META[id].label}
-            </button>
+            <option key={id} value={id} title={ELEMENT_META[id].hint}>
+              {ELEMENT_META[id].label}
+            </option>
           ))}
-        </div>
+        </select>
       )}
     </>
   );
@@ -853,7 +862,7 @@ function FsaControls({
  *  renderer uses, so the preview can't drift from reality. Empty gap zones show
  *  as faint dashed placeholders the operator can fill. */
 function PresetPreview({ config, geometry }: { config: PresetConfig; geometry: LayoutGeometry }) {
-  const PREVIEW_W = 380;
+  const PREVIEW_W = 460;
   const scale = PREVIEW_W / STAGE_WIDTH;
   const px = (n: number) => `${n * scale}px`;
   const filled = new Set(Object.keys(geometry.regions));
