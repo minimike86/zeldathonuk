@@ -97,20 +97,25 @@ CATALOGUE = [
 
 def seed_games(apps, schema_editor):
     Game = apps.get_model('api', 'Game')
+    # Some of these columns (igdb_id, twitch_game_id, …) are added by later
+    # migrations, so the historical Game model at THIS point may not have them.
+    # Replaying from zero (e.g. building the test database) would otherwise
+    # raise FieldError. Set only the fields that exist on the historical model;
+    # later migrations backfill the rest.
+    field_names = {f.name for f in Game._meta.get_fields()}
     for title, platform, layout, minutes, year, igdb_id, twitch_id, hltb_id, cover in CATALOGUE:
-        Game.objects.update_or_create(
-            title=title,
-            defaults={
-                'platform': platform,
-                'layout_type': layout,
-                'default_play_minutes': minutes,
-                'release_year': year,
-                'igdb_id': igdb_id,
-                'twitch_game_id': twitch_id,
-                'hltb_id': hltb_id,
-                'box_art_url': cover,
-            },
-        )
+        defaults = {
+            'platform': platform,
+            'layout_type': layout,
+            'default_play_minutes': minutes,
+            'release_year': year,
+            'igdb_id': igdb_id,
+            'twitch_game_id': twitch_id,
+            'hltb_id': hltb_id,
+            'box_art_url': cover,
+        }
+        defaults = {k: v for k, v in defaults.items() if k in field_names}
+        Game.objects.update_or_create(title=title, defaults=defaults)
 
 
 def unseed_games(apps, schema_editor):

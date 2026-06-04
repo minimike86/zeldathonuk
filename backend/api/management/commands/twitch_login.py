@@ -79,15 +79,28 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--scopes', default=DEFAULT_SCOPES,
-            help=f'Space-separated OAuth scopes (default: "{DEFAULT_SCOPES}").',
+            '--scopes', default='',
+            help='Space-separated OAuth scopes. Defaults to the full set for the '
+                 'primary channel, or just "channel:read:charity" with --channel.',
+        )
+        parser.add_argument(
+            '--channel', default='',
+            help='Mint a token for an ADDITIONAL charity channel (broadcaster '
+                 'login), saved to a TwitchCharityChannel row instead of the '
+                 'primary singleton. The broadcaster must authorise in the '
+                 'browser. Scopes default to channel:read:charity.',
         )
 
     def handle(self, *args, **opts):
         client_id = settings.TWITCH_CLIENT_ID
         if not client_id:
             raise CommandError('TWITCH_CLIENT_ID is not set — configure it first.')
-        scopes = opts['scopes']
+        channel = (opts.get('channel') or '').strip().lower()
+        # Extra charity channels only need read:charity; the primary needs the
+        # full feature set. An explicit --scopes always wins.
+        scopes = opts['scopes'] or (
+            'channel:read:charity' if channel else DEFAULT_SCOPES
+        )
 
         # 1) Request a device + user code.
         resp = requests.post(
@@ -123,11 +136,20 @@ class Command(BaseCommand):
                 timeout=15,
             )
             if tr.ok:
-                self._save(tr.json())
-                self.stdout.write(self.style.SUCCESS(
-                    '\n  ✓ Token saved to the TwitchOAuthToken row. '
-                    'Push to Twitch schedule will work now.'
-                ))
+                if channel:
+                    ch = self._save_channel(tr.json(), channel)
+                    self.stdout.write(self.style.SUCCESS(
+                        f'\n  ✓ Token saved for charity channel "{ch.login}" '
+                        f'(id {ch.broadcaster_id or "?"}). Run `twitch_eventsub` '
+                        'to register its charity subscriptions, and '
+                        '`poll_donations --twitch` to pull its donations.'
+                    ))
+                else:
+                    self._save(tr.json())
+                    self.stdout.write(self.style.SUCCESS(
+                        '\n  ✓ Token saved to the TwitchOAuthToken row. '
+                        'Push to Twitch schedule will work now.'
+                    ))
                 return
             message = ''
             try:
@@ -152,3 +174,36 @@ class Command(BaseCommand):
         scope = data.get('scope') or []
         tok.scopes = ' '.join(scope) if isinstance(scope, list) else str(scope)
         tok.save()
+
+    def _save_channel(self, data: dict, login_hint: str) -> 'models.TwitchCharityChannel':
+        """Persist an additional channel's token into TwitchCharityChannel,
+        resolving the broadcaster id/login/display from the freshly-minted token
+        (Get Users with no id returns the authenticated user)."""
+        from api import twitch  # local import: avoids loading requests at module import
+
+        token = data['access_token']
+        info = {}
+        resp = requests.get(
+            f'{twitch.HELIX}/users',
+            headers={'Authorization': f'Bearer {token}',
+                     'Client-Id': settings.TWITCH_CLIENT_ID},
+            timeout=15,
+        )
+        if resp.ok:
+            rows = resp.json().get('data') or []
+            info = rows[0] if rows else {}
+        login = (info.get('login') or login_hint).lower()
+        scope = data.get('scope') or []
+        ch, _ = models.TwitchCharityChannel.objects.update_or_create(
+            login=login,
+            defaults={
+                'broadcaster_id': info.get('id', ''),
+                'display_name': info.get('display_name', ''),
+                'access_token': token,
+                'refresh_token': data.get('refresh_token', ''),
+                'expires_at': timezone.now() + timedelta(seconds=int(data['expires_in'])),
+                'scopes': ' '.join(scope) if isinstance(scope, list) else str(scope),
+                'is_active': True,
+            },
+        )
+        return ch

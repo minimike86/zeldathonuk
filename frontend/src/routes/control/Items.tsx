@@ -29,6 +29,7 @@ import {
   type GameItemSet,
   type ItemSetKind,
 } from '@/lib/obsApi';
+import { ITEM_CATEGORIES, groupLabelOf, orderGroupLabels } from '@/lib/itemGrouping';
 
 // Same set of ids regardless of order.
 const sameIds = (a: number[], b: number[]) =>
@@ -130,14 +131,8 @@ function SortableCluster({
   );
 }
 
-const CATEGORIES = [
-  ['weapon', 'Weapon'],
-  ['song', 'Song'],
-  ['heart-piece', 'Heart piece'],
-  ['key-item', 'Key item'],
-  ['dungeon-item', 'Dungeon item'],
-  ['other', 'Other'],
-] as const;
+// Single source shared with the /obs items overlay so the two group identically.
+const CATEGORIES = ITEM_CATEGORIES;
 
 const SET_KINDS: readonly (readonly [ItemSetKind, string])[] = [
   ['set', 'Related set'],
@@ -168,6 +163,9 @@ export function ItemsControl() {
     category: Record<number, string>;
     setIds: Record<number, number[]>;
   }>({ group: {}, category: {}, setIds: {} });
+  // Optimistic group (section) order — set when the ▲▼ buttons reorder a group,
+  // so it doesn't flash back before the game PATCH is polled. Null = use server.
+  const [groupOrderOverride, setGroupOrderOverride] = useState<string[] | null>(null);
   // Live working arrangement during a drag: containerKey -> ordered item ids.
   // Null except mid-drag; drives the make-way animation across containers.
   const [working, setWorking] = useState<Map<string, number[]> | null>(null);
@@ -262,11 +260,7 @@ export function ItemsControl() {
   const effGroup = (i: GameItem) => fieldOverrides.group[i.id] ?? i.group;
   const effCat = (i: GameItem) => fieldOverrides.category[i.id] ?? i.category;
   const effSetIds = (i: GameItem) => fieldOverrides.setIds[i.id] ?? i.set_ids;
-  const groupLabel = (i: GameItem) =>
-    effGroup(i).trim() ||
-    CATEGORIES.find(([v]) => v === effCat(i))?.[1] ||
-    effCat(i) ||
-    'Other';
+  const groupLabel = (i: GameItem) => groupLabelOf(effGroup(i), effCat(i));
   const groups: { label: string; items: GameItem[] }[] = [];
   const byLabel = new Map<string, GameItem[]>();
   for (const it of items) {
@@ -279,6 +273,14 @@ export function ItemsControl() {
     }
     bucket.push(it);
   }
+  // Apply the operator's group (section) order: listed groups first, the rest
+  // after in appearance order. The override shadows the server value until the
+  // game PATCH is polled back.
+  const effGroupOrder = groupOrderOverride ?? game.item_group_order ?? [];
+  const orderedGroupLabels = orderGroupLabels(groups.map((g) => g.label), effGroupOrder);
+  groups.sort(
+    (a, b) => orderedGroupLabels.indexOf(a.label) - orderedGroupLabels.indexOf(b.label),
+  );
   // Distinct existing group (section) names for the form's autocomplete.
   const existingGroups = Array.from(
     new Set(items.map((i) => i.group.trim()).filter(Boolean)),
@@ -352,6 +354,18 @@ export function ItemsControl() {
     setErr(null);
     try {
       await obsApi.updateItemSet(set.id, { name: nm, kind });
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleSetOverlay = async (set: GameItemSet) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.updateItemSet(set.id, { show_in_overlay: !set.show_in_overlay });
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -448,6 +462,19 @@ export function ItemsControl() {
     const [moved] = reordered.splice(idx, 1);
     reordered.splice(target, 0, moved);
     applySetOrder(reordered);
+  };
+
+  // Move a whole group (section) up/down. Persists the full displayed order as
+  // the game's item_group_order so the control grid + the overlay follow it.
+  const moveGroup = (label: string, dir: number) => {
+    const current = groups.map((g) => g.label);
+    const idx = current.indexOf(label);
+    const target = idx + dir;
+    if (idx < 0 || target < 0 || target >= current.length) return;
+    const next = current.slice();
+    [next[idx], next[target]] = [next[target], next[idx]];
+    setGroupOrderOverride(next);
+    void runOps([obsApi.updateGame(game.id, { item_group_order: next })]);
   };
 
   // Clear every collected item for this run, then re-apply the game's
@@ -865,6 +892,26 @@ export function ItemsControl() {
                   <span className="text-white-50">
                     ({got}/{sec.items.length})
                   </span>
+                  <span className="set-head-actions" style={{ marginLeft: '0.4rem' }}>
+                    <button
+                      type="button"
+                      className="set-head-action"
+                      title="Move group up"
+                      disabled={busy || sec.idx === 0}
+                      onClick={() => moveGroup(sec.label, -1)}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      className="set-head-action"
+                      title="Move group down"
+                      disabled={busy || sec.idx === sections.length - 1}
+                      onClick={() => moveGroup(sec.label, 1)}
+                    >
+                      ▼
+                    </button>
+                  </span>
                 </h3>
                 <div className="items-flow">
                   <SortableContext
@@ -894,6 +941,7 @@ export function ItemsControl() {
                             onMoveNext={() => moveSet(sec.sectionSets, set, 1)}
                             onRename={renameSet}
                             onRemove={removeSet}
+                            onToggleOverlay={toggleSetOverlay}
                           />
                           <DroppableContainer id={contKey}>
                             <div className="link-cluster-body">
@@ -1293,6 +1341,21 @@ export function ItemsControl() {
           letter-spacing: 0.04em;
           opacity: 0.6;
         }
+        .item-set-chip-del {
+          border: none;
+          background: rgba(255,90,90,0.25);
+          color: #ffd5d5;
+          border-radius: 999px;
+          width: 1.1rem;
+          height: 1.1rem;
+          line-height: 1;
+          font-size: 0.8rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .item-set-chip-del:disabled { opacity: 0.4; cursor: default; }
       `}</style>
     </div>
   );
@@ -1305,6 +1368,7 @@ function SetClusterHead({
   busy,
   onRename,
   onRemove,
+  onToggleOverlay,
   canMovePrev,
   canMoveNext,
   onMovePrev,
@@ -1314,6 +1378,7 @@ function SetClusterHead({
   busy: boolean;
   onRename: (set: GameItemSet, name: string, kind: ItemSetKind) => void | Promise<void>;
   onRemove: (set: GameItemSet) => void | Promise<void>;
+  onToggleOverlay: (set: GameItemSet) => void | Promise<void>;
   canMovePrev: boolean;
   canMoveNext: boolean;
   onMovePrev: () => void;
@@ -1407,6 +1472,17 @@ function SetClusterHead({
         <button
           type="button"
           className="set-head-action"
+          title={set.show_in_overlay ? 'Shown in /obs overlay — click to hide' : 'Hidden from /obs overlay — click to show'}
+          aria-pressed={set.show_in_overlay}
+          disabled={busy}
+          onClick={() => void onToggleOverlay(set)}
+          style={{ opacity: set.show_in_overlay ? 1 : 0.4 }}
+        >
+          {set.show_in_overlay ? '👁' : '🚫'}
+        </button>
+        <button
+          type="button"
+          className="set-head-action"
           title="Delete set"
           disabled={busy}
           onClick={() => void onRemove(set)}
@@ -1457,7 +1533,14 @@ function ItemForm({
   const toggleUnlockWith = (id: number) =>
     setUnlocksWithIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const allSets = [...sets, ...extraSets.filter((e) => !sets.some((s) => s.id === e.id))];
+  // Sets deleted inline here, hidden immediately (the parent poll reconciles).
+  const [deletedSetIds, setDeletedSetIds] = useState<number[]>([]);
+  const allSets = [...sets, ...extraSets.filter((e) => !sets.some((s) => s.id === e.id))].filter(
+    (s) => !deletedSetIds.includes(s.id),
+  );
+  // Persisted item count per set — drives the chip count + the empty-set delete.
+  const setItemCount = (setId: number) =>
+    allItems.filter((it) => it.set_ids.includes(setId)).length;
 
   useEffect(() => {
     let cancelled = false;
@@ -1476,6 +1559,23 @@ function ItemForm({
 
   const toggleSet = (id: number) =>
     setSetIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  // Delete an EMPTY set (no items reference it) straight from the picker — these
+  // never render a deletable cluster on the page. Hidden optimistically.
+  const deleteSet = async (id: number) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.deleteItemSet(id);
+      setDeletedSetIds((prev) => [...prev, id]);
+      setExtraSets((prev) => prev.filter((s) => s.id !== id));
+      setSetIds((prev) => prev.filter((x) => x !== id));
+    } catch (e2) {
+      setErr((e2 as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const addNewSet = async () => {
     const nm = newSetName.trim();
@@ -1631,17 +1731,40 @@ function ItemForm({
           {allSets.length === 0 && (
             <span className="small text-white-50">No sets yet — add one below.</span>
           )}
-          {allSets.map((s) => (
-            <label key={s.id} className="item-set-chip" data-on={setIds.includes(s.id)}>
-              <input
-                type="checkbox"
-                checked={setIds.includes(s.id)}
-                onChange={() => toggleSet(s.id)}
-              />
-              {s.name}
-              <span className="item-set-chip-kind">{s.kind}</span>
-            </label>
-          ))}
+          {allSets.map((s) => {
+            const count = setItemCount(s.id);
+            // Deletable only when empty AND not being assigned to this item, so
+            // you can't nuke a set you're about to use.
+            const canDelete = count === 0 && !setIds.includes(s.id);
+            return (
+              <label key={s.id} className="item-set-chip" data-on={setIds.includes(s.id)}>
+                <input
+                  type="checkbox"
+                  checked={setIds.includes(s.id)}
+                  onChange={() => toggleSet(s.id)}
+                />
+                {s.name}
+                <span className="item-set-chip-kind">{s.kind}</span>
+                <span className="item-set-chip-kind" title={`${count} item${count === 1 ? '' : 's'}`}>
+                  {count}
+                </span>
+                {canDelete && (
+                  <button
+                    type="button"
+                    className="item-set-chip-del"
+                    title="Delete this empty set"
+                    disabled={busy}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void deleteSet(s.id);
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
+            );
+          })}
         </div>
         <div className="d-flex gap-2 align-items-end mt-2" style={{ flexWrap: 'wrap' }}>
           <div style={{ minWidth: 160 }}>

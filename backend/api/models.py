@@ -69,6 +69,14 @@ class Game(models.Model):
                   'playthrough, its lane configs win over the event-level '
                   'layout. Blank dict → fall back to the event layout.',
     )
+    item_group_order = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Ordered list of item GROUP labels (the section headers on '
+                  '/control/items). Drives section order on the control grid and '
+                  'the /obs items overlay. Labels not present fall back to '
+                  'first-appearance order after the listed ones.',
+    )
 
     class Meta:
         ordering = ['title']
@@ -171,6 +179,15 @@ class Event(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def currency_code(self) -> str:
+        """ISO 4217 code for this event's currency, mapped from the display
+        symbol. Used to denominate Twitch Charity donations, since Twitch's
+        Helix charity API reports the wrong currency (always 'USD')."""
+        return {
+            '£': 'GBP', '$': 'USD', '€': 'EUR', '¥': 'JPY',
+        }.get((self.currency_symbol or '£').strip(), 'GBP')
 
 
 class ScheduleEntry(models.Model):
@@ -392,6 +409,12 @@ class GameItemSet(models.Model):
                   'trade sequence, or an unordered related set.',
     )
     order = models.PositiveIntegerField(default=0)
+    show_in_overlay = models.BooleanField(
+        default=True,
+        help_text='When false, this set (and items whose only sets are hidden) '
+                  'is omitted from the /obs/full items element — e.g. bottle '
+                  'contents that the broadcast doesn\'t need to surface.',
+    )
 
     class Meta:
         ordering = ['game', 'order', 'name']
@@ -880,6 +903,15 @@ class Donation(models.Model):
         max_digits=10, decimal_places=2, null=True, blank=True
     )
     image_url = models.URLField(blank=True)
+    source_channel = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text='For multi-channel platforms (Twitch Charity), the broadcaster '
+                  'login the donation came through (e.g. "zeldathonuk", "msec"). '
+                  'Blank for single-source platforms. Donations still merge into '
+                  'the same event total; this tags which channel raised them.',
+    )
     mute_reason = models.CharField(
         max_length=32,
         choices=MuteReason.choices,
@@ -1181,6 +1213,209 @@ class TwitchOAuthToken(models.Model):
 
     @classmethod
     def get(cls) -> 'TwitchOAuthToken':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class TwitchCharityCampaign(models.Model):
+    """The state of a Twitch Charity campaign, mirrored from EventSub
+    (``channel.charity_campaign.start`` / ``.progress`` / ``.stop``) and the
+    Helix ``/charity/campaigns`` poll.
+
+    Keyed by Twitch's ``campaign_id`` (not a singleton) so past campaigns
+    persist for history; ``active()`` returns the live one. This row tracks
+    Twitch's *own* running total (``current_amount``) and target — used only as
+    a goal/progress display. It is NOT summed into our donation totals: every
+    individual Twitch Charity donation is also ingested as a ``Donation`` row,
+    which remains the source of truth for the money we report.
+    """
+
+    campaign_id = models.CharField(max_length=200, unique=True)
+    broadcaster_id = models.CharField(max_length=64, blank=True)
+    charity_name = models.CharField(max_length=200, blank=True)
+    charity_logo_url = models.URLField(blank=True)
+    charity_website = models.URLField(blank=True)
+    charity_description = models.TextField(blank=True)
+    # Twitch's own figures. Stored at 2dp after converting from the minor-unit
+    # integer Twitch sends (value=1234, decimal_places=2 → 12.34).
+    target_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    current_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal('0.00'),
+    )
+    currency = models.CharField(max_length=3, default='GBP')
+    is_active = models.BooleanField(default=True, db_index=True)
+    started_at = models.DateTimeField(default=timezone.now)
+    stopped_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-started_at']
+        verbose_name = 'Twitch charity campaign'
+
+    def __str__(self) -> str:
+        state = 'active' if self.is_active else 'ended'
+        return f'{self.charity_name or self.campaign_id} ({state})'
+
+    @classmethod
+    def active(cls) -> 'TwitchCharityCampaign | None':
+        return cls.objects.filter(is_active=True).order_by('-started_at').first()
+
+
+class TwitchCharityChannel(models.Model):
+    """An *additional* Twitch channel whose charity donations we ingest, beyond
+    the primary broadcaster (whose token lives in TwitchOAuthToken).
+
+    Twitch's charity API is per-broadcaster and token-gated: reading a channel's
+    charity campaign/donations requires THAT channel's own user OAuth token with
+    the ``channel:read:charity`` scope (the broadcaster_id in the request must
+    match the token's user id). So each extra channel stores its own token here,
+    minted via ``manage.py twitch_login --channel <login>`` (the broadcaster
+    authorises the app once). Same field shape as TwitchOAuthToken so the
+    refresh helper in twitch.py works on either.
+
+    EventSub also needs that one-time authorisation; once present,
+    ``manage.py twitch_eventsub`` registers the charity subscriptions for this
+    channel's broadcaster id against the shared callback.
+    """
+
+    login = models.CharField(
+        max_length=50, unique=True,
+        help_text='Twitch channel login (lowercase, the bit after twitch.tv/).',
+    )
+    broadcaster_id = models.CharField(
+        max_length=64, blank=True,
+        help_text='Numeric Twitch user id, resolved from the token at login.',
+    )
+    display_name = models.CharField(max_length=100, blank=True)
+    access_token = models.CharField(max_length=200, blank=True)
+    refresh_token = models.CharField(max_length=200, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    scopes = models.TextField(blank=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Uncheck to stop polling / registering EventSub for this '
+                  'channel without deleting its token.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['login']
+        verbose_name = 'Twitch charity channel'
+
+    def __str__(self) -> str:
+        return f'{self.display_name or self.login} ({"active" if self.is_active else "off"})'
+
+
+class LayoutPreset(models.Model):
+    """A named arrangement for one OBS game-layout aspect ratio.
+
+    /control/games assigns each Game a ``layout_type`` (16x9 / 4x3 / 3ds / …)
+    because games can only output at fixed aspect ratios. This model layers a
+    library of *presets* on top of each type: where the game capture sits and
+    which elements (items, death count, timer, runners, …) show in the freed
+    regions. /obs/full renders the **active** preset for the currently-playing
+    game's layout_type.
+
+    Activation is scoped **per layout_type** — exactly one preset is active for
+    each aspect ratio at a time (so flipping the active 4x3 preset doesn't touch
+    the active 16x9 one). This differs from ThemeSettings, where activation is
+    global. The shape of ``config`` is owned by the frontend
+    (useLayoutPresetConfig.parsePresetConfig); the backend stores it opaquely
+    and the parser drops unknown ids + clamps sizes to the 1920×984 stage.
+    """
+
+    name = models.CharField(
+        max_length=100,
+        help_text='Label shown in /control/layouts — purely cosmetic.',
+    )
+    layout_type = models.CharField(max_length=20, choices=LayoutType.choices)
+    is_active = models.BooleanField(
+        default=False,
+        help_text='One active preset per layout_type. The active row drives '
+                  '/obs/full for games of that aspect ratio.',
+    )
+    config = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Variant + per-region widths + per-region element lists. '
+                  'Shape owned by the frontend parser; unknown ids are dropped '
+                  'and over-budget widths clamped to the 1920×984 stage on read.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Layout preset'
+        verbose_name_plural = 'Layout presets'
+        ordering = ['layout_type', '-is_active', 'name']
+
+    def save(self, *args, **kwargs):
+        # Mirror ThemeSettings.save, but demote only siblings of the SAME
+        # layout_type so each aspect ratio keeps its own active preset.
+        super().save(*args, **kwargs)
+        if self.is_active:
+            LayoutPreset.objects.filter(
+                layout_type=self.layout_type, is_active=True,
+            ).exclude(pk=self.pk).update(is_active=False)
+
+    def __str__(self) -> str:
+        return f'{self.get_layout_type_display()} — {self.name}'
+
+    @classmethod
+    def active_for(cls, layout_type: str) -> 'LayoutPreset | None':
+        """The active preset for an aspect ratio, or None when none is set
+        (the frontend then falls back to its baked-in per-layout default)."""
+        return cls.objects.filter(layout_type=layout_type, is_active=True).first()
+
+
+class LayoutGuideSettings(models.Model):
+    """Singleton for OBS layout *global* settings: the capture alignment guide
+    and the manual layout-type override for /obs/full.
+
+    Capture guide: when on, the /obs/layout/<type> + /obs/full game-capture boxes
+    render a semi-transparent hashed border + device label so the operator can
+    line each OBS capture source up with its reserved box. The control lives in
+    /control/layouts but the guide draws inside the OBS browser source — a
+    different browser context — so the flag is stored here and polled by the OBS
+    page (the same singleton-polled pattern as ChestAnnouncerSettings).
+
+    Forced layout type: by default /obs/full auto-picks its aspect ratio from the
+    currently-playing game's layout_type. ``forced_layout_type`` lets the operator
+    override that — when set, /obs/full renders that type's active preset
+    regardless of the playing game; blank means "auto (follow the schedule)".
+
+    Pinned to pk=1.
+    """
+
+    show_guide = models.BooleanField(
+        default=False,
+        help_text='When true, OBS layout pages draw the capture alignment guide '
+                  '(hashed border + device label). Toggled from /control/layouts; '
+                  'leave off for the live scene.',
+    )
+    forced_layout_type = models.CharField(
+        max_length=20,
+        choices=LayoutType.choices,
+        blank=True,
+        default='',
+        help_text='When set, /obs/full forces this aspect ratio instead of '
+                  'following the currently-playing game. Blank = auto (follow '
+                  'the schedule). Set from /control/layouts.',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Layout guide settings'
+        verbose_name_plural = 'Layout guide settings'
+
+    def __str__(self) -> str:
+        return f'Layout guide: {"on" if self.show_guide else "off"}'
+
+    @classmethod
+    def get(cls) -> 'LayoutGuideSettings':
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 

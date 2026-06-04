@@ -24,13 +24,26 @@ from __future__ import annotations
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from api import twitch
+from api import models, twitch
+
+
+def _charity_desired(bid: str) -> list[dict]:
+    """The four charity-campaign subscriptions for one broadcaster. Shared by the
+    primary channel and every additional TwitchCharityChannel."""
+    broadcaster = {'broadcaster_user_id': bid}
+    return [
+        {'type': 'channel.charity_campaign.donate', 'version': '1', 'condition': broadcaster},
+        {'type': 'channel.charity_campaign.start', 'version': '1', 'condition': broadcaster},
+        {'type': 'channel.charity_campaign.progress', 'version': '1', 'condition': broadcaster},
+        {'type': 'channel.charity_campaign.stop', 'version': '1', 'condition': broadcaster},
+    ]
 
 
 def _desired(bid: str) -> list[dict]:
-    """The subscription set we consume. `key` is a stable (type, sorted-
-    condition) identity used to match against existing subs so re-running
-    doesn't duplicate. channel.follow is v2 (needs a moderator id)."""
+    """The subscription set we consume for the PRIMARY broadcaster. `key` is a
+    stable (type, sorted-condition) identity used to match against existing subs
+    so re-running doesn't duplicate. channel.follow is v2 (needs a moderator
+    id). Charity events also get registered for extra channels in handle()."""
     broadcaster = {'broadcaster_user_id': bid}
     return [
         {'type': 'channel.follow', 'version': '2',
@@ -40,8 +53,7 @@ def _desired(bid: str) -> list[dict]:
         {'type': 'channel.subscription.message', 'version': '1', 'condition': broadcaster},
         {'type': 'channel.cheer', 'version': '1', 'condition': broadcaster},
         {'type': 'channel.raid', 'version': '1', 'condition': {'to_broadcaster_user_id': bid}},
-        {'type': 'channel.charity_campaign.donate', 'version': '1', 'condition': broadcaster},
-    ]
+    ] + _charity_desired(bid)
 
 
 def _identity(sub_type: str, condition: dict) -> tuple:
@@ -93,6 +105,14 @@ class Command(BaseCommand):
             )
 
         desired = _desired(bid)
+        # Additional charity channels (e.g. a co-streamer): register only their
+        # charity-campaign events against their own broadcaster id. Each must
+        # have authorised the app with channel:read:charity (run
+        # `twitch_login --channel <login>`).
+        for ch in models.TwitchCharityChannel.objects.filter(is_active=True):
+            if ch.broadcaster_id:
+                desired += _charity_desired(ch.broadcaster_id)
+                self.stdout.write(f'  (incl. charity events for {ch.login})')
         desired_ids = {_identity(d['type'], d['condition']) for d in desired}
         our_types = {d['type'] for d in desired}
 

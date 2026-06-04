@@ -11,25 +11,29 @@ import './control.css';
 
 const sections = [
   { to: '/control', label: 'Overview', end: true },
-  // Pre-event setup
-  { to: '/control/events', label: 'Events' },
-  { to: '/control/charities', label: 'Charities' },
-  { to: '/control/games', label: 'Games' },
-  { to: '/control/objectives', label: 'Objectives' },
-  { to: '/control/runners', label: 'Runners' },
-  { to: '/control/schedule', label: 'Schedule' },
-  // Live show
-  { to: '/control/timer', label: 'Timer' },
-  { to: '/control/items', label: 'Items' },
-  { to: '/control/donations', label: 'Donations' },
-  { to: '/control/raffles', label: 'Raffles' },
-  { to: '/control/audio', label: 'Music' },
-  { to: '/control/brb', label: 'BRB' },
-  { to: '/control/omnibar', label: 'Omnibar' },
-  { to: '/control/chest-announcer', label: 'Chest announcer' },
-  { to: '/control/logs', label: 'Logs & Queue' },
   // Visual / branding
   { to: '/control/theme', label: 'Theme' },
+  // Pre-event setup
+  { to: '/control/charities', label: 'Charities' },   // A charity to fundraise for
+  { to: '/control/events', label: 'Events' },         // A fundraising event
+  { to: '/control/runners', label: 'Runners' },       // Player who will play the games
+  { to: '/control/donations', label: 'Donations' },
+  { to: '/control/raffles', label: 'Raffles' },
+  // Gameplay related
+  { to: '/control/games', label: 'Games' },           // Games that can be played
+  { to: '/control/schedule', label: 'Schedule' },     // A schedule is a playthrough of n games
+  { to: '/control/items', label: 'Items' },           // A game has items to collect
+  { to: '/control/objectives', label: 'Objectives' }, // A game has objectives to complete
+  // Live show
+  // { to: '/control/brb', label: 'BRB' },            // deprecated BRB isnt really needed with schedule updates
+  { to: '/control/timer', label: 'Timer' },           // A gameplay split timer tracking play time and collection of objectives
+  // OBS Screens
+  { to: '/control/audio', label: 'Music' },
+  { to: '/control/layouts', label: 'Layouts' },
+  { to: '/control/omnibar', label: 'Omnibar' },
+  { to: '/control/chest-announcer', label: 'Chest announcer' },
+  // Fault triage :)
+  { to: '/control/logs', label: 'Logs & Queue' },
 ];
 
 /**
@@ -51,9 +55,9 @@ export function ControlLayout() {
 
 function ControlGuard() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { me, loading, error } = useMe(isSignedIn === true);
+  const { me, error } = useMe(isSignedIn === true);
 
-  if (!isLoaded || (isSignedIn && loading)) {
+  if (!isLoaded) {
     return <ControlGate message="Checking access…" />;
   }
   if (!isSignedIn) {
@@ -62,7 +66,14 @@ function ControlGuard() {
   if (error) {
     return <ControlGate message="Couldn’t verify your access. Try reloading." />;
   }
-  if (me?.role !== 'operator') {
+  // Signed in but the profile hasn't resolved yet — keep waiting rather than
+  // evicting. `me` is the source of truth for the redirect below: redirecting
+  // on a transient null would bounce operators home during the render window
+  // after isSignedIn flips true but before useMe's fetch completes.
+  if (!me) {
+    return <ControlGate message="Checking access…" />;
+  }
+  if (me.role !== 'operator') {
     // Signed-in viewers (and any non-operator) aren't allowed in — send home.
     return <Navigate to="/" replace />;
   }

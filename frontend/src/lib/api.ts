@@ -23,6 +23,20 @@ export function setAuthTokenGetter(getter: (() => Promise<string | null>) | null
   tokenGetter = getter;
 }
 
+/**
+ * Current Clerk bearer token via the ambient getter, or null if unavailable.
+ * For requests that can't go through `api()` (e.g. multipart `FormData`
+ * uploads, which `api()` would JSON-stringify) but still need authentication.
+ */
+export async function getAuthToken(): Promise<string | null> {
+  if (!tokenGetter) return null;
+  try {
+    return await tokenGetter();
+  } catch {
+    return null;
+  }
+}
+
 export class ApiError extends Error {
   // Explicit field declarations rather than constructor parameter properties:
   // the latter emit runtime code, which `erasableSyntaxOnly` (tsconfig) forbids.

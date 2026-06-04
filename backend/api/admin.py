@@ -382,6 +382,17 @@ class ThemeSettingsAdmin(ModelAdmin):
     list_editable = ['is_active']
 
 
+@admin.register(models.LayoutPreset)
+class LayoutPresetAdmin(ModelAdmin):
+    """Library of OBS game-layout presets. One row per layout_type is
+    `is_active` (scoped demotion on save); the active row drives /obs/full for
+    games of that aspect ratio."""
+    list_display = ['__str__', 'layout_type', 'is_active', 'updated_at']
+    list_filter = ['layout_type', 'is_active']
+    readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['is_active']
+
+
 @admin.register(models.TwitchOAuthToken)
 class TwitchOAuthTokenAdmin(ModelAdmin):
     """Singleton row — Twitch user OAuth token + refresh metadata.
@@ -410,6 +421,34 @@ class TwitchOAuthTokenAdmin(ModelAdmin):
             self.message_user(request, str(exc), level=messages.ERROR)
             return
         self.message_user(request, 'Twitch token refreshed.', level=messages.SUCCESS)
+
+
+@admin.register(models.TwitchCharityCampaign)
+class TwitchCharityCampaignAdmin(ModelAdmin):
+    """Twitch's own charity campaign total + goal, mirrored from EventSub /
+    Helix. Read-only mirror — the money we report comes from Donation rows, so
+    this is a goal/progress reference only."""
+    list_display = ['charity_name', 'is_active', 'current_amount',
+                    'target_amount', 'currency', 'started_at', 'updated_at']
+    list_filter = ['is_active', 'currency']
+    search_fields = ['charity_name', 'campaign_id']
+    readonly_fields = ['updated_at']
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(models.TwitchCharityChannel)
+class TwitchCharityChannelAdmin(ModelAdmin):
+    """Additional Twitch channels whose charity donations we ingest. Tokens are
+    minted via `manage.py twitch_login --channel <login>`; toggle `is_active` to
+    stop polling/registering a channel without deleting its token."""
+    list_display = ['login', 'display_name', 'broadcaster_id', 'is_active',
+                    'expires_at', 'updated_at']
+    list_filter = ['is_active']
+    list_editable = ['is_active']
+    search_fields = ['login', 'display_name', 'broadcaster_id']
+    readonly_fields = ['expires_at', 'scopes', 'created_at', 'updated_at']
 
 
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────

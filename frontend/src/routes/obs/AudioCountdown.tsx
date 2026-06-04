@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { AudioTrack, VisualiserStyle } from '@/lib/obsApi';
-import { env } from '@/lib/env';
+import { env, resolveMediaUrl } from '@/lib/env';
 import { themeFor, themeToCssVars } from './game-themes';
 import { onThemeChanged } from '@/lib/themeBus';
 import './audio-countdown.css';
@@ -37,7 +37,7 @@ export function AudioCountdown() {
     [themeBump],
     { cacheKey: 'zeldathon-theme' },
   );
-  const titleLogo = themeSettings?.logo_url || DEFAULT_AC_LOGO;
+  const titleLogo = resolveMediaUrl(themeSettings?.logo_url) || DEFAULT_AC_LOGO;
   const { data: pinned } = usePolledQuery(obsApi.nowPlayingAudio, 1500);
   const { data: currentlyPlaying } = usePolledQuery(obsApi.currentlyPlaying, 4000);
   const { data: schedule } = usePolledQuery(

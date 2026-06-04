@@ -5,6 +5,7 @@ import { WaveText } from '@/components/WaveText';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { DonationPage, EventCharityLink, ScheduleEntry } from '@/lib/obsApi';
 import { useAccentDeck } from '@/lib/accentDeck';
+import { resolveMediaUrl } from '@/lib/env';
 import './home.css';
 
 // Pass every plausible parent so Twitch's iframe security check passes
@@ -476,7 +477,7 @@ function BenefittingCard({
           className="benefitting-logo"
           title={charity.name}
         >
-          <img src={charity.logo_url} alt={`${charity.name} logo`} />
+          <img src={resolveMediaUrl(charity.logo_url)} alt={`${charity.name} logo`} />
         </a>
       ) : null}
       <div className="benefitting-body">

@@ -10,12 +10,21 @@ import { notifyRafflesChanged } from '@/lib/raffleBus';
 import { notifyItemsChanged } from '@/lib/itemsBus';
 import { notifyObjectivesChanged } from '@/lib/objectiveBus';
 import { notifyThemeChanged } from '@/lib/themeBus';
+import { notifyLayoutChanged } from '@/lib/layoutBus';
 
 /** Pass-through `.then()` callback that fires a theme-changed broadcast
  *  and returns the response unchanged. Use on any mutation that can
  *  affect what /api/theme/ returns so other tabs re-fetch instantly. */
 function withThemeBroadcast<T>(value: T): T {
   notifyThemeChanged();
+  return value;
+}
+
+/** Same pattern but for LayoutPreset mutations. Activating/editing a preset
+ *  bumps any open /obs/full so a live capture-position swap lands in roughly
+ *  one render frame instead of waiting on the 2s poll. */
+function withLayoutBroadcast<T>(value: T): T {
+  notifyLayoutChanged();
   return value;
 }
 
@@ -64,6 +73,34 @@ function withObjectivesBroadcast<T>(value: T): T {
 
 export type LayoutKey = '16x9' | '4x3' | '3ds' | 'ds-top' | 'ds-both' | 'fsa-split';
 
+/** A named arrangement for one OBS game-layout aspect ratio. The control panel
+ *  manages a library of these per layout type, with exactly one `is_active`
+ *  per type (scoped activation, Theme-style). /obs/full renders the active
+ *  preset for the currently-playing game's layout_type. `config` is parsed +
+ *  clamped by `useLayoutPresetConfig` — see that module for the shape. */
+export interface LayoutPreset {
+  id: number;
+  name: string;
+  layout_type: LayoutKey;
+  /** Human-readable aspect-ratio label (e.g. "4:3 standard"). */
+  layout_type_display: string;
+  is_active: boolean;
+  /** Opaque to the API layer; shaped + validated by useLayoutPresetConfig. */
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Global OBS-layout settings (singleton): the capture-alignment guide toggle
+ *  and the manual /obs/full layout-type override. `forced_layout_type` is empty
+ *  for "auto" (follow the playing game) or a LayoutKey to force that aspect
+ *  ratio regardless of what's playing. */
+export interface LayoutGuideSettings {
+  show_guide: boolean;
+  forced_layout_type: LayoutKey | '';
+  updated_at: string;
+}
+
 export interface Game {
   id: number;
   title: string;
@@ -77,6 +114,10 @@ export interface Game {
    *  Event.omnibar_layout. Wins over the event-level layout while
    *  this game is the active playthrough; empty falls back to event. */
   omnibar_layout: Record<string, unknown>;
+  /** Ordered list of item GROUP labels (the /control/items section headers).
+   *  Drives section order on the control grid + the /obs items overlay; labels
+   *  not listed fall back to first-appearance order after the listed ones. */
+  item_group_order: string[];
   items: GameItem[];
   objectives: GameObjective[];
   /** Per-game item-set library (families like "Medallions", "Magic Items"). */
@@ -95,6 +136,9 @@ export interface GameItemSet {
   name: string;
   kind: ItemSetKind;
   order: number;
+  /** When false, the set (and items whose only sets are hidden) is omitted from
+   *  the /obs/full items element — e.g. bottle contents. Defaults true. */
+  show_in_overlay: boolean;
 }
 
 export interface GameItem {
@@ -1164,6 +1208,59 @@ export const obsApi = {
     api<ThemeSettings>(`/api/themes/${id}/duplicate/`, { method: 'POST' }).then(
       withThemeBroadcast,
     ),
+
+  // OBS layout presets — library managed in /control/layouts, consumed live by
+  // /obs/full. Mutations broadcast via layoutBus so an open browser source
+  // re-fetches the moment a preset is activated/edited. Pass `?layout_type` to
+  // narrow the list to one aspect ratio for the editor.
+  layoutPresets: (layoutType?: LayoutKey) =>
+    api<LayoutPreset[]>(
+      layoutType ? `/api/layout-presets/?layout_type=${layoutType}` : '/api/layout-presets/',
+    ),
+  // Capture alignment guide (global singleton). The OBS layout pages poll the
+  // GET; /control/layouts flips it via PATCH. Broadcast on the layoutBus so a
+  // /control + /obs pair in the SAME browser updates instantly; the OBS browser
+  // source (separate context) catches it on its next poll.
+  layoutGuide: () => api<LayoutGuideSettings>('/api/layout-guide/'),
+  setLayoutGuide: (show: boolean) =>
+    api<LayoutGuideSettings>('/api/layout-guide/', {
+      method: 'PATCH',
+      body: { show_guide: show },
+    }).then(withLayoutBroadcast),
+  // Manual /obs/full layout-type override. Pass a LayoutKey to force that aspect
+  // ratio, or '' to return to auto (follow the playing game). Shares the
+  // layout-guide singleton + layoutBus so an open OBS source reflects it fast.
+  setForcedLayoutType: (layoutType: LayoutKey | '') =>
+    api<LayoutGuideSettings>('/api/layout-guide/', {
+      method: 'PATCH',
+      body: { forced_layout_type: layoutType },
+    }).then(withLayoutBroadcast),
+  createLayoutPreset: (body: {
+    name: string;
+    layout_type: LayoutKey;
+    config?: Record<string, unknown>;
+    is_active?: boolean;
+  }) =>
+    api<LayoutPreset>('/api/layout-presets/', { method: 'POST', body }).then(
+      withLayoutBroadcast,
+    ),
+  updateLayoutPreset: (
+    id: number,
+    patch: Partial<Pick<LayoutPreset, 'name' | 'config' | 'is_active'>>,
+  ) =>
+    api<LayoutPreset>(`/api/layout-presets/${id}/`, { method: 'PATCH', body: patch }).then(
+      withLayoutBroadcast,
+    ),
+  deleteLayoutPreset: (id: number) =>
+    api<void>(`/api/layout-presets/${id}/`, { method: 'DELETE' }).then(withLayoutBroadcast),
+  activateLayoutPreset: (id: number) =>
+    api<LayoutPreset>(`/api/layout-presets/${id}/activate/`, { method: 'POST' }).then(
+      withLayoutBroadcast,
+    ),
+  duplicateLayoutPreset: (id: number) =>
+    api<LayoutPreset>(`/api/layout-presets/${id}/duplicate/`, { method: 'POST' }).then(
+      withLayoutBroadcast,
+    ),
   donations: (eventId?: number) =>
     api<Donation[]>(eventId ? `/api/donations/?event=${eventId}` : '/api/donations/'),
   donationTotals: (eventId?: number) =>
@@ -1259,6 +1356,13 @@ export const obsApi = {
     api<GameItem>(`/api/game-items/${id}/`, { method: 'PATCH', body: patch }).then(
       withItemsBroadcast,
     ),
+  /** Patch a game-level field — currently used for `item_group_order` (the
+   *  /control/items section order). Broadcasts via itemsBus so the overlay
+   *  re-fetches. */
+  updateGame: (id: number, patch: Partial<Pick<Game, 'item_group_order'>>) =>
+    api<Game>(`/api/games/${id}/`, { method: 'PATCH', body: patch }).then(
+      withItemsBroadcast,
+    ),
   deleteGameItem: (id: number) =>
     api<void>(`/api/game-items/${id}/`, { method: 'DELETE' }).then(withItemsBroadcast),
   duplicateGameItem: (id: number) =>
@@ -1272,7 +1376,7 @@ export const obsApi = {
     api<GameItemSet>('/api/game-item-sets/', { method: 'POST', body }).then(withItemsBroadcast),
   updateItemSet: (
     id: number,
-    patch: Partial<Pick<GameItemSet, 'name' | 'kind' | 'order'>>,
+    patch: Partial<Pick<GameItemSet, 'name' | 'kind' | 'order' | 'show_in_overlay'>>,
   ) =>
     api<GameItemSet>(`/api/game-item-sets/${id}/`, { method: 'PATCH', body: patch }).then(
       withItemsBroadcast,

@@ -12,7 +12,10 @@ export function ObsLayout() {
   useRouteTitle();
   return (
     <div className="router-outlet-obs">
-      <ThemeProvider />
+      {/* OBS is a separate browser, so the themeBus BroadcastChannel can't reach
+        * it — poll fast (2.5s) so theme switches land on the overlays promptly
+        * instead of waiting up to the 30s same-browser default. */}
+      <ThemeProvider pollMs={2500} />
       <Outlet />
     </div>
   );

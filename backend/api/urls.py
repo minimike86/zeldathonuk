@@ -14,6 +14,7 @@ router.register('schedule', views.ScheduleEntryViewSet)
 router.register('donations', views.DonationViewSet)
 router.register('donation-pages', views.DonationPageViewSet)
 router.register('themes', views.ThemeSettingsViewSet)
+router.register('layout-presets', views.LayoutPresetViewSet)
 router.register('brb', views.BrbTimerViewSet)
 # Omnibar v2 streams
 router.register('playthrough-events', views.PlaythroughEventViewSet)
@@ -57,6 +58,7 @@ urlpatterns = [
     path('tts/now-reading/', views.tts_now_reading, name='tts-now-reading'),
     path('donation-mute-reasons/', views.donation_mute_reasons, name='donation-mute-reasons'),
     path('theme/', views.theme_settings, name='theme-settings'),
+    path('layout-guide/', views.layout_guide_settings, name='layout-guide-settings'),
     path(
         'chest-announcer/settings/',
         views.chest_announcer_settings,
@@ -76,6 +78,13 @@ urlpatterns = [
     # Read-only live-status check used by the public homepage to decide
     # whether to show the "<channel> is Offline" placeholder.
     path('twitch/stream-status/', twitch.stream_status, name='twitch-stream-status'),
+    # Active Twitch Charity campaign (Twitch's own total + goal). Public read,
+    # polled by the omnibar goal display. Null when no campaign is running.
+    path(
+        'twitch/charity-campaign/',
+        views.twitch_charity_campaign,
+        name='twitch-charity-campaign',
+    ),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to
     # ExternalEvent; omnibar polls for these on a 1.5s tick.
     path('twitch/eventsub/', eventsub.eventsub_webhook, name='twitch-eventsub'),
@@ -91,6 +100,11 @@ urlpatterns = [
     # DEBUG-only; return 404 in production.
     path('sandbox/twitch-event/', sandbox.sandbox_twitch_event, name='sandbox-twitch-event'),
     path('sandbox/donation/', sandbox.sandbox_donation, name='sandbox-donation'),
+    path(
+        'sandbox/charity-campaign/',
+        sandbox.sandbox_charity_campaign,
+        name='sandbox-charity-campaign',
+    ),
     # SSE push for low-latency overrides + playthrough + external events.
     # Omnibar prefers SSE; falls back to polling if the stream errors.
     path('stream/omnibar/', sse.omnibar_stream, name='omnibar-stream'),

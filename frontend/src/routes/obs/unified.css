@@ -37,8 +37,6 @@
  * sits above the stage; harmless on stream but mainly an operator cue. */
 .obs-unified-layout-badge {
   position: absolute;
-  top: 24px;
-  left: 24px;
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -57,6 +55,28 @@
   );
   color: var(--theme-button-text, #fff);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  /* Glide between corners rather than teleport, so the move reads clearly. */
+  transition: top 0.6s ease, bottom 0.6s ease, left 0.6s ease, right 0.6s ease;
+}
+
+/* Corner parking spots. The badge cycles through these on a timer (see
+ * Unified.tsx) to reveal whatever sits underneath. Bottom corners clear the
+ * omnibar strip so the badge stays over the game stage. */
+.obs-unified-layout-badge--tl {
+  top: 24px;
+  left: 24px;
+}
+.obs-unified-layout-badge--tr {
+  top: 24px;
+  right: 24px;
+}
+.obs-unified-layout-badge--bl {
+  bottom: calc(var(--obs-omnibar-height, 96px) + 24px);
+  left: 24px;
+}
+.obs-unified-layout-badge--br {
+  bottom: calc(var(--obs-omnibar-height, 96px) + 24px);
+  right: 24px;
 }
 
 /* "LAYOUT" tag line — small Bungee caps, like the operator pill register. */
@@ -73,6 +93,15 @@
   text-transform: uppercase;
   font-size: 1.15rem;
   line-height: 1.1;
+}
+
+/* Raw layout key line — monospace so the operator can verify exactly what the
+ * auto-pick read (and, on fallback, the game's stored layout_type). */
+.obs-unified-layout-key {
+  font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
 }
 
 /* Game title context line — sits under the layout name in muted button text. */

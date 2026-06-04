@@ -1,29 +1,7 @@
-import { Stage, GameFrame, SidePanel } from './Layout';
+import { PresetLayout } from './PresetLayout';
 
-/**
- * 4:3 standard — narrow game frame centered-left, taller side panel on
- * the right. Stage is 1920×(1080 − omnibar); the omnibar is a separate
- * OBS browser source added below this one.
- */
+/** 4:3 standard layout — now the generic preset-driven renderer. Kept as a
+ *  named export for the layout registries. */
 export function Standard() {
-  return (
-    <Stage>
-      <GameFrame
-        style={{
-          top: '0',
-          left: '180px',
-          width: '1080px',
-          height: '810px',
-        }}
-      />
-      <SidePanel
-        position={{
-          top: '0',
-          right: '0',
-          width: '660px',
-          height: 'var(--obs-stage-height)',
-        }}
-      />
-    </Stage>
-  );
+  return <PresetLayout layoutType="4x3" />;
 }

@@ -16,7 +16,7 @@ import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import { cn } from '@/lib/utils';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { NavAuth } from '@/components/auth/NavAuth';
-import { env } from '@/lib/env';
+import { env, resolveMediaUrl } from '@/lib/env';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onThemeChanged } from '@/lib/themeBus';
 import { useAccentDeck } from '@/lib/accentDeck';
@@ -93,7 +93,7 @@ export function Navbar() {
     cacheKey: 'zeldathon-theme',
   });
   const donationPages = event?.donation_pages ?? [];
-  const logoSrc = theme?.logo_url || DEFAULT_LOGO;
+  const logoSrc = resolveMediaUrl(theme?.logo_url) || DEFAULT_LOGO;
   // Per-mount shuffled deck — each nav item picks one of the four
   // theme accents (primary + accent_1/2/3) so the bar shows off the
   // whole palette rather than painting all seven items the same

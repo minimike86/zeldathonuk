@@ -29,6 +29,7 @@ import type {
 import { DonateButton } from '@/components/donations/DonateButton';
 import { useAccentDeck } from '@/lib/accentDeck';
 import { formatTierAmount } from '@/lib/currency';
+import { resolveMediaUrl } from '@/lib/env';
 import './charity.css';
 
 /** Brand icon + display label per supported social platform. Keys match
@@ -255,7 +256,7 @@ function CharityHero({
           rel="noreferrer"
           title={charity.name}
         >
-          <img src={charity.logo_url} alt={`${charity.name} logo`} />
+          <img src={resolveMediaUrl(charity.logo_url)} alt={`${charity.name} logo`} />
         </a>
       )}
       <div className="charity-hero-meta">

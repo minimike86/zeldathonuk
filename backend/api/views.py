@@ -1394,6 +1394,18 @@ class BrbTimerViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(active).data)
 
 
+@api_view(['GET'])
+def twitch_charity_campaign(_request: Request) -> Response:
+    """Active Twitch Charity campaign (Twitch's own running total + target),
+    or null when none is running. Public read, like ``currently_playing`` —
+    drives the omnibar goal display. The campaign total is Twitch's figure for
+    a goal bar only; our reported money comes from the Donation rows."""
+    campaign = models.TwitchCharityCampaign.active()
+    if not campaign:
+        return Response(None)
+    return Response(serializers.TwitchCharityCampaignSerializer(campaign).data)
+
+
 @api_view(['GET', 'PUT'])
 def currently_playing(request: Request) -> Response:
     if request.method == 'GET':
@@ -1832,6 +1844,22 @@ def chest_announcer_settings(request: Request) -> Response:
     return Response(ser.data)
 
 
+@api_view(['GET', 'PATCH'])
+def layout_guide_settings(request: Request) -> Response:
+    """Returns / updates the singleton OBS layout capture-alignment guide flag.
+
+    GET is polled by the OBS layout pages (PresetLayout) to decide whether to
+    draw the hashed capture guides. PATCH is hit by the /control/layouts toggle.
+    """
+    obj = models.LayoutGuideSettings.get()
+    if request.method == 'GET':
+        return Response(serializers.LayoutGuideSettingsSerializer(obj).data)
+    ser = serializers.LayoutGuideSettingsSerializer(obj, data=request.data, partial=True)
+    ser.is_valid(raise_exception=True)
+    ser.save()
+    return Response(ser.data)
+
+
 class ThemeSettingsViewSet(viewsets.ModelViewSet):
     """Library of themes. CRUD + an `activate` action that mirrors the
     Event activation pattern (sets `is_active=True` here, demotes the
@@ -1876,6 +1904,47 @@ class ThemeSettingsViewSet(viewsets.ModelViewSet):
             divider_thickness=source.divider_thickness,
             heading_font=source.heading_font,
             body_font=source.body_font,
+        )
+        return Response(self.get_serializer(clone).data, status=status.HTTP_201_CREATED)
+
+
+class LayoutPresetViewSet(viewsets.ModelViewSet):
+    """Library of OBS game-layout presets. CRUD + `activate` (scoped per
+    layout_type) + `duplicate`, mirroring ThemeSettingsViewSet.
+
+    Optional `?layout_type=4x3` filter narrows the list to one aspect ratio
+    for the /control/layouts editor; /obs/full just fetches the whole list and
+    picks the active row for the currently-playing game's layout_type.
+    """
+
+    queryset = models.LayoutPreset.objects.all()
+    serializer_class = serializers.LayoutPresetSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        layout_type = self.request.query_params.get('layout_type')
+        if layout_type:
+            qs = qs.filter(layout_type=layout_type)
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request: Request, pk=None) -> Response:
+        preset = self.get_object()
+        if not preset.is_active:
+            preset.is_active = True
+            preset.save()  # The model's save() demotes siblings of the same type.
+        return Response(self.get_serializer(preset).data)
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request: Request, pk=None) -> Response:
+        """Clone the row into a new inactive preset of the same layout_type —
+        a starting point for a variant of an existing arrangement."""
+        source = self.get_object()
+        clone = models.LayoutPreset.objects.create(
+            name=f'{source.name} (copy)',
+            layout_type=source.layout_type,
+            is_active=False,
+            config=source.config,
         )
         return Response(self.get_serializer(clone).data, status=status.HTTP_201_CREATED)
 

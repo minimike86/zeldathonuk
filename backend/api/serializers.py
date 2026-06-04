@@ -20,7 +20,7 @@ class RunnerSerializer(serializers.ModelSerializer):
 class GameItemSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.GameItemSet
-        fields = ['id', 'game', 'name', 'kind', 'order']
+        fields = ['id', 'game', 'name', 'kind', 'order', 'show_in_overlay']
 
 
 class GameItemSerializer(serializers.ModelSerializer):
@@ -74,6 +74,7 @@ class GameSerializer(serializers.ModelSerializer):
             'release_year',
             'asset_slug',
             'omnibar_layout',
+            'item_group_order',
             'items',
             'objectives',
             'item_sets',
@@ -519,6 +520,7 @@ class DonationSerializer(serializers.ModelSerializer):
             'external_id',
             'gift_aid_amount',
             'image_url',
+            'source_channel',
             'mute_reason',
             'is_muted',
         ]
@@ -625,6 +627,16 @@ class CurrentlyPlayingSerializer(serializers.ModelSerializer):
         fields = ['schedule_entry', 'schedule_entry_detail', 'updated_at']
 
 
+class TwitchCharityCampaignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.TwitchCharityCampaign
+        fields = [
+            'campaign_id', 'charity_name', 'charity_logo_url', 'charity_website',
+            'charity_description', 'target_amount', 'current_amount', 'currency',
+            'is_active', 'started_at', 'stopped_at', 'updated_at',
+        ]
+
+
 class ThemeSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ThemeSettings
@@ -655,6 +667,21 @@ class ThemeSettingsSerializer(serializers.ModelSerializer):
             'omnibar_celebration_sub', 'omnibar_celebration_flash',
             'heading_font', 'body_font',
             'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class LayoutPresetSerializer(serializers.ModelSerializer):
+    # Human-readable aspect-ratio label for the control-panel selector.
+    layout_type_display = serializers.CharField(
+        source='get_layout_type_display', read_only=True,
+    )
+
+    class Meta:
+        model = models.LayoutPreset
+        fields = [
+            'id', 'name', 'layout_type', 'layout_type_display',
+            'is_active', 'config', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -797,6 +824,16 @@ class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
             'scale',
             'updated_at',
         ]
+        read_only_fields = ['updated_at']
+
+
+class LayoutGuideSettingsSerializer(serializers.ModelSerializer):
+    """Singleton: OBS layout capture-alignment guide + /obs/full layout-type
+    override."""
+
+    class Meta:
+        model = models.LayoutGuideSettings
+        fields = ['show_guide', 'forced_layout_type', 'updated_at']
         read_only_fields = ['updated_at']
 
 

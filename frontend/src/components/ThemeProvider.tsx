@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { ThemeSettings } from '@/lib/obsApi';
 import { onThemeChanged } from '@/lib/themeBus';
+import { resolveMediaUrl } from '@/lib/env';
 
 /** localStorage key holding the last resolved theme as a `:root{…}` CSS string.
  *  index.html's preload <script> applies it before first paint (no flash);
@@ -26,8 +27,15 @@ export const THEME_CSS_KEY = 'zeldathon-theme-css';
  */
 export function ThemeProvider({
   renderBackgroundMedia = false,
+  pollMs = 30000,
 }: {
   renderBackgroundMedia?: boolean;
+  /** Theme re-fetch interval. The default 30s suits same-browser surfaces
+   *  (control panel / public site) that already get an instant BroadcastChannel
+   *  push on change. OBS browser sources are a SEPARATE browser, so the bus
+   *  never reaches them — ObsLayout passes a short interval so theme switches
+   *  land on the overlays within a couple of seconds, not up to 30. */
+  pollMs?: number;
 } = {}) {
   // Bumping this state restarts the polled-query effect, which triggers
   // an immediate fetch. Other tabs notify via BroadcastChannel after a
@@ -36,10 +44,7 @@ export function ThemeProvider({
   const [bump, setBump] = useState(0);
   useEffect(() => onThemeChanged(() => setBump((b) => b + 1)), []);
 
-  // 30s, not 3s: themeBus pushes same-browser changes instantly (the `bump`
-  // dep), so this poll is just the cross-device fallback for a near-static
-  // singleton — no need to hammer it.
-  const { data: theme } = usePolledQuery(obsApi.themeSettings, 30000, [bump], {
+  const { data: theme } = usePolledQuery(obsApi.themeSettings, pollMs, [bump], {
     cacheKey: 'zeldathon-theme',
   });
 
@@ -154,15 +159,16 @@ export function applyTheme(t: ThemeSettings): void {
   setVar('--theme-font-heading', t.heading_font);
   setVar('--theme-font-body', t.body_font);
   // Media URLs wrap in url(...) so they can be referenced via background.
-  setVar(
-    '--theme-bg-image',
-    t.background_image_url ? `url("${t.background_image_url}")` : 'none',
-  );
-  setVar('--theme-bg-video', t.background_video_url || '');
-  setVar('--theme-logo', t.logo_url || '');
-  setVar('--theme-logo-small', t.logo_small_url || '');
+  // resolveMediaUrl re-points any loopback/relative value at the API origin so
+  // the public site doesn't try to fetch a localhost media path.
+  const bgImage = resolveMediaUrl(t.background_image_url);
+  setVar('--theme-bg-image', bgImage ? `url("${bgImage}")` : 'none');
+  setVar('--theme-bg-video', resolveMediaUrl(t.background_video_url));
+  setVar('--theme-logo', resolveMediaUrl(t.logo_url));
+  setVar('--theme-logo-small', resolveMediaUrl(t.logo_small_url));
 
-  if (t.favicon_url) {
+  const faviconUrl = resolveMediaUrl(t.favicon_url);
+  if (faviconUrl) {
     let link = document.querySelector(
       'link[rel="icon"]',
     ) as HTMLLinkElement | null;
@@ -171,7 +177,7 @@ export function applyTheme(t: ThemeSettings): void {
       link.rel = 'icon';
       document.head.appendChild(link);
     }
-    link.href = t.favicon_url;
+    link.href = faviconUrl;
   }
 
   // Cache the resolved CSS vars so index.html's preload <script> can apply

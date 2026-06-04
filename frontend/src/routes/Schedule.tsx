@@ -4,6 +4,7 @@ import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { EventModel, ScheduleEntry } from '@/lib/obsApi';
 import { useAccentDeck } from '@/lib/accentDeck';
+import { resolveMediaUrl } from '@/lib/env';
 import './schedule.css';
 
 interface SlotMeta {
@@ -216,8 +217,8 @@ function ScheduleHero({
   completedGames: number;
 }) {
   const start = event ? new Date(event.start_time) : null;
-  const banner = event?.banner_url || '';
-  const logo = event?.logo_url || '';
+  const banner = resolveMediaUrl(event?.banner_url);
+  const logo = resolveMediaUrl(event?.logo_url);
   const name = event?.name ?? 'Stream Schedule';
 
   return (
