@@ -13,7 +13,7 @@ import type {
 } from '@/lib/obsApi';
 import { api } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/env';
-import { notifyEventChanged } from '@/lib/eventBus';
+import { notifyEventChanged, onEventChanged } from '@/lib/eventBus';
 import { ImageDropzone } from '@/components/ImageDropzone';
 
 type SortKey = 'name' | 'start_time' | 'currency_symbol' | 'is_active' | 'donation_pages';
@@ -57,7 +57,12 @@ const DONATION_PLATFORMS: { value: DonationPlatformKey; label: string }[] = [
 const CURRENCY_OPTIONS = ['£', '$', '€', '¥'];
 
 export function EventsControl() {
-  const { data: events } = usePolledQuery(obsApi.events, 5000);
+  // Bump on any event mutation (this tab or another) so the list — and the
+  // Twitch-channel/connection state nested in it — refreshes within a frame
+  // instead of waiting out the 5s poll.
+  const [bump, setBump] = useState(0);
+  useEffect(() => onEventChanged(() => setBump((b) => b + 1)), []);
+  const { data: events } = usePolledQuery(obsApi.events, 5000, [bump]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -1677,6 +1682,18 @@ function ConnectChannelModal({
     null,
   );
   const [msg, setMsg] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const copyCode = async () => {
+    if (!info) return;
+    try {
+      await navigator.clipboard.writeText(info.user_code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard may be unavailable (insecure context) — ignore */
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1743,57 +1760,90 @@ function ConnectChannelModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Connect ${channel.login}`}
-      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-      style={{ background: 'rgba(0,0,0,0.65)', zIndex: 1090, padding: '1rem' }}
+      className="connect-modal__backdrop"
       onClick={onClose}
     >
-      <div
-        className="control-card"
-        style={{ maxWidth: 460, width: '100%' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="d-flex justify-content-between align-items-center mb-2">
-          <h5 className="m-0">Connect twitch.tv/{channel.login}</h5>
+      <div className="connect-modal__card" onClick={(e) => e.stopPropagation()}>
+        <header className="connect-modal__head">
+          <span className="connect-modal__glyph" aria-hidden="true">tv</span>
+          <h5 className="connect-modal__title">Connect twitch.tv/{channel.login}</h5>
           <button
             type="button"
-            className="btn-close btn-close-white"
+            className="connect-modal__close"
             aria-label="Close"
             onClick={onClose}
-          />
+          >
+            ×
+          </button>
         </header>
-        {phase === 'starting' && <p className="text-white-50">Starting…</p>}
-        {phase === 'waiting' && info && (
-          <div>
-            <p className="small text-white-50 mb-2">
-              The broadcaster of <strong>{channel.login}</strong> authorises on
-              their own device:
+
+        <div className="connect-modal__body">
+          {phase === 'starting' && (
+            <p className="connect-modal__status connect-modal__status--waiting">
+              <span className="connect-modal__spinner" aria-hidden="true" />
+              Starting…
             </p>
-            <ol className="small">
-              <li>
-                Open{' '}
-                <a href={info.verification_uri} target="_blank" rel="noreferrer">
-                  {info.verification_uri}
-                </a>
-              </li>
-              <li>
-                Enter code{' '}
-                <code style={{ fontSize: '1.25em' }}>{info.user_code}</code>
-              </li>
-            </ol>
-            <p className="small text-white-50 m-0">
-              Waiting for authorisation… this updates automatically.
+          )}
+
+          {phase === 'waiting' && info && (
+            <>
+              <p className="connect-modal__lead">
+                The broadcaster of <strong>{channel.login}</strong> authorises on
+                their own device:
+              </p>
+              <ol className="connect-modal__steps">
+                <li>
+                  <span>
+                    Open{' '}
+                    <a
+                      className="connect-modal__link"
+                      href={info.verification_uri}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {info.verification_uri}
+                    </a>
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    Enter this code:
+                    <span className="connect-modal__code-row">
+                      <code className="connect-modal__code">{info.user_code}</code>
+                      <button
+                        type="button"
+                        className="connect-modal__copy"
+                        onClick={copyCode}
+                      >
+                        {copied ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </span>
+                  </span>
+                </li>
+              </ol>
+              <p className="connect-modal__status connect-modal__status--waiting">
+                <span className="connect-modal__spinner" aria-hidden="true" />
+                Waiting for authorisation… this updates automatically.
+              </p>
+            </>
+          )}
+
+          {phase === 'done' && (
+            <p className="connect-modal__status connect-modal__status--done">
+              ✓ Connected — you can close this.
             </p>
-          </div>
-        )}
-        {phase === 'done' && (
-          <p className="text-success m-0">✓ Connected — you can close this.</p>
-        )}
-        {phase === 'error' && <p className="text-danger m-0">{msg}</p>}
-        <div className="text-end mt-3">
+          )}
+
+          {phase === 'error' && (
+            <p className="connect-modal__status connect-modal__status--error">{msg}</p>
+          )}
+        </div>
+
+        <footer className="connect-modal__foot">
           <button type="button" className="btn btn-sm btn-outline-light" onClick={onClose}>
             Close
           </button>
-        </div>
+        </footer>
       </div>
     </div>,
     document.body,
