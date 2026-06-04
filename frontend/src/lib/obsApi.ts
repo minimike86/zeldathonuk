@@ -650,6 +650,10 @@ export interface Donation {
   external_id: string;
   gift_aid_amount: string | null;
   image_url: string;
+  /** For multi-channel platforms (Twitch Charity), the broadcaster login
+   *  the donation came through (e.g. "zeldathonuk", "msec"). Empty string
+   *  for single-source platforms. */
+  source_channel: string;
   /** Operator-set reason this donation is muted. Empty string = not
    *  muted. /obs/tts and /obs/omnibar still read the read-only
    *  `is_muted` boolean (derived server-side from `mute_reason !== ''`)
@@ -2473,7 +2477,7 @@ export function usePolledQuery<T>(
   // is present on first render instead of flashing a default until the first
   // fetch lands. Only use for small, safe-to-show-stale payloads.
   options?: { cacheKey?: string },
-): { data: T | null; error: Error | null } {
+): { data: T | null; error: Error | null; loading: boolean } {
   const cacheKey = options?.cacheKey;
   const [data, setData] = useState<T | null>(() => {
     if (!cacheKey) return null;
@@ -2485,6 +2489,12 @@ export function usePolledQuery<T>(
     }
   });
   const [error, setError] = useState<Error | null>(null);
+  // True until the FIRST fetch settles (resolve OR reject). Lets callers
+  // tell "still loading" apart from "loaded and the result was null/empty"
+  // — e.g. so a page can show a spinner instead of a "nothing here" notice
+  // during the initial round trip. Stays false after the first settle (a
+  // deps-driven re-fetch keeps showing the last data rather than flashing).
+  const [loading, setLoading] = useState(true);
   // Keep the latest fn in a ref so closures created with dynamic state
   // (e.g. `() => obsApi.schedule(event.id)`) always read the current value
   // instead of being frozen at the mount-time closure.
@@ -2510,6 +2520,8 @@ export function usePolledQuery<T>(
         }
       } catch (e) {
         if (!cancelled) setError(e as Error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
       if (!cancelled) {
         timer = window.setTimeout(tick, intervalMs);
@@ -2523,5 +2535,5 @@ export function usePolledQuery<T>(
     };
   }, [intervalMs, cacheKey, ...deps]);
 
-  return { data, error };
+  return { data, error, loading };
 }

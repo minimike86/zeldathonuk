@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { Donation, EventModel, MuteReason, MuteReasonChoice } from '@/lib/obsApi';
 import { api } from '@/lib/api';
@@ -100,10 +102,26 @@ const platforms: Array<{ value: string; label: string; color: string }> = [
 ];
 
 export function DonationsControl() {
-  const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
+  // cacheKey seeds the last-known active event from localStorage so the
+  // page renders its full layout on first paint (instead of flashing the
+  // "No active event" notice) and the donations/totals queries below can
+  // fire against the real event id immediately rather than waiting a round
+  // trip. The first poll corrects it within ~one tick if it ever changed.
+  const { data: event, loading: eventLoading } = usePolledQuery(
+    obsApi.activeEvent,
+    10_000,
+    [],
+    { cacheKey: 'zeldathon-active-event' },
+  );
+  // `[event?.id]` deps are essential: without them, the donations/totals
+  // poll loop fires once on mount with event=null (resolving empty), then
+  // only re-fetches the real data on its NEXT 3s tick — a multi-second
+  // stall after the event loads. The deps cancel that stale tick and
+  // re-fetch the moment the event id arrives.
   const { data: donations } = usePolledQuery(
     () => (event ? obsApi.donations(event.id) : Promise.resolve([])),
     3000,
+    [event?.id],
   );
   const { data: totals } = usePolledQuery(
     () =>
@@ -111,6 +129,7 @@ export function DonationsControl() {
         ? obsApi.donationTotals(event.id)
         : Promise.resolve({ by_platform: [], grand_total: '0', donation_count: 0 }),
     3000,
+    [event?.id],
   );
   // What /obs/tts is announcing right now. Poll fast — the operator's
   // primary reason for watching the highlight is to catch and mute a
@@ -182,7 +201,13 @@ export function DonationsControl() {
     return (
       <div className="control-card">
         <h2>Donations</h2>
-        <p className="text-warning">No active event. Set one to start tracking donations.</p>
+        {eventLoading ? (
+          <p className="text-white-50">Loading…</p>
+        ) : (
+          <p className="text-warning">
+            No active event. Set one to start tracking donations.
+          </p>
+        )}
       </div>
     );
   }
@@ -363,6 +388,15 @@ export function DonationsControl() {
                 </td>
                 <td>
                   <PlatformChip value={d.platform} />
+                  {d.source_channel && (
+                    <div
+                      className="small text-white-50 mt-1"
+                      style={{ whiteSpace: 'nowrap' }}
+                      title={`Received via the ${d.source_channel} Twitch channel`}
+                    >
+                      <FontAwesomeIcon icon={faTwitch} fixedWidth /> {d.source_channel}
+                    </div>
+                  )}
                 </td>
                 <td
                   style={{ whiteSpace: 'nowrap', textAlign: 'right' }}
