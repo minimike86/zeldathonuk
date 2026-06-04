@@ -51,6 +51,31 @@ services:
       sh -c "python manage.py migrate --noinput &&
              python manage.py runserver 0.0.0.0:8000"
 
+  # In-stack scheduler: the single ticker that drives the enabled ScheduledJob
+  # rows (donation polling, chat reminders, shoutout draining). Managed from
+  # /control/automation — no host cron needed. Shares the backend image + env.
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: zeldathon-scheduler
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-zeldathon}:${POSTGRES_PASSWORD:-zeldathon}@postgres:5432/${POSTGRES_DB:-zeldathon}
+      DJANGO_DEBUG: "1"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    command: >
+      sh -c "python manage.py run_scheduled_jobs --loop --interval 30"
+
   frontend:
     build:
       context: ./frontend

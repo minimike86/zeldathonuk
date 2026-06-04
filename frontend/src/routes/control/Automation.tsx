@@ -5,10 +5,47 @@ import type { EventSubSubscription, ScheduledJob } from '@/lib/obsApi';
 export function AutomationControl() {
   return (
     <div className="control-card">
-      <h2 className="m-0">Automation</h2>
+      <div className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+        <h2 className="m-0">Automation</h2>
+        <SchedulerHeartbeat />
+      </div>
       <ScheduledJobsSection />
       <EventSubSection />
     </div>
+  );
+}
+
+function SchedulerHeartbeat() {
+  const { data } = usePolledQuery(obsApi.schedulerStatus, 5000);
+  if (!data) return null;
+  const alive = data.alive;
+  const ago =
+    data.seconds_ago == null
+      ? 'never'
+      : data.seconds_ago < 90
+        ? `${data.seconds_ago}s ago`
+        : `${Math.round(data.seconds_ago / 60)}m ago`;
+  return (
+    <span
+      className={`badge d-inline-flex align-items-center gap-1 ${alive ? 'bg-success' : 'bg-danger'}`}
+      title={
+        alive
+          ? 'The scheduler service is ticking.'
+          : 'No recent tick — is the scheduler container running?'
+      }
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: '#fff',
+          opacity: alive ? 1 : 0.6,
+        }}
+      />
+      Scheduler {alive ? 'live' : 'down'} · tick {ago}
+    </span>
   );
 }
 

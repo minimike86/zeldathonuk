@@ -1475,6 +1475,21 @@ def twitch_custom_rewards(request: Request) -> Response:
     ])
 
 
+@api_view(['GET'])
+def scheduler_status(request: Request) -> Response:
+    """Liveness of the scheduler loop — its last tick + whether it's recent.
+    Lets /control/automation show the heartbeat without shell access."""
+    hb = models.SchedulerHeartbeat.objects.filter(pk=1).first()
+    last = hb.last_tick_at if hb else None
+    seconds = (timezone.now() - last).total_seconds() if last else None
+    return Response({
+        'last_tick_at': last,
+        'seconds_ago': int(seconds) if seconds is not None else None,
+        # The loop ticks every ~30s; allow a few missed ticks before "down".
+        'alive': bool(seconds is not None and seconds < 120),
+    })
+
+
 class ScheduledJobViewSet(viewsets.ModelViewSet):
     """Periodic management commands the operator manages from /control/automation.
     A single `manage.py run_scheduled_jobs` cron tick runs due enabled jobs;

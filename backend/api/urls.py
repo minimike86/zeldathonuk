@@ -103,6 +103,8 @@ urlpatterns = [
     path('twitch/eventsub/subscriptions/', views.eventsub_subscriptions,
          name='eventsub-subscriptions'),
     path('twitch/eventsub/sync/', views.eventsub_sync, name='eventsub-sync'),
+    # Scheduler loop liveness (heartbeat) for the automation page.
+    path('scheduler-status/', views.scheduler_status, name='scheduler-status'),
     # Channel's custom channel-point rewards (for the reward-action picker).
     path('twitch/rewards/', views.twitch_custom_rewards, name='twitch-rewards'),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to

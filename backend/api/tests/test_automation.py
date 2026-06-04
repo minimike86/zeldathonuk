@@ -62,6 +62,18 @@ class ScheduledJobTests(TestCase):
         self.assertEqual([j.key for j in ran], ['on'])
 
 
+class SchedulerHeartbeatTests(TestCase):
+    def test_status_reflects_beat(self):
+        # No beat yet → not alive.
+        resp = self.client.get(reverse('scheduler-status'))
+        self.assertFalse(resp.json()['alive'])
+        # After a beat → alive + recent.
+        models.SchedulerHeartbeat.beat()
+        body = self.client.get(reverse('scheduler-status')).json()
+        self.assertTrue(body['alive'])
+        self.assertLess(body['seconds_ago'], 5)
+
+
 class EventSubDashboardTests(TestCase):
     @patch('api.twitch.list_eventsub_subscriptions')
     def test_list_subscriptions(self, mock_list):

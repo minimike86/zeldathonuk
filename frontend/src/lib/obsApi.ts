@@ -2243,6 +2243,10 @@ export const obsApi = {
     }),
 
   // ── Automation: scheduled jobs + EventSub dashboard ───────────────
+  schedulerStatus: () =>
+    api<{ last_tick_at: string | null; seconds_ago: number | null; alive: boolean }>(
+      '/api/scheduler-status/',
+    ),
   scheduledJobs: () => api<ScheduledJob[]>('/api/scheduled-jobs/'),
   updateScheduledJob: (
     id: number,

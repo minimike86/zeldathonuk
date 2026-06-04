@@ -1514,6 +1514,22 @@ class ScheduledJob(models.Model):
         )
 
 
+class SchedulerHeartbeat(models.Model):
+    """Singleton 'last tick' timestamp written by ``run_scheduled_jobs --loop``
+    every pass, so the control panel can show whether the scheduler service is
+    actually alive (independent of whether any job is enabled)."""
+
+    last_tick_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def beat(cls) -> None:
+        cls.objects.update_or_create(pk=1, defaults={'last_tick_at': timezone.now()})
+
+
 class ShoutoutConfig(models.Model):
     """Per-event shoutout settings. Donors (Twitch Charity, who carry a Twitch
     login) and raiders can be auto-queued for a ``/shoutout``; the queue is
