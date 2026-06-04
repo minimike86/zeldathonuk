@@ -1860,6 +1860,9 @@ def currently_playing(request: Request) -> Response:
                 'game': entry.game.title,
                 'runner': ', '.join(r.name for r in entry.runners.all()),
             })
+            # Opt-in: set the primary channel's Twitch category (+ title) to the
+            # new game. Best-effort — never blocks the schedule advance.
+            twitch.update_channel_for_game(entry.event, entry)
     return Response(serializers.CurrentlyPlayingSerializer(cp).data)
 
 

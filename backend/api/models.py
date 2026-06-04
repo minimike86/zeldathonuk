@@ -135,6 +135,17 @@ class Event(models.Model):
                   'Refresh this each year when the campaign rebrands. '
                   'Absolute URL or site-relative path.',
     )
+    update_twitch_category = models.BooleanField(
+        default=False,
+        help_text='On a game/run change, set the primary channel\'s Twitch '
+                  'category to the new game (uses Game.twitch_game_id). Needs '
+                  'the primary connection to have channel:manage:broadcast.',
+    )
+    twitch_title_template = models.CharField(
+        max_length=200, blank=True,
+        help_text='Optional: also set the stream title on game change. '
+                  'Supports {game} and {event}. Blank → leave the title alone.',
+    )
     omnibar_layout = models.JSONField(
         default=dict,
         blank=True,

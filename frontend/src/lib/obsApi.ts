@@ -440,6 +440,10 @@ export interface EventModel {
   /** The primary channel's login (the bit after twitch.tv/) for the
    *  embedded stream, chat, and Follow buttons. '' when no channels. */
   primary_twitch_channel: string;
+  /** On game change, set the primary channel's Twitch category to the game. */
+  update_twitch_category: boolean;
+  /** Optional title template applied on game change ({game}, {event}). */
+  twitch_title_template: string;
   logo_url: string;
   banner_url: string;
   /** SpecialEffect's current GameBlast campaign logo for this event.

@@ -361,6 +361,8 @@ class EventSerializer(serializers.ModelSerializer):
             'is_active',
             'twitch_channels',
             'primary_twitch_channel',
+            'update_twitch_category',
+            'twitch_title_template',
             'logo_url',
             'banner_url',
             'gameblast_logo_url',

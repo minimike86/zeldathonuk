@@ -345,6 +345,12 @@ function EventForm({
   const [gameblastLogoUrl, setGameblastLogoUrl] = useState(
     event?.gameblast_logo_url ?? '',
   );
+  const [updateCategory, setUpdateCategory] = useState(
+    event?.update_twitch_category ?? false,
+  );
+  const [titleTemplate, setTitleTemplate] = useState(
+    event?.twitch_title_template ?? '',
+  );
   const [pendingPages, setPendingPages] = useState<DonationPageDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -362,6 +368,8 @@ function EventForm({
         logo_url: logoUrl.trim(),
         banner_url: bannerUrl.trim(),
         gameblast_logo_url: gameblastLogoUrl.trim(),
+        update_twitch_category: updateCategory,
+        twitch_title_template: titleTemplate.trim(),
       };
       if (isEdit) {
         await api(`/api/events/${event.id}/`, { method: 'PATCH', body });
@@ -480,6 +488,40 @@ function EventForm({
           />
         </div>
       )}
+      <div
+        className="w-100 p-2"
+        style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}
+      >
+        <div className="form-check">
+          <input
+            id={`event-cat-${event?.id ?? 'new'}`}
+            type="checkbox"
+            className="form-check-input"
+            checked={updateCategory}
+            onChange={(e) => setUpdateCategory(e.target.checked)}
+          />
+          <label
+            htmlFor={`event-cat-${event?.id ?? 'new'}`}
+            className="form-check-label small"
+          >
+            Update Twitch category on game change
+            <span className="text-white-50">
+              {' '}
+              — sets the primary channel’s game (needs channel:manage:broadcast)
+            </span>
+          </label>
+        </div>
+        <label className="d-block small text-white-50 mt-2">
+          Stream title on game change (optional) — {'{game} {event}'}
+        </label>
+        <input
+          value={titleTemplate}
+          onChange={(e) => setTitleTemplate(e.target.value)}
+          className="form-control form-control-sm"
+          placeholder="Zeldathon — Now playing: {game}"
+          disabled={!updateCategory}
+        />
+      </div>
       <button type="submit" className="btn btn-bloodmoon btn-sm" disabled={busy}>
         {busy ? 'Saving…' : isEdit ? 'Update' : 'Save'}
       </button>

@@ -20,6 +20,7 @@ Get tokens via Twitch CLI: `twitch token -u -s channel:manage:schedule`
 """
 from __future__ import annotations
 
+import logging
 import re
 from datetime import timedelta
 from urllib.parse import urlparse
@@ -33,6 +34,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from . import models
+
+logger = logging.getLogger(__name__)
 
 
 HELIX = 'https://api.twitch.tv/helix'
@@ -643,6 +646,55 @@ def fetch_custom_rewards(conn, broadcaster_id: str) -> list[dict]:
     if not resp.ok:
         return []
     return resp.json().get('data') or []
+
+
+def modify_channel(conn, broadcaster_id: str, *, game_id: str | None = None,
+                   title: str | None = None) -> requests.Response | None:
+    """Set the channel's category (game_id) and/or stream title via Helix
+    ``PATCH /channels`` (needs channel:manage:broadcast). Returns the response,
+    or None when there's nothing to change. (204 on success.)"""
+    body: dict = {}
+    if game_id is not None:
+        body['game_id'] = str(game_id)
+    if title is not None:
+        body['title'] = title[:140]
+    if not body:
+        return None
+    return _request_as(
+        conn, 'PATCH', f'{HELIX}/channels', timeout=5,
+        params={'broadcaster_id': broadcaster_id}, json=body,
+    )
+
+
+def update_channel_for_game(event, entry) -> bool:
+    """Best-effort: on a game change, set the event's primary channel category
+    (+ optional title) to match ``entry``'s game, when the event opts in. Never
+    raises. Returns True only when a change was actually pushed."""
+    try:
+        if event is None or not getattr(event, 'update_twitch_category', False):
+            return False
+        if entry is None or not getattr(entry, 'game_id', None):
+            return False
+        game = entry.game
+        game_id = (game.twitch_game_id or '').strip()
+        if not game_id:
+            return False
+        conn = event_primary_connection(event)
+        if not conn or 'channel:manage:broadcast' not in (conn.scopes or '').split():
+            return False
+        bid = ensure_connection_broadcaster_id(conn)
+        if not bid:
+            return False
+        title = None
+        tpl = (getattr(event, 'twitch_title_template', '') or '').strip()
+        if tpl:
+            from .chat import render_template
+            title = render_template(tpl, {'game': game.title, 'event': event.name}).strip() or None
+        resp = modify_channel(conn, bid, game_id=game_id, title=title)
+        return bool(getattr(resp, 'ok', False))
+    except Exception:  # noqa: BLE001 — must never break the schedule advance
+        logger.exception('update_channel_for_game failed')
+        return False
 
 
 def send_shoutout(conn, from_broadcaster_id: str, to_broadcaster_id: str,
