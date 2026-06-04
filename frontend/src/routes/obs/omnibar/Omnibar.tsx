@@ -18,6 +18,7 @@ import { useOmnibarSse } from './hooks/useOmnibarSse';
 import { useLayoutConfig } from './hooks/useLayoutConfig';
 import { useTransitionsConfig } from './hooks/useTransitionsConfig';
 import { useImagePreload } from './hooks/useImagePreload';
+import { objectiveImageUrl } from '@/routes/obs/objectiveSection';
 import { Lane } from './lanes/Lane';
 import { LiveDonationPanel } from './panels/LiveDonationPanel';
 import { UrgentBannerPanel } from './panels/UrgentBannerPanel';
@@ -155,7 +156,7 @@ function OmnibarInner() {
   // as the network round-trip completes.
   const playingGame = feed.currentlyPlaying?.schedule_entry_detail?.game ?? null;
   useImagePreload([
-    ...(playingGame?.objectives ?? []).map((o) => o.image_url),
+    ...(playingGame?.objectives ?? []).map((o) => objectiveImageUrl(o)),
     ...(playingGame?.items ?? []).map((i) => i.image_url),
   ]);
 

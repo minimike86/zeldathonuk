@@ -112,7 +112,8 @@ class GameViewSet(viewsets.ModelViewSet):
         # `items__unlocks_with` is required: GameItemSerializer emits
         # unlocks_with_ids, so without it each item fires its own M2M query
         # (a 500-item catalog turned /api/games/ into a ~3.5s N+1).
-        'items', 'items__sets', 'items__unlocks_with', 'objectives', 'item_sets',
+        'items', 'items__sets', 'items__unlocks_with',
+        'objectives', 'objectives__linked_item', 'item_sets',
     )
     serializer_class = serializers.GameSerializer
 
@@ -794,7 +795,8 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             # (same N+1 that made /api/schedule/ ~3.5s on a full schedule).
             'runners', 'game__items', 'game__items__sets',
             'game__items__unlocks_with', 'game__item_sets',
-            'game__objectives', 'collected_items', 'objective_statuses',
+            'game__objectives', 'game__objectives__linked_item',
+            'collected_items', 'objective_statuses',
             'setpieces',
         )
     )
@@ -1942,6 +1944,7 @@ def currently_playing(request: Request) -> Response:
                 'schedule_entry__game__items__sets',
                 'schedule_entry__game__items__unlocks_with',
                 'schedule_entry__game__objectives',
+                'schedule_entry__game__objectives__linked_item',
                 'schedule_entry__game__item_sets',
             )
             .get(pk=1)

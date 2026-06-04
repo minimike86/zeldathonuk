@@ -47,11 +47,21 @@ class GameItemSerializer(serializers.ModelSerializer):
 
 
 class GameObjectiveSerializer(serializers.ModelSerializer):
+    # The linked GameItem's sprite, so an "item get" objective can fall back to
+    # the item's image when it has no own `image_url`. Read-only; consumers use
+    # `image_url || linked_item_image_url`. Relies on callers prefetching
+    # `…objectives__linked_item` to stay query-cheap.
+    linked_item_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = models.GameObjective
-        fields = ['id', 'game', 'name', 'image_url', 'category', 'group',
+        fields = ['id', 'game', 'name', 'image_url', 'linked_item_image_url',
+                  'category', 'group',
                   'linked_item', 'order', 'link_mode',
                   'setpiece_role', 'setpiece_name', 'clears_setpiece']
+
+    def get_linked_item_image_url(self, obj) -> str:
+        return obj.linked_item.image_url if obj.linked_item else ''
 
 
 class GameSerializer(serializers.ModelSerializer):

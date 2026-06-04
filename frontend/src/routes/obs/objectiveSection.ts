@@ -31,6 +31,13 @@ export interface ObjectiveSection {
   total: number;
 }
 
+/** Effective sprite for an objective: its own `image_url`, else the linked
+ *  GameItem's image — so an "item get" objective shows the item icon without a
+ *  separate upload. Empty string when neither is set. */
+export function objectiveImageUrl(o: GameObjective): string {
+  return o.image_url || o.linked_item_image_url || '';
+}
+
 const isTally = (o: GameObjective): boolean => o.link_mode === 'tally';
 
 const groupKey = (o: GameObjective): string =>

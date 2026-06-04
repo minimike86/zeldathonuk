@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSkull } from '@fortawesome/free-solid-svg-icons';
 import { topSetpiece, type ScheduleEntry } from '@/lib/obsApi';
-import { selectObjectiveSection } from '@/routes/obs/objectiveSection';
+import { objectiveImageUrl, selectObjectiveSection } from '@/routes/obs/objectiveSection';
 import { buildItemSections } from '@/routes/obs/itemClusters';
 import type { Box, ElementId } from './useLayoutPresetConfig';
 import type { RegionFeed } from './useRegionFeed';
@@ -337,8 +337,8 @@ function ObjectiveChecklistElement({ entry }: { entry: ScheduleEntry | null }) {
           return (
             <li key={objective.id} className="obs-region-objective" data-state={state}>
               <span className="obs-obj-node" aria-hidden>
-                {!done && objective.image_url && (
-                  <img className="obs-obj-icon" src={objective.image_url} alt="" />
+                {!done && objectiveImageUrl(objective) && (
+                  <img className="obs-obj-icon" src={objectiveImageUrl(objective)} alt="" />
                 )}
               </span>
               <span className="obs-region-objective-name">{objective.name}</span>
@@ -371,7 +371,7 @@ function NextObjectiveElement({ entry }: { entry: ScheduleEntry | null }) {
   return (
     <Block title="Next objective">
       <div className="obs-region-next-objective">
-        {next.image_url && <img src={next.image_url} alt="" aria-hidden />}
+        {objectiveImageUrl(next) && <img src={objectiveImageUrl(next)} alt="" aria-hidden />}
         <span className="obs-region-next-objective-name">{next.name}</span>
         <span className="obs-region-next-objective-pos">#{position} of {active.length}</span>
       </div>

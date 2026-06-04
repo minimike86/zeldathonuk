@@ -172,6 +172,11 @@ export interface GameObjective {
   game: number;
   name: string;
   image_url: string;
+  /** Read-only: the linked GameItem's sprite, so an "item get" objective can
+   *  fall back to the item's image when it has no own `image_url`. Empty when
+   *  there's no linked item (or it has no image). Use
+   *  `image_url || linked_item_image_url` when rendering. */
+  linked_item_image_url: string;
   category: string;
   /** Optional run-section label used to cluster objectives in the library
    *  editor and the timer splits (e.g. "Prologue", "Endgame"). Falls back to

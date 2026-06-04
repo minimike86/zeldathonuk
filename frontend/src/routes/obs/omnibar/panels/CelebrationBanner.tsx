@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { WaveText } from '@/components/WaveText';
 import { PanelRow } from './_shared/Row';
 import type { GameObjective, Incentive, Milestone } from '@/lib/obsApi';
+import { objectiveImageUrl } from '@/routes/obs/objectiveSection';
 
 /**
  * Full-bar takeover banner shown for the duration of a `celebrating`
@@ -205,7 +206,7 @@ function parseReason(reason: CelebrationReason, symbol: string): BannerView {
         tag: 'OBJECTIVE COMPLETE!',
         headline: o.name,
         subhead: objectiveSubhead(o.category),
-        image: o.image_url || undefined,
+        image: objectiveImageUrl(o) || undefined,
       };
     }
   }
