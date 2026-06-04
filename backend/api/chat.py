@@ -130,6 +130,21 @@ def _send_to_event(event, message: str, *, announcement: bool = False,
     return sent_any
 
 
+def broadcast(event, message: str, *, announcement: bool = False,
+              color: str = 'primary') -> bool:
+    """Send an arbitrary (operator-typed) message to all of the event's chat-
+    capable channels. Best-effort; returns True if at least one send succeeded."""
+    try:
+        if event is None or not (message or '').strip():
+            return False
+        return _send_to_event(
+            event, message.strip(), announcement=announcement, color=color,
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception('chat.broadcast failed')
+        return False
+
+
 def announce(event, trigger: str, ctx: dict | None = None) -> bool:
     """Post the configured chat message for ``trigger`` on ``event``. Best-effort:
     swallows everything and returns True only when a message was actually sent."""

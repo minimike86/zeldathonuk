@@ -648,6 +648,36 @@ def fetch_custom_rewards(conn, broadcaster_id: str) -> list[dict]:
     return resp.json().get('data') or []
 
 
+def fetch_global_emotes() -> list[dict]:
+    """Twitch global emotes (name + 1x image url) for the chat composer's emote
+    picker. App-token call (no user scope); returns [] on error. Sending an
+    emote's *name* in a chat message is what makes Twitch render the emote."""
+    try:
+        resp = requests.get(
+            f'{HELIX}/chat/emotes/global', headers=_app_auth_headers(), timeout=15,
+        )
+        if resp.status_code == 401:
+            resp = requests.get(
+                f'{HELIX}/chat/emotes/global',
+                headers={**_app_auth_headers(),
+                         'Authorization': f'Bearer {get_app_access_token(force_refresh=True)}'},
+                timeout=15,
+            )
+    except (TwitchAuthError, requests.RequestException):
+        return []
+    if not resp.ok:
+        return []
+    out = []
+    for e in resp.json().get('data') or []:
+        imgs = e.get('images') or {}
+        out.append({
+            'id': e.get('id'),
+            'name': e.get('name'),
+            'url': imgs.get('url_1x') or '',
+        })
+    return out
+
+
 def modify_channel(conn, broadcaster_id: str, *, game_id: str | None = None,
                    title: str | None = None) -> requests.Response | None:
     """Set the channel's category (game_id) and/or stream title via Helix

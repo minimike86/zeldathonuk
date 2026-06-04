@@ -389,6 +389,12 @@ export interface CustomReward {
   cost: number;
 }
 
+export interface TwitchEmote {
+  id: string;
+  name: string;
+  url: string;
+}
+
 export interface ScheduledJob {
   id: number;
   key: string;
@@ -2303,6 +2309,14 @@ export const obsApi = {
   deleteRewardAction: (id: number) =>
     api<void>(`/api/reward-actions/${id}/`, { method: 'DELETE' }),
   twitchCustomRewards: () => api<CustomReward[]>('/api/twitch/rewards/'),
+
+  // ── Send arbitrary chat message + emote picker ────────────────────
+  twitchEmotes: () => api<TwitchEmote[]>('/api/twitch/emotes/'),
+  twitchChatSend: (body: {
+    message: string;
+    announcement?: boolean;
+    color?: string;
+  }) => api<{ sent: boolean }>('/api/twitch/chat/send/', { method: 'POST', body }),
 
   // ── Twitch predictions ────────────────────────────────────────────
   twitchPredictions: (eventId?: number) =>

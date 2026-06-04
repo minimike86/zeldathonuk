@@ -1457,6 +1457,31 @@ class RewardActionViewSet(viewsets.ModelViewSet):
         return qs
 
 
+@api_view(['POST'])
+def twitch_chat_send(request: Request) -> Response:
+    """Operator: send an arbitrary message to every connected channel's chat for
+    the active event (Twitch emote names render as emotes)."""
+    active = models.Event.objects.filter(is_active=True).first()
+    if not active:
+        return Response({'detail': 'No active event.'}, status=status.HTTP_400_BAD_REQUEST)
+    message = (request.data.get('message') or '').strip()
+    if not message:
+        return Response({'detail': 'message required.'}, status=status.HTTP_400_BAD_REQUEST)
+    from . import chat
+    sent = chat.broadcast(
+        active, message[:500],
+        announcement=bool(request.data.get('announcement')),
+        color=request.data.get('color') or 'primary',
+    )
+    return Response({'sent': sent})
+
+
+@api_view(['GET'])
+def twitch_emotes(request: Request) -> Response:
+    """Twitch global emotes (name + image) for the chat composer's emote picker."""
+    return Response(twitch.fetch_global_emotes())
+
+
 @api_view(['GET'])
 def twitch_custom_rewards(request: Request) -> Response:
     """List the active event's primary channel's custom channel-point rewards

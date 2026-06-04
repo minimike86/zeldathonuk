@@ -107,6 +107,10 @@ urlpatterns = [
     path('scheduler-status/', views.scheduler_status, name='scheduler-status'),
     # Channel's custom channel-point rewards (for the reward-action picker).
     path('twitch/rewards/', views.twitch_custom_rewards, name='twitch-rewards'),
+    # Send an arbitrary message to all connected channels' chat (operator);
+    # global emotes for the composer's emote picker.
+    path('twitch/chat/send/', views.twitch_chat_send, name='twitch-chat-send'),
+    path('twitch/emotes/', views.twitch_emotes, name='twitch-emotes'),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to
     # ExternalEvent; omnibar polls for these on a 1.5s tick.
     path('twitch/eventsub/', eventsub.eventsub_webhook, name='twitch-eventsub'),

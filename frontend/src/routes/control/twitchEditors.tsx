@@ -3,14 +3,119 @@
 // them against the active event. Each takes the EventModel and writes via
 // obsApi + notifyEventChanged().
 import { useState } from 'react';
-import { obsApi } from '@/lib/obsApi';
+import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type {
   ChatAnnouncement,
   EventModel,
   RecurringChatMessage,
+  TwitchEmote,
 } from '@/lib/obsApi';
 import { api } from '@/lib/api';
 import { notifyEventChanged } from '@/lib/eventBus';
+
+// ── Send an arbitrary message to all connected channels ───────────────
+
+export function SendChatMessageForm() {
+  const { data: emotes } = usePolledQuery(obsApi.twitchEmotes, 300_000);
+  const [message, setMessage] = useState('');
+  const [showEmotes, setShowEmotes] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  const insertEmote = (name: string) =>
+    setMessage((m) => (m.trim() ? `${m.trimEnd()} ${name} ` : `${name} `));
+
+  const send = async () => {
+    const msg = message.trim();
+    if (!msg) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      const res = await obsApi.twitchChatSend({ message: msg });
+      if (res.sent) {
+        setStatus('Sent ✓');
+        setMessage('');
+      } else {
+        setStatus('No chat-capable connected channel.');
+      }
+    } catch (e) {
+      setStatus((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="mt-3 p-3"
+      style={{
+        background: 'rgba(0,0,0,0.25)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 8,
+      }}
+    >
+      <header className="d-flex align-items-center gap-2 mb-2">
+        <strong>Send a message to chat</strong>
+        {status && <span className="small text-white-50">{status}</span>}
+      </header>
+      <p className="small text-white-50">
+        Posts to every connected channel’s chat. Twitch emote names (e.g.{' '}
+        <code>Kappa</code>) render as emotes; unicode 💜 works too.
+      </p>
+      <textarea
+        className="form-control form-control-sm"
+        rows={2}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Type a message… (Kappa, PogChamp, 💜)"
+      />
+      <div className="d-flex gap-2 mt-2 align-items-center">
+        <button
+          type="button"
+          className="btn btn-bloodmoon btn-sm"
+          onClick={send}
+          disabled={busy || !message.trim()}
+        >
+          {busy ? 'Sending…' : 'Send'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-light btn-sm"
+          onClick={() => setShowEmotes((v) => !v)}
+        >
+          😀 Emotes
+        </button>
+      </div>
+      {showEmotes && (
+        <div
+          className="mt-2 p-2 d-flex flex-wrap gap-1"
+          style={{
+            maxHeight: 200,
+            overflow: 'auto',
+            background: 'rgba(0,0,0,0.3)',
+            borderRadius: 6,
+          }}
+        >
+          {(emotes ?? []).map((e: TwitchEmote) => (
+            <button
+              key={e.id}
+              type="button"
+              className="btn btn-sm p-1"
+              title={e.name}
+              onClick={() => insertEmote(e.name)}
+              style={{ lineHeight: 0 }}
+            >
+              <img src={e.url} alt={e.name} width={28} height={28} />
+            </button>
+          ))}
+          {emotes && emotes.length === 0 && (
+            <span className="small text-white-50">No emotes available.</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Broadcast: Twitch category / title on game change ─────────────────
 

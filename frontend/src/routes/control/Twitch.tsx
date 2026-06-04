@@ -10,6 +10,7 @@ import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import {
   ChatAnnouncementsEditor,
   RecurringMessagesEditor,
+  SendChatMessageForm,
   TwitchBroadcastForm,
 } from './twitchEditors';
 import { PredictionsPanel } from './Predictions';
@@ -49,6 +50,7 @@ export function TwitchControl() {
         {tab === 'chat' &&
           (event ? (
             <>
+              <SendChatMessageForm />
               <TwitchBroadcastForm event={event} />
               <ChatAnnouncementsEditor event={event} />
               <RecurringMessagesEditor event={event} />

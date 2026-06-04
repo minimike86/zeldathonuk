@@ -163,6 +163,20 @@ class ExternalChatTriggerTests(TestCase):
         mock_send.assert_not_called()
 
 
+class BroadcastTests(TestCase):
+    @patch('api.chat.send_chat_message')
+    def test_broadcast_sends_arbitrary_message(self, mock_send):
+        mock_send.return_value = MagicMock(ok=True)
+        event = _event()
+        _connected_primary(event)
+        self.assertTrue(chat.broadcast(event, 'gg everyone Kappa'))
+        self.assertEqual(mock_send.call_args.args[2], 'gg everyone Kappa')
+
+    def test_broadcast_blank_message_noop(self):
+        event = _event()
+        self.assertFalse(chat.broadcast(event, '   '))
+
+
 class RecurringMessageTests(TestCase):
     def setUp(self):
         self.event = _event(currency='£')
