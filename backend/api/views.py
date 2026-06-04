@@ -284,7 +284,9 @@ class EventViewSet(viewsets.ModelViewSet):
     queryset = (
         models.Event.objects.all()
         .order_by('-start_time')
-        .prefetch_related('twitch_channels__connection', 'donation_pages')
+        .prefetch_related(
+            'twitch_channels__connection', 'donation_pages', 'chat_announcements',
+        )
     )
     serializer_class = serializers.EventSerializer
 
@@ -292,6 +294,10 @@ class EventViewSet(viewsets.ModelViewSet):
         event = serializer.save()
         if event.is_active:
             models.Event.objects.exclude(pk=event.pk).filter(is_active=True).update(is_active=False)
+        # Seed the default (disabled) chat announcement rows so the control
+        # editor lists every trigger for the new event.
+        from . import chat
+        chat.ensure_announcements(event)
 
     def perform_update(self, serializer):
         event = serializer.save()
@@ -1402,6 +1408,21 @@ class EventTwitchChannelViewSet(viewsets.ModelViewSet):
         return qs
 
 
+class ChatAnnouncementViewSet(viewsets.ModelViewSet):
+    """Per-event Twitch chat announcement config (enable + template per
+    trigger). The active event's primary connected channel posts the rendered
+    message when a trigger fires (see api.chat)."""
+    queryset = models.ChatAnnouncement.objects.all()
+    serializer_class = serializers.ChatAnnouncementSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+
 class BrbTimerViewSet(viewsets.ModelViewSet):
     queryset = models.BrbTimer.objects.all()
     serializer_class = serializers.BrbTimerSerializer
@@ -1516,9 +1537,26 @@ def currently_playing(request: Request) -> Response:
         )
         return Response(serializers.CurrentlyPlayingSerializer(cp).data)
     cp = models.CurrentlyPlaying.get()
+    old_entry_id = cp.schedule_entry_id
     schedule_entry_id = request.data.get('schedule_entry')
     cp.schedule_entry_id = schedule_entry_id
     cp.save()
+    # Game-change chat announcement (best-effort) when the live entry actually
+    # changes to a game slot.
+    if schedule_entry_id and schedule_entry_id != old_entry_id:
+        entry = (
+            models.ScheduleEntry.objects
+            .select_related('game', 'event')
+            .prefetch_related('runners')
+            .filter(pk=schedule_entry_id)
+            .first()
+        )
+        if entry and entry.game_id:
+            from . import chat
+            chat.announce(entry.event, 'game_change', {
+                'game': entry.game.title,
+                'runner': ', '.join(r.name for r in entry.runners.all()),
+            })
     return Response(serializers.CurrentlyPlayingSerializer(cp).data)
 
 

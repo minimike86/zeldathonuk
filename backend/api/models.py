@@ -1369,6 +1369,47 @@ class EventTwitchChannel(models.Model):
             ).exclude(pk=self.pk).update(is_primary=False)
 
 
+class ChatTrigger(models.TextChoices):
+    DONATION = 'donation', 'Donation received'
+    MILESTONE = 'milestone', 'Milestone reached'
+    GAME_CHANGE = 'game_change', 'Game / run change'
+    SUB = 'sub', 'New subscription'
+    FOLLOW = 'follow', 'New follow'
+    RAID = 'raid', 'Incoming raid'
+    CHEER = 'cheer', 'Bits cheered'
+    REDEMPTION = 'redemption', 'Channel-point redemption'
+
+
+class ChatAnnouncement(models.Model):
+    """Per-event Twitch chat announcement config for one trigger.
+
+    When the trigger fires, the active event's PRIMARY connected channel posts
+    the rendered ``template`` into its own chat (best-effort — a send failure
+    never blocks ingest). Available placeholders depend on the trigger; see
+    ``api.chat.DEFAULT_TEMPLATES`` for the defaults and the supported fields.
+    """
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='chat_announcements',
+    )
+    trigger = models.CharField(max_length=20, choices=ChatTrigger.choices)
+    enabled = models.BooleanField(default=False)
+    template = models.TextField(
+        blank=True,
+        help_text='Message posted to chat. Supports {placeholder} fields — see '
+                  'the per-trigger hints in /control.',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['event', 'trigger']
+        unique_together = [('event', 'trigger')]
+
+    def __str__(self) -> str:
+        state = 'on' if self.enabled else 'off'
+        return f'{self.event} → chat:{self.trigger} ({state})'
+
+
 class LayoutPreset(models.Model):
     """A named arrangement for one OBS game-layout aspect ratio.
 

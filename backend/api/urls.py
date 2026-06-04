@@ -33,6 +33,7 @@ router.register('charity-images', views.CharityImageViewSet)
 router.register('charity-impact-tiers', views.CharityImpactTierViewSet)
 router.register('event-charities', views.EventCharityViewSet)
 router.register('event-twitch-channels', views.EventTwitchChannelViewSet)
+router.register('chat-announcements', views.ChatAnnouncementViewSet)
 router.register(
     'chest-announcer/sound-triggers',
     views.ChestAnnouncerSoundTriggerViewSet,

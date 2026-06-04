@@ -184,20 +184,21 @@ def _token_headers(token_str: str) -> dict[str, str]:
     }
 
 
-def _request_as(tok, method: str, url: str, **kwargs) -> requests.Response:
+def _request_as(tok, method: str, url: str, *, timeout: int = 15, **kwargs) -> requests.Response:
     """Helix request signed with a SPECIFIC token row; refresh + retry once on 401.
 
     The ``_request`` above implicitly uses the primary singleton; this variant
     lets the poller read an additional channel's charity data with that
     channel's own token (Twitch requires the broadcaster's own token + matching
-    broadcaster_id for charity endpoints)."""
+    broadcaster_id for charity endpoints). ``timeout`` is overridable so
+    best-effort callers (chat sends in the request path) can fail fast."""
     resp = requests.request(
-        method, url, headers=_token_headers(valid_token_for(tok)), timeout=15, **kwargs,
+        method, url, headers=_token_headers(valid_token_for(tok)), timeout=timeout, **kwargs,
     )
     if resp.status_code == 401:
         _refresh(tok)
         resp = requests.request(
-            method, url, headers=_token_headers(tok.access_token), timeout=15, **kwargs,
+            method, url, headers=_token_headers(tok.access_token), timeout=timeout, **kwargs,
         )
     return resp
 

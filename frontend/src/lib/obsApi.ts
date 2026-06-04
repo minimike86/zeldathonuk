@@ -297,6 +297,18 @@ export interface EventTwitchChannel {
   connection_scopes: string[];
 }
 
+export interface ChatAnnouncement {
+  id: number;
+  event: number;
+  trigger: string;
+  /** Human label for the trigger (e.g. "Donation received"). */
+  trigger_display: string;
+  enabled: boolean;
+  template: string;
+  /** Placeholder fields this trigger's template supports (editor hints). */
+  placeholders: string[];
+}
+
 export interface EventModel {
   id: number;
   name: string;
@@ -327,6 +339,9 @@ export interface EventModel {
    *    panels: { "<panel-id>": { ...overrides } } }. */
   omnibar_transitions: Record<string, unknown>;
   donation_pages: DonationPage[];
+  /** Per-trigger Twitch chat announcement config (enable + template).
+   *  Read-only here; written via /api/chat-announcements/. */
+  chat_announcements: ChatAnnouncement[];
   /** Charities this event is fundraising for, ordered + with the
    *  primary beneficiary flagged. Read-only on the EventModel —
    *  mutations go through `obsApi.createEventCharity` /
@@ -2042,6 +2057,16 @@ export const obsApi = {
     }>('/api/twitch/connect/poll/', {
       method: 'POST',
       body: { device_code: deviceCode, login },
+    }),
+
+  // ── Twitch chat announcements (per-event, per-trigger) ────────────
+  updateChatAnnouncement: (
+    id: number,
+    patch: Partial<{ enabled: boolean; template: string }>,
+  ) =>
+    api<ChatAnnouncement>(`/api/chat-announcements/${id}/`, {
+      method: 'PATCH',
+      body: patch,
     }),
 
   // ── Sound assets + schedule-entry sound triggers ──────────────────

@@ -215,9 +215,29 @@ class EventTwitchChannelSerializer(serializers.ModelSerializer):
         return (c.scopes or '').split() if c else []
 
 
+class ChatAnnouncementSerializer(serializers.ModelSerializer):
+    """Per-event, per-trigger Twitch chat announcement config. ``placeholders``
+    lists the template fields the trigger supports (for the editor's hints)."""
+
+    trigger_display = serializers.CharField(source='get_trigger_display', read_only=True)
+    placeholders = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.ChatAnnouncement
+        fields = [
+            'id', 'event', 'trigger', 'trigger_display', 'enabled', 'template',
+            'placeholders',
+        ]
+
+    def get_placeholders(self, obj) -> list:
+        from . import chat
+        return chat.TEMPLATE_PLACEHOLDERS.get(obj.trigger, [])
+
+
 class EventSerializer(serializers.ModelSerializer):
     donation_pages = DonationPageSerializer(many=True, read_only=True)
     twitch_channels = EventTwitchChannelSerializer(many=True, read_only=True)
+    chat_announcements = ChatAnnouncementSerializer(many=True, read_only=True)
     # Primary channel login for single-channel consumers (Follow link, embed).
     primary_twitch_channel = serializers.SerializerMethodField()
     # Charities are read here via the through-table so consumers get the
@@ -244,6 +264,7 @@ class EventSerializer(serializers.ModelSerializer):
             'omnibar_transitions',
             'donation_pages',
             'event_charities',
+            'chat_announcements',
         ]
 
     def get_primary_twitch_channel(self, obj) -> str:

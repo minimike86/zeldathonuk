@@ -462,6 +462,16 @@ class EventTwitchChannelAdmin(ModelAdmin):
     search_fields = ['login', 'event__name']
 
 
+@admin.register(models.ChatAnnouncement)
+class ChatAnnouncementAdmin(ModelAdmin):
+    """Per-event Twitch chat announcement config (enable + template per
+    trigger)."""
+    list_display = ['event', 'trigger', 'enabled', 'updated_at']
+    list_filter = ['enabled', 'trigger']
+    list_editable = ['enabled']
+    search_fields = ['event__name', 'template']
+
+
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────
 
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type {
+  ChatAnnouncement,
   Charity,
   DonationPage,
   DonationPlatformKey,
@@ -172,6 +173,7 @@ export function EventsControl() {
                   <EventTwitchChannelsEditor event={e} />
                   <DonationPagesEditor event={e} />
                   <EventCharitiesEditor event={e} />
+                  <ChatAnnouncementsEditor event={e} />
                 </td>
               </tr>
             ) : (
@@ -1751,6 +1753,131 @@ function ConnectChannelModal({
       </div>
     </div>,
     document.body,
+  );
+}
+
+// ── Twitch chat announcements ─────────────────────────────────────────
+//
+// Per-trigger enable + editable template. Only the triggers wired to actually
+// post are shown; the rest exist in the DB and light up as later slices ship.
+// When connected, the event's primary channel posts the rendered message to
+// its own chat.
+
+const WIRED_CHAT_TRIGGERS = ['donation', 'milestone', 'game_change'];
+
+function ChatAnnouncementsEditor({ event }: { event: EventModel }) {
+  const rows = event.chat_announcements
+    .filter((a) => WIRED_CHAT_TRIGGERS.includes(a.trigger))
+    .sort(
+      (a, b) =>
+        WIRED_CHAT_TRIGGERS.indexOf(a.trigger) -
+        WIRED_CHAT_TRIGGERS.indexOf(b.trigger),
+    );
+
+  return (
+    <div
+      className="mt-3 p-3"
+      style={{
+        background: 'rgba(0,0,0,0.25)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 8,
+      }}
+    >
+      <header className="mb-2">
+        <strong>Twitch chat announcements</strong>
+      </header>
+      <p className="text-white-50 small">
+        When the event’s primary channel is connected, it posts these to its own
+        chat. Use {'{placeholder}'} fields to insert values.
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-white-50 small m-0">
+          Save the event first to configure chat announcements.
+        </p>
+      ) : (
+        <ul className="list-unstyled m-0">
+          {rows.map((a) => (
+            <ChatAnnouncementRow key={a.id} row={a} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ChatAnnouncementRow({ row }: { row: ChatAnnouncement }) {
+  const [enabled, setEnabled] = useState(row.enabled);
+  const [template, setTemplate] = useState(row.template);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const dirty = template !== row.template;
+
+  const persist = async (patch: Partial<{ enabled: boolean; template: string }>) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.updateChatAnnouncement(row.id, patch);
+      notifyEventChanged();
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1500);
+    } catch (e) {
+      setErr((e as Error).message);
+      throw e;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggle = async (next: boolean) => {
+    setEnabled(next);
+    try {
+      await persist({ enabled: next, template });
+    } catch {
+      setEnabled(!next); // revert on failure
+    }
+  };
+
+  return (
+    <li className="py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="d-flex align-items-center gap-2 mb-1">
+        <div className="form-check form-switch m-0">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id={`chat-${row.id}`}
+            checked={enabled}
+            disabled={busy}
+            onChange={(e) => toggle(e.target.checked)}
+          />
+          <label className="form-check-label small" htmlFor={`chat-${row.id}`}>
+            <strong>{row.trigger_display}</strong>
+          </label>
+        </div>
+        {saved && <span className="text-success small">saved ✓</span>}
+        {err && <span className="text-danger small">{err}</span>}
+      </div>
+      <textarea
+        className="form-control form-control-sm"
+        rows={2}
+        value={template}
+        onChange={(e) => setTemplate(e.target.value)}
+        placeholder="Message posted to chat…"
+      />
+      <div className="d-flex justify-content-between align-items-center mt-1 gap-2 flex-wrap">
+        <span className="small text-white-50">
+          Placeholders: {row.placeholders.map((p) => `{${p}}`).join(' ') || '—'}
+        </span>
+        <button
+          type="button"
+          className="btn btn-sm btn-bloodmoon"
+          onClick={() => persist({ template }).catch(() => {})}
+          disabled={busy || !dirty}
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+    </li>
   );
 }
 
