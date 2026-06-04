@@ -176,3 +176,79 @@ class EndpointTests(APITestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['total_ingested'], 1)
         self.assertEqual(models.Donation.objects.count(), 1)
+
+
+@override_settings(JUSTGIVING_API_KEY='app123', JUSTGIVING_ENV='production')
+class PageTotalTests(APITestCase):
+    """The aggregate page total (page-details endpoint) keeps working even when
+    the itemized donations feed is empty — that's how a completed/past event's
+    total stays visible."""
+
+    def setUp(self):
+        self.event = _event()
+        self.page = _jg_page(self.event, 'gameblast17-michael-warner')
+
+    def _summary_resp(self, **over):
+        body = {
+            'pageId': '9558537',
+            'grandTotalRaisedExcludingGiftAid': '360',
+            'donationCount': 16,
+            'currencyCode': 'GBP',
+            'status': 'Completed',
+        }
+        body.update(over)
+        return _resp(body)
+
+    def test_fetch_page_summary_maps_fields(self):
+        with patch('api.justgiving.requests.get', return_value=self._summary_resp()):
+            s = justgiving.fetch_page_summary('gameblast17-michael-warner')
+        self.assertEqual(s['raised'], Decimal('360'))
+        self.assertEqual(s['donation_count'], 16)
+        self.assertEqual(s['currency'], 'GBP')
+        self.assertEqual(s['status'], 'Completed')
+
+    def test_sync_page_total_stores_aggregate_for_completed_page(self):
+        with patch('api.justgiving.requests.get', return_value=self._summary_resp()):
+            justgiving.sync_page_total(self.page)
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.total_raised, Decimal('360.00'))
+        self.assertEqual(self.page.total_donation_count, 16)
+        self.assertEqual(self.page.total_currency, 'GBP')
+        self.assertEqual(self.page.total_status, 'Completed')
+        self.assertIsNotNone(self.page.total_synced_at)
+
+    def test_sync_page_total_rejects_non_justgiving(self):
+        page = models.DonationPage.objects.create(
+            event=self.event, platform=models.DonationPlatform.TILTIFY,
+            url='https://tiltify.com/x', external_id='abc',
+        )
+        with self.assertRaises(justgiving.JustGivingError):
+            justgiving.sync_page_total(page)
+
+    def test_endpoint_requires_operator(self):
+        res = self.client.post(f'/api/donation-pages/{self.page.id}/sync_total/')
+        self.assertIn(res.status_code, (401, 403))
+
+    def _operator(self, username, clerk):
+        user = get_user_model().objects.create_user(username=username, password='x')
+        models.Profile.objects.create(
+            user=user, clerk_user_id=clerk, role=models.Profile.ROLE_OPERATOR,
+        )
+        self.client.force_authenticate(user=user)
+
+    def test_endpoint_updates_for_operator(self):
+        self._operator('op2', 'clerk_jg2')
+        with patch('api.justgiving.requests.get', return_value=self._summary_resp()):
+            res = self.client.post(f'/api/donation-pages/{self.page.id}/sync_total/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['total_donation_count'], 16)
+        self.assertEqual(Decimal(str(res.data['total_raised'])), Decimal('360.00'))
+
+    def test_endpoint_rejects_non_justgiving_page(self):
+        page = models.DonationPage.objects.create(
+            event=self.event, platform=models.DonationPlatform.TILTIFY,
+            url='https://tiltify.com/x', external_id='abc',
+        )
+        self._operator('op3', 'clerk_jg3')
+        res = self.client.post(f'/api/donation-pages/{page.id}/sync_total/')
+        self.assertEqual(res.status_code, 400)

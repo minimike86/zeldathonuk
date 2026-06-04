@@ -1419,6 +1419,26 @@ class DonationPageViewSet(viewsets.ModelViewSet):
             qs = qs.filter(event_id=event_id)
         return qs
 
+    @action(detail=True, methods=['post'])
+    def sync_total(self, request: Request, pk=None) -> Response:
+        """Refresh a JustGiving page's cached aggregate total (raised /
+        donation count / status) from the page-details endpoint. Works for any
+        event's page — including completed/past ones whose itemized donation
+        feed has gone empty — so operators can see what a past event raised.
+        Operator-only (default permission on POST)."""
+        page = self.get_object()
+        if page.platform != models.DonationPlatform.JUSTGIVING:
+            return Response(
+                {'detail': 'Totals sync is JustGiving-only.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from . import justgiving
+        try:
+            justgiving.sync_page_total(page)
+        except justgiving.JustGivingError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(page).data)
+
 
 class EventTwitchChannelViewSet(viewsets.ModelViewSet):
     """Per-event Twitch channels — each drives live status; those with

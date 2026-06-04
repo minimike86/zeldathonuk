@@ -141,10 +141,19 @@ class DonationPageSerializer(serializers.ModelSerializer):
             'external_id',
             'is_primary',
             'order',
+            'total_raised',
+            'total_donation_count',
+            'total_currency',
+            'total_status',
+            'total_synced_at',
             'fees_url',
             'gift_aid_url',
             'fee_warning',
             'minimum_donation_amount',
+        ]
+        read_only_fields = [
+            'total_raised', 'total_donation_count', 'total_currency',
+            'total_status', 'total_synced_at',
         ]
 
     def _profile(self, obj):

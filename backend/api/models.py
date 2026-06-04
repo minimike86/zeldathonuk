@@ -853,6 +853,23 @@ class DonationPage(models.Model):
         help_text='Promotes this page above others on landing CTAs.',
     )
     order = models.PositiveIntegerField(default=0)
+    # ── Aggregate page total (synced from the platform) ────────────────────
+    # JustGiving stops exposing the itemized donation feed once a page is
+    # "Completed", but the page-details endpoint still reports the running
+    # total + donation count. These cache that aggregate so past events'
+    # totals stay visible. Written only by the totals sync; null = never
+    # synced. Kept separate from the itemized Donation rows (never summed
+    # into the event grand total) to avoid double-counting live pages.
+    total_raised = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    total_donation_count = models.PositiveIntegerField(null=True, blank=True)
+    total_currency = models.CharField(max_length=8, blank=True)
+    total_status = models.CharField(
+        max_length=40, blank=True,
+        help_text='Platform page status, e.g. JustGiving "Active" / "Completed".',
+    )
+    total_synced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

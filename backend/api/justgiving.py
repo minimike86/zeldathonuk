@@ -160,6 +160,64 @@ def _parse_jg_date(value: str):
         return timezone.now()
 
 
+def fetch_page_summary(short_name: str) -> dict:
+    """Fetch a page's aggregate from the page-details endpoint.
+
+    Unlike the donations feed (which goes empty once a page is "Completed"),
+    the page-details endpoint keeps reporting the running total + donation
+    count for the life of the page — so this is how past events' totals stay
+    visible. Returns ``{raised, donation_count, currency, status, page_id}``.
+    Raises :class:`JustGivingError` on a non-OK response.
+    """
+    base = api_base()
+    appid = app_id()
+    url = f'{base}/{appid}/v1/fundraising/pages/{short_name}'
+    try:
+        resp = requests.get(
+            url, headers={'Accept': 'application/json'}, timeout=_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        raise JustGivingError(f'JustGiving request failed: {exc}') from exc
+    if not resp.ok:
+        raise JustGivingError(
+            f'JustGiving error {resp.status_code}: {resp.text[:200]}'
+        )
+    body = resp.json() or {}
+    count = body.get('donationCount')
+    return {
+        # Same basis as the itemized donations (excludes Gift Aid).
+        'raised': _amount(body.get('grandTotalRaisedExcludingGiftAid')),
+        'donation_count': int(count) if count is not None else None,
+        'currency': body.get('currencyCode') or '',
+        'status': body.get('status') or '',
+        'page_id': str(body.get('pageId') or ''),
+    }
+
+
+def sync_page_total(page: 'models.DonationPage') -> None:
+    """Sync a JustGiving DonationPage's cached aggregate total in place.
+
+    Works for any event's page (including completed/past ones) — keyed on the
+    page short name in ``external_id``. Raises :class:`JustGivingError` for a
+    non-JustGiving page, a blank short name, or a transport/config problem.
+    """
+    if page.platform != models.DonationPlatform.JUSTGIVING:
+        raise JustGivingError('Totals sync is JustGiving-only.')
+    short_name = (page.external_id or '').strip()
+    if not short_name:
+        raise JustGivingError('Page has no short name (external_id).')
+    summary = fetch_page_summary(short_name)
+    page.total_raised = summary['raised']
+    page.total_donation_count = summary['donation_count']
+    page.total_currency = summary['currency']
+    page.total_status = summary['status']
+    page.total_synced_at = timezone.now()
+    page.save(update_fields=[
+        'total_raised', 'total_donation_count', 'total_currency',
+        'total_status', 'total_synced_at',
+    ])
+
+
 def ingest_event(event: 'models.Event') -> dict:
     """Pull + ingest donations for every JustGiving page on ``event``.
 
@@ -219,6 +277,16 @@ def ingest_event(event: 'models.Event') -> dict:
             'ingested': ingested,
         })
         total_ingested += ingested
+    # Keep each page's cached aggregate fresh alongside the itemized stream,
+    # so the per-page total in /control/events stays current during a live
+    # show. Best-effort — a summary failure must not abort donation ingest.
+    for page_obj in event.donation_pages.filter(
+        platform=models.DonationPlatform.JUSTGIVING,
+    ).exclude(external_id=''):
+        try:
+            sync_page_total(page_obj)
+        except JustGivingError:
+            pass
     return {'pages': results, 'total_ingested': total_ingested}
 
 

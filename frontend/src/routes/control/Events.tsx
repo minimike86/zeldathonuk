@@ -14,8 +14,36 @@ import { resolveMediaUrl } from '@/lib/env';
 import { notifyEventChanged, onEventChanged } from '@/lib/eventBus';
 import { ImageDropzone } from '@/components/ImageDropzone';
 
-type SortKey = 'name' | 'start_time' | 'currency_symbol' | 'is_active' | 'donation_pages';
+type SortKey =
+  | 'name'
+  | 'start_time'
+  | 'currency_symbol'
+  | 'is_active'
+  | 'donation_pages'
+  | 'raised';
 type SortDir = 'asc' | 'desc';
+
+/** Sum the synced donation-page aggregates for an event. These are the
+ *  platform-reported page totals (JustGiving) cached via "Sync total" — the
+ *  only figure available for completed/past events whose itemized donation
+ *  feed has gone empty. `synced` is false until at least one page is synced. */
+function eventSyncedTotal(e: EventModel): {
+  amount: number;
+  count: number;
+  synced: boolean;
+} {
+  let amount = 0;
+  let count = 0;
+  let synced = false;
+  for (const p of e.donation_pages) {
+    if (p.total_synced_at !== null && p.total_raised !== null) {
+      synced = true;
+      amount += Number(p.total_raised) || 0;
+      count += p.total_donation_count ?? 0;
+    }
+  }
+  return { amount, count, synced };
+}
 
 const sortValue = (e: EventModel, key: SortKey): string | number => {
   switch (key) {
@@ -25,6 +53,8 @@ const sortValue = (e: EventModel, key: SortKey): string | number => {
       return e.is_active ? 1 : 0;
     case 'donation_pages':
       return e.donation_pages.length;
+    case 'raised':
+      return eventSyncedTotal(e).amount;
     case 'name':
     case 'currency_symbol':
       return e[key].toLowerCase();
@@ -160,15 +190,17 @@ export function EventsControl() {
             <SortableTh label="Name" sortKey="name" current={sortKey} dir={sortDir} onClick={toggleSort} />
             <SortableTh label="Start time" sortKey="start_time" current={sortKey} dir={sortDir} onClick={toggleSort} />
             <SortableTh label="Currency" sortKey="currency_symbol" current={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableTh label="Raised" sortKey="raised" current={sortKey} dir={sortDir} onClick={toggleSort} />
             <SortableTh label="Status" sortKey="is_active" current={sortKey} dir={sortDir} onClick={toggleSort} />
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {visibleEvents.map((e) =>
-            editingId === e.id ? (
+          {visibleEvents.map((e) => {
+            const raised = eventSyncedTotal(e);
+            return editingId === e.id ? (
               <tr key={e.id}>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <EventForm
                     event={e}
                     onCancel={() => setEditingId(null)}
@@ -235,6 +267,25 @@ export function EventsControl() {
                 <td>{fmtDateTime(e.start_time)}</td>
                 <td>{e.currency_symbol}</td>
                 <td>
+                  {raised.synced ? (
+                    <span
+                      title={`${raised.count} donations · synced page total${
+                        e.donation_pages.some((p) => p.platform === 'justgiving')
+                          ? ' (JustGiving)'
+                          : ''
+                      }`}
+                    >
+                      <strong>
+                        {e.currency_symbol}
+                        {raised.amount.toFixed(2)}
+                      </strong>
+                      <span className="text-white-50 small"> · {raised.count}</span>
+                    </span>
+                  ) : (
+                    <span className="text-white-50 small">—</span>
+                  )}
+                </td>
+                <td>
                   {e.is_active ? (
                     <span className="badge bg-warning text-dark">● ACTIVE</span>
                   ) : (
@@ -274,18 +325,18 @@ export function EventsControl() {
                   </div>
                 </td>
               </tr>
-            ),
-          )}
+            );
+          })}
           {events && events.length === 0 && (
             <tr>
-              <td colSpan={6} className="text-white-50 text-center py-4">
+              <td colSpan={7} className="text-white-50 text-center py-4">
                 No events yet — add one above.
               </td>
             </tr>
           )}
           {events && events.length > 0 && visibleEvents.length === 0 && (
             <tr>
-              <td colSpan={6} className="text-white-50 text-center py-4">
+              <td colSpan={7} className="text-white-50 text-center py-4">
                 No events match “{filter}”.
               </td>
             </tr>
@@ -744,6 +795,68 @@ function DraftPageForm({
   );
 }
 
+// Per-page aggregate total for a JustGiving page. JustGiving stops exposing
+// the itemized donation feed once a page is "Completed", but the page-details
+// endpoint still reports the running total — so this lets the operator see (and
+// refresh) what any past event raised, distinct from the itemized donations.
+function JustGivingPageTotal({ page }: { page: DonationPage }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const sync = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.syncDonationPageTotal(page.id);
+      // Re-fetch the event so this row picks up the freshly-synced total.
+      notifyEventChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const synced = page.total_synced_at !== null && page.total_raised !== null;
+  const symbol =
+    ({ GBP: '£', USD: '$', EUR: '€' } as Record<string, string>)[
+      page.total_currency
+    ] ?? (page.total_currency ? `${page.total_currency} ` : '£');
+
+  return (
+    <span className="d-inline-flex align-items-center gap-2 small">
+      {synced ? (
+        <span className="text-white-50">
+          <strong className="text-white">
+            {symbol}
+            {Number(page.total_raised).toFixed(2)}
+          </strong>{' '}
+          · {page.total_donation_count ?? 0} donations
+          {page.total_status ? ` · ${page.total_status}` : ''}
+          {page.total_synced_at
+            ? ` · synced ${new Date(page.total_synced_at).toLocaleString('en-GB')}`
+            : ''}
+        </span>
+      ) : (
+        <span className="text-white-50">total not synced</span>
+      )}
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-light"
+        onClick={() => void sync()}
+        disabled={busy}
+      >
+        {busy ? 'Syncing…' : 'Sync total'}
+      </button>
+      {err && (
+        <span className="badge bg-danger" title={err}>
+          Error
+        </span>
+      )}
+    </span>
+  );
+}
+
 function DonationPagesEditor({ event }: { event: EventModel }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -835,6 +948,7 @@ function DonationPagesEditor({ event }: { event: EventModel }) {
                 {p.external_id && (
                   <code className="small text-white-50">{p.external_id}</code>
                 )}
+                {p.platform === 'justgiving' && <JustGivingPageTotal page={p} />}
                 <div className="ms-auto control-btn-row">
                   <button
                     type="button"

@@ -270,6 +270,16 @@ export interface DonationPage {
   external_id: string;
   is_primary: boolean;
   order: number;
+  // Cached aggregate from the platform (JustGiving), synced via
+  // syncDonationPageTotal. JustGiving stops exposing itemized donations once
+  // a page is "Completed", but still reports these totals — so a past event's
+  // total stays visible. null/'' until first synced. NOT summed into the
+  // event's itemized donation total (separate stat).
+  total_raised: string | null;
+  total_donation_count: number | null;
+  total_currency: string;
+  total_status: string;
+  total_synced_at: string | null;
   // Denormalised from DonationPlatformProfile — same for every page of the
   // same platform. Kept on the page payload so the picker UI stays flat.
   fees_url: string;
@@ -501,6 +511,11 @@ export function eventDonationOptions(
       external_id: c.charity_slug,
       is_primary: false,
       order: 100 + c.order,
+      total_raised: null,
+      total_donation_count: null,
+      total_currency: '',
+      total_status: '',
+      total_synced_at: null,
       fees_url: '',
       gift_aid_url: '',
       fee_warning: '',
@@ -1382,6 +1397,11 @@ export const obsApi = {
    *  donations immediately; returns per-page counts. */
   runJustGivingFetch: () =>
     api<JustGivingTestResult>('/api/justgiving/test/', { method: 'POST' }),
+  /** Refresh a JustGiving donation page's cached aggregate total (raised /
+   *  donation count / status). Works for any event's page, including
+   *  completed/past ones whose itemized feed has gone empty. */
+  syncDonationPageTotal: (id: number) =>
+    api<DonationPage>(`/api/donation-pages/${id}/sync_total/`, { method: 'POST' }),
   /** Twitch live-status probe. Returns is_live=true when the named
    *  channel is currently streaming, with optional metadata (game,
    *  title, viewer count, started_at). Omit `login` to fall back to
