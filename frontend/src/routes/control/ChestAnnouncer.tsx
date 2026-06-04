@@ -119,6 +119,7 @@ export function ChestAnnouncerControl() {
   // in flight (and on the next poll for the rest of the page). Mirrors
   // the server values when a fresh response advances `updated_at`.
   const [audioOverride, setAudioOverride] = useState<boolean | null>(null);
+  const [ttsOverride, setTtsOverride] = useState<boolean | null>(null);
   // Pacing — three numeric settings drafted together and saved as one
   // PATCH so the operator doesn't have to click Save three times.
   const [pacingBetween, setPacingBetween] = useState<number>(1500);
@@ -132,6 +133,7 @@ export function ChestAnnouncerControl() {
     if (settings.updated_at !== lastUpdatedRef.current) {
       lastUpdatedRef.current = settings.updated_at;
       setAudioOverride(null);
+      setTtsOverride(null);
       setPacingBetween(settings.between_cards_ms);
       setPacingMinHold(settings.card_min_hold_ms);
       setPacingMaxHold(settings.card_max_hold_ms);
@@ -140,6 +142,9 @@ export function ChestAnnouncerControl() {
   }, [settings]);
 
   const audioEnabled = audioOverride ?? settings?.audio_enabled ?? false;
+  // TTS defaults true server-side (the omnibar no longer speaks), so the
+  // fallback here is true too.
+  const ttsEnabled = ttsOverride ?? settings?.tts_enabled ?? true;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -152,6 +157,20 @@ export function ChestAnnouncerControl() {
     } catch (e) {
       setErr((e as Error).message);
       setAudioOverride(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setTtsEnabled = async (next: boolean) => {
+    setTtsOverride(next);
+    setBusy(true);
+    setErr(null);
+    try {
+      await obsApi.updateChestAnnouncerSettings({ tts_enabled: next });
+    } catch (e) {
+      setErr((e as Error).message);
+      setTtsOverride(null);
     } finally {
       setBusy(false);
     }
@@ -256,6 +275,27 @@ export function ChestAnnouncerControl() {
           >
             Test fanfare
           </button>
+        </div>
+        <div className="control-btn-row mt-3" style={{ alignItems: 'center', gap: '1rem' }}>
+          <label className="d-flex align-items-center gap-2" style={{ cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={ttsEnabled}
+              onChange={(e) => void setTtsEnabled(e.target.checked)}
+              disabled={busy || !settings}
+              style={{ width: 20, height: 20 }}
+            />
+            <span>
+              <strong>Read donations aloud (TTS)</strong>
+              <br />
+              <small className="text-white-50">
+                The character reads each donation — donor, amount and
+                message — aloud via browser speech as the card is held up.
+                This is the primary donation readout (the omnibar no longer
+                speaks). Independent of the fanfare toggle above.
+              </small>
+            </span>
+          </label>
         </div>
         {err && <div className="text-danger small mt-2">{err}</div>}
         {settings && (

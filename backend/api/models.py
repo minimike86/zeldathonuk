@@ -2489,6 +2489,14 @@ class Milestone(models.Model):
                   'Markdown not supported — plain text only.',
     )
     reached_at = models.DateTimeField(null=True, blank=True)
+    announced = models.BooleanField(
+        default=False,
+        help_text='Set once the omnibar has played the flash/celebration for '
+                  'this milestone. Persistent so reopening (or adding a second) '
+                  'OBS browser source never replays an already-celebrated '
+                  'milestone. Independent of reached_at — cleared by Reset so '
+                  'the celebration can re-arm.',
+    )
     audio_url = models.CharField(
         max_length=500,
         blank=True,
@@ -2987,9 +2995,18 @@ class ChestAnnouncerSettings(models.Model):
         help_text=(
             'When true, the chest announcer plays a short procedural '
             'fanfare on each donation card reveal. Default false '
-            'because the omnibar already announces donations via TTS '
-            '— leave off when both overlays are in the scene to avoid '
-            'overlapping audio.'
+            'to avoid overlapping with the spoken readout — leave off '
+            'unless you want a fanfare sting under the TTS.'
+        ),
+    )
+    tts_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            'When true, the chest announcer reads each donation (donor, '
+            'amount and message) aloud via browser TTS as the card is '
+            'held up. Independent of audio_enabled, which only gates the '
+            'fanfare/trigger SFX. The omnibar no longer speaks donations, '
+            'so this is the primary readout — default true.'
         ),
     )
     between_cards_ms = models.PositiveIntegerField(

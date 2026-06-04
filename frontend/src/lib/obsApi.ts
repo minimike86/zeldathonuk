@@ -756,8 +756,12 @@ export interface ThemeSettings {
 
 export interface ChestAnnouncerSettings {
   /** When true, /obs/chest-announcer plays its fanfare on each card reveal.
-   *  Default false so the omnibar's TTS isn't competing with the fanfare. */
+   *  Default false to avoid competing with the spoken readout. */
   audio_enabled: boolean;
+  /** When true, /obs/chest-announcer reads each donation (donor, amount,
+   *  message) aloud via browser TTS as the card is held up. Independent of
+   *  `audio_enabled` (fanfare). Default true — the omnibar no longer speaks. */
+  tts_enabled: boolean;
   /** Pause in milliseconds between donation cards when multiple
    *  donations are queued. Hero stays idle at the chest for this long
    *  before reaching in for the next reveal. Default 1500. */
@@ -1034,6 +1038,10 @@ export interface Milestone {
   flash_color: string;
   order: number;
   is_reached: boolean;
+  /** Set once the omnibar has played this milestone's flash/celebration.
+   *  Persistent replay guard — the omnibar only fires when
+   *  `is_reached && !announced`. Cleared by the Reset action. */
+  announced: boolean;
   created_at: string;
 }
 
@@ -1322,6 +1330,17 @@ export const obsApi = {
         body: { event_id: eventId, mute_reason: reason },
       },
     ),
+  /** Mark one donation read/announced (overlay-driven). The chest
+   *  announcer POSTs this after reading the card aloud; the backend
+   *  sets `mute_reason='already_announced'` (unless already muted) so
+   *  it's skipped from future readouts. AllowAny endpoint. */
+  markDonationRead: (id: number) =>
+    api<Donation>(`/api/donations/${id}/mark_read/`, { method: 'POST' }),
+  /** Mark one milestone's celebration as already played (overlay-driven).
+   *  The omnibar POSTs this right after firing the flash/celebration so a
+   *  reopened browser source never replays it. AllowAny endpoint. */
+  markMilestoneAnnounced: (id: number) =>
+    api<Milestone>(`/api/milestones/${id}/mark_announced/`, { method: 'POST' }),
   /** Twitch live-status probe. Returns is_live=true when the named
    *  channel is currently streaming, with optional metadata (game,
    *  title, viewer count, started_at). Omit `login` to fall back to

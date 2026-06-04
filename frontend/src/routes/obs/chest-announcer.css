@@ -434,6 +434,29 @@
   line-height: 1;
   letter-spacing: 0.02em;
 }
+/* Donor message under the amount. A display font (Bungee) is unreadable
+ * for prose, so drop to a plain sans here. Wraps and clamps to a few
+ * lines so a long message can't blow the card off-screen — the spoken
+ * readout carries the full text regardless. */
+.ca-card-message {
+  margin-top: calc(var(--ca-uh) * 0.018);
+  max-width: 92%;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: calc(var(--ca-uh) * 0.04);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  /* Clamp to 3 lines with an ellipsis. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* Confetti — 18 spans laid out around the card centre. Each particle
  * gets a deterministic angle via --i and a colour pulled from --c.

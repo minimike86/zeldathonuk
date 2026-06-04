@@ -903,7 +903,7 @@ class MilestoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Milestone
         fields = ['id', 'event', 'name', 'threshold_amount',
-                  'celebration_message', 'reached_at', 'audio_url',
+                  'celebration_message', 'reached_at', 'announced', 'audio_url',
                   'tag_color_from', 'tag_color_to',
                   'heading_color', 'sub_color', 'flash_color',
                   'order', 'is_reached', 'created_at']
@@ -985,6 +985,7 @@ class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
         model = models.ChestAnnouncerSettings
         fields = [
             'audio_enabled',
+            'tts_enabled',
             'between_cards_ms',
             'card_min_hold_ms',
             'card_max_hold_ms',

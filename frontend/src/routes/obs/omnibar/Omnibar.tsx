@@ -28,6 +28,7 @@ import { DonationSplash, type SplashColorMode } from './panels/DonationSplash';
 import { SlotReel } from './panels/SlotReel';
 import { CelebrationBanner } from './panels/CelebrationBanner';
 import { getEventHandler } from './events/registry';
+import { obsApi } from '@/lib/obsApi';
 import type {
   Donation,
   ExternalEvent,
@@ -522,7 +523,6 @@ function OmnibarInner() {
   // collide with incentive ids.
   const reachedIdsRef = useRef<Set<number>>(new Set());
   const incentivesInitialisedRef = useRef(false);
-  const milestonesInitialisedRef = useRef(false);
   useEffect(() => {
     if (feed.incentivesLoaded) {
       if (!incentivesInitialisedRef.current) {
@@ -549,21 +549,28 @@ function OmnibarInner() {
       }
     }
     if (feed.milestonesLoaded) {
-      if (!milestonesInitialisedRef.current) {
-        for (const m of feed.milestones) {
-          if (m.is_reached) reachedIdsRef.current.add(-m.id);
-        }
-        milestonesInitialisedRef.current = true;
-      } else {
-        for (const m of feed.milestones) {
-          if (m.is_reached) {
-            if (!reachedIdsRef.current.has(-m.id)) {
-              reachedIdsRef.current.add(-m.id);
-              emit({ kind: 'milestone-reached', milestone: m });
-            }
-          } else {
-            reachedIdsRef.current.delete(-m.id);
+      // Milestones carry a PERSISTENT `announced` flag (set via the
+      // backend once the omnibar plays the celebration), so — unlike
+      // incentives — we don't seed from a first-load snapshot. `announced`
+      // is the durable "already played" signal: it survives remounts and
+      // is shared across every browser source, so a reached-but-unannounced
+      // milestone celebrates exactly once and an already-announced one
+      // never replays. The in-session ref only debounces the gap between
+      // emitting and the `announced=true` flag landing on the next poll.
+      for (const m of feed.milestones) {
+        if (m.is_reached && !m.announced) {
+          if (!reachedIdsRef.current.has(-m.id)) {
+            reachedIdsRef.current.add(-m.id);
+            emit({ kind: 'milestone-reached', milestone: m });
+            // Persist — next poll flips `announced` true so no source
+            // (this one included, post-reload) replays the celebration.
+            void obsApi.markMilestoneAnnounced(m.id);
           }
+        } else {
+          // Not reached, or already announced — drop any in-session mark
+          // so an operator Reset (clears reached_at + announced) re-arms
+          // the celebration for a future re-cross.
+          reachedIdsRef.current.delete(-m.id);
         }
       }
     }

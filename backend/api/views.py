@@ -1385,6 +1385,28 @@ class DonationViewSet(viewsets.ModelViewSet):
         )
         return Response({'updated': updated, 'mute_reason': reason})
 
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def mark_read(self, request: Request, pk=None) -> Response:
+        """Mark a single donation as read/announced (overlay-driven).
+
+        Called by the /obs/chest-announcer overlay once it has read a
+        donation's card aloud. Sets `mute_reason='already_announced'` so
+        the donation is muted from future readouts (the chest announcer
+        and the omnibar takeover both skip `is_muted` donations) — this
+        is what durably stops replay on a re-opened browser source.
+
+        AllowAny because OBS browser sources are unauthenticated. Never
+        clobbers a stronger existing mute (naughty_*): only an as-yet
+        unmuted donation is flipped to `already_announced`. Muting
+        suppresses the announcement only — the donation still counts
+        toward totals and still shows in the ICYMI reel.
+        """
+        donation = self.get_object()
+        if not donation.mute_reason:
+            donation.mute_reason = models.MuteReason.ALREADY_ANNOUNCED
+            donation.save(update_fields=['mute_reason'])
+        return Response(self.get_serializer(donation).data)
+
 
 class DonationPageViewSet(viewsets.ModelViewSet):
     queryset = models.DonationPage.objects.all()
@@ -2664,19 +2686,43 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             obj.save(update_fields=['reached_at'])
         return Response(self.get_serializer(obj).data)
 
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def mark_announced(self, request: Request, pk=None) -> Response:
+        """Mark a milestone's celebration as already played (overlay-driven).
+
+        The omnibar POSTs this right after it fires the flash/celebration
+        for a milestone. `announced` is a persistent marker so reopening
+        (or adding a second) OBS browser source never replays the
+        celebration — the omnibar only fires when `is_reached &&
+        !announced`. AllowAny because OBS browser sources are
+        unauthenticated. Idempotent.
+        """
+        obj = self.get_object()
+        if not obj.announced:
+            obj.announced = True
+            obj.save(update_fields=['announced'])
+        return Response(self.get_serializer(obj).data)
+
     @action(detail=True, methods=['post'])
     def reset(self, request: Request, pk=None) -> Response:
-        """Clear `reached_at` so the milestone is pending again.
+        """Clear `reached_at` + `announced` so the milestone is pending again.
 
         Mirrors `IncentiveViewSet.reset` — combined with the omnibar's
         self-cleaning `reachedIdsRef` set, this means the milestone's
         celebration banner will fire again the next time the running
-        donation total crosses the threshold.
+        donation total crosses the threshold. Clearing `announced` too
+        re-arms the persistent replay guard.
         """
         obj = self.get_object()
+        fields = []
         if obj.reached_at is not None:
             obj.reached_at = None
-            obj.save(update_fields=['reached_at'])
+            fields.append('reached_at')
+        if obj.announced:
+            obj.announced = False
+            fields.append('announced')
+        if fields:
+            obj.save(update_fields=fields)
         return Response(self.get_serializer(obj).data)
 
 
