@@ -61,10 +61,13 @@ export const router = createBrowserRouter([
       { path: 'events', ...lazy(() => import('@/routes/control/Events'), 'EventsControl') },
       { path: 'charities', ...lazy(() => import('@/routes/control/Charities'), 'CharitiesControl') },
       { path: 'raffles', ...lazy(() => import('@/routes/control/Raffles'), 'RafflesControl') },
-      { path: 'predictions', ...lazy(() => import('@/routes/control/Predictions'), 'PredictionsControl') },
-      { path: 'shoutouts', ...lazy(() => import('@/routes/control/Shoutouts'), 'ShoutoutsControl') },
+      { path: 'twitch', ...lazy(() => import('@/routes/control/Twitch'), 'TwitchControl') },
+      // The standalone Twitch pages are now tabs under /control/twitch; redirect
+      // any stale links/bookmarks.
+      { path: 'predictions', element: <Navigate to="/control/twitch" replace /> },
+      { path: 'shoutouts', element: <Navigate to="/control/twitch" replace /> },
+      { path: 'rewards', element: <Navigate to="/control/twitch" replace /> },
       { path: 'automation', ...lazy(() => import('@/routes/control/Automation'), 'AutomationControl') },
-      { path: 'rewards', ...lazy(() => import('@/routes/control/Rewards'), 'RewardsControl') },
       { path: 'theme', ...lazy(() => import('@/routes/control/Theme'), 'ThemeControl') },
       { path: 'layouts', ...lazy(() => import('@/routes/control/Layouts'), 'LayoutsControl') },
       { path: 'omnibar', ...lazy(() => import('@/routes/control/Omnibar'), 'OmnibarControl') },

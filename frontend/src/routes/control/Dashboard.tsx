@@ -1,6 +1,28 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router';
 import { useAuth } from '@clerk/clerk-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faHouse,
+  faPalette,
+  faHandHoldingHeart,
+  faCalendarDays,
+  faUsers,
+  faHandHoldingDollar,
+  faTicket,
+  faGamepad,
+  faListOl,
+  faGem,
+  faBullseye,
+  faStopwatch,
+  faMusic,
+  faTableCells,
+  faGripLines,
+  faBoxOpen,
+  faRobot,
+  faClipboardList,
+} from '@fortawesome/free-solid-svg-icons';
+import { faTwitch } from '@fortawesome/free-brands-svg-icons';
 import { ControlOverview } from './Overview';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { HazardButton, UserBadge } from '@/components/auth/authControls';
@@ -10,34 +32,32 @@ import { env } from '@/lib/env';
 import './control.css';
 
 const sections = [
-  { to: '/control', label: 'Overview', end: true },
+  { to: '/control', label: 'Overview', end: true, icon: faHouse },
   // Visual / branding
-  { to: '/control/theme', label: 'Theme' },
+  { to: '/control/theme', label: 'Theme', icon: faPalette },
   // Pre-event setup
-  { to: '/control/charities', label: 'Charities' },   // A charity to fundraise for
-  { to: '/control/events', label: 'Events' },         // A fundraising event
-  { to: '/control/runners', label: 'Runners' },       // Player who will play the games
-  { to: '/control/donations', label: 'Donations' },
-  { to: '/control/raffles', label: 'Raffles' },
+  { to: '/control/charities', label: 'Charities', icon: faHandHoldingHeart },
+  { to: '/control/events', label: 'Events', icon: faCalendarDays },
+  { to: '/control/runners', label: 'Runners', icon: faUsers },
+  { to: '/control/donations', label: 'Donations', icon: faHandHoldingDollar },
+  { to: '/control/raffles', label: 'Raffles', icon: faTicket },
   // Gameplay related
-  { to: '/control/games', label: 'Games' },           // Games that can be played
-  { to: '/control/schedule', label: 'Schedule' },     // A schedule is a playthrough of n games
-  { to: '/control/items', label: 'Items' },           // A game has items to collect
-  { to: '/control/objectives', label: 'Objectives' }, // A game has objectives to complete
+  { to: '/control/games', label: 'Games', icon: faGamepad },
+  { to: '/control/schedule', label: 'Schedule', icon: faListOl },
+  { to: '/control/items', label: 'Items', icon: faGem },
+  { to: '/control/objectives', label: 'Objectives', icon: faBullseye },
   // Live show
-  // { to: '/control/brb', label: 'BRB' },            // deprecated BRB isnt really needed with schedule updates
-  { to: '/control/timer', label: 'Timer' },           // A gameplay split timer tracking play time and collection of objectives
-  { to: '/control/predictions', label: 'Predictions' }, // Twitch predictions on gameplay outcomes
-  { to: '/control/shoutouts', label: 'Shoutouts' },   // Cooldown-managed donor/raid shoutout queue
-  { to: '/control/rewards', label: 'Channel rewards' }, // Channel-point reward → action mappings
+  { to: '/control/timer', label: 'Timer', icon: faStopwatch },
+  // All Twitch tooling (chat, predictions, shoutouts, rewards) in one section.
+  { to: '/control/twitch', label: 'Twitch', icon: faTwitch },
   // OBS Screens
-  { to: '/control/audio', label: 'Music' },
-  { to: '/control/layouts', label: 'Layouts' },
-  { to: '/control/omnibar', label: 'Omnibar' },
-  { to: '/control/chest-announcer', label: 'Chest announcer' },
+  { to: '/control/audio', label: 'Music', icon: faMusic },
+  { to: '/control/layouts', label: 'Layouts', icon: faTableCells },
+  { to: '/control/omnibar', label: 'Omnibar', icon: faGripLines },
+  { to: '/control/chest-announcer', label: 'Chest announcer', icon: faBoxOpen },
   // Fault triage :)
-  { to: '/control/automation', label: 'Automation' }, // Scheduled jobs + Twitch EventSub
-  { to: '/control/logs', label: 'Logs & Queue' },
+  { to: '/control/automation', label: 'Automation', icon: faRobot },
+  { to: '/control/logs', label: 'Logs & Queue', icon: faClipboardList },
 ];
 
 /**
@@ -121,6 +141,7 @@ function ControlShell() {
       )
       .sort((a, b) => b.to.length - a.to.length)[0] ?? null;
   const currentLabel = current?.label ?? 'Menu';
+  const currentIcon = current?.icon ?? null;
 
   return (
     <div className="control-shell">
@@ -156,7 +177,9 @@ function ControlShell() {
           onClick={() => setNavOpen((v) => !v)}
         >
           <span className="control-nav-toggle-label">
-            <span aria-hidden="true">☰</span> {currentLabel}
+            <span aria-hidden="true">☰</span>{' '}
+            {currentIcon && <FontAwesomeIcon icon={currentIcon} fixedWidth />}{' '}
+            {currentLabel}
           </span>
           <span className="control-nav-toggle-caret" aria-hidden="true">▾</span>
         </button>
@@ -170,6 +193,7 @@ function ControlShell() {
                 `control-nav-link${isActive ? ' active' : ''}`
               }
             >
+              <FontAwesomeIcon icon={s.icon} fixedWidth className="control-nav-icon" />
               {s.label}
             </NavLink>
           ))}

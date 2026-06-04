@@ -10,7 +10,7 @@ const STATUS_BADGE: Record<string, string> = {
   failed: 'bg-danger',
 };
 
-export function ShoutoutsControl() {
+export function ShoutoutsPanel() {
   const { data: config } = usePolledQuery(obsApi.shoutoutConfig, 10_000);
   const [nonce, setNonce] = useState(0);
   const refetch = () => setNonce((n) => n + 1);
@@ -25,11 +25,11 @@ export function ShoutoutsControl() {
   const recent = (requests ?? []).filter((r) => r.status !== 'pending').slice(0, 20);
 
   return (
-    <div className="control-card">
+    <div>
       <header className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-        <h2 className="m-0">Shoutouts</h2>
+        <h5 className="m-0">Shoutouts</h5>
         <span className="text-white-50 small">
-          Drained by the <code>process_shoutouts</code> cron, ~1 every 2 min
+          Drained by the <code>process_shoutouts</code> job, ~1 every 2 min
           (Twitch limit)
         </span>
       </header>

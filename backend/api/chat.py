@@ -79,24 +79,55 @@ def send_chat_message(connection, broadcaster_id: str, message: str):
     )
 
 
-def _send_to_event(event, message: str, *, announcement: bool = False,
-                   color: str = 'primary') -> bool:
-    """Post ``message`` to the event's primary connected channel's chat. When
-    ``announcement`` is set, post a highlighted /announce in ``color`` instead
-    of a normal message. Returns True on a successful send."""
+def _chat_targets(event):
+    """Connections to post chat to for an event: every charity channel (plus the
+    primary stream channel) that is connected AND whose connection can write
+    chat (``user:write:chat``). Yields ``(connection, broadcaster_id)``, deduped
+    by broadcaster. Charity-only connections (no chat scope) are skipped — they'd
+    need reconnecting with the chat scope."""
     from . import twitch
 
-    conn = twitch.event_primary_connection(event)
-    if not conn:
-        return False
-    bid = twitch.ensure_connection_broadcaster_id(conn)
-    if not bid:
-        return False
-    if announcement:
-        resp = twitch.send_chat_announcement(conn, bid, message, color)
-    else:
-        resp = send_chat_message(conn, bid, message)
-    return bool(getattr(resp, 'ok', False))
+    seen: set[str] = set()
+    channels = (
+        event.twitch_channels
+        .filter(is_active=True, connection__isnull=False)
+        .select_related('connection')
+        .order_by('-is_primary', 'order')
+    )
+    for ch in channels:
+        if not (ch.track_charity or ch.is_primary):
+            continue
+        conn = ch.connection
+        if not conn.is_active or not (conn.access_token or conn.refresh_token):
+            continue
+        if not conn.has_scope('user:write:chat'):
+            continue
+        bid = twitch.ensure_connection_broadcaster_id(conn)
+        if bid and bid not in seen:
+            seen.add(bid)
+            yield conn, bid
+
+
+def _send_to_event(event, message: str, *, announcement: bool = False,
+                   color: str = 'primary') -> bool:
+    """Post ``message`` to EVERY charity-connected channel's own chat (plus the
+    primary). When ``announcement`` is set, post a highlighted /announce in
+    ``color`` on channels that granted the announce scope, falling back to a
+    normal message elsewhere. Returns True if at least one send succeeded."""
+    from . import twitch
+
+    sent_any = False
+    for conn, bid in _chat_targets(event):
+        try:
+            if announcement and conn.has_scope('moderator:manage:announcements'):
+                resp = twitch.send_chat_announcement(conn, bid, message, color)
+            else:
+                resp = send_chat_message(conn, bid, message)
+            if getattr(resp, 'ok', False):
+                sent_any = True
+        except Exception:  # noqa: BLE001 — one channel failing mustn't stop the rest
+            logger.exception('chat send to %s failed', conn.login)
+    return sent_any
 
 
 def announce(event, trigger: str, ctx: dict | None = None) -> bool:

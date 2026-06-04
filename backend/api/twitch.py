@@ -689,12 +689,50 @@ def update_channel_for_game(event, entry) -> bool:
         tpl = (getattr(event, 'twitch_title_template', '') or '').strip()
         if tpl:
             from .chat import render_template
-            title = render_template(tpl, {'game': game.title, 'event': event.name}).strip() or None
+            title = render_template(tpl, _title_context(event, entry, game, conn)).strip() or None
         resp = modify_channel(conn, bid, game_id=game_id, title=title)
         return bool(getattr(resp, 'ok', False))
     except Exception:  # noqa: BLE001 — must never break the schedule advance
         logger.exception('update_channel_for_game failed')
         return False
+
+
+def _title_context(event, entry, game, conn) -> dict:
+    """Placeholder values for the on-game-change stream title."""
+    position = ''
+    game_number: int | str = ''
+    game_total: int | str = ''
+    try:
+        ids = list(
+            event.schedule
+            .filter(slot_type='game', parent_entry__isnull=True)
+            .order_by('order').values_list('id', flat=True)
+        )
+        if entry.id in ids:
+            game_number = ids.index(entry.id) + 1
+            game_total = len(ids)
+            position = f'{game_number} of {game_total}'
+    except Exception:  # noqa: BLE001
+        pass
+    charity = ''
+    try:
+        link = (
+            event.event_charities.filter(is_primary=True).select_related('charity').first()
+            or event.event_charities.select_related('charity').first()
+        )
+        if link:
+            charity = link.charity.name
+    except Exception:  # noqa: BLE001
+        pass
+    return {
+        'game': game.title,
+        'event': event.name,
+        'channel': (conn.display_name or conn.login or '') if conn else '',
+        'charity': charity,
+        'position': position,
+        'game_number': game_number,
+        'game_total': game_total,
+    }
 
 
 def send_shoutout(conn, from_broadcaster_id: str, to_broadcaster_id: str,

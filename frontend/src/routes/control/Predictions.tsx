@@ -14,7 +14,7 @@ const WINDOWS = [60, 120, 180, 300, 600];
 
 const OPEN_STATUSES = ['ACTIVE', 'LOCKED'];
 
-export function PredictionsControl() {
+export function PredictionsPanel() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
   // Bump to force an immediate re-fetch after create/resolve/cancel rather than
   // waiting for the next poll tick.
@@ -37,9 +37,9 @@ export function PredictionsControl() {
   );
 
   return (
-    <div className="control-card">
+    <div>
       <header className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-        <h2 className="m-0">Twitch predictions</h2>
+        <h5 className="m-0">Predictions</h5>
         {event && (
           <span className="text-white-50 small">
             Opens on{' '}

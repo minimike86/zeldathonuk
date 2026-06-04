@@ -60,6 +60,27 @@ class UpdateChannelForGameTests(TestCase):
         )
 
     @patch('api.twitch.modify_channel')
+    def test_extended_placeholders(self, mock_modify):
+        mock_modify.return_value = MagicMock(ok=True)
+        event = _event(title_template='{channel}: {game} [{position}] for {charity}')
+        conn = _connected_primary(event)
+        conn.display_name = 'ZeldathonUK'
+        conn.save()
+        charity = models.Charity.objects.create(slug='se', name='SpecialEffect')
+        models.EventCharity.objects.create(event=event, charity=charity, is_primary=True)
+        g1 = models.Game.objects.create(
+            title='OoT', platform='N64', twitch_game_id='1', default_play_minutes=60)
+        models.ScheduleEntry.objects.create(event=event, game=g1, order=0)
+        g2 = models.Game.objects.create(
+            title='MM', platform='N64', twitch_game_id='2', default_play_minutes=60)
+        e2 = models.ScheduleEntry.objects.create(event=event, game=g2, order=1)
+        twitch.update_channel_for_game(event, e2)
+        self.assertEqual(
+            mock_modify.call_args.kwargs['title'],
+            'ZeldathonUK: MM [2 of 2] for SpecialEffect',
+        )
+
+    @patch('api.twitch.modify_channel')
     def test_disabled_does_nothing(self, mock_modify):
         event = _event(update_category=False)
         _connected_primary(event)

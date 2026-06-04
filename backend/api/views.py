@@ -1750,11 +1750,12 @@ def twitch_charity_campaign(_request: Request) -> Response:
     return Response(serializers.TwitchCharityCampaignSerializer(campaign).data)
 
 
-# Scope sets requested when connecting a channel. Charity sources only need the
-# read scope; the primary/bot channel gets the full feature set so the planned
-# chat / redemption / prediction phase needs no re-auth.
+# Scope sets requested when connecting a channel. Charity sources get the read
+# scope PLUS chat write + announce so the event's chat announcements can post to
+# every charity channel's own chat (not just the primary). The primary/bot
+# channel gets the full feature set.
 _CONNECT_SCOPES = {
-    'charity': 'channel:read:charity',
+    'charity': 'channel:read:charity user:write:chat moderator:manage:announcements',
     'primary': twitch.DEFAULT_USER_SCOPES,
 }
 

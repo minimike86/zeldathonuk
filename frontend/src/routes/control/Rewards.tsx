@@ -10,7 +10,7 @@ const ACTION_TYPES = [
 
 const ANNOUNCE_COLORS = ['primary', 'blue', 'green', 'orange', 'purple'];
 
-export function RewardsControl() {
+export function RewardsPanel() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
   const [nonce, setNonce] = useState(0);
   const refetch = () => setNonce((n) => n + 1);
@@ -25,9 +25,9 @@ export function RewardsControl() {
   const [err, setErr] = useState<string | null>(null);
 
   return (
-    <div className="control-card">
+    <div>
       <header className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-        <h2 className="m-0">Channel-point rewards</h2>
+        <h5 className="m-0">Channel-point rewards</h5>
         <span className="text-white-50 small">
           A reward can run one or more actions when redeemed
         </span>

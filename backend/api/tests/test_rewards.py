@@ -18,7 +18,8 @@ def _event():
 
 def _connected_primary(event):
     conn = models.TwitchChannelConnection.objects.create(
-        login='zeldathonuk', broadcaster_id='1', access_token='t', is_active=True,
+        login='zeldathonuk', broadcaster_id='1', access_token='t',
+        scopes='user:write:chat', is_active=True,
     )
     models.EventTwitchChannel.objects.create(
         event=event, login='zeldathonuk', is_primary=True, connection=conn,

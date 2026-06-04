@@ -23,10 +23,21 @@ def _event(active=True, currency='£'):
 def _connected_primary(event, login='zeldathonuk'):
     conn = models.TwitchChannelConnection.objects.create(
         login=login, broadcaster_id='52548232', access_token='tok',
-        scopes='user:write:chat', is_active=True,
+        scopes='user:write:chat moderator:manage:announcements', is_active=True,
     )
     models.EventTwitchChannel.objects.create(
         event=event, login=login, is_primary=True, connection=conn,
+    )
+    return conn
+
+
+def _connected_charity(event, login, bid, *, scopes='user:write:chat'):
+    conn = models.TwitchChannelConnection.objects.create(
+        login=login, broadcaster_id=bid, access_token='t', scopes=scopes,
+        is_active=True,
+    )
+    models.EventTwitchChannel.objects.create(
+        event=event, login=login, track_charity=True, connection=conn,
     )
     return conn
 
@@ -101,6 +112,18 @@ class AnnounceTests(TestCase):
         mock_msg.assert_not_called()
         self.assertEqual(mock_ann.call_args.args[2], 'Milestone!')
         self.assertEqual(mock_ann.call_args.args[3], 'green')
+
+    @patch('api.chat.send_chat_message')
+    def test_broadcasts_to_all_chat_capable_channels(self, mock_send):
+        mock_send.return_value = MagicMock(ok=True)
+        _connected_primary(self.event)  # zeldathonuk, chat scope
+        _connected_charity(self.event, 'msec', '222')  # charity + chat scope
+        # charity-only connection (no chat scope) → must be skipped
+        _connected_charity(self.event, 'other', '333', scopes='channel:read:charity')
+        self._enable('donation', 'Thanks {donor}!')
+        chat.announce(self.event, 'donation', {'donor': 'Kris'})
+        sent_bids = {c.args[1] for c in mock_send.call_args_list}
+        self.assertEqual(sent_bids, {'52548232', '222'})
 
     @patch('api.chat.send_chat_message', side_effect=RuntimeError('boom'))
     def test_send_failure_is_swallowed(self, _mock_send):

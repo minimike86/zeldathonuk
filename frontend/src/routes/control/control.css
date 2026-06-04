@@ -130,6 +130,12 @@
   font-size: 0.95rem;
 }
 
+/* Leading icon on each nav link — fixedWidth keeps the labels aligned. */
+.control-nav-icon {
+  margin-right: 0.55rem;
+  opacity: 0.85;
+}
+
 .control-nav-link:hover {
   background: color-mix(
     in srgb,
