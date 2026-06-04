@@ -10,6 +10,7 @@ export function AutomationControl() {
         <SchedulerHeartbeat />
       </div>
       <ScheduledJobsSection />
+      <JustGivingSection />
       <EventSubSection />
     </div>
   );
@@ -63,7 +64,12 @@ function ScheduledJobsSection() {
         A single <code>run_scheduled_jobs</code> cron tick runs each enabled job
         when its interval elapses. Toggle, retime, or run on demand here.
       </p>
-      {err && <p className="text-danger small">{err}</p>}
+      {err && (
+        <p className="small mb-1">
+          <span className="badge bg-danger">Error</span>{' '}
+          <span className="text-white-50">{err}</span>
+        </p>
+      )}
       {(jobs ?? []).map((job) => (
         <JobRow
           key={job.id}
@@ -112,14 +118,7 @@ function JobRow({
           : 'bg-secondary';
 
   return (
-    <div
-      className="p-2 mb-2"
-      style={{
-        background: 'rgba(0,0,0,0.25)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 8,
-      }}
-    >
+    <div className="automation-tile p-2 mb-2">
       <div className="d-flex align-items-center gap-2 flex-wrap">
         <div className="form-check form-switch m-0">
           <input
@@ -200,6 +199,132 @@ function JobRow({
   );
 }
 
+// ── JustGiving ingestion ─────────────────────────────────────────────
+
+function JustGivingSection() {
+  const { data: status } = usePolledQuery(obsApi.justGivingStatus, 10_000);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+
+  const fetchNow = async () => {
+    setBusy(true);
+    setErr(null);
+    setResult(null);
+    try {
+      const res = await obsApi.runJustGivingFetch();
+      const per = res.pages
+        .map((p) => `${p.short_name}: ${p.ingested}/${p.fetched}`)
+        .join(', ');
+      setResult(
+        `Ingested ${res.total_ingested} donation${res.total_ingested === 1 ? '' : 's'}` +
+          (per ? ` (${per})` : ''),
+      );
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pages = status?.pages ?? [];
+  const job = status?.poll_job ?? null;
+  const lastRun = job?.last_run_at
+    ? new Date(job.last_run_at).toLocaleTimeString()
+    : 'never';
+
+  return (
+    <section className="mt-4">
+      <h5>JustGiving ingestion</h5>
+      <p className="small text-white-50">
+        Polling-only — JustGiving has no real-time webhooks. The{' '}
+        <code>poll_donations</code> job above pulls the active event&apos;s
+        JustGiving page donations on each tick.
+      </p>
+
+      {/* Same panel treatment as a JobRow above so it reads as part of the
+          scheduled-jobs family. Status uses solid badges (guaranteed
+          contrast on any theme) rather than Bootstrap's low-contrast
+          text-success/-danger hues. */}
+      <div className="automation-tile p-2 mb-2">
+        <div className="d-flex flex-column gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="small text-white-50">API</span>
+            <code>{status?.api_base ?? '…'}</code>
+            <span className="badge bg-secondary">{status?.env ?? '…'}</span>
+            {status &&
+              (status.app_id_present ? (
+                <span className="badge bg-success">App ID set</span>
+              ) : (
+                <span className="badge bg-danger">App ID missing</span>
+              ))}
+          </div>
+
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="small text-white-50">Page(s)</span>
+            {pages.length > 0 ? (
+              pages.map((p) => (
+                <code key={p.short_name}>
+                  {p.short_name}
+                  {p.is_primary ? ' ★' : ''}
+                </code>
+              ))
+            ) : (
+              <>
+                <span className="badge bg-warning text-dark">no page linked</span>
+                <span className="small text-white-50">
+                  add a JustGiving Donation Page (with its page short name) to the
+                  active event in <a href="/control/events">Events</a>.
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="small text-white-50">Poll job</span>
+            {job ? (
+              <>
+                <span className={`badge ${job.enabled ? 'bg-success' : 'bg-secondary'}`}>
+                  {job.enabled ? 'enabled' : 'disabled'}
+                </span>
+                <span className="small text-white-50">
+                  last run {lastRun}
+                  {job.last_status ? ` (${job.last_status})` : ''}
+                </span>
+              </>
+            ) : (
+              <span className="small text-white-50">not configured</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="d-flex align-items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          className="btn btn-sm btn-bloodmoon"
+          onClick={() => void fetchNow()}
+          disabled={busy || !status?.app_id_present || pages.length === 0}
+        >
+          {busy ? 'Fetching…' : 'Fetch now'}
+        </button>
+        {result && (
+          <span className="small">
+            <span className="badge bg-success">Done</span>{' '}
+            <span className="text-white-50">{result}</span>
+          </span>
+        )}
+        {err && (
+          <span className="small">
+            <span className="badge bg-danger">Error</span>{' '}
+            <span className="text-white-50">{err}</span>
+          </span>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── Twitch EventSub ──────────────────────────────────────────────────
 
 function EventSubSection() {
@@ -242,7 +367,7 @@ function EventSubSection() {
         </button>
         <button
           type="button"
-          className="btn btn-sm btn-outline-warning"
+          className="btn btn-sm btn-outline-light"
           disabled={busy}
           onClick={() => sync(true)}
         >
@@ -256,10 +381,25 @@ function EventSubSection() {
           </span>
         )}
       </div>
-      {msg && <p className="text-success small">{msg}</p>}
-      {err && <p className="text-danger small">{err}</p>}
+      {msg && (
+        <p className="small mb-1">
+          <span className="badge bg-success">Done</span>{' '}
+          <span className="text-white-50">{msg}</span>
+        </p>
+      )}
+      {err && (
+        <p className="small mb-1">
+          <span className="badge bg-danger">Error</span>{' '}
+          <span className="text-white-50">{err}</span>
+        </p>
+      )}
       {error && (
-        <p className="text-danger small">Couldn’t list subscriptions: {error.message}</p>
+        <p className="small mb-1">
+          <span className="badge bg-danger">Error</span>{' '}
+          <span className="text-white-50">
+            Couldn’t list subscriptions: {error.message}
+          </span>
+        </p>
       )}
 
       {data?.subscriptions && data.subscriptions.length > 0 && (

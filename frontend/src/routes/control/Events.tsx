@@ -636,8 +636,13 @@ function DraftPageForm({
   const [externalId, setExternalId] = useState(initial?.external_id ?? '');
   const [isPrimary, setIsPrimary] = useState(initial?.is_primary ?? false);
 
+  // JustGiving fetches donations by the page short name, which is stored in
+  // external_id — so it's required for JustGiving pages (optional for others).
+  const needsShortName = platform === 'justgiving';
+
   const handleSave = () => {
     if (!url.trim()) return;
+    if (needsShortName && !externalId.trim()) return;
     onSave({
       platform,
       label: label.trim(),
@@ -690,13 +695,20 @@ function DraftPageForm({
         />
       </div>
       <div style={{ minWidth: 160 }}>
-        <label className="d-block small text-white-50">External id (optional)</label>
+        <label className="d-block small text-white-50">
+          {needsShortName ? 'Page short name (required)' : 'External id (optional)'}
+        </label>
         <input
           value={externalId}
           onChange={(e) => setExternalId(e.target.value)}
           className="form-control form-control-sm"
-          placeholder="campaign id / slug"
+          placeholder={needsShortName ? 'e.g. zeldathonuk' : 'campaign id / slug'}
         />
+        {needsShortName && (
+          <span className="d-block text-white-50" style={{ fontSize: '0.7rem' }}>
+            From the page URL: justgiving.com/<strong>page-short-name</strong>
+          </span>
+        )}
       </div>
       <div className="form-check mb-1">
         <input
@@ -870,9 +882,17 @@ function DonationPageForm({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // JustGiving fetches donations by the page short name, which is stored in
+  // external_id — so it's required for JustGiving pages (optional for others).
+  const needsShortName = platform === 'justgiving';
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
+    if (needsShortName && !externalId.trim()) {
+      setErr('JustGiving pages need the page short name in External id to fetch donations.');
+      return;
+    }
     setBusy(true);
     try {
       const body = {
@@ -941,13 +961,21 @@ function DonationPageForm({
         />
       </div>
       <div style={{ minWidth: 160 }}>
-        <label className="d-block small text-white-50">External id (optional)</label>
+        <label className="d-block small text-white-50">
+          {needsShortName ? 'Page short name (required)' : 'External id (optional)'}
+        </label>
         <input
+          required={needsShortName}
           value={externalId}
           onChange={(e) => setExternalId(e.target.value)}
           className="form-control form-control-sm"
-          placeholder="campaign id / slug"
+          placeholder={needsShortName ? 'e.g. zeldathonuk' : 'campaign id / slug'}
         />
+        {needsShortName && (
+          <span className="d-block text-white-50" style={{ fontSize: '0.7rem' }}>
+            From the page URL: justgiving.com/<strong>page-short-name</strong>
+          </span>
+        )}
       </div>
       <div className="form-check mb-1">
         <input

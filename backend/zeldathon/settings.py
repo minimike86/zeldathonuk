@@ -190,7 +190,9 @@ REST_FRAMEWORK = {
 TILTIFY_ACCESS_TOKEN = env('TILTIFY_ACCESS_TOKEN', default='')
 TILTIFY_CAMPAIGN_ID = env('TILTIFY_CAMPAIGN_ID', default='')
 JUSTGIVING_API_KEY = env('JUSTGIVING_API_KEY', default='')
-JUSTGIVING_PAGE_SHORTNAME = env('JUSTGIVING_PAGE_SHORTNAME', default='')
+# Which JustGiving API to target: 'production' (api.justgiving.com) or
+# 'staging' (api.staging.justgiving.com).
+JUSTGIVING_ENV = env('JUSTGIVING_ENV', default='production')
 TWITCH_CLIENT_ID = env('TWITCH_CLIENT_ID', default='')
 TWITCH_CLIENT_SECRET = env('TWITCH_CLIENT_SECRET', default='')
 # User OAuth — bootstraps the persisted TwitchOAuthToken row on first use.

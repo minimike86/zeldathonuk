@@ -105,6 +105,10 @@ urlpatterns = [
     path('twitch/eventsub/sync/', views.eventsub_sync, name='eventsub-sync'),
     # Scheduler loop liveness (heartbeat) for the automation page.
     path('scheduler-status/', views.scheduler_status, name='scheduler-status'),
+    # JustGiving ingestion: config/last-poll snapshot (GET public) + an
+    # operator "fetch now" that ingests the active event's pages immediately.
+    path('justgiving/status/', views.justgiving_status, name='justgiving-status'),
+    path('justgiving/test/', views.justgiving_test, name='justgiving-test'),
     # Channel's custom channel-point rewards (for the reward-action picker).
     path('twitch/rewards/', views.twitch_custom_rewards, name='twitch-rewards'),
     # Send an arbitrary message to all connected channels' chat (operator);

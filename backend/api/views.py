@@ -1537,6 +1537,46 @@ def scheduler_status(request: Request) -> Response:
     })
 
 
+@api_view(['GET'])
+def justgiving_status(request: Request) -> Response:
+    """Config + last-poll snapshot for the /control/donations JustGiving card.
+
+    Public read (no secrets — only whether the App ID is set). Reports the
+    target API environment, the active event's resolved JustGiving page short
+    name(s), and the shared `poll_donations` job's last run so the operator
+    can see at a glance whether ingestion is wired up and running."""
+    from . import justgiving
+    event = models.Event.objects.filter(is_active=True).first()
+    pages = justgiving.event_pages(event) if event else []
+    job = models.ScheduledJob.objects.filter(key='poll_donations').first()
+    return Response({
+        'app_id_present': bool(settings.JUSTGIVING_API_KEY),
+        'env': (settings.JUSTGIVING_ENV or 'production').strip().lower(),
+        'api_base': justgiving.api_base(),
+        'pages': pages,
+        'poll_job': {
+            'enabled': job.enabled,
+            'last_run_at': job.last_run_at,
+            'last_status': job.last_status,
+            'interval_seconds': job.interval_seconds,
+        } if job else None,
+    })
+
+
+@api_view(['POST'])
+def justgiving_test(request: Request) -> Response:
+    """Operator "Fetch now" — pull + ingest the active event's JustGiving
+    donations immediately and return the per-page counts. Operator-only
+    (default ReadOnlyOrOperator on a POST). Shares api.justgiving.ingest_event
+    with the scheduler, so a manual fetch behaves exactly like a poll tick."""
+    from . import justgiving
+    try:
+        result = justgiving.ingest_active_event()
+    except justgiving.JustGivingError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(result)
+
+
 class ScheduledJobViewSet(viewsets.ModelViewSet):
     """Periodic management commands the operator manages from /control/automation.
     A single `manage.py run_scheduled_jobs` cron tick runs due enabled jobs;

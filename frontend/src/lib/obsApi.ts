@@ -664,6 +664,36 @@ export interface Donation {
   is_muted: boolean;
 }
 
+/** Config + last-poll snapshot for the JustGiving ingestion card. */
+export interface JustGivingStatus {
+  /** Whether the JustGiving App ID (JUSTGIVING_API_KEY) is configured. */
+  app_id_present: boolean;
+  /** Target API environment — 'production' | 'staging'. */
+  env: string;
+  /** Resolved API host root. */
+  api_base: string;
+  /** The active event's JustGiving page(s) the poller will pull from. */
+  pages: Array<{
+    short_name: string;
+    label: string;
+    url: string;
+    is_primary: boolean;
+  }>;
+  /** The shared `poll_donations` scheduled job's last run, or null if absent. */
+  poll_job: {
+    enabled: boolean;
+    last_run_at: string | null;
+    last_status: string;
+    interval_seconds: number;
+  } | null;
+}
+
+/** Result of an operator "fetch now" against JustGiving. */
+export interface JustGivingTestResult {
+  pages: Array<{ short_name: string; fetched: number; ingested: number }>;
+  total_ingested: number;
+}
+
 export interface ThemeSettings {
   id: number;
   name: string;
@@ -1345,6 +1375,13 @@ export const obsApi = {
    *  reopened browser source never replays it. AllowAny endpoint. */
   markMilestoneAnnounced: (id: number) =>
     api<Milestone>(`/api/milestones/${id}/mark_announced/`, { method: 'POST' }),
+  /** JustGiving ingestion config + last-poll snapshot for the
+   *  /control/donations card. Public read. */
+  justGivingStatus: () => api<JustGivingStatus>('/api/justgiving/status/'),
+  /** Operator "Fetch now": pull + ingest the active event's JustGiving
+   *  donations immediately; returns per-page counts. */
+  runJustGivingFetch: () =>
+    api<JustGivingTestResult>('/api/justgiving/test/', { method: 'POST' }),
   /** Twitch live-status probe. Returns is_live=true when the named
    *  channel is currently streaming, with optional metadata (game,
    *  title, viewer count, started_at). Omit `login` to fall back to

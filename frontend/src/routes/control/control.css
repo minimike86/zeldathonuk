@@ -496,6 +496,16 @@
   opacity: 0.55;
 }
 
+/* Inset tile used by /control/automation — the scheduled-job rows and the
+ * JustGiving panel share it so they read as one family. Sits on the (always
+ * dark) operator card; statuses inside use solid `badge bg-*` for contrast
+ * rather than Bootstrap's low-contrast text-success/-danger hues. */
+.automation-tile {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
 /* Horizontal-scroll wrapper used by the /control/donations table.
  * The action column carries three labelled buttons (Replay TTS,
  * Mute, Delete) which together push the row past the viewport on

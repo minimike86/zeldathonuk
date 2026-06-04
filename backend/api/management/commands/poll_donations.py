@@ -15,7 +15,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from api import models
-from api.webhooks import _ingest
+from api.webhooks import _active_event, _ingest
 
 
 class Command(BaseCommand):
@@ -70,42 +70,36 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Tiltify: ingested {count} donations'))
 
     # ──────────────────────────────────────────────────────────────────────
-    # JustGiving — fundraising page donations
+    # JustGiving — fundraising page donations (per-event, polling-only).
+    # Page short name(s) come from the active event's DonationPages; the
+    # fetch + ingest logic lives in api/justgiving.py so this command and the
+    # /api/justgiving/test/ button share one path.
     # ──────────────────────────────────────────────────────────────────────
     def _justgiving(self) -> None:
-        api_key = settings.JUSTGIVING_API_KEY
-        page = settings.JUSTGIVING_PAGE_SHORTNAME
-        if not api_key or not page:
-            self.stderr.write('JUSTGIVING_API_KEY + JUSTGIVING_PAGE_SHORTNAME not set; skipping.')
+        from api import justgiving
+        if not settings.JUSTGIVING_API_KEY:
+            self.stderr.write('JUSTGIVING_API_KEY not set; skipping JustGiving.')
             return
-        url = f'https://api.justgiving.com/{api_key}/v1/fundraising/pages/{page}/donations'
-        resp = requests.get(
-            url, headers={'Accept': 'application/json'}, timeout=20
-        )
-        if not resp.ok:
-            self.stderr.write(f'JustGiving error {resp.status_code}: {resp.text[:200]}')
+        event = _active_event()
+        if not event:
+            self.stderr.write('JustGiving: no active event; skipping.')
             return
-        items = resp.json().get('donations', []) or []
-        count = 0
-        for d in items:
-            donation = _ingest(
-                platform=models.DonationPlatform.JUSTGIVING,
-                external_id=str(d.get('id') or d.get('donationRef', '')),
-                donor_name=d.get('donorDisplayName', 'Anonymous'),
-                amount=Decimal(str(d.get('amount', '0'))),
-                currency=d.get('currencyCode', 'GBP'),
-                message=d.get('message', '') or '',
-                donated_at=_parse_jg_date(d.get('donationDate', '')),
-                gift_aid_amount=(
-                    Decimal(str(d['estimatedTaxReclaim']))
-                    if d.get('estimatedTaxReclaim')
-                    else None
-                ),
-                image_url=d.get('image', '') or '',
+        if not justgiving.event_pages(event):
+            self.stderr.write(
+                'JustGiving: no JustGiving Donation Page linked to the active '
+                'event; skipping.'
             )
-            if donation:
-                count += 1
-        self.stdout.write(self.style.SUCCESS(f'JustGiving: ingested {count} donations'))
+            return
+        try:
+            result = justgiving.ingest_event(event)
+        except justgiving.JustGivingError as exc:
+            self.stderr.write(f'JustGiving: {exc}')
+            return
+        for page in result['pages']:
+            self.stdout.write(self.style.SUCCESS(
+                f"JustGiving [{page['short_name']}]: ingested {page['ingested']} "
+                f"of {page['fetched']} fetched"
+            ))
 
     # ──────────────────────────────────────────────────────────────────────
     # Twitch Charity — Helix /charity/campaigns + /charity/donations
@@ -168,13 +162,4 @@ def _parse_iso(value: str | None):
     try:
         return datetime.fromisoformat(value.replace('Z', '+00:00'))
     except ValueError:
-        return timezone.now()
-
-
-def _parse_jg_date(value: str) -> 'datetime':
-    """JustGiving emits `/Date(1610767455000+0000)/`. Pull the millis out."""
-    try:
-        millis = int(value[6:-7])
-        return datetime.fromtimestamp(millis / 1000, tz=timezone.utc)
-    except (ValueError, IndexError):
         return timezone.now()
