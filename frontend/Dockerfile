@@ -25,6 +25,11 @@ FROM base AS build
 # origin, e.g. https://api.zeldathon.co.uk. Passed as a compose build arg.
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+# Clerk publishable key — also inlined into the bundle at build time (the app
+# initialises ClerkProvider with it — see src/lib/env.ts). Passed as a compose
+# build arg; use the pk_live_… key for the public deploy.
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
 COPY . .
 # `vite build`, not `npm run build` (= `tsc -b && vite build`): the deployable
 # bundle is produced by esbuild and doesn't need the type-check gate, which is

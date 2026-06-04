@@ -618,3 +618,49 @@ class EventCharityAdmin(ModelAdmin):
     search_fields = ['event__name', 'charity__name', 'charity__slug']
     autocomplete_fields = ['event', 'charity']
     readonly_fields = ['created_at']
+
+
+@admin.register(models.AuthConfig)
+class AuthConfigAdmin(ModelAdmin):
+    """Singleton settings page for Clerk auth, the Stream Deck secret, and the
+    CORS allowed origins. Blank fields fall back to env."""
+    fieldsets = (
+        ('Clerk', {
+            'fields': ('clerk_issuers', 'clerk_authorized_parties',
+                       'clerk_secret_key'),
+        }),
+        ('Stream Deck', {
+            'fields': ('timer_hotkey_secret',),
+        }),
+        ('CORS allowed origins', {
+            'fields': ('web_origins',),
+        }),
+        ('Meta', {'fields': ('updated_at',)}),
+    )
+    readonly_fields = ['updated_at']
+
+    def has_add_permission(self, request):
+        # Singleton — only ever the pk=1 row, created on demand.
+        return not models.AuthConfig.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Jump straight into the single row instead of showing a 1-item list.
+        from django.shortcuts import redirect
+        from django.urls import reverse
+        obj = models.AuthConfig.get()
+        return redirect(reverse('admin:api_authconfig_change', args=[obj.pk]))
+
+
+@admin.register(models.Profile)
+class ProfileAdmin(ModelAdmin):
+    """Promote/demote operators. Profiles are auto-created (as viewers) on first
+    Clerk sign-in; change `role` to `operator` here to grant write access."""
+    list_display = ['email', 'clerk_user_id', 'role', 'clerk_issuer', 'updated_at']
+    list_filter = ['role', 'clerk_issuer']
+    search_fields = ['email', 'clerk_user_id', 'user__username']
+    readonly_fields = ['clerk_user_id', 'clerk_issuer', 'created_at', 'updated_at']
+    list_editable = ['role']
+    autocomplete_fields = ['user']

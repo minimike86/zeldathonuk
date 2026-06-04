@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import { RootLayout } from '@/components/layout/RootLayout';
 import { ObsLayout } from '@/components/layout/ObsLayout';
+import { ClerkProviderLayout } from '@/components/auth/ClerkProviderLayout';
 
 /**
  * Code-split route helper. Each page becomes its own lazily-loaded chunk via
@@ -18,6 +19,12 @@ const lazy = (loader: () => Promise<Record<string, unknown>>, name: string) => (
 });
 
 export const router = createBrowserRouter([
+  // Clerk wraps the public site + control panel (anything that may need auth).
+  // The /obs overlays are a sibling group below, intentionally outside Clerk so
+  // OBS browser sources load no auth code.
+  {
+    element: <ClerkProviderLayout />,
+    children: [
   {
     element: <RootLayout />,
     children: [
@@ -35,22 +42,6 @@ export const router = createBrowserRouter([
       { path: '/privacy-policy', element: <Navigate to="/privacy" replace /> },
       { path: '/terms', ...lazy(() => import('@/routes/TermsOfUse'), 'TermsOfUse') },
       { path: '/terms-of-service', element: <Navigate to="/terms" replace /> },
-    ],
-  },
-  {
-    element: <ObsLayout />,
-    children: [
-      { path: '/obs', ...lazy(() => import('@/routes/obs/Obs'), 'Obs') },
-      { path: '/obs/layout/:layout', ...lazy(() => import('@/routes/obs/Layout'), 'ObsLayoutRoute') },
-      { path: '/obs/full', ...lazy(() => import('@/routes/obs/Unified'), 'UnifiedLayout') },
-      { path: '/obs/audio-countdown', ...lazy(() => import('@/routes/obs/AudioCountdown'), 'AudioCountdown') },
-      { path: '/obs/brb', ...lazy(() => import('@/routes/obs/Brb'), 'Brb') },
-      { path: '/obs/tts', ...lazy(() => import('@/routes/obs/Tts'), 'Tts') },
-      { path: '/obs/omnibar', ...lazy(() => import('@/routes/obs/omnibar/Omnibar'), 'Omnibar') },
-      { path: '/obs/chest-announcer', ...lazy(() => import('@/routes/obs/ChestAnnouncer'), 'ChestAnnouncer') },
-      { path: '/tracking/:game', ...lazy(() => import('@/routes/GameTracking'), 'GameTracking') },
-      { path: '/api/timers', ...lazy(() => import('@/routes/api/Timers'), 'Timers') },
-      { path: '/api/count-up', ...lazy(() => import('@/routes/api/CountUp'), 'CountUp') },
     ],
   },
   {
@@ -76,5 +67,25 @@ export const router = createBrowserRouter([
       { path: 'logs', ...lazy(() => import('@/routes/control/LogsQueue'), 'LogsQueueControl') },
     ],
   },
-  { path: '*', ...lazy(() => import('@/routes/NotFound'), 'NotFound') },
+      { path: '*', ...lazy(() => import('@/routes/NotFound'), 'NotFound') },
+    ],
+  },
+  // OBS browser-source overlays — sibling of the Clerk group above so they load
+  // no auth code. Public (read-only data); see the /obs access decision.
+  {
+    element: <ObsLayout />,
+    children: [
+      { path: '/obs', ...lazy(() => import('@/routes/obs/Obs'), 'Obs') },
+      { path: '/obs/layout/:layout', ...lazy(() => import('@/routes/obs/Layout'), 'ObsLayoutRoute') },
+      { path: '/obs/full', ...lazy(() => import('@/routes/obs/Unified'), 'UnifiedLayout') },
+      { path: '/obs/audio-countdown', ...lazy(() => import('@/routes/obs/AudioCountdown'), 'AudioCountdown') },
+      { path: '/obs/brb', ...lazy(() => import('@/routes/obs/Brb'), 'Brb') },
+      { path: '/obs/tts', ...lazy(() => import('@/routes/obs/Tts'), 'Tts') },
+      { path: '/obs/omnibar', ...lazy(() => import('@/routes/obs/omnibar/Omnibar'), 'Omnibar') },
+      { path: '/obs/chest-announcer', ...lazy(() => import('@/routes/obs/ChestAnnouncer'), 'ChestAnnouncer') },
+      { path: '/tracking/:game', ...lazy(() => import('@/routes/GameTracking'), 'GameTracking') },
+      { path: '/api/timers', ...lazy(() => import('@/routes/api/Timers'), 'Timers') },
+      { path: '/api/count-up', ...lazy(() => import('@/routes/api/CountUp'), 'CountUp') },
+    ],
+  },
 ]);

@@ -46,6 +46,9 @@ router.register('activity-log', views.ActivityLogViewSet, basename='activity-log
 
 urlpatterns = [
     path('healthz/', views.healthz, name='api-healthz'),
+    # Authenticated user's local profile (identity + role) — drives control-panel
+    # access in the frontend.
+    path('me/', views.me, name='me'),
     path('currently-playing/', views.currently_playing, name='currently-playing'),
     # Server-side timer actions for an external macro pad / Stream Deck — works
     # while the emulator (not the browser) holds OS focus. POST {"action": ...}.

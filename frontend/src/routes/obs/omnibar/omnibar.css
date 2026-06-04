@@ -1272,16 +1272,21 @@
 .omnibar--v2 .ob-total {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.4rem;
   padding: 0 1rem 0 1.25rem;
   background: var(--ob-bloodmoon-total);
   /* Currency + amount + supporting copy inside the right cluster read
    * this; bright totals (e.g. SNES yellow) need a dark text colour to
    * stay legible. Falls back to --theme-text. */
   color: var(--theme-omnibar-total-text, var(--theme-text, #fff));
-  /* Wider to fit total + charity cluster side-by-side without
-   * either feeling cramped. */
-  min-width: 420px;
+  /* Hug the amount + fixed-width charity cluster instead of padding out
+   * to a fixed 420px floor. The old min-width left ~120px of dead space
+   * once the cluster became a fixed 190px (rather than flex:1 filling
+   * the panel), which the flex layout spread as a gap between the £
+   * figure and the cluster. flex-shrink:0 keeps it from being squeezed
+   * by the lanes; the panel still grows naturally as the total gains
+   * digits. */
+  flex-shrink: 0;
   position: relative;
   z-index: 3;
   transition: box-shadow 240ms ease;
@@ -1500,8 +1505,11 @@
 
 .omnibar--v2 .ob-charity-cluster {
   position: relative;
-  flex: 1;
-  min-width: 190px;
+  /* Fixed width so the cluster (and the logos within it) stay a
+   * consistent compact size instead of stretching to fill leftover
+   * omnibar space. Blurbs wrap within this width. */
+  flex: 0 0 auto;
+  width: 190px;
   /* Taller than the original 64px so a blurb with a title can wrap
    * to two lines of body text, or a title-less blurb to three. The
    * .ob-total parent is full-omnibar-height (96px) so we still have
@@ -1535,9 +1543,12 @@
 }
 
 .omnibar--v2 .ob-charity-logo {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
+  /* Fixed logo width so every charity mark renders at the same compact
+   * size regardless of its intrinsic dimensions. height:auto +
+   * object-fit:contain preserve aspect ratio; max-height caps any
+   * unusually tall logo so it can't exceed the cluster. */
+  width: 130px;
+  max-height: 80%;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));

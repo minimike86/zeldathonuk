@@ -1161,3 +1161,23 @@
   max-height: 280px;
   overflow: auto;
 }
+
+/* Auth gate — full-screen status while operator access resolves / is denied. */
+.control-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+  font-size: 1.1rem;
+  color: var(--theme-text, #fff);
+  opacity: 0.85;
+}
+
+/* HOME button + account badge in the header, pushed to the trailing edge. */
+.control-user-cluster {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}

@@ -137,13 +137,47 @@ CORS_ALLOWED_ORIGIN_REGEXES = env.list(
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_PRIVATE_NETWORK = env.bool('CORS_ALLOW_PRIVATE_NETWORK', default=DEBUG)
 
+# Origins trusted for unsafe (POST/PUT/PATCH/DELETE) cross-origin requests —
+# needed for the django-unfold admin login over the Cloudflare tunnel, where the
+# Origin is the public https hostname. DRF itself is token-authed (no cookies),
+# so this is really just for the session-cookie admin.
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=['https://api.zeldathon.co.uk', 'https://www.zeldathon.co.uk'],
+)
+
 # ──────────────────────────────────────────────────────────────────────────────
-# DRF — no auth wired yet; everything is AllowAny until auth is added
+# Clerk authentication
+# ──────────────────────────────────────────────────────────────────────────────
+# Clerk owns authentication; api.models.Profile owns authorization. The frontend
+# sends Clerk session JWTs as Bearer tokens which api.authentication verifies
+# against each issuer's JWKS. Multiple instances are trusted at once (dev for
+# localhost + prod for the public site), so this is a LIST. CLERK_ISSUER (single)
+# is still honoured for back-compat. The DB AuthConfig overrides these when set.
+CLERK_ISSUERS = env.list(
+    'CLERK_ISSUERS',
+    default=[i for i in [env('CLERK_ISSUER', default='')] if i],
+)
+# Allowed `azp` (authorized party) claim values — the frontend origins across
+# all instances (e.g. http://localhost:5173 and https://www.zeldathon.co.uk).
+CLERK_AUTHORIZED_PARTIES = env.list('CLERK_AUTHORIZED_PARTIES', default=[])
+# Optional — reserved for the Clerk Management API (e.g. backfilling emails).
+CLERK_SECRET_KEY = env('CLERK_SECRET_KEY', default='')
+
+# Shared secret the Stream Deck / macro pad sends as `X-Hotkey-Secret` to
+# /api/timer-hotkey/. That endpoint is machine-driven (no Clerk login), so it is
+# gated by this secret instead of the operator role.
+TIMER_HOTKEY_SECRET = env('TIMER_HOTKEY_SECRET', default='')
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DRF — Clerk JWT auth; reads are public, writes require the operator role
 # ──────────────────────────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'api.authentication.ClerkJWTAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'api.permissions.ReadOnlyOrOperator',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
