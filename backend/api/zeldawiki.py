@@ -62,6 +62,31 @@ _CATEGORY_KEYWORDS = [
 _GALLERY_RE = re.compile(r'<gallery([^>]*)>(.*?)</gallery>', re.DOTALL | re.IGNORECASE)
 _CAPTION_RE = re.compile(r'caption\s*=\s*"([^"]*)"', re.IGNORECASE)
 _LINK_RE = re.compile(r'\[\[\s*([^\]|]+?)\s*(?:\|\s*([^\]]+?)\s*)?\]\]')
+
+# Rendered-HTML gallery parsing. Newer wiki pages lay items out with the
+# {{Gallery List}} template, which emits NO <gallery> wikitext block — but both
+# formats render to the same `<li class="gallerybox">…<img src><div
+# class="gallerytext">Name</div>` HTML. Parsing the rendered page (action=parse
+# prop=text) therefore covers both. Used as a fallback when the wikitext path
+# finds no <gallery> blocks.
+_GALLERYBOX_RE = re.compile(
+    r'gallerybox.*?<img[^>]+src="([^"]+)".*?gallerytext"[^>]*>(.*?)</div>',
+    re.DOTALL | re.IGNORECASE,
+)
+_TAG_RE = re.compile(r'<[^>]+>')
+# Trailing "×4" / "x2" quantity annotations the template renders next to a name.
+_QTY_SUFFIX_RE = re.compile(r'\s*[×xX]\s*\d+\s*$')
+# Edition descriptors stripped to fall back to a remake/port's base wiki page
+# (the wiki keeps one "Items in <base game>" page covering 3D/HD/DX re-releases).
+_EDITION_RE = re.compile(
+    r'\s*(?:'
+    r'3D|HD|DX'
+    r'|\(Wii\)|\(Switch\)|\(Nintendo Switch\)'
+    r'|[—-]\s*Nintendo Switch 2 Edition'
+    r'|&\s*Four Swords'
+    r')\s*$',
+    re.IGNORECASE,
+)
 # Game-prefix / suffix tokens stripped when we have to derive a name from a
 # bare filename (rare — the galleries almost always carry an explicit name).
 _FILENAME_NOISE = re.compile(
@@ -104,12 +129,26 @@ def _short_title(game: models.Game) -> str:
     return title
 
 
+def _base_title(short: str) -> str:
+    """Strip trailing edition descriptors (3D / HD / DX / (Wii) / …) so a
+    remake or port falls back to the base game's wiki page."""
+    prev = None
+    out = short
+    while out != prev:
+        prev = out
+        out = _EDITION_RE.sub('', out).strip()
+    return out
+
+
 def candidate_pages(game: models.Game) -> list[str]:
-    """`Items in <Game>` page titles to try, most-likely first."""
+    """`Items in <Game>` page titles to try, most-likely first. Includes the
+    base-game title for remakes/ports (e.g. "Ocarina of Time 3D" →
+    "Items in Ocarina of Time") since the wiki keeps one page per base game."""
     short = _short_title(game)
     seen, out = set(), []
-    for title in (f'Items in {short}', f'Items in {game.title}'):
-        if title not in seen:
+    for name in (short, game.title, _base_title(short)):
+        title = f'Items in {name}'
+        if name and title not in seen:
             seen.add(title)
             out.append(title)
     return out
@@ -226,16 +265,67 @@ def _resolve_image_urls(
     return out
 
 
+def _dethumb(url: str) -> str:
+    """Turn a MediaWiki thumbnail URL back into the full-size original:
+    `…/thumb/a/ab/File.png/120px-File.png` → `…/a/ab/File.png`."""
+    m = re.match(r'(.*)/thumb/(.+?/[^/]+\.\w+)/[^/]+$', url)
+    return f'{m.group(1)}/{m.group(2)}' if m else url
+
+
+def _fetch_rendered_items(
+    session: requests.Session, pages: list[str], *, on_progress=None
+) -> list[ScrapedItem]:
+    """Parse item (name, sprite URL) pairs from a page's RENDERED HTML.
+
+    Covers pages that build their galleries with the {{Gallery List}} template
+    (no <gallery> wikitext) — both formats render to the same gallerybox HTML.
+    """
+    for page in pages:
+        data = _api_get(
+            session,
+            {'action': 'parse', 'page': page, 'prop': 'text', 'redirects': '1'},
+        )
+        if not data or 'error' in data:
+            continue
+        html = (data.get('parse', {}) or {}).get('text', '')
+        if not html:
+            continue
+        items: list[ScrapedItem] = []
+        seen: set[str] = set()
+        for src, raw_name in _GALLERYBOX_RE.findall(html):
+            name = _TAG_RE.sub('', raw_name)
+            name = _QTY_SUFFIX_RE.sub('', name).strip()
+            name = (
+                name.replace('&amp;', '&').replace('&#039;', "'")
+                .replace('&quot;', '"').replace('&nbsp;', ' ').strip()
+            )
+            if not name or name in seen:
+                continue
+            seen.add(name)
+            url = _dethumb(src.strip())
+            if url.startswith('//'):
+                url = f'https:{url}'
+            items.append(
+                ScrapedItem(name=name, image_url=url, category=_guess_category(name)),
+            )
+        if items:
+            if on_progress:
+                on_progress(f'parsed {len(items)} rendered gallery items')
+            return items
+    return []
+
+
 def fetch_items(
     session: requests.Session, game: models.Game, *, on_progress=None
 ) -> list[ScrapedItem]:
     """Return the wiki's item list for `game`, or [] if no page matched."""
-    wikitext = _fetch_wikitext(session, candidate_pages(game))
-    if not wikitext:
-        return []
-    parsed = _parse_galleries(wikitext)
+    pages = candidate_pages(game)
+    wikitext = _fetch_wikitext(session, pages)
+    parsed = _parse_galleries(wikitext) if wikitext else []
     if not parsed:
-        return []
+        # No <gallery> blocks — fall back to the rendered HTML, which also
+        # captures the {{Gallery List}} template used by newer pages.
+        return _fetch_rendered_items(session, pages, on_progress=on_progress)
     if on_progress:
         on_progress(f'parsed {len(parsed)} gallery items')
 
