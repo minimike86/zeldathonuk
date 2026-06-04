@@ -61,6 +61,7 @@ export const router = createBrowserRouter([
       { path: 'events', ...lazy(() => import('@/routes/control/Events'), 'EventsControl') },
       { path: 'charities', ...lazy(() => import('@/routes/control/Charities'), 'CharitiesControl') },
       { path: 'raffles', ...lazy(() => import('@/routes/control/Raffles'), 'RafflesControl') },
+      { path: 'predictions', ...lazy(() => import('@/routes/control/Predictions'), 'PredictionsControl') },
       { path: 'theme', ...lazy(() => import('@/routes/control/Theme'), 'ThemeControl') },
       { path: 'layouts', ...lazy(() => import('@/routes/control/Layouts'), 'LayoutsControl') },
       { path: 'omnibar', ...lazy(() => import('@/routes/control/Omnibar'), 'OmnibarControl') },

@@ -1410,6 +1410,86 @@ class ChatAnnouncement(models.Model):
         return f'{self.event} → chat:{self.trigger} ({state})'
 
 
+class RecurringChatMessage(models.Model):
+    """A chat message posted on a timer to the active event's primary connected
+    channel — e.g. a periodic "donate here" CTA. Driven by
+    ``manage.py post_chat_reminders`` on a cron tick (best-effort, like the
+    per-trigger announcements). Placeholders: ``{donate_url} {total} {charity}
+    {channel}`` (see ``api.chat.recurring_context``)."""
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='recurring_chat_messages',
+    )
+    label = models.CharField(
+        max_length=80, blank=True,
+        help_text='Operator label (e.g. "Donation CTA"). Not posted.',
+    )
+    template = models.TextField()
+    interval_minutes = models.PositiveIntegerField(
+        default=15, help_text='Minimum minutes between posts.',
+    )
+    only_when_live = models.BooleanField(
+        default=True,
+        help_text='Only post while the primary channel is live on Twitch.',
+    )
+    enabled = models.BooleanField(default=False)
+    last_posted_at = models.DateTimeField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+
+    def __str__(self) -> str:
+        state = 'on' if self.enabled else 'off'
+        return f'{self.event} → recurring:{self.label or self.pk} ({state})'
+
+    @property
+    def is_due(self) -> bool:
+        if not self.enabled:
+            return False
+        if self.last_posted_at is None:
+            return True
+        from datetime import timedelta
+        return timezone.now() - self.last_posted_at >= timedelta(
+            minutes=self.interval_minutes,
+        )
+
+
+class TwitchPrediction(models.Model):
+    """A Twitch Prediction opened from the control panel (e.g. "Beat the boss
+    first try?"). Mirrors the Helix prediction so the operator can resolve or
+    cancel it later. Created on the active event's primary connected channel
+    (needs the channel:manage:predictions scope)."""
+
+    STATUS_ACTIVE = 'ACTIVE'
+    STATUS_LOCKED = 'LOCKED'
+    STATUS_RESOLVED = 'RESOLVED'
+    STATUS_CANCELED = 'CANCELED'
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='predictions',
+    )
+    prediction_id = models.CharField(max_length=200, unique=True)
+    broadcaster_id = models.CharField(max_length=64, blank=True)
+    title = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, default=STATUS_ACTIVE)
+    # Mirror of Twitch's outcomes: [{id, title, color, users, channel_points}].
+    outcomes = models.JSONField(default=list, blank=True)
+    winning_outcome_id = models.CharField(max_length=200, blank=True)
+    window_seconds = models.PositiveIntegerField(default=120)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Twitch prediction'
+
+    def __str__(self) -> str:
+        return f'{self.title} ({self.status})'
+
+
 class LayoutPreset(models.Model):
     """A named arrangement for one OBS game-layout aspect ratio.
 

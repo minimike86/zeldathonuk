@@ -7,6 +7,7 @@ from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import quote
 
+import requests
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db.models import Count, Max, Q, Sum
@@ -286,6 +287,7 @@ class EventViewSet(viewsets.ModelViewSet):
         .order_by('-start_time')
         .prefetch_related(
             'twitch_channels__connection', 'donation_pages', 'chat_announcements',
+            'recurring_chat_messages',
         )
     )
     serializer_class = serializers.EventSerializer
@@ -295,9 +297,11 @@ class EventViewSet(viewsets.ModelViewSet):
         if event.is_active:
             models.Event.objects.exclude(pk=event.pk).filter(is_active=True).update(is_active=False)
         # Seed the default (disabled) chat announcement rows so the control
-        # editor lists every trigger for the new event.
+        # editor lists every trigger for the new event, plus a donation-CTA
+        # recurring message.
         from . import chat
         chat.ensure_announcements(event)
+        chat.ensure_recurring_defaults(event)
 
     def perform_update(self, serializer):
         event = serializer.save()
@@ -1421,6 +1425,128 @@ class ChatAnnouncementViewSet(viewsets.ModelViewSet):
         if event_id:
             qs = qs.filter(event_id=event_id)
         return qs
+
+
+class RecurringChatMessageViewSet(viewsets.ModelViewSet):
+    """Per-event recurring chat messages (e.g. a periodic donation CTA). Posted
+    by `manage.py post_chat_reminders` on a cron tick."""
+    queryset = models.RecurringChatMessage.objects.all()
+    serializer_class = serializers.RecurringChatMessageSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+
+class TwitchPredictionViewSet(viewsets.ModelViewSet):
+    """Twitch Predictions opened from the control panel. ``create`` opens one on
+    the active event's primary connected channel; ``resolve``/``cancel``/``lock``
+    end it. Operator-gated (default permission). GET list is public."""
+    queryset = models.TwitchPrediction.objects.all()
+    serializer_class = serializers.TwitchPredictionSerializer
+    http_method_names = ['get', 'post']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        active = models.Event.objects.filter(is_active=True).first()
+        if not active:
+            return Response({'detail': 'No active event.'}, status=status.HTTP_400_BAD_REQUEST)
+        conn = twitch.event_primary_connection(active)
+        if not conn:
+            return Response(
+                {'detail': 'No connected primary Twitch channel for the active event.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        title = (request.data.get('title') or '').strip()
+        outcomes = [
+            str(o).strip() for o in (request.data.get('outcomes') or [])
+            if str(o).strip()
+        ]
+        try:
+            window = int(request.data.get('window_seconds') or 120)
+        except (TypeError, ValueError):
+            window = 120
+        if not title or len(outcomes) < 2:
+            return Response(
+                {'detail': 'A title and at least two outcomes are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        bid = twitch.ensure_connection_broadcaster_id(conn)
+        if not bid:
+            return Response(
+                {'detail': 'Could not resolve the channel broadcaster id.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            data = twitch.create_prediction(conn, bid, title, outcomes, window)
+        except (twitch.TwitchAuthError, requests.RequestException) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        if not data:
+            return Response(
+                {'detail': 'Twitch did not return a prediction.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pred = models.TwitchPrediction.objects.create(
+            event=active,
+            prediction_id=data.get('id', ''),
+            broadcaster_id=bid,
+            title=data.get('title', title),
+            status=data.get('status', models.TwitchPrediction.STATUS_ACTIVE),
+            outcomes=data.get('outcomes', []),
+            window_seconds=data.get('prediction_window', window),
+        )
+        return Response(self.get_serializer(pred).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def resolve(self, request: Request, pk=None) -> Response:
+        winning = (request.data.get('winning_outcome_id') or '').strip()
+        if not winning:
+            return Response(
+                {'detail': 'winning_outcome_id required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return self._end(self.get_object(), 'RESOLVED', winning)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request: Request, pk=None) -> Response:
+        return self._end(self.get_object(), 'CANCELED', '')
+
+    @action(detail=True, methods=['post'])
+    def lock(self, request: Request, pk=None) -> Response:
+        return self._end(self.get_object(), 'LOCKED', '')
+
+    def _end(self, pred, new_status: str, winning_outcome_id: str) -> Response:
+        conn = twitch.event_primary_connection(pred.event)
+        if not conn:
+            return Response(
+                {'detail': 'No connected channel for this prediction.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        bid = pred.broadcaster_id or twitch.ensure_connection_broadcaster_id(conn)
+        try:
+            data = twitch.end_prediction(
+                conn, bid, pred.prediction_id, new_status, winning_outcome_id,
+            )
+        except (twitch.TwitchAuthError, requests.RequestException) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        pred.status = (data or {}).get('status', new_status)
+        if data and data.get('winning_outcome_id'):
+            pred.winning_outcome_id = data['winning_outcome_id']
+        elif winning_outcome_id:
+            pred.winning_outcome_id = winning_outcome_id
+        if data and data.get('outcomes'):
+            pred.outcomes = data['outcomes']
+        pred.save()
+        return Response(self.get_serializer(pred).data)
 
 
 class BrbTimerViewSet(viewsets.ModelViewSet):

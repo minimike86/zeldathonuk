@@ -309,6 +309,42 @@ export interface ChatAnnouncement {
   placeholders: string[];
 }
 
+export interface TwitchPredictionOutcome {
+  id: string;
+  title: string;
+  color?: string;
+  users?: number;
+  channel_points?: number;
+}
+
+export interface TwitchPrediction {
+  id: number;
+  event: number;
+  prediction_id: string;
+  title: string;
+  /** ACTIVE | LOCKED | RESOLVED | CANCELED */
+  status: string;
+  outcomes: TwitchPredictionOutcome[];
+  winning_outcome_id: string;
+  window_seconds: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecurringChatMessage {
+  id: number;
+  event: number;
+  label: string;
+  template: string;
+  interval_minutes: number;
+  only_when_live: boolean;
+  enabled: boolean;
+  last_posted_at: string | null;
+  order: number;
+  is_due: boolean;
+  placeholders: string[];
+}
+
 export interface EventModel {
   id: number;
   name: string;
@@ -342,6 +378,9 @@ export interface EventModel {
   /** Per-trigger Twitch chat announcement config (enable + template).
    *  Read-only here; written via /api/chat-announcements/. */
   chat_announcements: ChatAnnouncement[];
+  /** Recurring chat messages (e.g. a periodic donation CTA). Read-only here;
+   *  written via /api/recurring-chat-messages/. */
+  recurring_chat_messages: RecurringChatMessage[];
   /** Charities this event is fundraising for, ordered + with the
    *  primary beneficiary flagged. Read-only on the EventModel —
    *  mutations go through `obsApi.createEventCharity` /
@@ -2067,6 +2106,61 @@ export const obsApi = {
     api<ChatAnnouncement>(`/api/chat-announcements/${id}/`, {
       method: 'PATCH',
       body: patch,
+    }),
+
+  // ── Recurring chat messages (e.g. periodic donation CTA) ──────────
+  createRecurringChatMessage: (body: {
+    event: number;
+    label?: string;
+    template: string;
+    interval_minutes?: number;
+    only_when_live?: boolean;
+    enabled?: boolean;
+  }) =>
+    api<RecurringChatMessage>('/api/recurring-chat-messages/', {
+      method: 'POST',
+      body,
+    }),
+  updateRecurringChatMessage: (
+    id: number,
+    patch: Partial<{
+      label: string;
+      template: string;
+      interval_minutes: number;
+      only_when_live: boolean;
+      enabled: boolean;
+    }>,
+  ) =>
+    api<RecurringChatMessage>(`/api/recurring-chat-messages/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteRecurringChatMessage: (id: number) =>
+    api<void>(`/api/recurring-chat-messages/${id}/`, { method: 'DELETE' }),
+
+  // ── Twitch predictions ────────────────────────────────────────────
+  twitchPredictions: (eventId?: number) =>
+    api<TwitchPrediction[]>(
+      `/api/twitch-predictions/${eventId ? `?event=${eventId}` : ''}`,
+    ),
+  createTwitchPrediction: (body: {
+    title: string;
+    outcomes: string[];
+    window_seconds: number;
+  }) =>
+    api<TwitchPrediction>('/api/twitch-predictions/', { method: 'POST', body }),
+  resolveTwitchPrediction: (id: number, winningOutcomeId: string) =>
+    api<TwitchPrediction>(`/api/twitch-predictions/${id}/resolve/`, {
+      method: 'POST',
+      body: { winning_outcome_id: winningOutcomeId },
+    }),
+  cancelTwitchPrediction: (id: number) =>
+    api<TwitchPrediction>(`/api/twitch-predictions/${id}/cancel/`, {
+      method: 'POST',
+    }),
+  lockTwitchPrediction: (id: number) =>
+    api<TwitchPrediction>(`/api/twitch-predictions/${id}/lock/`, {
+      method: 'POST',
     }),
 
   // ── Sound assets + schedule-entry sound triggers ──────────────────

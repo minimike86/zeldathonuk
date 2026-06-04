@@ -590,6 +590,72 @@ def charity_poll_sources() -> list[tuple[str, object, str]]:
     return sources
 
 
+def event_primary_connection(event):
+    """The connection that should act for an event (chat / predictions): its
+    primary connected channel, falling back to any connected channel. Returns
+    None when there's no usable connection."""
+    if event is None:
+        return None
+    ch = (
+        event.twitch_channels
+        .filter(is_primary=True, connection__isnull=False)
+        .select_related('connection')
+        .first()
+        or event.twitch_channels
+        .filter(connection__isnull=False)
+        .select_related('connection')
+        .first()
+    )
+    if not ch or not ch.connection:
+        return None
+    conn = ch.connection
+    if not conn.is_active or not (conn.access_token or conn.refresh_token):
+        return None
+    return conn
+
+
+# ── Predictions (gameplay bets — operator-driven) ───────────────────────────
+# Twitch limits: title ≤45 chars, 2-10 outcomes (title ≤25), window 30-1800s.
+
+
+def create_prediction(conn, broadcaster_id: str, title: str,
+                      outcomes: list[str], window_seconds: int) -> dict | None:
+    """Open a prediction on the channel. Returns the Helix prediction dict."""
+    body = {
+        'broadcaster_id': broadcaster_id,
+        'title': title[:45],
+        'outcomes': [{'title': str(o)[:25]} for o in outcomes if str(o).strip()],
+        'prediction_window': max(30, min(1800, int(window_seconds))),
+    }
+    resp = _request_as(conn, 'POST', f'{HELIX}/predictions', json=body)
+    if not resp.ok:
+        raise TwitchAuthError(
+            f'Create prediction failed ({resp.status_code}): {resp.text[:300]}'
+        )
+    data = resp.json().get('data') or []
+    return data[0] if data else None
+
+
+def end_prediction(conn, broadcaster_id: str, prediction_id: str, status: str,
+                   winning_outcome_id: str = '') -> dict | None:
+    """Resolve / cancel / lock a prediction. ``status`` is one of RESOLVED,
+    CANCELED, LOCKED; RESOLVED requires ``winning_outcome_id``."""
+    body = {
+        'broadcaster_id': broadcaster_id,
+        'id': prediction_id,
+        'status': status,
+    }
+    if status == 'RESOLVED' and winning_outcome_id:
+        body['winning_outcome_id'] = winning_outcome_id
+    resp = _request_as(conn, 'PATCH', f'{HELIX}/predictions', json=body)
+    if not resp.ok:
+        raise TwitchAuthError(
+            f'End prediction failed ({resp.status_code}): {resp.text[:300]}'
+        )
+    data = resp.json().get('data') or []
+    return data[0] if data else None
+
+
 @api_view(['GET'])
 def stream_status(request: Request) -> Response:
     """Return whether a Twitch channel is currently live.

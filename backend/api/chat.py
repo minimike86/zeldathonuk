@@ -79,25 +79,19 @@ def send_chat_message(connection, broadcaster_id: str, message: str):
     )
 
 
-def _primary_connection(event):
-    """The connection that should post chat for an event: its primary connected
-    channel, falling back to any connected channel. None when nothing usable."""
-    ch = (
-        event.twitch_channels
-        .filter(is_primary=True, connection__isnull=False)
-        .select_related('connection')
-        .first()
-        or event.twitch_channels
-        .filter(connection__isnull=False)
-        .select_related('connection')
-        .first()
-    )
-    if not ch or not ch.connection:
-        return None
-    conn = ch.connection
-    if not conn.is_active or not (conn.access_token or conn.refresh_token):
-        return None
-    return conn
+def _send_to_event(event, message: str) -> bool:
+    """Post ``message`` to the event's primary connected channel's chat. Returns
+    True on a successful send, False when there's no usable connection."""
+    from . import twitch
+
+    conn = twitch.event_primary_connection(event)
+    if not conn:
+        return False
+    bid = twitch.ensure_connection_broadcaster_id(conn)
+    if not bid:
+        return False
+    resp = send_chat_message(conn, bid, message)
+    return bool(getattr(resp, 'ok', False))
 
 
 def announce(event, trigger: str, ctx: dict | None = None) -> bool:
@@ -115,19 +109,85 @@ def announce(event, trigger: str, ctx: dict | None = None) -> bool:
         message = render_template(template, ctx or {}).strip()
         if not message:
             return False
-        from . import twitch
-
-        conn = _primary_connection(event)
-        if not conn:
-            return False
-        bid = twitch.ensure_connection_broadcaster_id(conn)
-        if not bid:
-            return False
-        resp = send_chat_message(conn, bid, message)
-        return bool(getattr(resp, 'ok', False))
+        return _send_to_event(event, message)
     except Exception:  # noqa: BLE001 — chat must never break the caller
         logger.exception('chat.announce failed for trigger=%s', trigger)
         return False
+
+
+# ── Recurring messages (e.g. a periodic donation CTA) ───────────────────────
+
+DEFAULT_DONATION_CTA = (
+    '💜 Enjoying the run? Help us smash the goal for {charity} — '
+    'donate here: {donate_url}'
+)
+
+# Placeholders surfaced as hints in the recurring-message editor.
+RECURRING_PLACEHOLDERS = ['donate_url', 'total', 'charity', 'channel']
+
+
+def event_donate_url(event) -> str:
+    """Best donate link for an event: the primary donation page, else a Twitch
+    Charity link for a charity channel, else ''."""
+    page = (
+        event.donation_pages.filter(is_primary=True).first()
+        or event.donation_pages.first()
+    )
+    if page and page.url:
+        return page.url
+    ch = event.twitch_channels.filter(track_charity=True, is_active=True).first()
+    if ch:
+        return f'https://www.twitch.tv/charity/{ch.login}'
+    return ''
+
+
+def recurring_context(event) -> dict:
+    """Placeholder values for recurring messages on ``event``."""
+    from django.db.models import Sum
+
+    total = (
+        models.Donation.objects.filter(event=event).aggregate(s=Sum('amount'))['s']
+        or 0
+    )
+    charity_link = (
+        event.event_charities.filter(is_primary=True).select_related('charity').first()
+        or event.event_charities.select_related('charity').first()
+    )
+    primary = (
+        event.twitch_channels.filter(is_primary=True).first()
+        or event.twitch_channels.first()
+    )
+    return {
+        'donate_url': event_donate_url(event),
+        'total': f'{event.currency_symbol}{total:.2f}',
+        'charity': charity_link.charity.name if charity_link else '',
+        'channel': primary.login if primary else '',
+    }
+
+
+def post_recurring(event, msg) -> bool:
+    """Render + send one recurring message. Best-effort."""
+    try:
+        template = (msg.template or '').strip()
+        if not template:
+            return False
+        message = render_template(template, recurring_context(event)).strip()
+        if not message:
+            return False
+        return _send_to_event(event, message)
+    except Exception:  # noqa: BLE001
+        logger.exception('chat.post_recurring failed')
+        return False
+
+
+def ensure_recurring_defaults(event) -> None:
+    """Seed a default (disabled) donation-CTA recurring message for a new event,
+    if it has none yet."""
+    if not event.recurring_chat_messages.exists():
+        models.RecurringChatMessage.objects.create(
+            event=event, label='Donation CTA', template=DEFAULT_DONATION_CTA,
+            interval_minutes=15, only_when_live=True, enabled=False,
+        )
 
 
 def ensure_announcements(event) -> None:

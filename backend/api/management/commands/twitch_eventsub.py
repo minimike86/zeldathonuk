@@ -53,6 +53,8 @@ def _desired(bid: str) -> list[dict]:
         {'type': 'channel.subscription.message', 'version': '1', 'condition': broadcaster},
         {'type': 'channel.cheer', 'version': '1', 'condition': broadcaster},
         {'type': 'channel.raid', 'version': '1', 'condition': {'to_broadcaster_user_id': bid}},
+        {'type': 'channel.channel_points_custom_reward_redemption.add',
+         'version': '1', 'condition': broadcaster},
     ] + _charity_desired(bid)
 
 

@@ -34,6 +34,8 @@ router.register('charity-impact-tiers', views.CharityImpactTierViewSet)
 router.register('event-charities', views.EventCharityViewSet)
 router.register('event-twitch-channels', views.EventTwitchChannelViewSet)
 router.register('chat-announcements', views.ChatAnnouncementViewSet)
+router.register('twitch-predictions', views.TwitchPredictionViewSet)
+router.register('recurring-chat-messages', views.RecurringChatMessageViewSet)
 router.register(
     'chest-announcer/sound-triggers',
     views.ChestAnnouncerSoundTriggerViewSet,

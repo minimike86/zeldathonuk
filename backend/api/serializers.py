@@ -234,10 +234,44 @@ class ChatAnnouncementSerializer(serializers.ModelSerializer):
         return chat.TEMPLATE_PLACEHOLDERS.get(obj.trigger, [])
 
 
+class TwitchPredictionSerializer(serializers.ModelSerializer):
+    """Read-only mirror of a Twitch Prediction. Created/resolved via the
+    viewset's custom actions, not direct writes."""
+
+    class Meta:
+        model = models.TwitchPrediction
+        fields = [
+            'id', 'event', 'prediction_id', 'title', 'status', 'outcomes',
+            'winning_outcome_id', 'window_seconds', 'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+
+class RecurringChatMessageSerializer(serializers.ModelSerializer):
+    """A recurring chat message (e.g. a periodic donation CTA)."""
+
+    is_due = serializers.BooleanField(read_only=True)
+    placeholders = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.RecurringChatMessage
+        fields = [
+            'id', 'event', 'label', 'template', 'interval_minutes',
+            'only_when_live', 'enabled', 'last_posted_at', 'order',
+            'is_due', 'placeholders',
+        ]
+        read_only_fields = ['last_posted_at', 'is_due', 'placeholders']
+
+    def get_placeholders(self, obj) -> list:
+        from . import chat
+        return chat.RECURRING_PLACEHOLDERS
+
+
 class EventSerializer(serializers.ModelSerializer):
     donation_pages = DonationPageSerializer(many=True, read_only=True)
     twitch_channels = EventTwitchChannelSerializer(many=True, read_only=True)
     chat_announcements = ChatAnnouncementSerializer(many=True, read_only=True)
+    recurring_chat_messages = RecurringChatMessageSerializer(many=True, read_only=True)
     # Primary channel login for single-channel consumers (Follow link, embed).
     primary_twitch_channel = serializers.SerializerMethodField()
     # Charities are read here via the through-table so consumers get the
@@ -265,6 +299,7 @@ class EventSerializer(serializers.ModelSerializer):
             'donation_pages',
             'event_charities',
             'chat_announcements',
+            'recurring_chat_messages',
         ]
 
     def get_primary_twitch_channel(self, obj) -> str:

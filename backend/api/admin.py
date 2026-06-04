@@ -472,6 +472,16 @@ class ChatAnnouncementAdmin(ModelAdmin):
     search_fields = ['event__name', 'template']
 
 
+@admin.register(models.TwitchPrediction)
+class TwitchPredictionAdmin(ModelAdmin):
+    """Twitch Predictions opened from the control panel (read-only mirror)."""
+    list_display = ['title', 'event', 'status', 'created_at']
+    list_filter = ['status']
+    search_fields = ['title', 'event__name']
+    readonly_fields = ['prediction_id', 'broadcaster_id', 'outcomes',
+                       'winning_outcome_id', 'created_at', 'updated_at']
+
+
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────
 
 

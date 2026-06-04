@@ -93,6 +93,89 @@ class AnnounceTests(TestCase):
         self.assertFalse(chat.announce(self.event, 'donation', {'donor': 'Kris'}))
 
 
+class ExternalChatTriggerTests(TestCase):
+    """The EventSub notification path fires the configured chat announcement for
+    sub/follow/raid/cheer/redemption on the active event."""
+
+    def setUp(self):
+        self.event = _event()
+        chat.ensure_announcements(self.event)
+        _connected_primary(self.event)
+
+    @patch('api.chat.send_chat_message')
+    def test_redemption_fires_chat(self, mock_send):
+        mock_send.return_value = MagicMock(ok=True)
+        a = self.event.chat_announcements.get(trigger='redemption')
+        a.enabled = True
+        a.template = '{user} redeemed {reward}'
+        a.save()
+        from api import eventsub
+        eventsub._announce_external_chat(
+            'channel.channel_points_custom_reward_redemption.add',
+            {'user_name': 'Kris', 'reward': {'title': 'Hydrate'}},
+        )
+        self.assertEqual(mock_send.call_args.args[2], 'Kris redeemed Hydrate')
+
+    @patch('api.chat.send_chat_message')
+    def test_unmapped_type_does_nothing(self, mock_send):
+        from api import eventsub
+        eventsub._announce_external_chat('channel.unknown.event', {})
+        mock_send.assert_not_called()
+
+
+class RecurringMessageTests(TestCase):
+    def setUp(self):
+        self.event = _event(currency='£')
+
+    def test_is_due_logic(self):
+        from datetime import timedelta
+        m = models.RecurringChatMessage.objects.create(
+            event=self.event, template='hi', interval_minutes=10, enabled=True,
+        )
+        self.assertTrue(m.is_due)  # never posted
+        m.last_posted_at = timezone.now()
+        self.assertFalse(m.is_due)  # just posted
+        m.last_posted_at = timezone.now() - timedelta(minutes=11)
+        self.assertTrue(m.is_due)  # past the interval
+        m.enabled = False
+        self.assertFalse(m.is_due)  # disabled never due
+
+    def test_recurring_context_fields(self):
+        ctx = chat.recurring_context(self.event)
+        self.assertEqual(set(ctx), {'donate_url', 'total', 'charity', 'channel'})
+        self.assertEqual(ctx['total'], '£0.00')
+
+    def test_donate_url_prefers_primary_page(self):
+        models.DonationPage.objects.create(
+            event=self.event, platform='justgiving',
+            url='https://justgiving.com/x', is_primary=True,
+        )
+        self.assertEqual(chat.event_donate_url(self.event), 'https://justgiving.com/x')
+
+    def test_donate_url_falls_back_to_twitch_charity(self):
+        conn = models.TwitchChannelConnection.objects.create(login='msec', access_token='t')
+        models.EventTwitchChannel.objects.create(
+            event=self.event, login='msec', track_charity=True, connection=conn,
+        )
+        self.assertEqual(
+            chat.event_donate_url(self.event), 'https://www.twitch.tv/charity/msec',
+        )
+
+    @patch('api.chat.send_chat_message')
+    def test_post_recurring_renders_and_sends(self, mock_send):
+        mock_send.return_value = MagicMock(ok=True)
+        _connected_primary(self.event)
+        m = models.RecurringChatMessage.objects.create(
+            event=self.event, template='Donate: {donate_url}', enabled=True,
+        )
+        models.DonationPage.objects.create(
+            event=self.event, platform='tiltify', url='https://tiltify.com/z',
+            is_primary=True,
+        )
+        self.assertTrue(chat.post_recurring(self.event, m))
+        self.assertEqual(mock_send.call_args.args[2], 'Donate: https://tiltify.com/z')
+
+
 class EnsureAnnouncementsTests(TestCase):
     def test_seeds_one_row_per_trigger_idempotently(self):
         event = _event()

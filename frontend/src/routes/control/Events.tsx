@@ -9,6 +9,7 @@ import type {
   EventCharityLink,
   EventModel,
   EventTwitchChannel,
+  RecurringChatMessage,
 } from '@/lib/obsApi';
 import { api } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/env';
@@ -174,6 +175,7 @@ export function EventsControl() {
                   <DonationPagesEditor event={e} />
                   <EventCharitiesEditor event={e} />
                   <ChatAnnouncementsEditor event={e} />
+                  <RecurringMessagesEditor event={e} />
                 </td>
               </tr>
             ) : (
@@ -1763,7 +1765,16 @@ function ConnectChannelModal({
 // When connected, the event's primary channel posts the rendered message to
 // its own chat.
 
-const WIRED_CHAT_TRIGGERS = ['donation', 'milestone', 'game_change'];
+const WIRED_CHAT_TRIGGERS = [
+  'donation',
+  'milestone',
+  'game_change',
+  'sub',
+  'follow',
+  'raid',
+  'cheer',
+  'redemption',
+];
 
 function ChatAnnouncementsEditor({ event }: { event: EventModel }) {
   const rows = event.chat_announcements
@@ -1878,6 +1889,244 @@ function ChatAnnouncementRow({ row }: { row: ChatAnnouncement }) {
         </button>
       </div>
     </li>
+  );
+}
+
+// ── Recurring chat messages (e.g. periodic donation CTA) ──────────────
+
+function RecurringMessagesEditor({ event }: { event: EventModel }) {
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const rows = [...event.recurring_chat_messages].sort((a, b) => a.order - b.order);
+
+  const remove = async (id: number) => {
+    if (!confirm('Delete this recurring message?')) return;
+    try {
+      await obsApi.deleteRecurringChatMessage(id);
+      notifyEventChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  const toggle = async (row: RecurringChatMessage, next: boolean) => {
+    try {
+      await obsApi.updateRecurringChatMessage(row.id, { enabled: next });
+      notifyEventChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  return (
+    <div
+      className="mt-3 p-3"
+      style={{
+        background: 'rgba(0,0,0,0.25)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 8,
+      }}
+    >
+      <header className="d-flex justify-content-between align-items-center mb-2">
+        <strong>Recurring chat messages</strong>
+        {!adding && editingId === null && (
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            onClick={() => setAdding(true)}
+          >
+            + Add
+          </button>
+        )}
+      </header>
+      <p className="small text-white-50">
+        Posted to the primary channel’s chat on a timer (needs the{' '}
+        <code>post_chat_reminders</code> cron). Placeholders:{' '}
+        {'{donate_url} {total} {charity} {channel}'}.
+      </p>
+
+      {err && <div className="text-danger small mb-2">{err}</div>}
+
+      {adding && (
+        <RecurringMessageForm
+          eventId={event.id}
+          onCancel={() => setAdding(false)}
+          onSaved={() => setAdding(false)}
+        />
+      )}
+
+      {rows.length === 0 && !adding && (
+        <p className="text-white-50 small m-0">None yet.</p>
+      )}
+
+      <ul className="list-unstyled m-0">
+        {rows.map((r) =>
+          editingId === r.id ? (
+            <li key={r.id} className="mb-2">
+              <RecurringMessageForm
+                eventId={event.id}
+                row={r}
+                onCancel={() => setEditingId(null)}
+                onSaved={() => setEditingId(null)}
+              />
+            </li>
+          ) : (
+            <li
+              key={r.id}
+              className="py-2"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <div className="d-flex align-items-center gap-2 flex-wrap">
+                <div className="form-check form-switch m-0">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id={`rcm-${r.id}`}
+                    checked={r.enabled}
+                    onChange={(e) => toggle(r, e.target.checked)}
+                  />
+                  <label className="form-check-label small" htmlFor={`rcm-${r.id}`}>
+                    <strong>{r.label || '(unnamed)'}</strong>
+                  </label>
+                </div>
+                <span className="badge bg-secondary">every {r.interval_minutes}m</span>
+                {r.only_when_live && (
+                  <span className="badge bg-info text-dark">when live</span>
+                )}
+                <div className="ms-auto control-btn-row">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light"
+                    onClick={() => setEditingId(r.id)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => remove(r.id)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="small text-white-50 text-truncate mt-1">{r.template}</div>
+            </li>
+          ),
+        )}
+      </ul>
+    </div>
+  );
+}
+
+function RecurringMessageForm({
+  eventId,
+  row,
+  onCancel,
+  onSaved,
+}: {
+  eventId: number;
+  row?: RecurringChatMessage;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const isEdit = row !== undefined;
+  const [label, setLabel] = useState(row?.label ?? '');
+  const [template, setTemplate] = useState(
+    row?.template ?? '💜 Donate here: {donate_url}',
+  );
+  const [interval, setInterval] = useState(row?.interval_minutes ?? 15);
+  const [onlyLive, setOnlyLive] = useState(row?.only_when_live ?? true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!template.trim()) return;
+    setBusy(true);
+    setErr(null);
+    const body = {
+      label: label.trim(),
+      template: template.trim(),
+      interval_minutes: Math.max(1, interval),
+      only_when_live: onlyLive,
+    };
+    try {
+      if (isEdit) {
+        await obsApi.updateRecurringChatMessage(row.id, body);
+      } else {
+        await obsApi.createRecurringChatMessage({ event: eventId, ...body, enabled: false });
+      }
+      notifyEventChanged();
+      onSaved();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mt-2 p-2"
+      style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}
+    >
+      <div className="d-flex gap-2 flex-wrap align-items-end">
+        <div style={{ minWidth: 160 }}>
+          <label className="d-block small text-white-50">Label</label>
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="form-control form-control-sm"
+            placeholder="Donation CTA"
+          />
+        </div>
+        <div style={{ width: 130 }}>
+          <label className="d-block small text-white-50">Every (min)</label>
+          <input
+            type="number"
+            min={1}
+            value={interval}
+            onChange={(e) => setInterval(Number(e.target.value))}
+            className="form-control form-control-sm"
+          />
+        </div>
+        <div className="form-check mb-1">
+          <input
+            id={`rcm-live-${row?.id ?? 'new'}`}
+            type="checkbox"
+            className="form-check-input"
+            checked={onlyLive}
+            onChange={(e) => setOnlyLive(e.target.checked)}
+          />
+          <label
+            htmlFor={`rcm-live-${row?.id ?? 'new'}`}
+            className="form-check-label small"
+          >
+            Only when live
+          </label>
+        </div>
+      </div>
+      <label className="d-block small text-white-50 mt-2">Message</label>
+      <textarea
+        className="form-control form-control-sm"
+        rows={2}
+        value={template}
+        onChange={(e) => setTemplate(e.target.value)}
+        placeholder="💜 Donate here: {donate_url}"
+      />
+      <div className="d-flex gap-2 mt-2">
+        <button type="submit" className="btn btn-bloodmoon btn-sm" disabled={busy}>
+          {busy ? 'Saving…' : isEdit ? 'Update' : 'Add'}
+        </button>
+        <button type="button" className="btn btn-outline-light btn-sm" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+      {err && <div className="text-danger small mt-2">{err}</div>}
+    </form>
   );
 }
 

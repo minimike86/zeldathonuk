@@ -177,7 +177,49 @@ def eventsub_webhook(request: Request) -> Response:
         payload=payload,
         occurred_at=occurred_at,
     )
+    # Best-effort Twitch chat announcement for the configured trigger
+    # (sub/follow/raid/cheer/redemption) on the active event.
+    _announce_external_chat(sub_type, event)
     return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
+
+
+# Maps a Twitch subscription.type to a (chat trigger, context-builder) pair so
+# the configured chat announcement fires from the EventSub notification path.
+_EXTERNAL_CHAT = {
+    'channel.subscribe': ('sub', lambda e: {
+        'user': e.get('user_name'), 'tier': e.get('tier'),
+    }),
+    'channel.subscription.message': ('sub', lambda e: {
+        'user': e.get('user_name'), 'tier': e.get('tier'),
+    }),
+    'channel.subscription.gift': ('sub', lambda e: {
+        'user': e.get('user_name'), 'tier': e.get('tier'),
+    }),
+    'channel.follow': ('follow', lambda e: {'user': e.get('user_name')}),
+    'channel.raid': ('raid', lambda e: {
+        'user': e.get('from_broadcaster_user_name'), 'viewers': e.get('viewers'),
+    }),
+    'channel.cheer': ('cheer', lambda e: {
+        'user': e.get('user_name'), 'bits': e.get('bits'),
+    }),
+    'channel.channel_points_custom_reward_redemption.add': ('redemption', lambda e: {
+        'user': e.get('user_name'), 'reward': (e.get('reward') or {}).get('title'),
+    }),
+}
+
+
+def _announce_external_chat(sub_type: str, event: dict) -> None:
+    """Fire the configured chat announcement for an EventSub event, if any.
+    Best-effort — chat.announce never raises."""
+    mapping = _EXTERNAL_CHAT.get(sub_type)
+    if not mapping:
+        return
+    trigger, build_ctx = mapping
+    from . import chat
+    from .webhooks import _active_event
+    active = _active_event()
+    if active:
+        chat.announce(active, trigger, build_ctx(event))
 
 
 def _charity_currency() -> str:
@@ -309,6 +351,7 @@ def _normalise_kind(twitch_type: str) -> str:
         'channel.subscription.message': 'twitch-resub',
         'channel.raid': 'twitch-raid',
         'channel.cheer': 'twitch-bits',
+        'channel.channel_points_custom_reward_redemption.add': 'twitch-redemption',
     }.get(twitch_type, f'twitch:{twitch_type}')
 
 
