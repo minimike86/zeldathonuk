@@ -116,7 +116,7 @@ class Command(BaseCommand):
         # Imported lazily so the command still runs (Tiltify/JustGiving) even
         # if the Twitch helpers fail to import for any reason.
         from api import twitch
-        from api.eventsub import _charity_amount, _upsert_charity_campaign
+        from api.eventsub import _charity_amount, _charity_currency, _upsert_charity_campaign
 
         # Poll the primary broadcaster plus every active extra channel. Each
         # needs its OWN token (Twitch charity endpoints are per-broadcaster).
@@ -140,12 +140,13 @@ class Command(BaseCommand):
             donations = twitch.fetch_charity_donations(
                 str(campaign.get('id') or ''), tok=tok, broadcaster_id=bid,
             )
+            # Twitch's currency field is unreliable ('USD'); use the event's.
+            currency = _charity_currency()
             count = 0
             for d in donations:
                 amount = _charity_amount(d.get('amount'))
                 if amount is None or amount <= 0:
                     continue
-                currency = ((d.get('amount') or {}).get('currency') or 'GBP')[:3].upper()
                 donation = _ingest(
                     platform=models.DonationPlatform.TWITCH_CHARITY,
                     external_id=str(d.get('id') or ''),

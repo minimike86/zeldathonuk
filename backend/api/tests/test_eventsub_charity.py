@@ -86,6 +86,14 @@ class CharityEventSubTests(TestCase):
         self.assertEqual(donation.event_id, self.event.id)
         self.assertEqual(donation.source_channel, 'zeldathonuk')
 
+    def test_donate_uses_event_currency_not_twitch(self):
+        # Twitch's charity API mislabels currency as USD; we record the event's.
+        payload = self._donate_payload(donation_id='don-usd')
+        payload['event']['amount']['currency'] = 'USD'
+        self._post(payload)
+        donation = models.Donation.objects.get(external_id='don-usd')
+        self.assertEqual(donation.currency, 'GBP')  # event default £ → GBP, not USD
+
     def test_donate_tags_source_channel(self):
         # A second channel's donation merges into the same event but is tagged.
         payload = self._donate_payload(donation_id='don-msec')

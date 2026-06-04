@@ -180,6 +180,15 @@ class Event(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    @property
+    def currency_code(self) -> str:
+        """ISO 4217 code for this event's currency, mapped from the display
+        symbol. Used to denominate Twitch Charity donations, since Twitch's
+        Helix charity API reports the wrong currency (always 'USD')."""
+        return {
+            '£': 'GBP', '$': 'USD', '€': 'EUR', '¥': 'JPY',
+        }.get((self.currency_symbol or '£').strip(), 'GBP')
+
 
 class ScheduleEntry(models.Model):
     """One slot in an event's schedule.

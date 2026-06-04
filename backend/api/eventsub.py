@@ -180,6 +180,17 @@ def eventsub_webhook(request: Request) -> Response:
     return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
 
 
+def _charity_currency() -> str:
+    """The currency Twitch Charity donations should be recorded in. Twitch's
+    Helix/EventSub charity payloads report the wrong code (observed: always
+    'USD') regardless of the charity's real currency, so we use the active
+    event's currency instead — a Zeldathon's charity campaign is denominated in
+    the event currency. Falls back to GBP when no event is active."""
+    from .webhooks import _active_event
+    ev = _active_event()
+    return ev.currency_code if ev else 'GBP'
+
+
 def _charity_amount(amount_obj) -> Decimal | None:
     """Convert a Twitch money object — ``{value, decimal_places, currency}`` in
     minor units (value=1234, decimal_places=2 → 12.34) — to a 2dp Decimal.
@@ -206,7 +217,8 @@ def _ingest_charity_donation(event: dict, occurred_at) -> bool:
     amount = _charity_amount(event.get('amount'))
     if amount is None or amount <= 0:
         return False
-    currency = ((event.get('amount') or {}).get('currency') or 'GBP')[:3].upper()
+    # Twitch's currency field is unreliable (always 'USD') — use the event's.
+    currency = _charity_currency()
     donor = (event.get('user_name') or '').strip() or 'Anonymous'
     # Which channel raised it — charity events name the broadcaster. (Charity
     # events use broadcaster_login; tolerate the broadcaster_user_login spelling
@@ -263,8 +275,6 @@ def _upsert_charity_campaign(event: dict, sub_type: str, occurred_at) -> None:
         return
     current = _charity_amount(event.get('current_amount'))
     target = _charity_amount(event.get('target_amount'))
-    money = event.get('current_amount') or event.get('target_amount') or {}
-    currency = (money.get('currency') if isinstance(money, dict) else None) or 'GBP'
     stopping = sub_type == 'channel.charity_campaign.stop'
     defaults = {
         'broadcaster_id': str(
@@ -274,7 +284,8 @@ def _upsert_charity_campaign(event: dict, sub_type: str, occurred_at) -> None:
         'charity_logo_url': event.get('charity_logo') or '',
         'charity_website': event.get('charity_website') or '',
         'charity_description': event.get('charity_description') or '',
-        'currency': currency[:3].upper(),
+        # Twitch's currency field is unreliable ('USD'); use the event's.
+        'currency': _charity_currency(),
         'is_active': not stopping,
     }
     if current is not None:
