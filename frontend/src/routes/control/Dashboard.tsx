@@ -28,6 +28,7 @@ const sections = [
   // { to: '/control/brb', label: 'BRB' },            // deprecated BRB isnt really needed with schedule updates
   { to: '/control/timer', label: 'Timer' },           // A gameplay split timer tracking play time and collection of objectives
   { to: '/control/predictions', label: 'Predictions' }, // Twitch predictions on gameplay outcomes
+  { to: '/control/shoutouts', label: 'Shoutouts' },   // Cooldown-managed donor/raid shoutout queue
   // OBS Screens
   { to: '/control/audio', label: 'Music' },
   { to: '/control/layouts', label: 'Layouts' },

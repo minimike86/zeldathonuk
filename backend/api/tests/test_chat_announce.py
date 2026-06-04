@@ -85,6 +85,23 @@ class AnnounceTests(TestCase):
         sent_message = mock_send.call_args.args[2]
         self.assertEqual(sent_message, 'Thanks Kris!')
 
+    @patch('api.twitch.send_chat_announcement')
+    @patch('api.chat.send_chat_message')
+    def test_announcement_mode_uses_announce_endpoint(self, mock_msg, mock_ann):
+        mock_ann.return_value = MagicMock(ok=True)
+        _connected_primary(self.event)
+        a = self.event.chat_announcements.get(trigger='milestone')
+        a.enabled = True
+        a.template = 'Milestone!'
+        a.as_announcement = True
+        a.announcement_color = 'green'
+        a.save()
+        ok = chat.announce(self.event, 'milestone', {})
+        self.assertTrue(ok)
+        mock_msg.assert_not_called()
+        self.assertEqual(mock_ann.call_args.args[2], 'Milestone!')
+        self.assertEqual(mock_ann.call_args.args[3], 'green')
+
     @patch('api.chat.send_chat_message', side_effect=RuntimeError('boom'))
     def test_send_failure_is_swallowed(self, _mock_send):
         _connected_primary(self.event)

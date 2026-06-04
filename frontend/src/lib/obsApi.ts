@@ -305,6 +305,10 @@ export interface ChatAnnouncement {
   trigger_display: string;
   enabled: boolean;
   template: string;
+  /** Post as a highlighted Twitch /announce instead of a normal message. */
+  as_announcement: boolean;
+  /** Highlight colour when posted as an announcement. */
+  announcement_color: string;
   /** Placeholder fields this trigger's template supports (editor hints). */
   placeholders: string[];
 }
@@ -329,6 +333,34 @@ export interface TwitchPrediction {
   window_seconds: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ShoutoutConfig {
+  id: number;
+  event: number;
+  enabled: boolean;
+  shout_donations: boolean;
+  shout_raids: boolean;
+  min_donation_amount: string;
+  only_when_live: boolean;
+  global_cooldown_seconds: number;
+  target_cooldown_seconds: number;
+  max_age_minutes: number;
+}
+
+export interface ShoutoutRequest {
+  id: number;
+  event: number;
+  target_login: string;
+  target_display: string;
+  reason: string;
+  reason_display: string;
+  note: string;
+  status: string;
+  status_display: string;
+  requested_at: string;
+  sent_at: string | null;
+  detail: string;
 }
 
 export interface RecurringChatMessage {
@@ -2101,7 +2133,12 @@ export const obsApi = {
   // ── Twitch chat announcements (per-event, per-trigger) ────────────
   updateChatAnnouncement: (
     id: number,
-    patch: Partial<{ enabled: boolean; template: string }>,
+    patch: Partial<{
+      enabled: boolean;
+      template: string;
+      as_announcement: boolean;
+      announcement_color: string;
+    }>,
   ) =>
     api<ChatAnnouncement>(`/api/chat-announcements/${id}/`, {
       method: 'PATCH',
@@ -2137,6 +2174,23 @@ export const obsApi = {
     }),
   deleteRecurringChatMessage: (id: number) =>
     api<void>(`/api/recurring-chat-messages/${id}/`, { method: 'DELETE' }),
+
+  // ── Twitch shoutouts (cooldown-managed queue) ─────────────────────
+  shoutoutConfig: () => api<ShoutoutConfig>('/api/shoutout-config/'),
+  updateShoutoutConfig: (
+    patch: Partial<Omit<ShoutoutConfig, 'id' | 'event'>>,
+  ) =>
+    api<ShoutoutConfig>('/api/shoutout-config/', { method: 'PATCH', body: patch }),
+  shoutoutRequests: (eventId?: number) =>
+    api<ShoutoutRequest[]>(
+      `/api/shoutout-requests/${eventId ? `?event=${eventId}` : ''}`,
+    ),
+  createShoutout: (body: { target_login: string; note?: string }) =>
+    api<ShoutoutRequest>('/api/shoutout-requests/', { method: 'POST', body }),
+  cancelShoutout: (id: number) =>
+    api<ShoutoutRequest>(`/api/shoutout-requests/${id}/cancel/`, {
+      method: 'POST',
+    }),
 
   // ── Twitch predictions ────────────────────────────────────────────
   twitchPredictions: (eventId?: number) =>

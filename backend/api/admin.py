@@ -472,6 +472,22 @@ class ChatAnnouncementAdmin(ModelAdmin):
     search_fields = ['event__name', 'template']
 
 
+@admin.register(models.ShoutoutConfig)
+class ShoutoutConfigAdmin(ModelAdmin):
+    list_display = ['event', 'enabled', 'shout_donations', 'shout_raids',
+                    'min_donation_amount', 'only_when_live']
+    list_filter = ['enabled']
+
+
+@admin.register(models.ShoutoutRequest)
+class ShoutoutRequestAdmin(ModelAdmin):
+    list_display = ['target_login', 'event', 'reason', 'status',
+                    'requested_at', 'sent_at']
+    list_filter = ['status', 'reason']
+    search_fields = ['target_login', 'event__name']
+    readonly_fields = ['requested_at', 'sent_at', 'detail']
+
+
 @admin.register(models.TwitchPrediction)
 class TwitchPredictionAdmin(ModelAdmin):
     """Twitch Predictions opened from the control panel (read-only mirror)."""

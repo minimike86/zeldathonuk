@@ -614,6 +614,38 @@ def event_primary_connection(event):
     return conn
 
 
+# ── Chat: announcements + shoutouts ─────────────────────────────────────────
+
+
+def send_chat_announcement(conn, broadcaster_id: str, message: str,
+                           color: str = 'primary') -> requests.Response:
+    """Post a highlighted /announce to the channel's chat (needs
+    moderator:manage:announcements). ``color`` ∈ blue/green/orange/purple/
+    primary. broadcaster_id == moderator_id (the channel announces in its own
+    chat). Returns the Helix response (204 on success)."""
+    return _request_as(
+        conn, 'POST', f'{HELIX}/chat/announcements', timeout=5,
+        params={'broadcaster_id': broadcaster_id, 'moderator_id': broadcaster_id},
+        json={'message': message[:500], 'color': color or 'primary'},
+    )
+
+
+def send_shoutout(conn, from_broadcaster_id: str, to_broadcaster_id: str,
+                  moderator_id: str) -> requests.Response:
+    """Send a Twitch /shoutout from one channel to another (needs
+    moderator:manage:shoutouts). Twitch enforces a 2-min global + 60-min
+    per-target cooldown and requires the from-channel to be live. Returns the
+    Helix response (204 on success)."""
+    return _request_as(
+        conn, 'POST', f'{HELIX}/chat/shoutouts', timeout=5,
+        params={
+            'from_broadcaster_id': from_broadcaster_id,
+            'to_broadcaster_id': to_broadcaster_id,
+            'moderator_id': moderator_id,
+        },
+    )
+
+
 # ── Predictions (gameplay bets — operator-driven) ───────────────────────────
 # Twitch limits: title ≤45 chars, 2-10 outcomes (title ≤25), window 30-1800s.
 

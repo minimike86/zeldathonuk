@@ -1816,15 +1816,29 @@ function ChatAnnouncementsEditor({ event }: { event: EventModel }) {
   );
 }
 
+const ANNOUNCE_COLORS = ['primary', 'blue', 'green', 'orange', 'purple'];
+
 function ChatAnnouncementRow({ row }: { row: ChatAnnouncement }) {
   const [enabled, setEnabled] = useState(row.enabled);
   const [template, setTemplate] = useState(row.template);
+  const [asAnnouncement, setAsAnnouncement] = useState(row.as_announcement);
+  const [color, setColor] = useState(row.announcement_color);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const dirty = template !== row.template;
+  const dirty =
+    template !== row.template ||
+    asAnnouncement !== row.as_announcement ||
+    color !== row.announcement_color;
 
-  const persist = async (patch: Partial<{ enabled: boolean; template: string }>) => {
+  const persist = async (
+    patch: Partial<{
+      enabled: boolean;
+      template: string;
+      as_announcement: boolean;
+      announcement_color: string;
+    }>,
+  ) => {
     setBusy(true);
     setErr(null);
     try {
@@ -1875,6 +1889,34 @@ function ChatAnnouncementRow({ row }: { row: ChatAnnouncement }) {
         onChange={(e) => setTemplate(e.target.value)}
         placeholder="Message posted to chat…"
       />
+      <div className="d-flex align-items-center gap-3 mt-1 flex-wrap">
+        <div className="form-check m-0">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id={`chat-ann-${row.id}`}
+            checked={asAnnouncement}
+            onChange={(e) => setAsAnnouncement(e.target.checked)}
+          />
+          <label className="form-check-label small" htmlFor={`chat-ann-${row.id}`}>
+            Highlight (/announce)
+          </label>
+        </div>
+        {asAnnouncement && (
+          <select
+            className="form-select form-select-sm"
+            style={{ width: 130 }}
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+          >
+            {ANNOUNCE_COLORS.map((c) => (
+              <option key={c} value={c}>
+                {c === 'primary' ? 'Channel accent' : c}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
       <div className="d-flex justify-content-between align-items-center mt-1 gap-2 flex-wrap">
         <span className="small text-white-50">
           Placeholders: {row.placeholders.map((p) => `{${p}}`).join(' ') || '—'}
@@ -1882,7 +1924,13 @@ function ChatAnnouncementRow({ row }: { row: ChatAnnouncement }) {
         <button
           type="button"
           className="btn btn-sm btn-bloodmoon"
-          onClick={() => persist({ template }).catch(() => {})}
+          onClick={() =>
+            persist({
+              template,
+              as_announcement: asAnnouncement,
+              announcement_color: color,
+            }).catch(() => {})
+          }
           disabled={busy || !dirty}
         >
           {busy ? 'Saving…' : 'Save'}

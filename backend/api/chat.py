@@ -79,9 +79,11 @@ def send_chat_message(connection, broadcaster_id: str, message: str):
     )
 
 
-def _send_to_event(event, message: str) -> bool:
-    """Post ``message`` to the event's primary connected channel's chat. Returns
-    True on a successful send, False when there's no usable connection."""
+def _send_to_event(event, message: str, *, announcement: bool = False,
+                   color: str = 'primary') -> bool:
+    """Post ``message`` to the event's primary connected channel's chat. When
+    ``announcement`` is set, post a highlighted /announce in ``color`` instead
+    of a normal message. Returns True on a successful send."""
     from . import twitch
 
     conn = twitch.event_primary_connection(event)
@@ -90,7 +92,10 @@ def _send_to_event(event, message: str) -> bool:
     bid = twitch.ensure_connection_broadcaster_id(conn)
     if not bid:
         return False
-    resp = send_chat_message(conn, bid, message)
+    if announcement:
+        resp = twitch.send_chat_announcement(conn, bid, message, color)
+    else:
+        resp = send_chat_message(conn, bid, message)
     return bool(getattr(resp, 'ok', False))
 
 
@@ -109,7 +114,11 @@ def announce(event, trigger: str, ctx: dict | None = None) -> bool:
         message = render_template(template, ctx or {}).strip()
         if not message:
             return False
-        return _send_to_event(event, message)
+        return _send_to_event(
+            event, message,
+            announcement=cfg.as_announcement,
+            color=cfg.announcement_color,
+        )
     except Exception:  # noqa: BLE001 — chat must never break the caller
         logger.exception('chat.announce failed for trigger=%s', trigger)
         return False

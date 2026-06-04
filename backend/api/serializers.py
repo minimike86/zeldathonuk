@@ -226,12 +226,40 @@ class ChatAnnouncementSerializer(serializers.ModelSerializer):
         model = models.ChatAnnouncement
         fields = [
             'id', 'event', 'trigger', 'trigger_display', 'enabled', 'template',
-            'placeholders',
+            'as_announcement', 'announcement_color', 'placeholders',
         ]
 
     def get_placeholders(self, obj) -> list:
         from . import chat
         return chat.TEMPLATE_PLACEHOLDERS.get(obj.trigger, [])
+
+
+class ShoutoutConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ShoutoutConfig
+        fields = [
+            'id', 'event', 'enabled', 'shout_donations', 'shout_raids',
+            'min_donation_amount', 'only_when_live', 'global_cooldown_seconds',
+            'target_cooldown_seconds', 'max_age_minutes',
+        ]
+        read_only_fields = ['id', 'event']
+
+
+class ShoutoutRequestSerializer(serializers.ModelSerializer):
+    reason_display = serializers.CharField(source='get_reason_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = models.ShoutoutRequest
+        fields = [
+            'id', 'event', 'target_login', 'target_display', 'reason',
+            'reason_display', 'note', 'status', 'status_display', 'requested_at',
+            'sent_at', 'detail',
+        ]
+        read_only_fields = [
+            'event', 'target_display', 'reason_display', 'status', 'status_display',
+            'requested_at', 'sent_at', 'detail',
+        ]
 
 
 class TwitchPredictionSerializer(serializers.ModelSerializer):

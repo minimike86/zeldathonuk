@@ -1427,6 +1427,65 @@ class ChatAnnouncementViewSet(viewsets.ModelViewSet):
         return qs
 
 
+@api_view(['GET', 'PATCH'])
+def shoutout_config(request: Request) -> Response:
+    """Per-event shoutout settings. Operates on the active event, or ?event=<id>.
+    GET is public; PATCH needs operator (default permission)."""
+    event_id = request.query_params.get('event')
+    if event_id:
+        event = models.Event.objects.filter(pk=event_id).first()
+    else:
+        event = models.Event.objects.filter(is_active=True).first()
+    if not event:
+        return Response({'detail': 'No event.'}, status=status.HTTP_400_BAD_REQUEST)
+    from . import shoutouts
+    cfg = shoutouts.get_config(event)
+    if request.method == 'PATCH':
+        ser = serializers.ShoutoutConfigSerializer(cfg, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+    return Response(serializers.ShoutoutConfigSerializer(cfg).data)
+
+
+class ShoutoutRequestViewSet(viewsets.ModelViewSet):
+    """The shoutout queue. List (filtered by event, default active), manually
+    enqueue (POST {target_login, note}), and cancel a pending one."""
+    queryset = models.ShoutoutRequest.objects.all()
+    serializer_class = serializers.ShoutoutRequestSerializer
+    http_method_names = ['get', 'post']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            return qs.filter(event_id=event_id)
+        active = models.Event.objects.filter(is_active=True).first()
+        return qs.filter(event=active) if active else qs.none()
+
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        active = models.Event.objects.filter(is_active=True).first()
+        if not active:
+            return Response({'detail': 'No active event.'}, status=status.HTTP_400_BAD_REQUEST)
+        login = (request.data.get('target_login') or request.data.get('login') or '').strip().lower()
+        if not login:
+            return Response({'detail': 'target_login required.'}, status=status.HTTP_400_BAD_REQUEST)
+        req = models.ShoutoutRequest.objects.create(
+            event=active, target_login=login,
+            reason=models.ShoutoutReason.MANUAL,
+            note=(request.data.get('note') or '').strip(),
+        )
+        return Response(self.get_serializer(req).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request: Request, pk=None) -> Response:
+        req = self.get_object()
+        if req.status == models.ShoutoutStatus.PENDING:
+            req.status = models.ShoutoutStatus.CANCELED
+            req.save()
+        return Response(self.get_serializer(req).data)
+
+
 class RecurringChatMessageViewSet(viewsets.ModelViewSet):
     """Per-event recurring chat messages (e.g. a periodic donation CTA). Posted
     by `manage.py post_chat_reminders` on a cron tick."""

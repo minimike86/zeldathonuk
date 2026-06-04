@@ -36,6 +36,7 @@ router.register('event-twitch-channels', views.EventTwitchChannelViewSet)
 router.register('chat-announcements', views.ChatAnnouncementViewSet)
 router.register('twitch-predictions', views.TwitchPredictionViewSet)
 router.register('recurring-chat-messages', views.RecurringChatMessageViewSet)
+router.register('shoutout-requests', views.ShoutoutRequestViewSet)
 router.register(
     'chest-announcer/sound-triggers',
     views.ChestAnnouncerSoundTriggerViewSet,
@@ -93,6 +94,8 @@ urlpatterns = [
     # returns a user code + Twitch URL; poll → completes + saves the connection.
     path('twitch/connect/start/', views.twitch_connect_start, name='twitch-connect-start'),
     path('twitch/connect/poll/', views.twitch_connect_poll, name='twitch-connect-poll'),
+    # Per-event shoutout settings (GET public, PATCH operator).
+    path('shoutout-config/', views.shoutout_config, name='shoutout-config'),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to
     # ExternalEvent; omnibar polls for these on a 1.5s tick.
     path('twitch/eventsub/', eventsub.eventsub_webhook, name='twitch-eventsub'),

@@ -1369,6 +1369,14 @@ class EventTwitchChannel(models.Model):
             ).exclude(pk=self.pk).update(is_primary=False)
 
 
+class AnnouncementColor(models.TextChoices):
+    PRIMARY = 'primary', 'Channel accent'
+    BLUE = 'blue', 'Blue'
+    GREEN = 'green', 'Green'
+    ORANGE = 'orange', 'Orange'
+    PURPLE = 'purple', 'Purple'
+
+
 class ChatTrigger(models.TextChoices):
     DONATION = 'donation', 'Donation received'
     MILESTONE = 'milestone', 'Milestone reached'
@@ -1398,6 +1406,16 @@ class ChatAnnouncement(models.Model):
         blank=True,
         help_text='Message posted to chat. Supports {placeholder} fields — see '
                   'the per-trigger hints in /control.',
+    )
+    as_announcement = models.BooleanField(
+        default=False,
+        help_text='Post as a highlighted Twitch /announce (needs '
+                  'moderator:manage:announcements) instead of a normal message.',
+    )
+    announcement_color = models.CharField(
+        max_length=10, choices=AnnouncementColor.choices,
+        default=AnnouncementColor.PRIMARY,
+        help_text='Highlight colour when posted as an announcement.',
     )
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1455,6 +1473,86 @@ class RecurringChatMessage(models.Model):
         return timezone.now() - self.last_posted_at >= timedelta(
             minutes=self.interval_minutes,
         )
+
+
+class ShoutoutConfig(models.Model):
+    """Per-event shoutout settings. Donors (Twitch Charity, who carry a Twitch
+    login) and raiders can be auto-queued for a ``/shoutout``; the queue is
+    drained by ``manage.py process_shoutouts`` respecting Twitch's cooldowns
+    (2-min global, 60-min per target) and the from-channel-must-be-live rule."""
+
+    event = models.OneToOneField(
+        Event, on_delete=models.CASCADE, related_name='shoutout_config',
+    )
+    enabled = models.BooleanField(default=False)
+    shout_donations = models.BooleanField(default=True)
+    shout_raids = models.BooleanField(default=True)
+    min_donation_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text='Only shout out donors who gave at least this much.',
+    )
+    only_when_live = models.BooleanField(default=True)
+    global_cooldown_seconds = models.PositiveIntegerField(
+        default=120, help_text='Min seconds between any two shoutouts (Twitch ≥120).',
+    )
+    target_cooldown_seconds = models.PositiveIntegerField(
+        default=3600, help_text='Min seconds before shouting the same channel again.',
+    )
+    max_age_minutes = models.PositiveIntegerField(
+        default=30, help_text='Drop queued shoutouts older than this (stale).',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f'Shoutout config for {self.event} ({"on" if self.enabled else "off"})'
+
+
+class ShoutoutReason(models.TextChoices):
+    DONATION = 'donation', 'Donation'
+    RAID = 'raid', 'Raid'
+    MANUAL = 'manual', 'Manual'
+
+
+class ShoutoutStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    SENT = 'sent', 'Sent'
+    SKIPPED = 'skipped', 'Skipped'
+    CANCELED = 'canceled', 'Canceled'
+    FAILED = 'failed', 'Failed'
+
+
+class ShoutoutRequest(models.Model):
+    """One queued ``/shoutout``. Drained one-at-a-time by the cron, oldest first,
+    skipping targets on per-target cooldown — so a burst of donations drip-feeds
+    out within Twitch's rate limits instead of being dropped."""
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='shoutout_requests',
+    )
+    target_login = models.CharField(max_length=50)
+    target_display = models.CharField(max_length=100, blank=True)
+    reason = models.CharField(
+        max_length=12, choices=ShoutoutReason.choices, default=ShoutoutReason.MANUAL,
+    )
+    note = models.CharField(max_length=200, blank=True)
+    status = models.CharField(
+        max_length=12, choices=ShoutoutStatus.choices,
+        default=ShoutoutStatus.PENDING, db_index=True,
+    )
+    requested_at = models.DateTimeField(default=timezone.now, db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    detail = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ['-requested_at']
+        indexes = [models.Index(fields=['event', 'status'])]
+
+    def __str__(self) -> str:
+        return f'shoutout {self.target_login} ({self.status})'
+
+    def save(self, *args, **kwargs):
+        self.target_login = (self.target_login or '').strip().lower()
+        super().save(*args, **kwargs)
 
 
 class TwitchPrediction(models.Model):

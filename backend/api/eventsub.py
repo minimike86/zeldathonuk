@@ -180,6 +180,18 @@ def eventsub_webhook(request: Request) -> Response:
     # Best-effort Twitch chat announcement for the configured trigger
     # (sub/follow/raid/cheer/redemption) on the active event.
     _announce_external_chat(sub_type, event)
+    # Queue a shoutout for raiders (cooldown-managed; see api/shoutouts.py).
+    if sub_type == 'channel.raid':
+        from . import shoutouts
+        from .webhooks import _active_event
+        active = _active_event()
+        raider = (event.get('from_broadcaster_user_login') or '').strip().lower()
+        if active and raider:
+            shoutouts.enqueue(
+                active, raider, reason='raid',
+                display=event.get('from_broadcaster_user_name') or '',
+                note=f"raided with {event.get('viewers', '')}",
+            )
     return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
 
 
@@ -305,6 +317,15 @@ def _ingest_charity_donation(event: dict, occurred_at) -> bool:
                 'source_channel': source_channel,
             },
         )
+        # Queue a shoutout for the donor's Twitch channel (if they're a Twitch
+        # user). Cooldown-managed + best-effort; see api/shoutouts.py.
+        donor_login = (event.get('user_login') or '').strip().lower()
+        if donor_login:
+            from . import shoutouts
+            shoutouts.enqueue(
+                donation.event, donor_login, reason='donation', amount=amount,
+                display=donor, note=f'donated {currency}{amount}',
+            )
     return True
 
 
