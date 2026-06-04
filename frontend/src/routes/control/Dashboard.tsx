@@ -29,12 +29,14 @@ const sections = [
   { to: '/control/timer', label: 'Timer' },           // A gameplay split timer tracking play time and collection of objectives
   { to: '/control/predictions', label: 'Predictions' }, // Twitch predictions on gameplay outcomes
   { to: '/control/shoutouts', label: 'Shoutouts' },   // Cooldown-managed donor/raid shoutout queue
+  { to: '/control/rewards', label: 'Channel rewards' }, // Channel-point reward → action mappings
   // OBS Screens
   { to: '/control/audio', label: 'Music' },
   { to: '/control/layouts', label: 'Layouts' },
   { to: '/control/omnibar', label: 'Omnibar' },
   { to: '/control/chest-announcer', label: 'Chest announcer' },
   // Fault triage :)
+  { to: '/control/automation', label: 'Automation' }, // Scheduled jobs + Twitch EventSub
   { to: '/control/logs', label: 'Logs & Queue' },
 ];
 

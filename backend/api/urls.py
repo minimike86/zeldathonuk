@@ -37,6 +37,9 @@ router.register('chat-announcements', views.ChatAnnouncementViewSet)
 router.register('twitch-predictions', views.TwitchPredictionViewSet)
 router.register('recurring-chat-messages', views.RecurringChatMessageViewSet)
 router.register('shoutout-requests', views.ShoutoutRequestViewSet)
+router.register('scheduled-jobs', views.ScheduledJobViewSet)
+router.register('reward-mappings', views.RewardMappingViewSet)
+router.register('reward-actions', views.RewardActionViewSet)
 router.register(
     'chest-announcer/sound-triggers',
     views.ChestAnnouncerSoundTriggerViewSet,
@@ -96,6 +99,12 @@ urlpatterns = [
     path('twitch/connect/poll/', views.twitch_connect_poll, name='twitch-connect-poll'),
     # Per-event shoutout settings (GET public, PATCH operator).
     path('shoutout-config/', views.shoutout_config, name='shoutout-config'),
+    # Twitch EventSub dashboard: list current subs + sync/prune (operator).
+    path('twitch/eventsub/subscriptions/', views.eventsub_subscriptions,
+         name='eventsub-subscriptions'),
+    path('twitch/eventsub/sync/', views.eventsub_sync, name='eventsub-sync'),
+    # Channel's custom channel-point rewards (for the reward-action picker).
+    path('twitch/rewards/', views.twitch_custom_rewards, name='twitch-rewards'),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to
     # ExternalEvent; omnibar polls for these on a 1.5s tick.
     path('twitch/eventsub/', eventsub.eventsub_webhook, name='twitch-eventsub'),

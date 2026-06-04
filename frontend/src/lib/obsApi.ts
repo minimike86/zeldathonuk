@@ -363,6 +363,56 @@ export interface ShoutoutRequest {
   detail: string;
 }
 
+export interface RewardAction {
+  id: number;
+  mapping: number;
+  action_type: string;
+  action_type_display: string;
+  params: Record<string, unknown>;
+  enabled: boolean;
+  order: number;
+}
+
+export interface RewardMapping {
+  id: number;
+  event: number;
+  reward_id: string;
+  reward_title: string;
+  enabled: boolean;
+  order: number;
+  actions: RewardAction[];
+}
+
+export interface CustomReward {
+  id: string;
+  title: string;
+  cost: number;
+}
+
+export interface ScheduledJob {
+  id: number;
+  key: string;
+  label: string;
+  command: string;
+  description: string;
+  enabled: boolean;
+  interval_seconds: number;
+  last_run_at: string | null;
+  last_status: string;
+  last_output: string;
+  is_due: boolean;
+  updated_at: string;
+}
+
+export interface EventSubSubscription {
+  id: string;
+  type: string;
+  version: string;
+  status: string;
+  condition: Record<string, unknown>;
+  callback: string;
+}
+
 export interface RecurringChatMessage {
   id: number;
   event: number;
@@ -2191,6 +2241,60 @@ export const obsApi = {
     api<ShoutoutRequest>(`/api/shoutout-requests/${id}/cancel/`, {
       method: 'POST',
     }),
+
+  // ── Automation: scheduled jobs + EventSub dashboard ───────────────
+  scheduledJobs: () => api<ScheduledJob[]>('/api/scheduled-jobs/'),
+  updateScheduledJob: (
+    id: number,
+    patch: Partial<{ enabled: boolean; interval_seconds: number; label: string }>,
+  ) =>
+    api<ScheduledJob>(`/api/scheduled-jobs/${id}/`, { method: 'PATCH', body: patch }),
+  runScheduledJob: (id: number) =>
+    api<ScheduledJob>(`/api/scheduled-jobs/${id}/run/`, { method: 'POST' }),
+  eventsubSubscriptions: () =>
+    api<{
+      subscriptions: EventSubSubscription[];
+      counts: Record<string, number>;
+    }>('/api/twitch/eventsub/subscriptions/'),
+  eventsubSync: (prune = false) =>
+    api<{ output: string }>('/api/twitch/eventsub/sync/', {
+      method: 'POST',
+      body: { prune },
+    }),
+
+  // ── Channel-point reward → action mappings ────────────────────────
+  rewardMappings: (eventId?: number) =>
+    api<RewardMapping[]>(
+      `/api/reward-mappings/${eventId ? `?event=${eventId}` : ''}`,
+    ),
+  createRewardMapping: (body: {
+    event: number;
+    reward_id?: string;
+    reward_title: string;
+  }) => api<RewardMapping>('/api/reward-mappings/', { method: 'POST', body }),
+  updateRewardMapping: (
+    id: number,
+    patch: Partial<{ reward_id: string; reward_title: string; enabled: boolean }>,
+  ) => api<RewardMapping>(`/api/reward-mappings/${id}/`, { method: 'PATCH', body: patch }),
+  deleteRewardMapping: (id: number) =>
+    api<void>(`/api/reward-mappings/${id}/`, { method: 'DELETE' }),
+  createRewardAction: (body: {
+    mapping: number;
+    action_type: string;
+    params?: Record<string, unknown>;
+    enabled?: boolean;
+  }) => api<RewardAction>('/api/reward-actions/', { method: 'POST', body }),
+  updateRewardAction: (
+    id: number,
+    patch: Partial<{
+      action_type: string;
+      params: Record<string, unknown>;
+      enabled: boolean;
+    }>,
+  ) => api<RewardAction>(`/api/reward-actions/${id}/`, { method: 'PATCH', body: patch }),
+  deleteRewardAction: (id: number) =>
+    api<void>(`/api/reward-actions/${id}/`, { method: 'DELETE' }),
+  twitchCustomRewards: () => api<CustomReward[]>('/api/twitch/rewards/'),
 
   // ── Twitch predictions ────────────────────────────────────────────
   twitchPredictions: (eventId?: number) =>

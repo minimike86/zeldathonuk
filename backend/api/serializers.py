@@ -234,6 +234,48 @@ class ChatAnnouncementSerializer(serializers.ModelSerializer):
         return chat.TEMPLATE_PLACEHOLDERS.get(obj.trigger, [])
 
 
+class RewardActionSerializer(serializers.ModelSerializer):
+    action_type_display = serializers.CharField(
+        source='get_action_type_display', read_only=True,
+    )
+
+    class Meta:
+        model = models.RewardAction
+        fields = [
+            'id', 'mapping', 'action_type', 'action_type_display', 'params',
+            'enabled', 'order',
+        ]
+
+
+class RewardMappingSerializer(serializers.ModelSerializer):
+    """A channel-point reward mapped to one-or-more actions (read nested)."""
+
+    actions = RewardActionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = models.RewardMapping
+        fields = [
+            'id', 'event', 'reward_id', 'reward_title', 'enabled', 'order',
+            'actions',
+        ]
+
+
+class ScheduledJobSerializer(serializers.ModelSerializer):
+    is_due = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = models.ScheduledJob
+        fields = [
+            'id', 'key', 'label', 'command', 'description', 'enabled',
+            'interval_seconds', 'last_run_at', 'last_status', 'last_output',
+            'is_due', 'updated_at',
+        ]
+        read_only_fields = [
+            'key', 'command', 'last_run_at', 'last_status', 'last_output',
+            'is_due', 'updated_at',
+        ]
+
+
 class ShoutoutConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ShoutoutConfig

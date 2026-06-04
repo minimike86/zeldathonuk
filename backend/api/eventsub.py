@@ -192,6 +192,18 @@ def eventsub_webhook(request: Request) -> Response:
                 display=event.get('from_broadcaster_user_name') or '',
                 note=f"raided with {event.get('viewers', '')}",
             )
+    # Run any per-reward actions for a channel-point redemption.
+    if sub_type == 'channel.channel_points_custom_reward_redemption.add':
+        from . import rewards
+        from .webhooks import _active_event
+        active = _active_event()
+        if active:
+            rewards.handle_redemption(
+                active, event.get('reward') or {},
+                user_login=event.get('user_login') or '',
+                user_name=event.get('user_name') or '',
+                user_input=event.get('user_input') or '',
+            )
     return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
 
 

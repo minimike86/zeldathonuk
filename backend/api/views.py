@@ -3,6 +3,7 @@ import hmac
 import random
 import secrets
 from collections import Counter
+from io import StringIO
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import quote
@@ -10,6 +11,7 @@ from urllib.parse import quote
 import requests
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.core.management import call_command
 from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -1425,6 +1427,107 @@ class ChatAnnouncementViewSet(viewsets.ModelViewSet):
         if event_id:
             qs = qs.filter(event_id=event_id)
         return qs
+
+
+class RewardMappingViewSet(viewsets.ModelViewSet):
+    """Channel-point reward → actions mappings (one reward, many actions).
+    Filtered by event (default active)."""
+    queryset = models.RewardMapping.objects.prefetch_related('actions').all()
+    serializer_class = serializers.RewardMappingSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            return qs.filter(event_id=event_id)
+        active = models.Event.objects.filter(is_active=True).first()
+        return qs.filter(event=active) if active else qs.none()
+
+
+class RewardActionViewSet(viewsets.ModelViewSet):
+    """The child actions of a reward mapping."""
+    queryset = models.RewardAction.objects.all()
+    serializer_class = serializers.RewardActionSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        mapping_id = self.request.query_params.get('mapping')
+        if mapping_id:
+            return qs.filter(mapping_id=mapping_id)
+        return qs
+
+
+@api_view(['GET'])
+def twitch_custom_rewards(request: Request) -> Response:
+    """List the active event's primary channel's custom channel-point rewards
+    (id, title, cost) so the operator can pick one to map actions to."""
+    active = models.Event.objects.filter(is_active=True).first()
+    conn = twitch.event_primary_connection(active) if active else None
+    if not conn:
+        return Response([])
+    bid = twitch.ensure_connection_broadcaster_id(conn)
+    if not bid:
+        return Response([])
+    rewards = twitch.fetch_custom_rewards(conn, bid)
+    return Response([
+        {'id': r.get('id'), 'title': r.get('title'), 'cost': r.get('cost')}
+        for r in rewards
+    ])
+
+
+class ScheduledJobViewSet(viewsets.ModelViewSet):
+    """Periodic management commands the operator manages from /control/automation.
+    A single `manage.py run_scheduled_jobs` cron tick runs due enabled jobs;
+    `run` triggers one immediately."""
+    queryset = models.ScheduledJob.objects.all()
+    serializer_class = serializers.ScheduledJobSerializer
+    http_method_names = ['get', 'patch', 'post']
+
+    @action(detail=True, methods=['post'])
+    def run(self, request: Request, pk=None) -> Response:
+        from . import jobs
+        job = jobs.run_job(self.get_object())
+        return Response(self.get_serializer(job).data)
+
+
+@api_view(['GET'])
+def eventsub_subscriptions(request: Request) -> Response:
+    """List the app's Twitch EventSub subscriptions (type + status + callback)
+    for the control-panel dashboard."""
+    try:
+        subs = twitch.list_eventsub_subscriptions()
+    except twitch.TwitchAuthError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    rows = [{
+        'id': s.get('id'),
+        'type': s.get('type'),
+        'version': s.get('version'),
+        'status': s.get('status'),
+        'condition': s.get('condition'),
+        'callback': (s.get('transport') or {}).get('callback'),
+    } for s in subs]
+    rows.sort(key=lambda r: (r['status'] != 'enabled', r['type'] or ''))
+    return Response({
+        'subscriptions': rows,
+        'counts': dict(Counter(s.get('status') for s in subs)),
+    })
+
+
+@api_view(['POST'])
+def eventsub_sync(request: Request) -> Response:
+    """Register/sync the Twitch EventSub subscriptions (operator). Pass
+    {"prune": true} to also drop stale ones. Runs `manage.py twitch_eventsub`
+    and returns its output."""
+    args = ['--prune'] if request.data.get('prune') else []
+    out = StringIO()
+    try:
+        call_command('twitch_eventsub', *args, stdout=out, stderr=out)
+    except Exception as exc:  # noqa: BLE001 — surface the command error to the UI
+        return Response(
+            {'detail': str(exc), 'output': out.getvalue()},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response({'output': out.getvalue()})
 
 
 @api_view(['GET', 'PATCH'])

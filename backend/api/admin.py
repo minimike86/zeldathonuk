@@ -472,6 +472,28 @@ class ChatAnnouncementAdmin(ModelAdmin):
     search_fields = ['event__name', 'template']
 
 
+class RewardActionInline(admin.TabularInline):
+    model = models.RewardAction
+    extra = 0
+
+
+@admin.register(models.RewardMapping)
+class RewardMappingAdmin(ModelAdmin):
+    list_display = ['reward_title', 'event', 'reward_id', 'enabled']
+    list_filter = ['enabled']
+    search_fields = ['reward_title', 'reward_id', 'event__name']
+    inlines = [RewardActionInline]
+
+
+@admin.register(models.ScheduledJob)
+class ScheduledJobAdmin(ModelAdmin):
+    list_display = ['key', 'label', 'enabled', 'interval_seconds',
+                    'last_run_at', 'last_status']
+    list_filter = ['enabled', 'last_status']
+    list_editable = ['enabled']
+    readonly_fields = ['last_run_at', 'last_status', 'last_output', 'updated_at']
+
+
 @admin.register(models.ShoutoutConfig)
 class ShoutoutConfigAdmin(ModelAdmin):
     list_display = ['event', 'enabled', 'shout_donations', 'shout_raids',

@@ -1475,6 +1475,45 @@ class RecurringChatMessage(models.Model):
         )
 
 
+class ScheduledJob(models.Model):
+    """A periodic management command the operator can enable + schedule from the
+    control panel. A single cron tick (``manage.py run_scheduled_jobs``) runs
+    every enabled job whose interval has elapsed; the panel also offers a
+    "Run now". Keeps the recurring chores (donation polling, chat reminders,
+    shoutout draining) configurable without editing crontabs."""
+
+    key = models.CharField(max_length=50, unique=True)
+    label = models.CharField(max_length=120)
+    command = models.CharField(
+        max_length=200,
+        help_text='manage.py command + args, e.g. "poll_donations --twitch".',
+    )
+    description = models.CharField(max_length=300, blank=True)
+    enabled = models.BooleanField(default=False)
+    interval_seconds = models.PositiveIntegerField(default=60)
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    last_status = models.CharField(max_length=20, blank=True)  # ok / error / running
+    last_output = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['key']
+
+    def __str__(self) -> str:
+        return f'{self.label} ({"on" if self.enabled else "off"})'
+
+    @property
+    def is_due(self) -> bool:
+        if not self.enabled:
+            return False
+        if self.last_run_at is None:
+            return True
+        from datetime import timedelta
+        return timezone.now() - self.last_run_at >= timedelta(
+            seconds=self.interval_seconds,
+        )
+
+
 class ShoutoutConfig(models.Model):
     """Per-event shoutout settings. Donors (Twitch Charity, who carry a Twitch
     login) and raiders can be auto-queued for a ``/shoutout``; the queue is
@@ -1553,6 +1592,66 @@ class ShoutoutRequest(models.Model):
     def save(self, *args, **kwargs):
         self.target_login = (self.target_login or '').strip().lower()
         super().save(*args, **kwargs)
+
+
+class RewardMapping(models.Model):
+    """A channel-point reward (matched by Twitch reward id, or by title as a
+    fallback) mapped to one or more actions. When the reward is redeemed
+    (``channel.channel_points_custom_reward_redemption.add``), its enabled
+    actions run in order. See ``api.rewards``."""
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='reward_mappings',
+    )
+    reward_id = models.CharField(
+        max_length=100, blank=True,
+        help_text='Twitch custom-reward id (preferred match). Blank → match by title.',
+    )
+    reward_title = models.CharField(
+        max_length=200,
+        help_text='Reward name — shown in the panel and used to match when no id.',
+    )
+    enabled = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.event} → reward:{self.reward_title}'
+
+    def matches(self, reward_id: str, reward_title: str) -> bool:
+        if self.reward_id:
+            return self.reward_id == (reward_id or '')
+        return self.reward_title.strip().lower() == (reward_title or '').strip().lower()
+
+
+class RewardActionType(models.TextChoices):
+    CHAT = 'chat', 'Post chat message'
+    SHOUTOUT = 'shoutout', 'Shout out the redeemer'
+    DEATH_COUNTER = 'death_counter', 'Adjust death counter'
+
+
+class RewardAction(models.Model):
+    """One action run when a ``RewardMapping`` is redeemed. ``params`` holds the
+    per-type config: chat → {template, as_announcement, color}; shoutout → {};
+    death_counter → {delta}."""
+
+    mapping = models.ForeignKey(
+        RewardMapping, on_delete=models.CASCADE, related_name='actions',
+    )
+    action_type = models.CharField(max_length=20, choices=RewardActionType.choices)
+    params = models.JSONField(default=dict, blank=True)
+    enabled = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['mapping', 'order', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.mapping.reward_title} → {self.action_type}'
 
 
 class TwitchPrediction(models.Model):

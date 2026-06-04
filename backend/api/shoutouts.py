@@ -35,24 +35,27 @@ def _primary_login(event) -> str:
 
 
 def enqueue(event, login: str, *, reason: str, amount=None,
-            display: str = '', note: str = '') -> 'models.ShoutoutRequest | None':
-    """Queue a shoutout for ``login`` if config allows. Returns the created row,
-    or None when skipped (disabled, wrong reason, self, below threshold, or a
-    pending duplicate already exists). Never raises."""
+            display: str = '', note: str = '',
+            force: bool = False) -> 'models.ShoutoutRequest | None':
+    """Queue a shoutout for ``login`` if config allows. ``force`` bypasses the
+    master enable + per-source gates (used when the operator explicitly wired a
+    shoutout, e.g. a reward action). Returns the created row, or None when
+    skipped (self, below threshold, or a pending duplicate). Never raises."""
     try:
         login = (login or '').strip().lower()
         if not login:
             return None
         cfg = get_config(event)
-        if not cfg.enabled:
-            return None
-        if reason == models.ShoutoutReason.DONATION:
-            if not cfg.shout_donations:
+        if not force:
+            if not cfg.enabled:
                 return None
-            if amount is not None and cfg.min_donation_amount and amount < cfg.min_donation_amount:
+            if reason == models.ShoutoutReason.DONATION:
+                if not cfg.shout_donations:
+                    return None
+                if amount is not None and cfg.min_donation_amount and amount < cfg.min_donation_amount:
+                    return None
+            elif reason == models.ShoutoutReason.RAID and not cfg.shout_raids:
                 return None
-        elif reason == models.ShoutoutReason.RAID and not cfg.shout_raids:
-            return None
         if login == _primary_login(event):
             return None  # never shout the host's own channel
         # One pending entry per target is enough — a burst of donations from the

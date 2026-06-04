@@ -630,6 +630,21 @@ def send_chat_announcement(conn, broadcaster_id: str, message: str,
     )
 
 
+def fetch_custom_rewards(conn, broadcaster_id: str) -> list[dict]:
+    """List the channel's custom channel-point rewards (id, title, cost) for the
+    reward-action picker. Needs channel:read:redemptions. Returns [] on error."""
+    try:
+        resp = _request_as(
+            conn, 'GET', f'{HELIX}/channel_points/custom_rewards',
+            params={'broadcaster_id': broadcaster_id},
+        )
+    except (TwitchAuthError, requests.RequestException):
+        return []
+    if not resp.ok:
+        return []
+    return resp.json().get('data') or []
+
+
 def send_shoutout(conn, from_broadcaster_id: str, to_broadcaster_id: str,
                   moderator_id: str) -> requests.Response:
     """Send a Twitch /shoutout from one channel to another (needs
