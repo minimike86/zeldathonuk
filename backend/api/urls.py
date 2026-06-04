@@ -32,6 +32,7 @@ router.register('charity-videos', views.CharityVideoViewSet)
 router.register('charity-images', views.CharityImageViewSet)
 router.register('charity-impact-tiers', views.CharityImpactTierViewSet)
 router.register('event-charities', views.EventCharityViewSet)
+router.register('event-twitch-channels', views.EventTwitchChannelViewSet)
 router.register(
     'chest-announcer/sound-triggers',
     views.ChestAnnouncerSoundTriggerViewSet,
@@ -85,6 +86,10 @@ urlpatterns = [
         views.twitch_charity_campaign,
         name='twitch-charity-campaign',
     ),
+    # In-app device-code OAuth to connect a channel (operator-only). start →
+    # returns a user code + Twitch URL; poll → completes + saves the connection.
+    path('twitch/connect/start/', views.twitch_connect_start, name='twitch-connect-start'),
+    path('twitch/connect/poll/', views.twitch_connect_poll, name='twitch-connect-poll'),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to
     # ExternalEvent; omnibar polls for these on a 1.5s tick.
     path('twitch/eventsub/', eventsub.eventsub_webhook, name='twitch-eventsub'),

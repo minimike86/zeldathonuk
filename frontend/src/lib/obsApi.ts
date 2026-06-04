@@ -278,16 +278,38 @@ export interface DonationPage {
   minimum_donation_amount: string; // DecimalField serialises as string.
 }
 
+export interface EventTwitchChannel {
+  id: number;
+  event: number;
+  login: string;
+  display_name: string;
+  /** The main stream channel — leads the homepage embed. One per event. */
+  is_primary: boolean;
+  /** Poll / EventSub this channel for Twitch Charity donations. */
+  track_charity: boolean;
+  /** Optional Twitch Charity campaign slug (e.g. "msec-gameblast26"). */
+  charity_slug: string;
+  order: number;
+  is_active: boolean;
+  /** Whether an OAuth token has been connected for this channel. */
+  is_connected: boolean;
+  /** Granted OAuth scopes on the linked connection (read-only). */
+  connection_scopes: string[];
+}
+
 export interface EventModel {
   id: number;
   name: string;
   start_time: string;
   currency_symbol: string;
   is_active: boolean;
-  /** Twitch channel login name (the bit after twitch.tv/) for the
-   *  embedded stream, chat, and Follow buttons. Lowercase 4-25 chars
-   *  per Twitch's rules. Blank → consumers fall back to "zeldathonuk". */
-  twitch_channel: string;
+  /** Twitch channels for this event — each drives live status; those with
+   *  track_charity + a connection are charity sources. Managed in
+   *  /control/events; written via /api/event-twitch-channels/. */
+  twitch_channels: EventTwitchChannel[];
+  /** The primary channel's login (the bit after twitch.tv/) for the
+   *  embedded stream, chat, and Follow buttons. '' when no channels. */
+  primary_twitch_channel: string;
   logo_url: string;
   banner_url: string;
   /** SpecialEffect's current GameBlast campaign logo for this event.
@@ -310,6 +332,35 @@ export interface EventModel {
    *  mutations go through `obsApi.createEventCharity` /
    *  `updateEventCharity` / `deleteEventCharity`. */
   event_charities: EventCharityLink[];
+}
+
+/** Donation options for an event's public donate UI: the stored donation_pages
+ *  (JustGiving / Tiltify / …) plus a synthesized Twitch Charity link per
+ *  charity-tracking channel — Twitch channels replaced the manual twitch
+ *  donation pages, but viewers still need a donate link per channel. */
+export function eventDonationOptions(
+  event: EventModel | null | undefined,
+): DonationPage[] {
+  if (!event) return [];
+  const twitchRows: DonationPage[] = (event.twitch_channels ?? [])
+    .filter((c) => c.track_charity && c.is_active && c.login)
+    .map((c) => ({
+      id: -c.id, // negative so it never collides with a real page id (React key)
+      event: event.id,
+      platform: 'twitch' as DonationPlatformKey,
+      display_label: 'Twitch Charity',
+      logo_url: '',
+      label: c.display_name || c.login,
+      url: `https://www.twitch.tv/charity/${c.login}`,
+      external_id: c.charity_slug,
+      is_primary: false,
+      order: 100 + c.order,
+      fees_url: '',
+      gift_aid_url: '',
+      fee_warning: '',
+      minimum_donation_amount: '0',
+    }));
+  return [...event.donation_pages, ...twitchRows];
 }
 
 export interface TimerRun {
@@ -1529,7 +1580,7 @@ export const obsApi = {
   updateEvent: (
     eventId: number,
     patch: Partial<Pick<EventModel,
-      'name' | 'start_time' | 'currency_symbol' | 'twitch_channel'
+      'name' | 'start_time' | 'currency_symbol'
       | 'logo_url' | 'banner_url' | 'gameblast_logo_url'
     >> & {
       omnibar_layout?: Record<string, unknown>;
@@ -1935,6 +1986,63 @@ export const obsApi = {
     }),
   deleteEventCharity: (id: number) =>
     api<void>(`/api/event-charities/${id}/`, { method: 'DELETE' }),
+
+  // ── Per-event Twitch channels + device-code connect ───────────────
+  createEventTwitchChannel: (body: {
+    event: number;
+    login: string;
+    is_primary?: boolean;
+    track_charity?: boolean;
+    charity_slug?: string;
+    order?: number;
+  }) =>
+    api<EventTwitchChannel>('/api/event-twitch-channels/', { method: 'POST', body }),
+  updateEventTwitchChannel: (
+    id: number,
+    patch: Partial<{
+      login: string;
+      is_primary: boolean;
+      track_charity: boolean;
+      charity_slug: string;
+      order: number;
+      is_active: boolean;
+    }>,
+  ) =>
+    api<EventTwitchChannel>(`/api/event-twitch-channels/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteEventTwitchChannel: (id: number) =>
+    api<void>(`/api/event-twitch-channels/${id}/`, { method: 'DELETE' }),
+  /** Begin the device-code OAuth flow to connect a channel. Returns a short
+   *  user_code + verification_uri the broadcaster opens on their own device,
+   *  plus the device_code to pass to twitchConnectPoll. */
+  twitchConnectStart: (login: string, role: 'charity' | 'primary' = 'charity') =>
+    api<{
+      login: string;
+      device_code: string;
+      user_code: string;
+      verification_uri: string;
+      interval: number;
+      expires_in: number;
+      scopes: string;
+    }>('/api/twitch/connect/start/', { method: 'POST', body: { login, role } }),
+  /** Poll a pending device authorization. status 'authorized' once the
+   *  broadcaster approves (connection saved server-side). */
+  twitchConnectPoll: (deviceCode: string, login: string) =>
+    api<{
+      status: 'authorized' | 'pending' | 'slow_down' | 'expired' | 'error';
+      message?: string;
+      connection?: {
+        login: string;
+        broadcaster_id: string;
+        display_name: string;
+        scopes: string;
+      };
+    }>('/api/twitch/connect/poll/', {
+      method: 'POST',
+      body: { device_code: deviceCode, login },
+    }),
 
   // ── Sound assets + schedule-entry sound triggers ──────────────────
   // Reusable audio library + per-entry trigger rows. The backend SSE

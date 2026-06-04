@@ -24,54 +24,15 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from api import models
+from api.twitch import DEFAULT_USER_SCOPES
 
 DEVICE_URL = 'https://id.twitch.tv/oauth2/device'
 TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
 DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code'
 
-# Every scope the broadcaster token may need across the app's Twitch features —
-# both what's wired today and the headroom for planned integrations — so a
-# single authorisation covers everything and you don't have to re-auth when a
-# feature ships. (channel.raid needs no scope, so raids work without one.)
-SCOPES = [
-    # Schedule
-    'channel:manage:schedule',         # Push to Twitch schedule
-
-    # Event feed (read) — EventSub the omnibar reacts to
-    'moderator:read:followers',        # channel.follow
-    'channel:read:subscriptions',      # channel.subscribe / .gift / .message
-    'bits:read',                       # channel.cheer
-    'channel:read:redemptions',        # channel-points redemptions (read)
-    'channel:read:charity',            # Twitch Charity campaign donations
-    'channel:read:hype_train',         # hype train begin/progress/end
-    'channel:read:ads',                # channel.ad_break.begin (auto-BRB)
-    'channel:read:goals',              # creator goals
-    'channel:read:polls',              # poll results
-    'channel:read:predictions',        # prediction results
-
-    # Chat (read + write)
-    'user:read:chat',                  # read chat (EventSub channel.chat.message)
-    'chat:read',                       # read chat over IRC
-    'user:write:chat',                 # send chat as the user/bot (Helix)
-    'chat:edit',                       # send chat over IRC
-    'channel:bot',                     # let the app act as a bot in this channel
-
-    # Broadcast & highlights
-    'channel:manage:broadcast',        # set title/category, create stream markers
-    'clips:edit',                      # auto-create clips
-    'channel:edit:commercial',         # start / snooze ad breaks
-
-    # Community announcements / shout-outs
-    'moderator:manage:announcements',  # /announce milestones
-    'moderator:manage:shoutouts',      # /shoutout runners & guests
-
-    # Interactive segments (manage)
-    'channel:manage:redemptions',      # create / fulfill channel-point rewards
-    'channel:manage:polls',            # run polls
-    'channel:manage:predictions',      # run predictions
-    'channel:manage:raids',            # raid out at the end of the event
-]
-DEFAULT_SCOPES = ' '.join(SCOPES)
+# The full broadcaster scope set lives in api.twitch (shared with the in-app
+# connect endpoints), so a single authorisation covers every Twitch feature.
+DEFAULT_SCOPES = DEFAULT_USER_SCOPES
 
 
 class Command(BaseCommand):
@@ -85,10 +46,11 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             '--channel', default='',
-            help='Mint a token for an ADDITIONAL charity channel (broadcaster '
-                 'login), saved to a TwitchCharityChannel row instead of the '
-                 'primary singleton. The broadcaster must authorise in the '
-                 'browser. Scopes default to channel:read:charity.',
+            help='Mint a token for an ADDITIONAL channel (broadcaster login), '
+                 'saved to a TwitchChannelConnection row instead of the primary '
+                 'singleton. The broadcaster must authorise in the browser. '
+                 'Scopes default to channel:read:charity. (The in-app Connect '
+                 'button in /control/events does the same thing.)',
         )
 
     def handle(self, *args, **opts):
@@ -175,35 +137,10 @@ class Command(BaseCommand):
         tok.scopes = ' '.join(scope) if isinstance(scope, list) else str(scope)
         tok.save()
 
-    def _save_channel(self, data: dict, login_hint: str) -> 'models.TwitchCharityChannel':
-        """Persist an additional channel's token into TwitchCharityChannel,
-        resolving the broadcaster id/login/display from the freshly-minted token
-        (Get Users with no id returns the authenticated user)."""
+    def _save_channel(self, data: dict, login_hint: str) -> 'models.TwitchChannelConnection':
+        """Persist an additional channel's token into a TwitchChannelConnection,
+        via the shared twitch.save_connection helper (resolves id/login/display
+        from the freshly-minted token)."""
         from api import twitch  # local import: avoids loading requests at module import
 
-        token = data['access_token']
-        info = {}
-        resp = requests.get(
-            f'{twitch.HELIX}/users',
-            headers={'Authorization': f'Bearer {token}',
-                     'Client-Id': settings.TWITCH_CLIENT_ID},
-            timeout=15,
-        )
-        if resp.ok:
-            rows = resp.json().get('data') or []
-            info = rows[0] if rows else {}
-        login = (info.get('login') or login_hint).lower()
-        scope = data.get('scope') or []
-        ch, _ = models.TwitchCharityChannel.objects.update_or_create(
-            login=login,
-            defaults={
-                'broadcaster_id': info.get('id', ''),
-                'display_name': info.get('display_name', ''),
-                'access_token': token,
-                'refresh_token': data.get('refresh_token', ''),
-                'expires_at': timezone.now() + timedelta(seconds=int(data['expires_in'])),
-                'scopes': ' '.join(scope) if isinstance(scope, list) else str(scope),
-                'is_active': True,
-            },
-        )
-        return ch
+        return twitch.save_connection(login_hint, data)

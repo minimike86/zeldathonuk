@@ -189,8 +189,37 @@ class DonationPageSerializer(serializers.ModelSerializer):
         return str(p.minimum_donation_amount) if p else '0.00'
 
 
+class EventTwitchChannelSerializer(serializers.ModelSerializer):
+    """A Twitch channel attached to an event. Read nested on the event tree and
+    written via the dedicated /api/event-twitch-channels/ endpoint. Exposes
+    whether the channel is OAuth-connected + its granted scopes, but never the
+    tokens themselves."""
+
+    is_connected = serializers.SerializerMethodField()
+    connection_scopes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.EventTwitchChannel
+        fields = [
+            'id', 'event', 'login', 'display_name', 'is_primary',
+            'track_charity', 'charity_slug', 'order', 'is_active',
+            'is_connected', 'connection_scopes',
+        ]
+
+    def get_is_connected(self, obj) -> bool:
+        c = obj.connection
+        return bool(c and c.is_active and (c.access_token or c.refresh_token))
+
+    def get_connection_scopes(self, obj) -> list:
+        c = obj.connection
+        return (c.scopes or '').split() if c else []
+
+
 class EventSerializer(serializers.ModelSerializer):
     donation_pages = DonationPageSerializer(many=True, read_only=True)
+    twitch_channels = EventTwitchChannelSerializer(many=True, read_only=True)
+    # Primary channel login for single-channel consumers (Follow link, embed).
+    primary_twitch_channel = serializers.SerializerMethodField()
     # Charities are read here via the through-table so consumers get the
     # per-event ordering + is_primary flag, with the full Charity nested
     # so the public /event landing can render branding without a second
@@ -206,7 +235,8 @@ class EventSerializer(serializers.ModelSerializer):
             'start_time',
             'currency_symbol',
             'is_active',
-            'twitch_channel',
+            'twitch_channels',
+            'primary_twitch_channel',
             'logo_url',
             'banner_url',
             'gameblast_logo_url',
@@ -215,6 +245,15 @@ class EventSerializer(serializers.ModelSerializer):
             'donation_pages',
             'event_charities',
         ]
+
+    def get_primary_twitch_channel(self, obj) -> str:
+        # Iterate the (prefetched) list rather than a filtered query so this
+        # stays cheap across the events list.
+        chans = list(obj.twitch_channels.all())
+        primary = next((c for c in chans if c.is_primary), None) or (
+            chans[0] if chans else None
+        )
+        return primary.login if primary else ''
 
     def get_event_charities(self, obj):
         # Forward-declared serializer — `EventCharitySerializer` is

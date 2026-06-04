@@ -37,10 +37,46 @@ from . import models
 
 HELIX = 'https://api.twitch.tv/helix'
 TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
+DEVICE_URL = 'https://id.twitch.tv/oauth2/device'
+DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code'
 
 # Refresh proactively when the token has this little time left, so a long-running
 # request can't get half-way and then hit a 401.
 REFRESH_LEEWAY = timedelta(seconds=60)
+
+# Every scope a broadcaster (the primary / bot channel) token may need across
+# the app's Twitch features — what's wired today plus headroom for the planned
+# chat / redemption / prediction phase — so a single authorisation covers
+# everything and no re-auth is needed when those ship. (channel.raid needs no
+# scope.) Additional charity-only channels request just `channel:read:charity`.
+USER_SCOPES = [
+    'channel:manage:schedule',         # push to Twitch schedule
+    'moderator:read:followers',        # channel.follow
+    'channel:read:subscriptions',      # channel.subscribe / .gift / .message
+    'bits:read',                       # channel.cheer
+    'channel:read:redemptions',        # channel-points redemptions (read)
+    'channel:read:charity',            # Twitch Charity campaign donations
+    'channel:read:hype_train',         # hype train begin/progress/end
+    'channel:read:ads',                # channel.ad_break.begin (auto-BRB)
+    'channel:read:goals',              # creator goals
+    'channel:read:polls',              # poll results
+    'channel:read:predictions',        # prediction results
+    'user:read:chat',                  # read chat (EventSub channel.chat.message)
+    'chat:read',                       # read chat over IRC
+    'user:write:chat',                 # send chat as the user/bot (Helix)
+    'chat:edit',                       # send chat over IRC
+    'channel:bot',                     # act as a bot in this channel
+    'channel:manage:broadcast',        # set title/category, stream markers
+    'clips:edit',                      # auto-create clips
+    'channel:edit:commercial',         # start / snooze ad breaks
+    'moderator:manage:announcements',  # /announce milestones
+    'moderator:manage:shoutouts',      # /shoutout runners & guests
+    'channel:manage:redemptions',      # create / fulfill channel-point rewards
+    'channel:manage:polls',            # run polls
+    'channel:manage:predictions',      # run gameplay predictions
+    'channel:manage:raids',            # raid out at the end of the event
+]
+DEFAULT_USER_SCOPES = ' '.join(USER_SCOPES)
 
 
 class TwitchAuthError(RuntimeError):
@@ -126,7 +162,7 @@ def _request(method: str, url: str, **kwargs) -> requests.Response:
 
 def valid_token_for(tok) -> str:
     """Return a valid access token for ANY token-bearing row — the primary
-    ``TwitchOAuthToken`` singleton or a ``TwitchCharityChannel`` — refreshing
+    ``TwitchOAuthToken`` singleton or a ``TwitchChannelConnection`` — refreshing
     when within ``REFRESH_LEEWAY`` of expiry. Both models share the field names
     ``_refresh`` reads/writes, so it works on either."""
     if not (tok.access_token or tok.refresh_token):
@@ -353,13 +389,104 @@ def fetch_stream(login: str) -> dict | None:
     return data[0] if data else None
 
 
+# ── Device-code OAuth (in-app channel connect) ──────────────────────────────
+# Lets an operator connect a channel from the control panel without the CLI:
+# start() returns a short user code + Twitch URL the broadcaster opens on their
+# own device; the UI polls until they authorise, then we persist the token as a
+# TwitchChannelConnection. Same grant the twitch_login command uses.
+
+
+def start_device_authorization(scopes: str) -> dict:
+    """Begin the device-code flow. Returns Twitch's response: device_code,
+    user_code, verification_uri, interval, expires_in."""
+    if not settings.TWITCH_CLIENT_ID:
+        raise TwitchAuthError('TWITCH_CLIENT_ID is not set.')
+    resp = requests.post(
+        DEVICE_URL,
+        data={'client_id': settings.TWITCH_CLIENT_ID, 'scopes': scopes},
+        timeout=15,
+    )
+    if not resp.ok:
+        raise TwitchAuthError(
+            f'Device authorization request failed ({resp.status_code}): {resp.text}'
+        )
+    return resp.json()
+
+
+def poll_device_token(device_code: str) -> dict:
+    """Poll the token endpoint once for a device_code. Returns
+    ``{'status': 'authorized', 'token': {...}}`` on success, else
+    ``{'status': 'pending'|'slow_down'|'expired'|'error', 'message': ...}``."""
+    if not settings.TWITCH_CLIENT_ID:
+        raise TwitchAuthError('TWITCH_CLIENT_ID is not set.')
+    resp = requests.post(
+        TOKEN_URL,
+        data={
+            'client_id': settings.TWITCH_CLIENT_ID,
+            'device_code': device_code,
+            'grant_type': DEVICE_GRANT,
+        },
+        timeout=15,
+    )
+    if resp.ok:
+        return {'status': 'authorized', 'token': resp.json()}
+    message = ''
+    try:
+        message = (resp.json() or {}).get('message', '') or ''
+    except ValueError:
+        pass
+    low = message.lower()
+    if 'authorization_pending' in low or 'pending' in low:
+        return {'status': 'pending'}
+    if 'slow_down' in low:
+        return {'status': 'slow_down'}
+    if 'expired' in low:
+        return {'status': 'expired', 'message': message}
+    return {'status': 'error', 'message': message or resp.text[:200]}
+
+
+def save_connection(login_hint: str, token: dict) -> 'models.TwitchChannelConnection':
+    """Upsert a TwitchChannelConnection from a token response, resolving the
+    channel's login / id / display name from the token (Get Users with no id
+    returns the authenticated user)."""
+    access = token['access_token']
+    info: dict = {}
+    resp = requests.get(
+        f'{HELIX}/users',
+        headers={'Authorization': f'Bearer {access}',
+                 'Client-Id': settings.TWITCH_CLIENT_ID},
+        timeout=15,
+    )
+    if resp.ok:
+        rows = resp.json().get('data') or []
+        info = rows[0] if rows else {}
+    login = (info.get('login') or login_hint or '').strip().lower()
+    scope = token.get('scope') or []
+    conn, _ = models.TwitchChannelConnection.objects.update_or_create(
+        login=login,
+        defaults={
+            'broadcaster_id': info.get('id', '') or '',
+            'display_name': info.get('display_name', '') or '',
+            'access_token': access,
+            'refresh_token': token.get('refresh_token', '') or '',
+            'expires_at': timezone.now() + timedelta(seconds=int(token['expires_in'])),
+            'scopes': ' '.join(scope) if isinstance(scope, list) else str(scope or ''),
+            'is_active': True,
+        },
+    )
+    # Link this connection to every event channel of the same login so a single
+    # connect wires up the channel wherever it's used.
+    models.EventTwitchChannel.objects.filter(login=login).update(connection=conn)
+    return conn
+
+
 def fetch_active_charity_campaign(tok=None, broadcaster_id: str = '') -> dict | None:
     """Return a channel's active Twitch Charity campaign, or None.
 
     Helix ``GET /charity/campaigns`` returns the single in-progress campaign for
     that broadcaster (empty when none is running). Defaults to the PRIMARY
     broadcaster (singleton token, id auto-resolved); pass an explicit ``tok``
-    (e.g. a ``TwitchCharityChannel``) + ``broadcaster_id`` to read an additional
+    (e.g. a ``TwitchChannelConnection``) + ``broadcaster_id`` to read an additional
     channel. Needs ``channel:read:charity`` on the token used.
     """
     if tok is None:
@@ -413,20 +540,52 @@ def fetch_charity_donations(
     return out
 
 
+def ensure_connection_broadcaster_id(conn) -> str:
+    """Return a connection's broadcaster id, resolving + persisting it from the
+    connection's own token (Get Users with no id) the first time. Returns ''
+    when it can't be determined."""
+    if conn.broadcaster_id:
+        return conn.broadcaster_id
+    try:
+        resp = _request_as(conn, 'GET', f'{HELIX}/users')
+    except (TwitchAuthError, requests.RequestException):
+        return ''
+    if not resp.ok:
+        return ''
+    data = resp.json().get('data') or []
+    if not data:
+        return ''
+    conn.broadcaster_id = data[0].get('id', '') or ''
+    if not conn.display_name:
+        conn.display_name = data[0].get('display_name', '') or ''
+    if conn.broadcaster_id:
+        conn.save()
+    return conn.broadcaster_id
+
+
 def charity_poll_sources() -> list[tuple[str, object, str]]:
-    """Every channel whose charity donations we poll: the primary broadcaster
-    plus each active ``TwitchCharityChannel``. Returns
-    ``(label, token_row, broadcaster_id)`` tuples — the label is only for log
-    output; the real source-channel tag is taken from each campaign's
-    ``broadcaster_login`` at ingest time.
+    """Every channel whose charity donations we poll, derived from the ACTIVE
+    event: each ``EventTwitchChannel`` with ``track_charity`` and a linked
+    ``TwitchChannelConnection``. Returns ``(login, connection, broadcaster_id)``
+    — the login is for log output; the real source-channel tag comes from each
+    campaign's ``broadcaster_login`` at ingest time.
     """
+    active = models.Event.objects.filter(is_active=True).first()
+    if not active:
+        return []
     sources: list[tuple[str, object, str]] = []
-    primary = models.TwitchOAuthToken.get()
-    if primary.access_token or primary.refresh_token:
-        sources.append(('primary', primary, resolve_broadcaster_id()))
-    for ch in models.TwitchCharityChannel.objects.filter(is_active=True):
-        if ch.broadcaster_id:
-            sources.append((ch.login, ch, ch.broadcaster_id))
+    channels = (
+        active.twitch_channels
+        .filter(is_active=True, track_charity=True, connection__isnull=False)
+        .select_related('connection')
+    )
+    for ch in channels:
+        conn = ch.connection
+        if not (conn.is_active and (conn.access_token or conn.refresh_token)):
+            continue
+        bid = ensure_connection_broadcaster_id(conn)
+        if bid:
+            sources.append((ch.login, conn, bid))
     return sources
 
 
@@ -435,15 +594,20 @@ def stream_status(request: Request) -> Response:
     """Return whether a Twitch channel is currently live.
 
     Query params: ?login=<channel-login>. Falls back to the active event's
-    `twitch_channel` when omitted, so the homepage can call it without
+    primary Twitch channel when omitted, so the homepage can call it without
     threading the channel into the URL. Lightweight response shape so
     consumers can poll on a short cadence without dragging metadata in.
     """
     login = (request.query_params.get('login') or '').strip().lower()
     if not login:
         event = models.Event.objects.filter(is_active=True).first()
-        if event and event.twitch_channel:
-            login = event.twitch_channel.strip().lower()
+        if event:
+            primary = (
+                event.twitch_channels.filter(is_primary=True).first()
+                or event.twitch_channels.first()
+            )
+            if primary:
+                login = primary.login.strip().lower()
     if not login or not _TWITCH_LOGIN_RE.match(login):
         return Response(
             {'error': 'login required'}, status=status.HTTP_400_BAD_REQUEST,

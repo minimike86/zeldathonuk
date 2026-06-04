@@ -17,7 +17,7 @@ import {
 } from '@fortawesome/free-brands-svg-icons';
 import { faLink, faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { eventDonationOptions, obsApi, usePolledQuery } from '@/lib/obsApi';
 import type {
   Charity,
   CharityImpactTier,
@@ -100,7 +100,7 @@ function ImpactTierDescription({ tier }: { tier: CharityImpactTier }) {
 
 export function Charity() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 30_000);
-  const donationPages = event?.donation_pages ?? [];
+  const donationPages = eventDonationOptions(event);
   const benefitting = useMemo(
     () =>
       [...(event?.event_charities ?? [])].sort((a, b) => {

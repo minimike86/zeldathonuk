@@ -107,15 +107,10 @@ class Event(models.Model):
     start_time = models.DateTimeField()
     currency_symbol = models.CharField(max_length=4, default='£')
     is_active = models.BooleanField(default=False, help_text='Only one event can be active at a time.')
-    twitch_channel = models.CharField(
-        max_length=50,
-        blank=True,
-        default='zeldathonuk',
-        help_text='Twitch channel login name (the bit after twitch.tv/) used '
-                  'for the embedded stream, chat, and "Follow Us On Twitch" '
-                  'links. Lowercase, 4-25 chars per Twitch rules. Blank → '
-                  'consumers fall back to "zeldathonuk".',
-    )
+    # Twitch channels for this event live in the related EventTwitchChannel
+    # model (each drives live status; some are charity sources). The primary
+    # channel's login is exposed as `primary_twitch_channel` on the serializer
+    # for single-channel consumers.
     # CharField (not URLField) on every operator-set media URL so the
     # /control/events form accepts site-relative paths
     # (/assets/img/foo.svg) alongside absolute URLs. URLField's
@@ -1263,21 +1258,21 @@ class TwitchCharityCampaign(models.Model):
         return cls.objects.filter(is_active=True).order_by('-started_at').first()
 
 
-class TwitchCharityChannel(models.Model):
-    """An *additional* Twitch channel whose charity donations we ingest, beyond
-    the primary broadcaster (whose token lives in TwitchOAuthToken).
+class TwitchChannelConnection(models.Model):
+    """A durable OAuth connection to one Twitch channel, keyed by ``login`` and
+    reused across events.
 
-    Twitch's charity API is per-broadcaster and token-gated: reading a channel's
-    charity campaign/donations requires THAT channel's own user OAuth token with
-    the ``channel:read:charity`` scope (the broadcaster_id in the request must
-    match the token's user id). So each extra channel stores its own token here,
-    minted via ``manage.py twitch_login --channel <login>`` (the broadcaster
-    authorises the app once). Same field shape as TwitchOAuthToken so the
-    refresh helper in twitch.py works on either.
+    Twitch's per-broadcaster APIs (charity campaign/donations, chat-as-bot,
+    redemptions, predictions) are token-gated: each requires THAT channel's own
+    user OAuth token (the broadcaster_id in the request must match the token's
+    user id). So we store one connection per channel here, acquired in-app via
+    the device-code flow (``/api/twitch/connect/start`` + ``…/poll``) or
+    ``manage.py twitch_login --channel <login>``. Same field shape as
+    TwitchOAuthToken so the refresh helper in twitch.py works on either.
 
-    EventSub also needs that one-time authorisation; once present,
-    ``manage.py twitch_eventsub`` registers the charity subscriptions for this
-    channel's broadcaster id against the shared callback.
+    ``EventTwitchChannel`` rows reference a connection to mark which of an
+    event's channels are charity sources (and, later, chat/redemption sources).
+    The granted ``scopes`` determine what the connection can do.
     """
 
     login = models.CharField(
@@ -1286,7 +1281,7 @@ class TwitchCharityChannel(models.Model):
     )
     broadcaster_id = models.CharField(
         max_length=64, blank=True,
-        help_text='Numeric Twitch user id, resolved from the token at login.',
+        help_text='Numeric Twitch user id, resolved from the token at connect.',
     )
     display_name = models.CharField(max_length=100, blank=True)
     access_token = models.CharField(max_length=200, blank=True)
@@ -1303,10 +1298,75 @@ class TwitchCharityChannel(models.Model):
 
     class Meta:
         ordering = ['login']
-        verbose_name = 'Twitch charity channel'
+        verbose_name = 'Twitch channel connection'
 
     def __str__(self) -> str:
         return f'{self.display_name or self.login} ({"active" if self.is_active else "off"})'
+
+    def has_scope(self, scope: str) -> bool:
+        return scope in (self.scopes or '').split()
+
+
+class EventTwitchChannel(models.Model):
+    """One Twitch channel attached to an Event.
+
+    Every channel on an event is checked for **live status**. A channel is also
+    a **charity source** when ``track_charity`` is set and a ``connection`` is
+    linked — its donations are polled / pushed (EventSub) and merge into the
+    event total, tagged with ``Donation.source_channel = login``. This supports
+    both "one live channel, several broadcasters fundraising for it" and "several
+    channels live together sharing donations".
+    """
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='twitch_channels',
+    )
+    login = models.CharField(
+        max_length=50,
+        help_text='Twitch channel login (the bit after twitch.tv/).',
+    )
+    display_name = models.CharField(max_length=100, blank=True)
+    is_primary = models.BooleanField(
+        default=False,
+        help_text='The main stream channel — leads the homepage embed and is '
+                  'the fallback for single-channel consumers. One per event.',
+    )
+    track_charity = models.BooleanField(
+        default=False,
+        help_text='Poll / EventSub this channel for Twitch Charity donations. '
+                  'Requires a linked connection with channel:read:charity.',
+    )
+    charity_slug = models.CharField(
+        max_length=200, blank=True,
+        help_text='Optional Twitch Charity campaign slug (e.g. '
+                  '"msec-gameblast26") used as the donate-link external id.',
+    )
+    connection = models.ForeignKey(
+        TwitchChannelConnection,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='event_channels',
+        help_text='The OAuth connection (token) for this channel, set once the '
+                  'broadcaster has connected. Null = live-status-only.',
+    )
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+        unique_together = [('event', 'login')]
+
+    def __str__(self) -> str:
+        return f'{self.event} → {self.login}{" (primary)" if self.is_primary else ""}'
+
+    def save(self, *args, **kwargs):
+        self.login = (self.login or '').strip().lower()
+        super().save(*args, **kwargs)
+        # One primary channel per event — demote the others in the same event.
+        if self.is_primary:
+            EventTwitchChannel.objects.filter(
+                event_id=self.event_id, is_primary=True,
+            ).exclude(pk=self.pk).update(is_primary=False)
 
 
 class LayoutPreset(models.Model):

@@ -281,7 +281,11 @@ class RunnerViewSet(viewsets.ModelViewSet):
 
 
 class EventViewSet(viewsets.ModelViewSet):
-    queryset = models.Event.objects.all().order_by('-start_time')
+    queryset = (
+        models.Event.objects.all()
+        .order_by('-start_time')
+        .prefetch_related('twitch_channels__connection', 'donation_pages')
+    )
     serializer_class = serializers.EventSerializer
 
     def perform_create(self, serializer):
@@ -1382,6 +1386,22 @@ class DonationPageViewSet(viewsets.ModelViewSet):
         return qs
 
 
+class EventTwitchChannelViewSet(viewsets.ModelViewSet):
+    """Per-event Twitch channels — each drives live status; those with
+    track_charity + a connection are charity sources. Tokens are attached via
+    the device-code connect flow (which links the connection to every event
+    channel of the same login)."""
+    queryset = models.EventTwitchChannel.objects.select_related('connection').all()
+    serializer_class = serializers.EventTwitchChannelSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+
 class BrbTimerViewSet(viewsets.ModelViewSet):
     queryset = models.BrbTimer.objects.all()
     serializer_class = serializers.BrbTimerSerializer
@@ -1404,6 +1424,70 @@ def twitch_charity_campaign(_request: Request) -> Response:
     if not campaign:
         return Response(None)
     return Response(serializers.TwitchCharityCampaignSerializer(campaign).data)
+
+
+# Scope sets requested when connecting a channel. Charity sources only need the
+# read scope; the primary/bot channel gets the full feature set so the planned
+# chat / redemption / prediction phase needs no re-auth.
+_CONNECT_SCOPES = {
+    'charity': 'channel:read:charity',
+    'primary': twitch.DEFAULT_USER_SCOPES,
+}
+
+
+@api_view(['POST'])
+def twitch_connect_start(request: Request) -> Response:
+    """Operator-only: begin the device-code flow to connect a Twitch channel.
+
+    Body ``{ login, role: 'charity'|'primary' }``. Returns the ``user_code`` +
+    ``verification_uri`` the broadcaster opens on their own device, plus the
+    ``device_code`` the client passes back to the poll endpoint."""
+    login = (request.data.get('login') or '').strip().lower()
+    role = (request.data.get('role') or 'charity').strip()
+    if not login:
+        return Response({'detail': 'login required'}, status=status.HTTP_400_BAD_REQUEST)
+    scopes = _CONNECT_SCOPES.get(role, _CONNECT_SCOPES['charity'])
+    try:
+        dev = twitch.start_device_authorization(scopes)
+    except twitch.TwitchAuthError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({
+        'login': login,
+        'device_code': dev.get('device_code'),
+        'user_code': dev.get('user_code'),
+        'verification_uri': dev.get('verification_uri_complete') or dev.get('verification_uri'),
+        'interval': dev.get('interval', 5),
+        'expires_in': dev.get('expires_in', 1800),
+        'scopes': scopes,
+    })
+
+
+@api_view(['POST'])
+def twitch_connect_poll(request: Request) -> Response:
+    """Operator-only: poll a pending device authorization. Body
+    ``{ device_code, login }``. While the broadcaster hasn't authorised yet the
+    status is ``pending``/``slow_down``; on success the connection is saved and
+    returned."""
+    device_code = (request.data.get('device_code') or '').strip()
+    login = (request.data.get('login') or '').strip().lower()
+    if not device_code:
+        return Response({'detail': 'device_code required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        result = twitch.poll_device_token(device_code)
+    except twitch.TwitchAuthError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    if result['status'] != 'authorized':
+        return Response({'status': result['status'], 'message': result.get('message', '')})
+    conn = twitch.save_connection(login, result['token'])
+    return Response({
+        'status': 'authorized',
+        'connection': {
+            'login': conn.login,
+            'broadcaster_id': conn.broadcaster_id,
+            'display_name': conn.display_name,
+            'scopes': conn.scopes,
+        },
+    })
 
 
 @api_view(['GET', 'PUT'])

@@ -438,17 +438,28 @@ class TwitchCharityCampaignAdmin(ModelAdmin):
         return False
 
 
-@admin.register(models.TwitchCharityChannel)
-class TwitchCharityChannelAdmin(ModelAdmin):
-    """Additional Twitch channels whose charity donations we ingest. Tokens are
-    minted via `manage.py twitch_login --channel <login>`; toggle `is_active` to
-    stop polling/registering a channel without deleting its token."""
+@admin.register(models.TwitchChannelConnection)
+class TwitchChannelConnectionAdmin(ModelAdmin):
+    """Durable per-channel OAuth connections (charity / chat / redemptions).
+    Acquired via the in-app device-code connect flow or `manage.py twitch_login
+    --channel <login>`; toggle `is_active` to stop using a channel without
+    deleting its token."""
     list_display = ['login', 'display_name', 'broadcaster_id', 'is_active',
                     'expires_at', 'updated_at']
     list_filter = ['is_active']
     list_editable = ['is_active']
     search_fields = ['login', 'display_name', 'broadcaster_id']
     readonly_fields = ['expires_at', 'scopes', 'created_at', 'updated_at']
+
+
+@admin.register(models.EventTwitchChannel)
+class EventTwitchChannelAdmin(ModelAdmin):
+    """Twitch channels attached to an event — each drives live status; those
+    with track_charity + a connection are charity sources."""
+    list_display = ['event', 'login', 'is_primary', 'track_charity',
+                    'connection', 'order', 'is_active']
+    list_filter = ['is_active', 'track_charity', 'is_primary']
+    search_fields = ['login', 'event__name']
 
 
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────

@@ -24,12 +24,12 @@ from __future__ import annotations
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from api import models, twitch
+from api import twitch
 
 
 def _charity_desired(bid: str) -> list[dict]:
     """The four charity-campaign subscriptions for one broadcaster. Shared by the
-    primary channel and every additional TwitchCharityChannel."""
+    primary channel and every additional event charity channel."""
     broadcaster = {'broadcaster_user_id': bid}
     return [
         {'type': 'channel.charity_campaign.donate', 'version': '1', 'condition': broadcaster},
@@ -105,14 +105,17 @@ class Command(BaseCommand):
             )
 
         desired = _desired(bid)
-        # Additional charity channels (e.g. a co-streamer): register only their
-        # charity-campaign events against their own broadcaster id. Each must
-        # have authorised the app with channel:read:charity (run
-        # `twitch_login --channel <login>`).
-        for ch in models.TwitchCharityChannel.objects.filter(is_active=True):
-            if ch.broadcaster_id:
-                desired += _charity_desired(ch.broadcaster_id)
-                self.stdout.write(f'  (incl. charity events for {ch.login})')
+        # Additional charity channels for the ACTIVE event (e.g. a co-streamer):
+        # register only their charity-campaign events against their own
+        # broadcaster id. Each must have a connected token with
+        # channel:read:charity (Connect in /control/events). Skip the primary
+        # broadcaster (already covered by _desired above).
+        seen_bids = {bid}
+        for login, conn, ch_bid in twitch.charity_poll_sources():
+            if ch_bid and ch_bid not in seen_bids:
+                desired += _charity_desired(ch_bid)
+                seen_bids.add(ch_bid)
+                self.stdout.write(f'  (incl. charity events for {login})')
         desired_ids = {_identity(d['type'], d['condition']) for d in desired}
         our_types = {d['type'] for d in desired}
 

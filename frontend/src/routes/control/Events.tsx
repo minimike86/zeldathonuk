@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type {
   Charity,
@@ -6,6 +7,7 @@ import type {
   DonationPlatformKey,
   EventCharityLink,
   EventModel,
+  EventTwitchChannel,
 } from '@/lib/obsApi';
 import { api } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/env';
@@ -37,10 +39,13 @@ interface DonationPageDraft {
   is_primary: boolean;
 }
 
+// Twitch Charity is intentionally NOT here — Twitch channels (with their own
+// OAuth connect) are managed in the per-event "Twitch channels" section below,
+// which also drives the public donate link. Other platforms stay here and the
+// list is ready for future JustGiving / Tiltify automation.
 const DONATION_PLATFORMS: { value: DonationPlatformKey; label: string }[] = [
   { value: 'justgiving', label: 'JustGiving' },
   { value: 'tiltify', label: 'Tiltify' },
-  { value: 'twitch', label: 'Twitch Charity' },
   { value: 'facebook', label: 'Facebook' },
   { value: 'paypal', label: 'PayPal' },
   { value: 'direct', label: 'Direct / cash' },
@@ -164,6 +169,7 @@ export function EventsControl() {
                     onCancel={() => setEditingId(null)}
                     onSaved={() => setEditingId(null)}
                   />
+                  <EventTwitchChannelsEditor event={e} />
                   <DonationPagesEditor event={e} />
                   <EventCharitiesEditor event={e} />
                 </td>
@@ -335,7 +341,6 @@ function EventForm({
   const [gameblastLogoUrl, setGameblastLogoUrl] = useState(
     event?.gameblast_logo_url ?? '',
   );
-  const [twitchChannel, setTwitchChannel] = useState(event?.twitch_channel ?? 'zeldathonuk');
   const [pendingPages, setPendingPages] = useState<DonationPageDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -350,7 +355,6 @@ function EventForm({
         start_time: new Date(startTime).toISOString(),
         currency_symbol: currency,
         is_active: isActive,
-        twitch_channel: twitchChannel.trim().toLowerCase(),
         logo_url: logoUrl.trim(),
         banner_url: bannerUrl.trim(),
         gameblast_logo_url: gameblastLogoUrl.trim(),
@@ -414,20 +418,6 @@ function EventForm({
             </option>
           ))}
         </select>
-      </div>
-      <div style={{ minWidth: 180 }}>
-        <label className="d-block small text-white-50">Twitch channel</label>
-        <div className="input-group input-group-sm">
-          <span className="input-group-text">twitch.tv/</span>
-          <input
-            value={twitchChannel}
-            onChange={(e) => setTwitchChannel(e.target.value)}
-            className="form-control form-control-sm"
-            placeholder="zeldathonuk"
-            spellCheck={false}
-            maxLength={50}
-          />
-        </div>
       </div>
       <div className="form-check mb-1">
         <input
@@ -1357,6 +1347,410 @@ function EventCharityEditForm({
       </button>
       {err && <div className="text-danger w-100 small mt-2">{err}</div>}
     </form>
+  );
+}
+
+// ── Per-event Twitch channels ────────────────────────────────────────
+//
+// Mirrors DonationPagesEditor/EventCharitiesEditor: a list of the event's
+// Twitch channels with an add/edit form, plus a per-channel device-code
+// "Connect" flow that mints an OAuth token (TwitchChannelConnection) so the
+// channel can be a charity source. Each channel drives live status; charity
+// channels also need connecting.
+
+function EventTwitchChannelsEditor({ event }: { event: EventModel }) {
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [connecting, setConnecting] = useState<EventTwitchChannel | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const channels = [...event.twitch_channels].sort((a, b) => a.order - b.order);
+
+  const remove = async (id: number) => {
+    if (!confirm('Remove this Twitch channel from the event?')) return;
+    try {
+      await obsApi.deleteEventTwitchChannel(id);
+      notifyEventChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  return (
+    <div
+      className="mt-3 p-3"
+      style={{
+        background: 'rgba(0,0,0,0.25)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 8,
+      }}
+    >
+      <header className="d-flex justify-content-between align-items-center mb-2">
+        <strong>Twitch channels</strong>
+        {!adding && (
+          <button
+            type="button"
+            className="btn btn-sm btn-bloodmoon"
+            onClick={() => setAdding(true)}
+          >
+            + Add channel
+          </button>
+        )}
+      </header>
+
+      {err && <div className="text-danger small mb-2">{err}</div>}
+
+      {adding && (
+        <EventTwitchChannelForm
+          eventId={event.id}
+          onCancel={() => setAdding(false)}
+          onSaved={() => setAdding(false)}
+        />
+      )}
+
+      {channels.length === 0 && !adding && (
+        <p className="text-white-50 small m-0">
+          No channels yet — add the stream channel(s). Each drives live status;
+          tick “Charity source” and Connect to pull its donations into this
+          event.
+        </p>
+      )}
+
+      {channels.length > 0 && (
+        <ul className="list-unstyled m-0">
+          {channels.map((c) =>
+            editingId === c.id ? (
+              <li key={c.id} className="mb-2">
+                <EventTwitchChannelForm
+                  eventId={event.id}
+                  channel={c}
+                  onCancel={() => setEditingId(null)}
+                  onSaved={() => setEditingId(null)}
+                />
+              </li>
+            ) : (
+              <li
+                key={c.id}
+                className="d-flex align-items-center gap-2 flex-wrap py-2 px-2"
+                style={{
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: c.is_primary ? 'rgba(231, 19, 71, 0.12)' : undefined,
+                  borderLeft: c.is_primary
+                    ? '3px solid rgba(231, 19, 71, 0.7)'
+                    : '3px solid transparent',
+                  borderRadius: 4,
+                }}
+              >
+                <code className="text-warning">twitch.tv/{c.login}</code>
+                {c.is_primary && (
+                  <span className="badge bg-warning text-dark">primary</span>
+                )}
+                {c.track_charity && (
+                  <span className="badge bg-info text-dark">charity</span>
+                )}
+                {c.track_charity &&
+                  (c.is_connected ? (
+                    <span
+                      className="badge bg-success"
+                      title={c.connection_scopes.join(' ')}
+                    >
+                      connected
+                    </span>
+                  ) : (
+                    <span className="badge bg-secondary">not connected</span>
+                  ))}
+                <div className="ms-auto control-btn-row">
+                  {c.track_charity && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-warning"
+                      onClick={() => setConnecting(c)}
+                    >
+                      {c.is_connected ? 'Reconnect' : 'Connect'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light"
+                    onClick={() => setEditingId(c.id)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => remove(c.id)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </li>
+            ),
+          )}
+        </ul>
+      )}
+
+      {connecting && (
+        <ConnectChannelModal
+          channel={connecting}
+          onClose={() => setConnecting(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function EventTwitchChannelForm({
+  eventId,
+  channel,
+  onCancel,
+  onSaved,
+}: {
+  eventId: number;
+  channel?: EventTwitchChannel;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const isEdit = channel !== undefined;
+  const [login, setLogin] = useState(channel?.login ?? '');
+  const [isPrimary, setIsPrimary] = useState(channel?.is_primary ?? false);
+  const [trackCharity, setTrackCharity] = useState(channel?.track_charity ?? false);
+  const [charitySlug, setCharitySlug] = useState(channel?.charity_slug ?? '');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!login.trim()) return;
+    setErr(null);
+    setBusy(true);
+    const body = {
+      login: login.trim().toLowerCase(),
+      is_primary: isPrimary,
+      track_charity: trackCharity,
+      charity_slug: charitySlug.trim(),
+    };
+    try {
+      if (isEdit) {
+        await obsApi.updateEventTwitchChannel(channel.id, body);
+      } else {
+        await obsApi.createEventTwitchChannel({ event: eventId, ...body });
+      }
+      notifyEventChanged();
+      onSaved();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={submit}
+      className="d-flex gap-2 flex-wrap align-items-end mt-2"
+      style={{ padding: 10, background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}
+    >
+      <div style={{ minWidth: 200 }}>
+        <label className="d-block small text-white-50">Channel</label>
+        <div className="input-group input-group-sm">
+          <span className="input-group-text">twitch.tv/</span>
+          <input
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
+            className="form-control form-control-sm"
+            placeholder="msec"
+            spellCheck={false}
+            maxLength={50}
+            required
+          />
+        </div>
+      </div>
+      <div style={{ minWidth: 180 }}>
+        <label className="d-block small text-white-50">
+          Charity slug (optional)
+        </label>
+        <input
+          value={charitySlug}
+          onChange={(e) => setCharitySlug(e.target.value)}
+          className="form-control form-control-sm"
+          placeholder="msec-gameblast26"
+        />
+      </div>
+      <div className="form-check mb-1">
+        <input
+          id={`etc-primary-${channel?.id ?? 'new'}`}
+          type="checkbox"
+          className="form-check-input"
+          checked={isPrimary}
+          onChange={(e) => setIsPrimary(e.target.checked)}
+        />
+        <label
+          htmlFor={`etc-primary-${channel?.id ?? 'new'}`}
+          className="form-check-label small"
+        >
+          Primary
+        </label>
+      </div>
+      <div className="form-check mb-1">
+        <input
+          id={`etc-charity-${channel?.id ?? 'new'}`}
+          type="checkbox"
+          className="form-check-input"
+          checked={trackCharity}
+          onChange={(e) => setTrackCharity(e.target.checked)}
+        />
+        <label
+          htmlFor={`etc-charity-${channel?.id ?? 'new'}`}
+          className="form-check-label small"
+        >
+          Charity source
+        </label>
+      </div>
+      <button type="submit" className="btn btn-bloodmoon btn-sm" disabled={busy}>
+        {busy ? 'Saving…' : isEdit ? 'Update' : 'Add'}
+      </button>
+      <button type="button" className="btn btn-outline-light btn-sm" onClick={onCancel}>
+        Cancel
+      </button>
+      {err && <div className="text-danger w-100 small mt-2">{err}</div>}
+    </form>
+  );
+}
+
+function ConnectChannelModal({
+  channel,
+  onClose,
+}: {
+  channel: EventTwitchChannel;
+  onClose: () => void;
+}) {
+  const [phase, setPhase] = useState<'starting' | 'waiting' | 'done' | 'error'>(
+    'starting',
+  );
+  const [info, setInfo] = useState<{ user_code: string; verification_uri: string } | null>(
+    null,
+  );
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+    (async () => {
+      try {
+        const role = channel.is_primary ? 'primary' : 'charity';
+        const started = await obsApi.twitchConnectStart(channel.login, role);
+        if (cancelled) return;
+        setInfo({
+          user_code: started.user_code,
+          verification_uri: started.verification_uri,
+        });
+        setPhase('waiting');
+        const intervalMs = Math.max(2, started.interval) * 1000;
+        const deadline = Date.now() + started.expires_in * 1000;
+        const poll = async () => {
+          if (cancelled) return;
+          if (Date.now() > deadline) {
+            setPhase('error');
+            setMsg('Authorisation timed out — try again.');
+            return;
+          }
+          try {
+            const res = await obsApi.twitchConnectPoll(started.device_code, channel.login);
+            if (cancelled) return;
+            if (res.status === 'authorized') {
+              setPhase('done');
+              notifyEventChanged();
+              return;
+            }
+            if (res.status === 'expired' || res.status === 'error') {
+              setPhase('error');
+              setMsg(res.message || 'Authorisation failed.');
+              return;
+            }
+            timer = window.setTimeout(
+              poll,
+              res.status === 'slow_down' ? intervalMs + 2000 : intervalMs,
+            );
+          } catch (e) {
+            if (!cancelled) {
+              setPhase('error');
+              setMsg((e as Error).message);
+            }
+          }
+        };
+        timer = window.setTimeout(poll, intervalMs);
+      } catch (e) {
+        if (!cancelled) {
+          setPhase('error');
+          setMsg((e as Error).message);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [channel.login, channel.is_primary]);
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Connect ${channel.login}`}
+      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+      style={{ background: 'rgba(0,0,0,0.65)', zIndex: 1090, padding: '1rem' }}
+      onClick={onClose}
+    >
+      <div
+        className="control-card"
+        style={{ maxWidth: 460, width: '100%' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="d-flex justify-content-between align-items-center mb-2">
+          <h5 className="m-0">Connect twitch.tv/{channel.login}</h5>
+          <button
+            type="button"
+            className="btn-close btn-close-white"
+            aria-label="Close"
+            onClick={onClose}
+          />
+        </header>
+        {phase === 'starting' && <p className="text-white-50">Starting…</p>}
+        {phase === 'waiting' && info && (
+          <div>
+            <p className="small text-white-50 mb-2">
+              The broadcaster of <strong>{channel.login}</strong> authorises on
+              their own device:
+            </p>
+            <ol className="small">
+              <li>
+                Open{' '}
+                <a href={info.verification_uri} target="_blank" rel="noreferrer">
+                  {info.verification_uri}
+                </a>
+              </li>
+              <li>
+                Enter code{' '}
+                <code style={{ fontSize: '1.25em' }}>{info.user_code}</code>
+              </li>
+            </ol>
+            <p className="small text-white-50 m-0">
+              Waiting for authorisation… this updates automatically.
+            </p>
+          </div>
+        )}
+        {phase === 'done' && (
+          <p className="text-success m-0">✓ Connected — you can close this.</p>
+        )}
+        {phase === 'error' && <p className="text-danger m-0">{msg}</p>}
+        <div className="text-end mt-3">
+          <button type="button" className="btn btn-sm btn-outline-light" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
