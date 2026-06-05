@@ -81,8 +81,10 @@ urlpatterns = [
     path('webhooks/justgiving/', webhooks.justgiving_webhook, name='wh-justgiving'),
     path('webhooks/tiltify/', webhooks.tiltify_webhook, name='wh-tiltify'),
     path('webhooks/donation/', webhooks.generic_webhook, name='wh-generic'),
-    # Twitch — push the active schedule to the channel's Twitch schedule.
+    # Twitch — push the active schedule to the channel's Twitch schedule, or
+    # clear every segment off it.
     path('twitch/push-schedule/', twitch.push_schedule, name='twitch-push'),
+    path('twitch/clear-schedule/', twitch.clear_schedule, name='twitch-clear'),
     # Read-only live-status check used by the public homepage to decide
     # whether to show the "<channel> is Offline" placeholder.
     path('twitch/stream-status/', twitch.stream_status, name='twitch-stream-status'),

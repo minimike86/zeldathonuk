@@ -872,22 +872,66 @@ def stream_status(request: Request) -> Response:
     })
 
 
-@api_view(['POST'])
-def push_schedule(_req: Request) -> Response:  # noqa: ARG001 — unused; named _req so it doesn't shadow the module-level _request() Helix helper
-    """Replace the Twitch channel schedule with the active event's lineup."""
-    # Token first — gives a clear "no token configured" message rather than the
-    # (now auto-resolved) broadcaster id being the apparent blocker.
+def _all_segment_ids(bid: str) -> list[str]:
+    """Every scheduled segment id for the broadcaster, paginating the Helix
+    schedule so a long marathon (>25 segments) is fully covered."""
+    ids: list[str] = []
+    cursor: str | None = None
+    for _ in range(50):  # safety bound — far more than any real schedule
+        url = f'{HELIX}/schedule?broadcaster_id={bid}&first=25'
+        if cursor:
+            url += f'&after={cursor}'
+        resp = _request('GET', url)
+        if not resp.ok:
+            break
+        body = resp.json()
+        segments = (body.get('data') or {}).get('segments') or []
+        ids.extend(str(s['id']) for s in segments if s.get('id'))
+        cursor = (body.get('pagination') or {}).get('cursor')
+        if not cursor or not segments:
+            break
+    return ids
+
+
+def _delete_all_segments(bid: str) -> int:
+    """Delete every scheduled segment for the broadcaster. Returns the count
+    actually removed."""
+    base = f'{HELIX}/schedule/segment?broadcaster_id={bid}'
+    deleted = 0
+    for seg_id in _all_segment_ids(bid):
+        if _request('DELETE', f'{base}&id={seg_id}').ok:
+            deleted += 1
+    return deleted
+
+
+def _schedule_broadcaster() -> tuple[str | None, Response | None]:
+    """Shared guard for the schedule actions: require a user token + resolved
+    broadcaster id. Returns (broadcaster_id, None) on success, else (None,
+    error Response)."""
     try:
         get_user_access_token()
     except TwitchAuthError as exc:
-        return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-
+        return None, Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     bid = resolve_broadcaster_id()
     if not bid:
-        return Response(
+        return None, Response(
             {'error': 'Could not resolve broadcaster id from the Twitch token.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    return bid, None
+
+
+@api_view(['POST'])
+def push_schedule(_req: Request) -> Response:  # noqa: ARG001 — unused; named _req so it doesn't shadow the module-level _request() Helix helper
+    """Replace the Twitch channel schedule with the active event's lineup.
+
+    Each game entry becomes a segment titled with the game, and — when the game
+    carries a ``twitch_game_id`` — tagged with that Twitch **category** so the
+    schedule shows the right box art. Break/start/end slots are skipped but
+    still advance the clock."""
+    bid, err = _schedule_broadcaster()
+    if err is not None:
+        return err
 
     event = models.Event.objects.filter(is_active=True).first()
     if not event:
@@ -901,23 +945,15 @@ def push_schedule(_req: Request) -> Response:  # noqa: ARG001 — unused; named 
 
     base = f'{HELIX}/schedule/segment?broadcaster_id={bid}'
 
-    # 1) Pull existing scheduled segments and delete them (idempotency).
-    list_url = f'{HELIX}/schedule?broadcaster_id={bid}'
-    existing = _request('GET', list_url)
-    deleted = 0
-    if existing.ok:
-        segments = existing.json().get('data', {}).get('segments', []) or []
-        for seg in segments:
-            seg_id = seg.get('id')
-            if seg_id:
-                _request('DELETE', f'{base}&id={seg_id}')
-                deleted += 1
+    # 1) Clear the existing schedule first (idempotent re-push).
+    deleted = _delete_all_segments(bid)
 
     # 2) Post each GAME entry as a new segment. Break/start/end slots have no
     #    game — skip them as segments, but still advance the cursor over their
     #    duration so the following game's start time accounts for the gap.
     cursor = event.start_time
     created = []
+    categorised = 0
     for entry in entries:
         duration_min = entry.effective_minutes
         if entry.game is not None:
@@ -927,9 +963,15 @@ def push_schedule(_req: Request) -> Response:  # noqa: ARG001 — unused; named 
                 'duration': str(duration_min),
                 'title': entry.game.title,
             }
+            # Twitch category (game) id, so the segment shows the right box art.
+            category_id = (entry.game.twitch_game_id or '').strip()
+            if category_id:
+                body['category_id'] = category_id
             resp = _request('POST', base, json=body)
             if resp.ok:
                 created.append(entry.id)
+                if category_id:
+                    categorised += 1
         cursor = cursor + timedelta(minutes=duration_min)
 
     return Response(
@@ -938,5 +980,16 @@ def push_schedule(_req: Request) -> Response:  # noqa: ARG001 — unused; named 
             'deleted_segments': deleted,
             'created_entries': created,
             'segment_count': len(created),
+            'categorised_count': categorised,
         }
     )
+
+
+@api_view(['POST'])
+def clear_schedule(_req: Request) -> Response:  # noqa: ARG001 — see push_schedule
+    """Delete every segment from the Twitch channel schedule."""
+    bid, err = _schedule_broadcaster()
+    if err is not None:
+        return err
+    deleted = _delete_all_segments(bid)
+    return Response({'deleted_segments': deleted})
