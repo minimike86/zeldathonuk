@@ -1676,12 +1676,15 @@ class RewardActionType(models.TextChoices):
     CHAT = 'chat', 'Post chat message'
     SHOUTOUT = 'shoutout', 'Shout out the redeemer'
     DEATH_COUNTER = 'death_counter', 'Adjust death counter'
+    WEBHOOK = 'webhook', 'Call a webhook (HTTP)'
+    ALERT = 'alert', 'On-stream alert + sound'
 
 
 class RewardAction(models.Model):
     """One action run when a ``RewardMapping`` is redeemed. ``params`` holds the
     per-type config: chat → {template, as_announcement, color}; shoutout → {};
-    death_counter → {delta}."""
+    death_counter → {delta}; webhook → {url, method, headers, body,
+    content_type}; alert → {text, sound_url, duration_ms}."""
 
     mapping = models.ForeignKey(
         RewardMapping, on_delete=models.CASCADE, related_name='actions',

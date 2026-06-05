@@ -2433,6 +2433,16 @@ export const obsApi = {
   deleteRewardAction: (id: number) =>
     api<void>(`/api/reward-actions/${id}/`, { method: 'DELETE' }),
   twitchCustomRewards: () => api<CustomReward[]>('/api/twitch/rewards/'),
+  /** Create a NEW channel-point reward on the active event's primary channel
+   *  (operator) so it appears for viewers to redeem. Returns the created
+   *  reward; map actions to it via its returned id. */
+  createTwitchReward: (body: {
+    title: string;
+    cost: number;
+    prompt?: string;
+    require_input?: boolean;
+    background_color?: string;
+  }) => api<CustomReward>('/api/twitch/rewards/', { method: 'POST', body }),
 
   // ── Send arbitrary chat message + emote picker ────────────────────
   twitchEmotes: () => api<TwitchEmote[]>('/api/twitch/emotes/'),

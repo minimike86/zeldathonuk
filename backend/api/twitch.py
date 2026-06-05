@@ -648,6 +648,29 @@ def fetch_custom_rewards(conn, broadcaster_id: str) -> list[dict]:
     return resp.json().get('data') or []
 
 
+def create_custom_reward(
+    conn, broadcaster_id: str, *, title: str, cost: int,
+    prompt: str = '', require_input: bool = False, background_color: str = '',
+) -> requests.Response:
+    """Create a channel-point custom reward on the channel.
+
+    Needs ``channel:manage:redemptions``. Rewards created by *this* app (client
+    id) also become manageable via the API (redemptions can be fulfilled /
+    refunded) and, crucially, actually appear on the channel for viewers to
+    redeem — mapping a reward by name alone never creates it on Twitch."""
+    body: dict = {'title': title, 'cost': int(cost)}
+    if prompt:
+        body['prompt'] = prompt
+    if require_input:
+        body['is_user_input_required'] = True
+    if background_color:
+        body['background_color'] = background_color
+    return _request_as(
+        conn, 'POST', f'{HELIX}/channel_points/custom_rewards',
+        params={'broadcaster_id': broadcaster_id}, json=body,
+    )
+
+
 def fetch_global_emotes() -> list[dict]:
     """Twitch global emotes (name + 1x image url) for the chat composer's emote
     picker. App-token call (no user scope); returns [] on error. Sending an

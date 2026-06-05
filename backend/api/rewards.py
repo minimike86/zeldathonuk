@@ -9,9 +9,15 @@ from __future__ import annotations
 
 import logging
 
+import requests
+from django.utils import timezone
+
 from . import models
 
 logger = logging.getLogger(__name__)
+
+# Cap webhook calls so a slow/hung endpoint can't stall the redemption path.
+_WEBHOOK_TIMEOUT = 10
 
 
 def handle_redemption(event, reward: dict, *, user_login: str = '',
@@ -76,10 +82,80 @@ def _run_action(action, event, ctx: dict, user_login: str) -> bool:
             except (TypeError, ValueError):
                 delta = 1
             return _adjust_death_counter(delta)
+        if action.action_type == models.RewardActionType.WEBHOOK:
+            return _call_webhook(params, ctx)
+        if action.action_type == models.RewardActionType.ALERT:
+            return _fire_alert(params, ctx)
         return False
     except Exception:  # noqa: BLE001
         logger.exception('reward action %s failed', action.action_type)
         return False
+
+
+def _render_placeholders(template: str, ctx: dict) -> str:
+    """Substitute ``{user}``/``{reward}``/… by plain replacement.
+
+    Unlike ``chat.render_template`` (str.format_map), this leaves other braces
+    untouched, so a JSON webhook body (full of ``{`` / ``}``) renders correctly
+    instead of tripping the format parser."""
+    out = template
+    for key, value in ctx.items():
+        out = out.replace('{' + key + '}', '' if value is None else str(value))
+    return out
+
+
+def _call_webhook(params: dict, ctx: dict) -> bool:
+    """Fire a templated HTTP request to an operator-configured URL.
+
+    ``params``: ``{url, method, headers, body, content_type}``. The body is
+    rendered with the redemption context ({user}/{reward}/{input}/{cost}).
+    Operator-configured (trusted), but bounded by a short timeout and an
+    http(s)-only scheme check. Best-effort — never raises."""
+    url = (params.get('url') or '').strip()
+    if not url.lower().startswith(('http://', 'https://')):
+        return False
+    method = (params.get('method') or 'POST').upper()
+    headers = params.get('headers') if isinstance(params.get('headers'), dict) else {}
+    body_tmpl = params.get('body') or ''
+    body = _render_placeholders(body_tmpl, ctx) if body_tmpl else ''
+    try:
+        if method == 'GET':
+            requests.get(url, headers=headers, timeout=_WEBHOOK_TIMEOUT)
+        else:
+            ctype = params.get('content_type') or 'application/json'
+            requests.request(
+                method, url,
+                headers={'Content-Type': ctype, **headers},
+                data=body.encode('utf-8') if body else None,
+                timeout=_WEBHOOK_TIMEOUT,
+            )
+        return True
+    except requests.RequestException:
+        logger.warning('reward webhook to %s failed', url, exc_info=True)
+        return False
+
+
+def _fire_alert(params: dict, ctx: dict) -> bool:
+    """Surface an on-stream alert (+ optional sound) by writing an ExternalEvent
+    the omnibar's event stream renders as a ``reward-alert`` takeover."""
+    from . import chat
+
+    text = chat.render_template(
+        params.get('text') or '{user} redeemed {reward}', ctx,
+    ).strip()
+    models.ExternalEvent.objects.create(
+        source=models.ExternalEvent.SOURCE_TWITCH,
+        kind='reward-alert',
+        payload={
+            'text': text,
+            'sound_url': (params.get('sound_url') or '').strip(),
+            'duration_ms': params.get('duration_ms') or 0,
+            'user_name': ctx.get('user', ''),
+            'reward': ctx.get('reward', ''),
+        },
+        occurred_at=timezone.now(),
+    )
+    return True
 
 
 def _adjust_death_counter(delta: int) -> bool:

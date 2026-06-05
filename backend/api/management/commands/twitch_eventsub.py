@@ -158,7 +158,7 @@ class Command(BaseCommand):
             else:
                 failed += 1
                 self.stdout.write(self.style.ERROR(
-                    f'    ! {resp.status_code}: {resp.text[:300]}'
+                    f'    ! {d["type"]} failed ({resp.status_code}): {resp.text[:300]}'
                 ))
 
         # Prune our managed subs that are stale (wrong callback or dead status).

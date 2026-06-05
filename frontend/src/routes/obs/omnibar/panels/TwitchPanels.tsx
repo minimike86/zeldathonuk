@@ -98,6 +98,35 @@ export function TwitchBitsPanel({ data, onComplete }: TwitchPanelProps) {
   );
 }
 
+/** Operator-defined channel-point reward alert: shows the configured text and
+ *  plays the optional sound. Driven by the `reward-alert` ExternalEvent the
+ *  backend writes when an "On-stream alert + sound" reward action fires. */
+export function RewardAlertPanel({ data, onComplete }: TwitchPanelProps) {
+  useExpiry(onComplete);
+  const event = asExternal(data.event);
+  const text = pickString(event.payload, ['text']) || 'Reward redeemed';
+  const soundUrl = pickString(event.payload, ['sound_url']);
+
+  useEffect(() => {
+    if (!soundUrl) return;
+    try {
+      const audio = new Audio(soundUrl);
+      audio.volume = 0.7;
+      void audio.play().catch(() => {});
+    } catch {
+      /* autoplay/codec issues are non-fatal — the visual still shows */
+    }
+  }, [soundUrl]);
+
+  return (
+    <PanelRow tag="REWARD" arrow flash>
+      <span className="ob-text-strong">
+        <WaveText text={text} staggerMs={24} startDelayMs={520} />
+      </span>
+    </PanelRow>
+  );
+}
+
 /** Generic fallback for any twitch:* event we haven't built UI for. */
 export function TwitchGenericToast({ data, onComplete }: TwitchPanelProps) {
   useExpiry(onComplete);
@@ -130,6 +159,8 @@ registerEventHandler({ kind: 'twitch-raid', component: TwitchRaidPanel,
   flashMood: 'celebrate', durationMs: HOLD_MS });
 registerEventHandler({ kind: 'twitch-bits', component: TwitchBitsPanel,
   flashMood: 'cheer', durationMs: HOLD_MS });
+registerEventHandler({ kind: 'reward-alert', component: RewardAlertPanel,
+  flashMood: 'celebrate', durationMs: HOLD_MS });
 
 // ── helpers ─────────────────────────────────────────────────────────
 

@@ -462,15 +462,22 @@ function EventSubSection() {
   const { data, error } = usePolledQuery(obsApi.eventsubSubscriptions, 15_000, [nonce]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [output, setOutput] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const sync = async (prune: boolean) => {
     setErr(null);
     setMsg(null);
+    setOutput(null);
     setBusy(true);
     try {
       const res = await obsApi.eventsubSync(prune);
-      setMsg(res.output.trim().split('\n').slice(-1)[0] || 'Done.');
+      const lines = res.output.trim().split('\n');
+      setMsg(lines[lines.length - 1] || 'Done.');
+      // Keep the full log when anything failed/pruned so the per-subscription
+      // error lines (e.g. "! channel.follow failed (403): …") are visible.
+      const hadDetail = /failed|prune|!/i.test(res.output);
+      setOutput(hadDetail ? res.output.trim() : null);
       setNonce((n) => n + 1);
     } catch (e) {
       setErr((e as Error).message);
@@ -516,6 +523,20 @@ function EventSubSection() {
           <span className="badge bg-success">Done</span>{' '}
           <span className="text-white-50">{msg}</span>
         </p>
+      )}
+      {output && (
+        <pre
+          className="small mt-1 mb-2 p-2"
+          style={{
+            background: 'rgba(0,0,0,0.4)',
+            borderRadius: 6,
+            maxHeight: 240,
+            overflow: 'auto',
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {output}
+        </pre>
       )}
       {err && (
         <p className="small mb-1">

@@ -216,6 +216,7 @@ class WebhookTests(APITestCase):
         self.assertEqual(res.status_code, 201)
         self.assertTrue(models.Donation.objects.filter(external_id='jg1').exists())
 
+    @override_settings(TILTIFY_WEBHOOK_SECRET='')  # unsigned-intake path
     def test_tiltify_webhook(self):
         res = self.client.post('/api/webhooks/tiltify/', {
             'data': {'id': 'tl1', 'donor_name': 'Sam',

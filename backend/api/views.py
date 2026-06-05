@@ -1531,17 +1531,62 @@ def twitch_emotes(request: Request) -> Response:
     return Response(twitch.fetch_global_emotes())
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 def twitch_custom_rewards(request: Request) -> Response:
-    """List the active event's primary channel's custom channel-point rewards
-    (id, title, cost) so the operator can pick one to map actions to."""
+    """The active event's primary channel's custom channel-point rewards.
+
+    GET (public): list ``{id, title, cost}`` so the operator can map actions to
+    an existing reward. POST (operator): create a NEW reward on the channel via
+    Helix so it actually appears for viewers to redeem — body
+    ``{title, cost, prompt?, require_input?, background_color?}``. Returns the
+    created reward; the panel then maps it by its returned id."""
     active = models.Event.objects.filter(is_active=True).first()
     conn = twitch.event_primary_connection(active) if active else None
     if not conn:
+        if request.method == 'POST':
+            return Response(
+                {'detail': 'No active event with a connected primary channel.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response([])
     bid = twitch.ensure_connection_broadcaster_id(conn)
     if not bid:
+        if request.method == 'POST':
+            return Response(
+                {'detail': 'Could not resolve the channel broadcaster id.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response([])
+
+    if request.method == 'POST':
+        title = (request.data.get('title') or '').strip()
+        try:
+            cost = int(request.data.get('cost'))
+        except (TypeError, ValueError):
+            cost = 0
+        if not title or cost < 1:
+            return Response(
+                {'detail': 'A title and a cost of at least 1 are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        resp = twitch.create_custom_reward(
+            conn, bid, title=title, cost=cost,
+            prompt=(request.data.get('prompt') or '').strip(),
+            require_input=bool(request.data.get('require_input')),
+            background_color=(request.data.get('background_color') or '').strip(),
+        )
+        if not resp.ok:
+            return Response(
+                {'detail': f'Twitch rejected the reward ({resp.status_code}): '
+                           f'{resp.text[:200]}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        r = (resp.json().get('data') or [{}])[0]
+        return Response(
+            {'id': r.get('id'), 'title': r.get('title'), 'cost': r.get('cost')},
+            status=status.HTTP_201_CREATED,
+        )
+
     rewards = twitch.fetch_custom_rewards(conn, bid)
     return Response([
         {'id': r.get('id'), 'title': r.get('title'), 'cost': r.get('cost')}
@@ -1671,6 +1716,14 @@ def eventsub_subscriptions(request: Request) -> Response:
         subs = twitch.list_eventsub_subscriptions()
     except twitch.TwitchAuthError as exc:
         return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as exc:  # noqa: BLE001 — transport/timeout: surface, don't 500
+        # A bare 500 reaches the browser as an opaque "Failed to fetch" (the
+        # error page carries no CORS headers); return a clean JSON error so the
+        # panel can show what actually went wrong.
+        return Response(
+            {'detail': f'Could not reach Twitch: {exc}'},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
     rows = [{
         'id': s.get('id'),
         'type': s.get('type'),

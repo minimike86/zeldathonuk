@@ -6,9 +6,12 @@ const ACTION_TYPES = [
   { value: 'chat', label: 'Post chat message' },
   { value: 'shoutout', label: 'Shout out the redeemer' },
   { value: 'death_counter', label: 'Adjust death counter' },
+  { value: 'webhook', label: 'Call a webhook (HTTP)' },
+  { value: 'alert', label: 'On-stream alert + sound' },
 ];
 
 const ANNOUNCE_COLORS = ['primary', 'blue', 'green', 'orange', 'purple'];
+const HTTP_METHODS = ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'];
 
 export function RewardsPanel() {
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
@@ -78,8 +81,13 @@ function AddReward({
   onAdded: () => void;
   onError: (m: string | null) => void;
 }) {
+  // 'existing' = map an existing Twitch reward; 'create' = create a NEW reward
+  // on the channel (so it actually appears for viewers) then map it.
+  const [mode, setMode] = useState<'existing' | 'create'>('existing');
   const [title, setTitle] = useState('');
   const [rewardId, setRewardId] = useState('');
+  const [cost, setCost] = useState(100);
+  const [requireInput, setRequireInput] = useState(false);
   const [busy, setBusy] = useState(false);
   const mappedIds = new Set(existing.map((m) => m.reward_id).filter(Boolean));
   const candidates = rewards.filter((r) => !mappedIds.has(r.id));
@@ -95,13 +103,25 @@ function AddReward({
     if (!title.trim()) return;
     setBusy(true);
     try {
+      let mappedRewardId = rewardId;
+      if (mode === 'create') {
+        // Create the reward on Twitch first, then map actions to its real id.
+        const created = await obsApi.createTwitchReward({
+          title: title.trim(),
+          cost,
+          require_input: requireInput,
+        });
+        mappedRewardId = created.id;
+      }
       await obsApi.createRewardMapping({
         event: eventId,
-        reward_id: rewardId,
+        reward_id: mappedRewardId,
         reward_title: title.trim(),
       });
       setTitle('');
       setRewardId('');
+      setCost(100);
+      setRequireInput(false);
       onAdded();
     } catch (e) {
       onError((e as Error).message);
@@ -111,38 +131,103 @@ function AddReward({
   };
 
   return (
-    <form onSubmit={submit} className="d-flex gap-2 align-items-end flex-wrap mt-2">
-      {candidates.length > 0 && (
-        <div>
-          <label className="d-block small text-white-50">Pick a reward</label>
-          <select
-            className="form-select form-select-sm"
-            style={{ width: 220 }}
-            value={rewardId}
-            onChange={(e) => pick(e.target.value)}
-          >
-            <option value="">— choose —</option>
-            {candidates.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.title} ({r.cost})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <div>
-        <label className="d-block small text-white-50">Reward name</label>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="form-control form-control-sm"
-          placeholder="Add a death"
-          style={{ width: 200 }}
-        />
+    <form onSubmit={submit} className="mt-2">
+      <div className="btn-group btn-group-sm mb-2" role="group">
+        <button
+          type="button"
+          className={`btn ${mode === 'existing' ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+          onClick={() => setMode('existing')}
+        >
+          Map existing reward
+        </button>
+        <button
+          type="button"
+          className={`btn ${mode === 'create' ? 'btn-bloodmoon' : 'btn-outline-light'}`}
+          onClick={() => {
+            setMode('create');
+            setRewardId('');
+          }}
+        >
+          Create new on Twitch
+        </button>
       </div>
-      <button type="submit" className="btn btn-bloodmoon btn-sm" disabled={busy || !title.trim()}>
-        {busy ? 'Adding…' : '+ Add reward'}
-      </button>
+
+      <div className="d-flex gap-2 align-items-end flex-wrap">
+        {mode === 'existing' && candidates.length > 0 && (
+          <div>
+            <label className="d-block small text-white-50">Pick a reward</label>
+            <select
+              className="form-select form-select-sm"
+              style={{ width: 220 }}
+              value={rewardId}
+              onChange={(e) => pick(e.target.value)}
+            >
+              <option value="">— choose —</option>
+              {candidates.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.title} ({r.cost})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {mode === 'existing' && candidates.length === 0 && (
+          <span className="small text-white-50 align-self-center">
+            No unmapped rewards on the channel — switch to “Create new on Twitch”
+            or check the primary channel is connected.
+          </span>
+        )}
+        <div>
+          <label className="d-block small text-white-50">Reward name</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="form-control form-control-sm"
+            placeholder="Add a death"
+            style={{ width: 200 }}
+          />
+        </div>
+        {mode === 'create' && (
+          <>
+            <div>
+              <label className="d-block small text-white-50">Cost</label>
+              <input
+                type="number"
+                min={1}
+                value={cost}
+                onChange={(e) => setCost(Number(e.target.value))}
+                className="form-control form-control-sm"
+                style={{ width: 110 }}
+              />
+            </div>
+            <div className="form-check mb-1">
+              <input
+                id="rw-require-input"
+                type="checkbox"
+                className="form-check-input"
+                checked={requireInput}
+                onChange={(e) => setRequireInput(e.target.checked)}
+              />
+              <label htmlFor="rw-require-input" className="form-check-label small">
+                Require viewer text
+              </label>
+            </div>
+          </>
+        )}
+        <button
+          type="submit"
+          className="btn btn-bloodmoon btn-sm"
+          disabled={busy || !title.trim() || (mode === 'create' && cost < 1)}
+        >
+          {busy ? 'Adding…' : mode === 'create' ? '+ Create & add' : '+ Add reward'}
+        </button>
+      </div>
+      {mode === 'create' && (
+        <p className="small text-white-50 mt-1 mb-0">
+          Creates the reward on your channel via Twitch so viewers can redeem it.
+          Needs the primary channel connected with manage-redemptions.
+        </p>
+      )}
     </form>
   );
 }
@@ -316,6 +401,10 @@ function summarise(a: RewardAction): string {
   if (a.action_type === 'chat') return String(p.template ?? '{user} redeemed {reward}');
   if (a.action_type === 'death_counter') return `delta ${p.delta ?? 1}`;
   if (a.action_type === 'shoutout') return 'shouts out the redeemer';
+  if (a.action_type === 'webhook')
+    return `${String(p.method ?? 'POST')} ${String(p.url ?? '')}`.trim();
+  if (a.action_type === 'alert')
+    return String(p.text ?? '{user} redeemed {reward}') + (p.sound_url ? ' 🔊' : '');
   return '';
 }
 
@@ -339,11 +428,24 @@ function ActionForm({
   const [asAnnouncement, setAsAnnouncement] = useState(Boolean(p.as_announcement));
   const [color, setColor] = useState(String(p.color ?? 'primary'));
   const [delta, setDelta] = useState(Number(p.delta ?? 1));
+  // webhook
+  const [url, setUrl] = useState(String(p.url ?? ''));
+  const [method, setMethod] = useState(String(p.method ?? 'POST'));
+  const [contentType, setContentType] = useState(String(p.content_type ?? 'application/json'));
+  const [webhookBody, setWebhookBody] = useState(
+    String(p.body ?? '{"user": "{user}", "reward": "{reward}", "input": "{input}"}'),
+  );
+  // alert
+  const [alertText, setAlertText] = useState(String(p.text ?? '{user} redeemed {reward}!'));
+  const [soundUrl, setSoundUrl] = useState(String(p.sound_url ?? ''));
   const [busy, setBusy] = useState(false);
 
   const buildParams = (): Record<string, unknown> => {
     if (type === 'chat') return { template, as_announcement: asAnnouncement, color };
     if (type === 'death_counter') return { delta };
+    if (type === 'webhook')
+      return { url: url.trim(), method, content_type: contentType, body: webhookBody };
+    if (type === 'alert') return { text: alertText, sound_url: soundUrl.trim() };
     return {};
   };
 
@@ -445,6 +547,89 @@ function ActionForm({
         <p className="small text-white-50 mt-2 mb-0">
           Queues a cooldown-managed shoutout for whoever redeemed the reward.
         </p>
+      )}
+      {type === 'webhook' && (
+        <div className="mt-2">
+          <div className="d-flex gap-2 align-items-end flex-wrap">
+            <div>
+              <label className="d-block small text-white-50">Method</label>
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 110 }}
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+              >
+                {HTTP_METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: 240 }}>
+              <label className="d-block small text-white-50">URL</label>
+              <input
+                type="url"
+                className="form-control form-control-sm"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com/hook"
+              />
+            </div>
+            <div>
+              <label className="d-block small text-white-50">Content-Type</label>
+              <input
+                className="form-control form-control-sm"
+                style={{ width: 170 }}
+                value={contentType}
+                onChange={(e) => setContentType(e.target.value)}
+              />
+            </div>
+          </div>
+          {method !== 'GET' && (
+            <div className="mt-2">
+              <label className="d-block small text-white-50">
+                Body — {'{user} {reward} {input} {cost}'}
+              </label>
+              <textarea
+                className="form-control form-control-sm"
+                rows={2}
+                value={webhookBody}
+                onChange={(e) => setWebhookBody(e.target.value)}
+              />
+            </div>
+          )}
+          <p className="small text-white-50 mt-1 mb-0">
+            Fires an HTTP request when redeemed — wire a reward to anything (a
+            script, Discord, OBS, IFTTT/Zapier). 10s timeout, best-effort.
+          </p>
+        </div>
+      )}
+      {type === 'alert' && (
+        <div className="mt-2">
+          <label className="d-block small text-white-50">
+            On-screen text — {'{user} {reward} {input} {cost}'}
+          </label>
+          <input
+            className="form-control form-control-sm"
+            value={alertText}
+            onChange={(e) => setAlertText(e.target.value)}
+          />
+          <label className="d-block small text-white-50 mt-2">
+            Sound URL (optional)
+          </label>
+          <input
+            type="url"
+            className="form-control form-control-sm"
+            value={soundUrl}
+            onChange={(e) => setSoundUrl(e.target.value)}
+            placeholder="https://…/cheer.mp3"
+          />
+          <p className="small text-white-50 mt-1 mb-0">
+            Shows a takeover on the omnibar overlay and plays the sound (if set)
+            when redeemed.
+          </p>
+        </div>
       )}
 
       <div className="d-flex gap-2 mt-2">
