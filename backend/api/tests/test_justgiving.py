@@ -169,6 +169,69 @@ class IngestEventTests(APITestCase):
         self.assertIn('page/', str(ctx.exception).lower())
 
 
+@override_settings(JUSTGIVING_API_KEY='app123', JUSTGIVING_ENV='production')
+class PageTypePathTests(APITestCase):
+    """New "Page" products (justgiving.com/page/{slug}) are served at
+    .../pages/page/{slug}; classic pages at .../pages/{shortName}. The path is
+    chosen from the saved DonationPage URL."""
+
+    def test_segment_detects_page_product_from_url(self):
+        self.assertEqual(
+            justgiving._page_segment('myslug', 'https://www.justgiving.com/page/myslug'),
+            'page/myslug',
+        )
+
+    def test_segment_classic_when_fundraising_url(self):
+        self.assertEqual(
+            justgiving._page_segment('zeldamarathon',
+                                     'https://www.justgiving.com/fundraising/zeldamarathon'),
+            'zeldamarathon',
+        )
+
+    def test_segment_explicit_prefix_forces_page_path(self):
+        self.assertEqual(justgiving._page_segment('page/myslug'), 'page/myslug')
+
+    def test_segment_defaults_to_classic_without_url(self):
+        self.assertEqual(justgiving._page_segment('myslug'), 'myslug')
+
+    def test_summary_uses_page_path_for_new_product(self):
+        body = _resp({'pageId': '1', 'grandTotalRaisedExcludingGiftAid': '0',
+                      'donationCount': 0, 'currencyCode': 'GBP', 'status': 'Active'})
+        with patch('api.justgiving.requests.get', return_value=body) as mock_get:
+            justgiving.fetch_page_summary(
+                'zeldathonuk-2026-15th-anniversary-stream',
+                page_url='https://www.justgiving.com/page/zeldathonuk-2026-15th-anniversary-stream',
+            )
+        called_url = mock_get.call_args[0][0]
+        self.assertIn(
+            '/v1/fundraising/pages/page/zeldathonuk-2026-15th-anniversary-stream',
+            called_url,
+        )
+
+    def test_donations_uses_page_path_for_new_product(self):
+        body = _resp({'donations': [], 'pagination': {'totalPages': 1}})
+        with patch('api.justgiving.requests.get', return_value=body) as mock_get:
+            justgiving.fetch_page_donations(
+                'newslug', page_url='https://www.justgiving.com/page/newslug',
+            )
+        called_url = mock_get.call_args[0][0]
+        self.assertIn('/v1/fundraising/pages/page/newslug/donations', called_url)
+
+    def test_sync_page_total_threads_url(self):
+        event = _event()
+        page = models.DonationPage.objects.create(
+            event=event, platform=models.DonationPlatform.JUSTGIVING,
+            url='https://www.justgiving.com/page/newslug', external_id='newslug',
+        )
+        body = _resp({'pageId': '1', 'grandTotalRaisedExcludingGiftAid': '50',
+                      'donationCount': 2, 'currencyCode': 'GBP', 'status': 'Active'})
+        with patch('api.justgiving.requests.get', return_value=body) as mock_get:
+            justgiving.sync_page_total(page)
+        self.assertIn('/v1/fundraising/pages/page/newslug', mock_get.call_args[0][0])
+        page.refresh_from_db()
+        self.assertEqual(page.total_donation_count, 2)
+
+
 @override_settings(JUSTGIVING_API_KEY='app123', JUSTGIVING_ENV='staging')
 class EndpointTests(APITestCase):
     def setUp(self):

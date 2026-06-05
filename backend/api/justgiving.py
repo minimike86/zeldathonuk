@@ -55,22 +55,43 @@ class JustGivingError(RuntimeError):
     """Raised when the JustGiving API can't be reached or is misconfigured."""
 
 
+def _page_segment(short_name: str, url: str = '') -> str:
+    """Build the path segment that follows ``.../v1/fundraising/pages/``.
+
+    JustGiving serves its two page products on different paths:
+
+    * the newer **"Page"** product (``justgiving.com/page/{slug}``) lives at
+      ``.../pages/page/{slug}``;
+    * **classic** fundraising pages (``justgiving.com/fundraising/{shortName}``)
+      live at ``.../pages/{shortName}``.
+
+    We tell them apart by the saved DonationPage ``url`` (``/page/`` vs
+    ``/fundraising/``); an explicit ``page/`` prefix on the short name also
+    forces the new-product path. Defaults to the classic path when the url is
+    blank, so existing callers are unaffected."""
+    sn = (short_name or '').strip().strip('/')
+    if sn.startswith('page/'):
+        return sn
+    if '/page/' in (url or '').lower():
+        return f'page/{sn}'
+    return sn
+
+
 def _raise_for_response(resp, short_name: str) -> None:
     """Raise a :class:`JustGivingError` describing a non-OK API response.
 
-    A 404 on the v1 fundraising endpoint almost always means the short name
-    isn't a *classic* fundraising page — most commonly because it's one of
-    JustGiving's newer ``justgiving.com/page/{slug}`` "Page" products, which the
-    legacy v1 API doesn't serve. Spell that out so a 404 here doesn't read as a
-    mysterious bug."""
+    A 404 means JustGiving has no page at this short name *on this path*. The
+    most common cause is a new ``justgiving.com/page/{slug}`` product whose
+    DonationPage ``url`` wasn't saved (so we used the classic path instead of
+    ``.../pages/page/{slug}``), or simply a wrong slug. Spell that out so a 404
+    doesn't read as a mysterious bug."""
     if resp.status_code == 404:
         raise JustGivingError(
-            f'JustGiving 404 for "{short_name}": no classic fundraising page '
-            f'with that short name. If your page URL is '
-            f'justgiving.com/page/{short_name} (the newer "Page" product), the '
-            f'legacy v1 API does not serve it — use a classic '
-            f'/fundraising/ page or the JustGiving Data API once access is '
-            f'granted.'
+            f'JustGiving 404 for "{short_name}": no page found at that short '
+            f'name. New "Page" products (justgiving.com/page/{short_name}) are '
+            f'served at a different path — make sure the DonationPage URL is '
+            f'saved so the page type is detected. Older closed pages may also '
+            f'no longer expose donations publicly.'
         )
     raise JustGivingError(
         f'JustGiving error {resp.status_code}: {resp.text[:200]}'
@@ -120,21 +141,25 @@ def fetch_page_donations(
     known_ids: set[str] | None = None,
     page_size: int = _PAGE_SIZE,
     max_pages: int = _MAX_PAGES,
+    page_url: str = '',
 ) -> list[dict]:
     """Fetch a page's donations, newest-first, paginating until exhausted.
 
-    When ``known_ids`` is supplied, stop as soon as a page contains only
-    already-ingested donation ids — donations come back newest-first, so once
-    an entire page is known there's nothing newer beyond it. Keeps each poll
-    proportional to the number of *new* donations rather than the whole
-    history. Raises :class:`JustGivingError` on a non-OK response.
+    ``page_url`` is the DonationPage's public URL; it selects the classic vs
+    "Page"-product API path (see :func:`_page_segment`). When ``known_ids`` is
+    supplied, stop as soon as a page contains only already-ingested donation
+    ids — donations come back newest-first, so once an entire page is known
+    there's nothing newer beyond it. Keeps each poll proportional to the number
+    of *new* donations rather than the whole history. Raises
+    :class:`JustGivingError` on a non-OK response.
     """
     base = api_base()
     appid = app_id()
+    segment = _page_segment(short_name, page_url)
     collected: list[dict] = []
     page = 1
     while page <= max_pages:
-        url = f'{base}/{appid}/v1/fundraising/pages/{short_name}/donations'
+        url = f'{base}/{appid}/v1/fundraising/pages/{segment}/donations'
         try:
             resp = requests.get(
                 url,
@@ -183,18 +208,21 @@ def _parse_jg_date(value: str):
         return timezone.now()
 
 
-def fetch_page_summary(short_name: str) -> dict:
+def fetch_page_summary(short_name: str, *, page_url: str = '') -> dict:
     """Fetch a page's aggregate from the page-details endpoint.
 
-    Unlike the donations feed (which goes empty once a page is "Completed"),
-    the page-details endpoint keeps reporting the running total + donation
-    count for the life of the page — so this is how past events' totals stay
-    visible. Returns ``{raised, donation_count, currency, status, page_id}``.
-    Raises :class:`JustGivingError` on a non-OK response.
+    ``page_url`` is the DonationPage's public URL; it selects the classic vs
+    "Page"-product API path (see :func:`_page_segment`). Unlike the donations
+    feed (which goes empty once a page is "Completed"), the page-details
+    endpoint keeps reporting the running total + donation count for the life of
+    the page — so this is how past events' totals stay visible. Returns
+    ``{raised, donation_count, currency, status, page_id}``. Raises
+    :class:`JustGivingError` on a non-OK response.
     """
     base = api_base()
     appid = app_id()
-    url = f'{base}/{appid}/v1/fundraising/pages/{short_name}'
+    segment = _page_segment(short_name, page_url)
+    url = f'{base}/{appid}/v1/fundraising/pages/{segment}'
     try:
         resp = requests.get(
             url, headers={'Accept': 'application/json'}, timeout=_TIMEOUT,
@@ -227,7 +255,7 @@ def sync_page_total(page: 'models.DonationPage') -> None:
     short_name = (page.external_id or '').strip()
     if not short_name:
         raise JustGivingError('Page has no short name (external_id).')
-    summary = fetch_page_summary(short_name)
+    summary = fetch_page_summary(short_name, page_url=page.url)
     page.total_raised = summary['raised']
     page.total_donation_count = summary['donation_count']
     page.total_currency = summary['currency']
@@ -257,7 +285,9 @@ def ingest_event(event: 'models.Event') -> dict:
     for page in pages:
         short_name = page['short_name']
         try:
-            donations = fetch_page_donations(short_name, known_ids=known_ids)
+            donations = fetch_page_donations(
+                short_name, known_ids=known_ids, page_url=page.get('url', ''),
+            )
         except JustGivingError as exc:
             # One unreachable/unsupported page (e.g. a new /page/ product that
             # 404s on the v1 API) must not suppress the event's other pages.
