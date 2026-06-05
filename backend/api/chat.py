@@ -182,17 +182,31 @@ RECURRING_PLACEHOLDERS = ['donate_url', 'total', 'charity', 'channel']
 
 
 def event_donate_url(event) -> str:
-    """Best donate link for an event: the primary donation page, else a Twitch
-    Charity link for a charity channel, else ''."""
-    page = (
-        event.donation_pages.filter(is_primary=True).first()
-        or event.donation_pages.first()
+    """Best donate link for an event, in precedence order:
+
+    1. a donation page the operator **explicitly marked primary** (override);
+    2. the event's **primary** charity-tracking Twitch channel's charity link;
+    3. any active charity-tracking Twitch channel's charity link;
+    4. any donation page (lowest ``order``);
+
+    else ``''``. So the event's charity source (a Twitch channel using the
+    charity tools) wins over a donation page that's merely first by order
+    (e.g. Tiltify/JustGiving), while an explicitly-primary donation page still
+    lets an operator force a specific link per event."""
+    explicit = event.donation_pages.filter(is_primary=True).first()
+    if explicit and explicit.url:
+        return explicit.url
+    ch = (
+        event.twitch_channels.filter(
+            track_charity=True, is_active=True, is_primary=True,
+        ).first()
+        or event.twitch_channels.filter(track_charity=True, is_active=True).first()
     )
-    if page and page.url:
-        return page.url
-    ch = event.twitch_channels.filter(track_charity=True, is_active=True).first()
     if ch:
         return f'https://www.twitch.tv/charity/{ch.login}'
+    page = event.donation_pages.first()
+    if page and page.url:
+        return page.url
     return ''
 
 

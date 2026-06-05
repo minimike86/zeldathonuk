@@ -215,6 +215,44 @@ class RecurringMessageTests(TestCase):
             chat.event_donate_url(self.event), 'https://www.twitch.tv/charity/msec',
         )
 
+    def test_donate_url_charity_channel_beats_non_primary_page(self):
+        # A donation page that's only first-by-order (NOT explicitly primary)
+        # loses to the event's charity-tracking Twitch channel.
+        models.DonationPage.objects.create(
+            event=self.event, platform='tiltify',
+            url='https://tiltify.com/@z/x', is_primary=False,
+        )
+        conn = models.TwitchChannelConnection.objects.create(login='zeldathonuk', access_token='t')
+        models.EventTwitchChannel.objects.create(
+            event=self.event, login='zeldathonuk', track_charity=True,
+            is_primary=True, connection=conn,
+        )
+        self.assertEqual(
+            chat.event_donate_url(self.event),
+            'https://www.twitch.tv/charity/zeldathonuk',
+        )
+
+    def test_donate_url_explicit_primary_page_overrides_charity_channel(self):
+        # An explicitly-primary donation page is an operator override → it wins.
+        models.DonationPage.objects.create(
+            event=self.event, platform='tiltify',
+            url='https://tiltify.com/@z/x', is_primary=True,
+        )
+        conn = models.TwitchChannelConnection.objects.create(login='zeldathonuk', access_token='t')
+        models.EventTwitchChannel.objects.create(
+            event=self.event, login='zeldathonuk', track_charity=True,
+            is_primary=True, connection=conn,
+        )
+        self.assertEqual(chat.event_donate_url(self.event), 'https://tiltify.com/@z/x')
+
+    def test_donate_url_non_primary_page_used_when_no_charity_channel(self):
+        # No charity channel → fall back to any donation page.
+        models.DonationPage.objects.create(
+            event=self.event, platform='tiltify',
+            url='https://tiltify.com/@z/x', is_primary=False,
+        )
+        self.assertEqual(chat.event_donate_url(self.event), 'https://tiltify.com/@z/x')
+
     @patch('api.chat.send_chat_message')
     def test_post_recurring_renders_and_sends(self, mock_send):
         mock_send.return_value = MagicMock(ok=True)
