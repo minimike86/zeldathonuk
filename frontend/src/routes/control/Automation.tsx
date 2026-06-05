@@ -11,6 +11,7 @@ export function AutomationControl() {
       </div>
       <ScheduledJobsSection />
       <JustGivingSection />
+      <TiltifySection />
       <EventSubSection />
     </div>
   );
@@ -305,6 +306,135 @@ function JustGivingSection() {
           className="btn btn-sm btn-bloodmoon"
           onClick={() => void fetchNow()}
           disabled={busy || !status?.app_id_present || pages.length === 0}
+        >
+          {busy ? 'Fetching…' : 'Fetch now'}
+        </button>
+        {result && (
+          <span className="small">
+            <span className="badge bg-success">Done</span>{' '}
+            <span className="text-white-50">{result}</span>
+          </span>
+        )}
+        {err && (
+          <span className="small">
+            <span className="badge bg-danger">Error</span>{' '}
+            <span className="text-white-50">{err}</span>
+          </span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ── Tiltify ingestion ────────────────────────────────────────────────
+
+function TiltifySection() {
+  const { data: status } = usePolledQuery(obsApi.tiltifyStatus, 10_000);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+
+  const fetchNow = async () => {
+    setBusy(true);
+    setErr(null);
+    setResult(null);
+    try {
+      const res = await obsApi.runTiltifyFetch();
+      const per = res.pages
+        .map((p) => `${p.campaign_id}: ${p.ingested}/${p.fetched}`)
+        .join(', ');
+      setResult(
+        `Ingested ${res.total_ingested} donation${res.total_ingested === 1 ? '' : 's'}` +
+          (per ? ` (${per})` : ''),
+      );
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const campaigns = status?.campaigns ?? [];
+  const job = status?.poll_job ?? null;
+  const lastRun = job?.last_run_at
+    ? new Date(job.last_run_at).toLocaleTimeString()
+    : 'never';
+
+  return (
+    <section className="mt-4">
+      <h5>Tiltify ingestion</h5>
+      <p className="small text-white-50">
+        Two ways in: Tiltify webhooks deliver donations in real time to{' '}
+        <code>/api/webhooks/tiltify/</code> (HMAC-verified when a signing secret
+        is set), and the <code>poll_donations</code> job above pulls the active
+        event&apos;s campaign as a backfill on each tick.
+      </p>
+
+      {/* Same panel treatment as the JustGiving card so they read as a family. */}
+      <div className="automation-tile p-2 mb-2">
+        <div className="d-flex flex-column gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="small text-white-50">API</span>
+            <code>{status?.api_base ?? '…'}</code>
+            {status &&
+              (status.creds_present ? (
+                <span className="badge bg-success">OAuth creds set</span>
+              ) : (
+                <span className="badge bg-danger">OAuth creds missing</span>
+              ))}
+            {status &&
+              (status.webhook_secret_present ? (
+                <span className="badge bg-success">webhook verified</span>
+              ) : (
+                <span className="badge bg-secondary">webhook unsigned</span>
+              ))}
+          </div>
+
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="small text-white-50">Campaign(s)</span>
+            {campaigns.length > 0 ? (
+              campaigns.map((c) => (
+                <code key={c.campaign_id}>
+                  {c.campaign_id}
+                  {c.is_primary ? ' ★' : ''}
+                </code>
+              ))
+            ) : (
+              <>
+                <span className="badge bg-warning text-dark">no campaign linked</span>
+                <span className="small text-white-50">
+                  add a Tiltify Donation Page (with its campaign id) to the active
+                  event in <a href="/control/events">Events</a>.
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="small text-white-50">Poll job</span>
+            {job ? (
+              <>
+                <span className={`badge ${job.enabled ? 'bg-success' : 'bg-secondary'}`}>
+                  {job.enabled ? 'enabled' : 'disabled'}
+                </span>
+                <span className="small text-white-50">
+                  last run {lastRun}
+                  {job.last_status ? ` (${job.last_status})` : ''}
+                </span>
+              </>
+            ) : (
+              <span className="small text-white-50">not configured</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="d-flex align-items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          className="btn btn-sm btn-bloodmoon"
+          onClick={() => void fetchNow()}
+          disabled={busy || !status?.creds_present || campaigns.length === 0}
         >
           {busy ? 'Fetching…' : 'Fetch now'}
         </button>

@@ -1423,21 +1423,26 @@ class DonationPageViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def sync_total(self, request: Request, pk=None) -> Response:
-        """Refresh a JustGiving page's cached aggregate total (raised /
-        donation count / status) from the page-details endpoint. Works for any
+        """Refresh a page's cached aggregate total (raised / donation count /
+        status) from the platform's campaign-details endpoint. Works for any
         event's page — including completed/past ones whose itemized donation
         feed has gone empty — so operators can see what a past event raised.
-        Operator-only (default permission on POST)."""
+        Supported for JustGiving and Tiltify. Operator-only (default
+        permission on POST)."""
         page = self.get_object()
-        if page.platform != models.DonationPlatform.JUSTGIVING:
+        from . import justgiving, tiltify
+        if page.platform == models.DonationPlatform.JUSTGIVING:
+            syncer, error = justgiving.sync_page_total, justgiving.JustGivingError
+        elif page.platform == models.DonationPlatform.TILTIFY:
+            syncer, error = tiltify.sync_page_total, tiltify.TiltifyError
+        else:
             return Response(
-                {'detail': 'Totals sync is JustGiving-only.'},
+                {'detail': 'Totals sync is JustGiving/Tiltify-only.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        from . import justgiving
         try:
-            justgiving.sync_page_total(page)
-        except justgiving.JustGivingError as exc:
+            syncer(page)
+        except error as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(self.get_serializer(page).data)
 
@@ -1595,6 +1600,50 @@ def justgiving_test(request: Request) -> Response:
     try:
         result = justgiving.ingest_active_event()
     except justgiving.JustGivingError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(result)
+
+
+@api_view(['GET'])
+def tiltify_status(request: Request) -> Response:
+    """Config + last-poll snapshot for the /control/automation Tiltify card.
+
+    Public read (no secrets — only whether the OAuth credentials + webhook
+    secret are set). Reports the active event's resolved Tiltify campaign id(s)
+    and the shared `poll_donations` job's last run so the operator can see at a
+    glance whether ingestion is wired up and running."""
+    from . import tiltify
+    event = models.Event.objects.filter(is_active=True).first()
+    campaigns = tiltify.event_pages(event) if event else []
+    creds_present = bool(
+        (settings.TILTIFY_CLIENT_ID and settings.TILTIFY_CLIENT_SECRET)
+        or settings.TILTIFY_ACCESS_TOKEN
+    )
+    job = models.ScheduledJob.objects.filter(key='poll_donations').first()
+    return Response({
+        'creds_present': creds_present,
+        'webhook_secret_present': bool(settings.TILTIFY_WEBHOOK_SECRET),
+        'api_base': tiltify.api_base(),
+        'campaigns': campaigns,
+        'poll_job': {
+            'enabled': job.enabled,
+            'last_run_at': job.last_run_at,
+            'last_status': job.last_status,
+            'interval_seconds': job.interval_seconds,
+        } if job else None,
+    })
+
+
+@api_view(['POST'])
+def tiltify_test(request: Request) -> Response:
+    """Operator "Fetch now" — pull + ingest the active event's Tiltify
+    donations immediately and return the per-campaign counts. Operator-only
+    (default ReadOnlyOrOperator on a POST). Shares api.tiltify.ingest_event
+    with the scheduler, so a manual fetch behaves exactly like a poll tick."""
+    from . import tiltify
+    try:
+        result = tiltify.ingest_active_event()
+    except tiltify.TiltifyError as exc:
         return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     return Response(result)
 

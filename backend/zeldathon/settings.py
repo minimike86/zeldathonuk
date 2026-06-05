@@ -1,4 +1,5 @@
 """Django settings for the zeldathon API."""
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -187,6 +188,17 @@ REST_FRAMEWORK = {
 # ──────────────────────────────────────────────────────────────────────────────
 # Third-party API credentials (proxied from the frontend, never exposed there)
 # ──────────────────────────────────────────────────────────────────────────────
+# Tiltify v5 API is OAuth2 — the app fetches a short-lived access token from
+# the client credentials below, so unattended polling keeps working. The
+# campaign(s) to poll come per-event from the event's Tiltify DonationPage
+# (external_id = campaign id), so TILTIFY_CAMPAIGN_ID is no longer used.
+# TILTIFY_ACCESS_TOKEN stays as an optional manual override (e.g. a token
+# pasted in for a one-off test); leave it blank in normal operation.
+TILTIFY_CLIENT_ID = env('TILTIFY_CLIENT_ID', default='')
+TILTIFY_CLIENT_SECRET = env('TILTIFY_CLIENT_SECRET', default='')
+# Signing secret for the Tiltify webhook — when set, each delivery's HMAC
+# signature is verified before ingest.
+TILTIFY_WEBHOOK_SECRET = env('TILTIFY_WEBHOOK_SECRET', default='')
 TILTIFY_ACCESS_TOKEN = env('TILTIFY_ACCESS_TOKEN', default='')
 TILTIFY_CAMPAIGN_ID = env('TILTIFY_CAMPAIGN_ID', default='')
 JUSTGIVING_API_KEY = env('JUSTGIVING_API_KEY', default='')

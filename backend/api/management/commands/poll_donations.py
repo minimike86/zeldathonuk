@@ -6,10 +6,6 @@ have webhook URLs configured.
 """
 from __future__ import annotations
 
-from datetime import datetime
-from decimal import Decimal
-
-import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -36,38 +32,41 @@ class Command(BaseCommand):
             self._twitch()
 
     # ──────────────────────────────────────────────────────────────────────
-    # Tiltify v5 — campaign donations endpoint
-    # https://developers.tiltify.com
+    # Tiltify v5 — campaign donations (per-event, OAuth2). Campaign id(s) come
+    # from the active event's Tiltify DonationPages; the OAuth token, fetch +
+    # ingest logic lives in api/tiltify.py so this command and the
+    # /api/tiltify/test/ button share one path.
     # ──────────────────────────────────────────────────────────────────────
     def _tiltify(self) -> None:
-        token = settings.TILTIFY_ACCESS_TOKEN
-        cid = settings.TILTIFY_CAMPAIGN_ID
-        if not token or not cid:
-            self.stderr.write('TILTIFY_ACCESS_TOKEN + TILTIFY_CAMPAIGN_ID not set; skipping.')
-            return
-        url = f'https://v5api.tiltify.com/api/public/campaigns/{cid}/donations'
-        resp = requests.get(
-            url, headers={'Authorization': f'Bearer {token}'}, timeout=20
-        )
-        if not resp.ok:
-            self.stderr.write(f'Tiltify error {resp.status_code}: {resp.text[:200]}')
-            return
-        items = resp.json().get('data', []) or []
-        count = 0
-        for d in items:
-            amt = d.get('amount') or {}
-            donation = _ingest(
-                platform=models.DonationPlatform.TILTIFY,
-                external_id=str(d.get('id', '')),
-                donor_name=d.get('donor_name', 'Anonymous'),
-                amount=Decimal(str(amt.get('value', '0'))),
-                currency=amt.get('currency', 'GBP'),
-                message=d.get('donor_comment', '') or '',
-                donated_at=_parse_iso(d.get('completed_at')),
+        from api import tiltify
+        creds = (settings.TILTIFY_CLIENT_ID and settings.TILTIFY_CLIENT_SECRET) \
+            or settings.TILTIFY_ACCESS_TOKEN
+        if not creds:
+            self.stderr.write(
+                'TILTIFY_CLIENT_ID/SECRET (or TILTIFY_ACCESS_TOKEN) not set; '
+                'skipping Tiltify.'
             )
-            if donation:
-                count += 1
-        self.stdout.write(self.style.SUCCESS(f'Tiltify: ingested {count} donations'))
+            return
+        event = _active_event()
+        if not event:
+            self.stderr.write('Tiltify: no active event; skipping.')
+            return
+        if not tiltify.event_pages(event):
+            self.stderr.write(
+                'Tiltify: no Tiltify Donation Page linked to the active event; '
+                'skipping.'
+            )
+            return
+        try:
+            result = tiltify.ingest_event(event)
+        except tiltify.TiltifyError as exc:
+            self.stderr.write(f'Tiltify: {exc}')
+            return
+        for page in result['pages']:
+            self.stdout.write(self.style.SUCCESS(
+                f"Tiltify [{page['campaign_id']}]: ingested {page['ingested']} "
+                f"of {page['fetched']} fetched"
+            ))
 
     # ──────────────────────────────────────────────────────────────────────
     # JustGiving — fundraising page donations (per-event, polling-only).
@@ -154,12 +153,3 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 f'Twitch charity [{label}]: ingested {count} donations'
             ))
-
-
-def _parse_iso(value: str | None):
-    if not value:
-        return timezone.now()
-    try:
-        return datetime.fromisoformat(value.replace('Z', '+00:00'))
-    except ValueError:
-        return timezone.now()

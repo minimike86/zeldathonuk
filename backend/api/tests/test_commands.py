@@ -49,18 +49,28 @@ class PollDonationsCommandTests(TestCase):
             name='E', start_time=timezone.now(), is_active=True, currency_symbol='£',
         )
 
-    @patch('api.management.commands.poll_donations.requests.get')
+    @patch('api.tiltify.requests.get')
     def test_tiltify_branch(self, mock_get):
-        mock_get.return_value = MagicMock(
-            ok=True,
-            json=lambda: {'data': [{
+        models.DonationPage.objects.create(
+            event=self.event, platform=models.DonationPlatform.TILTIFY,
+            url='https://tiltify.com/x', external_id='cid',
+        )
+        # First call returns donations, the trailing call is the summary sync.
+        mock_get.side_effect = [
+            MagicMock(ok=True, status_code=200, json=lambda: {'data': [{
                 'id': 't1', 'donor_name': 'Kris',
                 'amount': {'value': '5', 'currency': 'GBP'},
                 'donor_comment': 'gg', 'completed_at': '2026-01-01T00:00:00Z',
-            }]},
-        )
-        with self.settings(TILTIFY_ACCESS_TOKEN='tok', TILTIFY_CAMPAIGN_ID='cid'):
+            }], 'metadata': {'after': None}}),
+            MagicMock(ok=True, status_code=200, json=lambda: {'data': {
+                'id': 'cid', 'total_amount_raised': {'value': '5', 'currency': 'GBP'},
+                'donation_count': 1, 'status': 'published',
+            }}),
+        ]
+        # TILTIFY_ACCESS_TOKEN override skips the OAuth token POST.
+        with self.settings(TILTIFY_ACCESS_TOKEN='tok'):
             call_command('poll_donations', '--tiltify', verbosity=0)
+        self.assertEqual(models.Donation.objects.filter(external_id='t1').count(), 1)
 
     @patch('api.justgiving.requests.get')
     def test_justgiving_branch(self, mock_get):
@@ -77,7 +87,10 @@ class PollDonationsCommandTests(TestCase):
 
     def test_skips_when_unconfigured(self):
         # No tokens / pages configured → each branch skips cleanly.
-        with self.settings(TILTIFY_ACCESS_TOKEN='', JUSTGIVING_API_KEY=''):
+        with self.settings(
+            TILTIFY_ACCESS_TOKEN='', TILTIFY_CLIENT_ID='', TILTIFY_CLIENT_SECRET='',
+            JUSTGIVING_API_KEY='',
+        ):
             call_command('poll_donations', verbosity=0)
 
 

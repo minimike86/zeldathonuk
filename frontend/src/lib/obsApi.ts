@@ -714,6 +714,38 @@ export interface JustGivingTestResult {
   total_ingested: number;
 }
 
+/** Config + last-poll snapshot for the Tiltify ingestion card. */
+export interface TiltifyStatus {
+  /** Whether OAuth credentials (client id + secret, or a manual access
+   *  token) are configured. */
+  creds_present: boolean;
+  /** Whether the webhook signing secret is configured (real-time deliveries
+   *  are HMAC-verified when set). */
+  webhook_secret_present: boolean;
+  /** Resolved API host root. */
+  api_base: string;
+  /** The active event's Tiltify campaign(s) the poller will pull from. */
+  campaigns: Array<{
+    campaign_id: string;
+    label: string;
+    url: string;
+    is_primary: boolean;
+  }>;
+  /** The shared `poll_donations` scheduled job's last run, or null if absent. */
+  poll_job: {
+    enabled: boolean;
+    last_run_at: string | null;
+    last_status: string;
+    interval_seconds: number;
+  } | null;
+}
+
+/** Result of an operator "fetch now" against Tiltify. */
+export interface TiltifyTestResult {
+  pages: Array<{ campaign_id: string; fetched: number; ingested: number }>;
+  total_ingested: number;
+}
+
 export interface ThemeSettings {
   id: number;
   name: string;
@@ -1402,6 +1434,13 @@ export const obsApi = {
    *  donations immediately; returns per-page counts. */
   runJustGivingFetch: () =>
     api<JustGivingTestResult>('/api/justgiving/test/', { method: 'POST' }),
+  /** Tiltify ingestion config + last-poll snapshot for the
+   *  /control/automation card. Public read. */
+  tiltifyStatus: () => api<TiltifyStatus>('/api/tiltify/status/'),
+  /** Operator "Fetch now": pull + ingest the active event's Tiltify
+   *  donations immediately; returns per-campaign counts. */
+  runTiltifyFetch: () =>
+    api<TiltifyTestResult>('/api/tiltify/test/', { method: 'POST' }),
   /** Refresh a JustGiving donation page's cached aggregate total (raised /
    *  donation count / status). Works for any event's page, including
    *  completed/past ones whose itemized feed has gone empty. */

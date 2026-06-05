@@ -111,6 +111,10 @@ urlpatterns = [
     # operator "fetch now" that ingests the active event's pages immediately.
     path('justgiving/status/', views.justgiving_status, name='justgiving-status'),
     path('justgiving/test/', views.justgiving_test, name='justgiving-test'),
+    # Tiltify ingestion: config/last-poll snapshot (GET public) + an operator
+    # "fetch now" that ingests the active event's campaigns immediately.
+    path('tiltify/status/', views.tiltify_status, name='tiltify-status'),
+    path('tiltify/test/', views.tiltify_test, name='tiltify-test'),
     # Channel's custom channel-point rewards (for the reward-action picker).
     path('twitch/rewards/', views.twitch_custom_rewards, name='twitch-rewards'),
     # Send an arbitrary message to all connected channels' chat (operator);
