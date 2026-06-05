@@ -53,7 +53,7 @@ class PollDonationsCommandTests(TestCase):
     def test_tiltify_branch(self, mock_get):
         models.DonationPage.objects.create(
             event=self.event, platform=models.DonationPlatform.TILTIFY,
-            url='https://tiltify.com/x', external_id='cid',
+            url='https://tiltify.com/x', external_id='12345',  # numeric id → no slug lookup
         )
         # First call returns donations, the trailing call is the summary sync.
         mock_get.side_effect = [

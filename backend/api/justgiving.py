@@ -274,6 +274,10 @@ def ingest_event(event: 'models.Event') -> dict:
     Raises :class:`JustGivingError` for config/transport problems so callers
     can surface them.
     """
+    # Validate config up front so a missing App ID raises (→ surfaced to the
+    # operator) rather than being swallowed by the per-page guard below as if
+    # it were a single bad page.
+    app_id()
     pages = event_pages(event)
     known_ids = set(
         models.Donation.objects.filter(
