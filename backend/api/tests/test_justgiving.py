@@ -142,6 +142,32 @@ class IngestEventTests(APITestCase):
         with self.assertRaises(justgiving.JustGivingError):
             justgiving.ingest_active_event()
 
+    def test_one_404_page_does_not_abort_siblings(self):
+        # Add a second (working) page; the first 404s. The good page should
+        # still ingest, and the bad one is reported with an error.
+        _jg_page(self.event, 'good-page', primary=False)
+
+        def _router(url, **kwargs):
+            if 'zeldathon' in url:  # the original page → 404 (new /page/ product)
+                return _resp('{}', ok=False, status_code=404)
+            return _resp({'donations': [_donation_obj(7)],
+                          'pagination': {'totalPages': 1}})
+
+        with patch('api.justgiving.requests.get', side_effect=_router):
+            result = justgiving.ingest_event(self.event)
+        # The good page ingested; the bad page is recorded with an error.
+        by_name = {p['short_name']: p for p in result['pages']}
+        self.assertEqual(by_name['good-page']['ingested'], 1)
+        self.assertIn('error', by_name['zeldathon'])
+        self.assertEqual(result['total_ingested'], 1)
+
+    def test_summary_404_explains_new_page_product(self):
+        with patch('api.justgiving.requests.get',
+                   return_value=_resp('{}', ok=False, status_code=404)):
+            with self.assertRaises(justgiving.JustGivingError) as ctx:
+                justgiving.fetch_page_summary('zeldathonuk-2026-15th-anniversary-stream')
+        self.assertIn('page/', str(ctx.exception).lower())
+
 
 @override_settings(JUSTGIVING_API_KEY='app123', JUSTGIVING_ENV='staging')
 class EndpointTests(APITestCase):

@@ -18,6 +18,7 @@ signal — the same writer the webhooks and other pollers use.
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone as dt_timezone
 from decimal import Decimal, InvalidOperation
 
@@ -27,6 +28,8 @@ from django.utils import timezone
 
 from . import models
 from .webhooks import _active_event, _ingest
+
+logger = logging.getLogger(__name__)
 
 # Host roots for the two JustGiving environments, selected by JUSTGIVING_ENV.
 _BASES = {
@@ -50,6 +53,28 @@ _TIMEOUT = 20
 
 class JustGivingError(RuntimeError):
     """Raised when the JustGiving API can't be reached or is misconfigured."""
+
+
+def _raise_for_response(resp, short_name: str) -> None:
+    """Raise a :class:`JustGivingError` describing a non-OK API response.
+
+    A 404 on the v1 fundraising endpoint almost always means the short name
+    isn't a *classic* fundraising page — most commonly because it's one of
+    JustGiving's newer ``justgiving.com/page/{slug}`` "Page" products, which the
+    legacy v1 API doesn't serve. Spell that out so a 404 here doesn't read as a
+    mysterious bug."""
+    if resp.status_code == 404:
+        raise JustGivingError(
+            f'JustGiving 404 for "{short_name}": no classic fundraising page '
+            f'with that short name. If your page URL is '
+            f'justgiving.com/page/{short_name} (the newer "Page" product), the '
+            f'legacy v1 API does not serve it — use a classic '
+            f'/fundraising/ page or the JustGiving Data API once access is '
+            f'granted.'
+        )
+    raise JustGivingError(
+        f'JustGiving error {resp.status_code}: {resp.text[:200]}'
+    )
 
 
 def api_base() -> str:
@@ -120,9 +145,7 @@ def fetch_page_donations(
         except requests.RequestException as exc:
             raise JustGivingError(f'JustGiving request failed: {exc}') from exc
         if not resp.ok:
-            raise JustGivingError(
-                f'JustGiving error {resp.status_code}: {resp.text[:200]}'
-            )
+            _raise_for_response(resp, short_name)
         body = resp.json() or {}
         items = body.get('donations') or []
         if not items:
@@ -179,9 +202,7 @@ def fetch_page_summary(short_name: str) -> dict:
     except requests.RequestException as exc:
         raise JustGivingError(f'JustGiving request failed: {exc}') from exc
     if not resp.ok:
-        raise JustGivingError(
-            f'JustGiving error {resp.status_code}: {resp.text[:200]}'
-        )
+        _raise_for_response(resp, short_name)
     body = resp.json() or {}
     count = body.get('donationCount')
     return {
@@ -235,7 +256,17 @@ def ingest_event(event: 'models.Event') -> dict:
     total_ingested = 0
     for page in pages:
         short_name = page['short_name']
-        donations = fetch_page_donations(short_name, known_ids=known_ids)
+        try:
+            donations = fetch_page_donations(short_name, known_ids=known_ids)
+        except JustGivingError as exc:
+            # One unreachable/unsupported page (e.g. a new /page/ product that
+            # 404s on the v1 API) must not suppress the event's other pages.
+            logger.warning('JustGiving page %s skipped: %s', short_name, exc)
+            results.append({
+                'short_name': short_name, 'fetched': 0, 'ingested': 0,
+                'error': str(exc),
+            })
+            continue
         ingested = 0
         for d in donations:
             # Only count cleared donations; Pending/Rejected/Cancelled are
