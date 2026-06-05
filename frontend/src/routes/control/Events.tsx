@@ -700,7 +700,7 @@ function DraftPageForm({
     platform === 'justgiving'
       ? 'e.g. zeldathonuk'
       : platform === 'tiltify'
-        ? 'e.g. 12345 or campaign slug'
+        ? 'UUID, 12345, or userslug/campaignslug'
         : 'campaign id / slug';
 
   const handleSave = () => {
@@ -772,7 +772,9 @@ function DraftPageForm({
         )}
         {platform === 'tiltify' && (
           <span className="d-block text-white-50" style={{ fontSize: '0.7rem' }}>
-            The Tiltify campaign id (from the campaign URL or API).
+            Campaign UUID, legacy id, or <strong>userslug/campaignslug</strong>{' '}
+            from the URL (tiltify.com/@<strong>userslug</strong>/
+            <strong>campaignslug</strong>).
           </span>
         )}
       </div>
@@ -1024,7 +1026,7 @@ function DonationPageForm({
     platform === 'justgiving'
       ? 'e.g. zeldathonuk'
       : platform === 'tiltify'
-        ? 'e.g. 12345 or campaign slug'
+        ? 'UUID, 12345, or userslug/campaignslug'
         : 'campaign id / slug';
 
   const submit = async (e: React.FormEvent) => {
@@ -1121,7 +1123,9 @@ function DonationPageForm({
         )}
         {platform === 'tiltify' && (
           <span className="d-block text-white-50" style={{ fontSize: '0.7rem' }}>
-            The Tiltify campaign id (from the campaign URL or API).
+            Campaign UUID, legacy id, or <strong>userslug/campaignslug</strong>{' '}
+            from the URL (tiltify.com/@<strong>userslug</strong>/
+            <strong>campaignslug</strong>).
           </span>
         )}
       </div>

@@ -111,6 +111,62 @@ class TokenTests(APITestCase):
 
 @override_settings(
     TILTIFY_CLIENT_ID='cid', TILTIFY_CLIENT_SECRET='secret',
+    TILTIFY_ACCESS_TOKEN='static',
+)
+class ResolveCampaignIdTests(APITestCase):
+    def setUp(self):
+        _reset_token_cache()
+        tiltify._campaign_id_cache.clear()
+
+    def tearDown(self):
+        tiltify._campaign_id_cache.clear()
+
+    def test_uuid_passes_through(self):
+        uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        with patch('api.tiltify.requests.get') as mock_get:
+            self.assertEqual(tiltify._resolve_campaign_id(uuid), uuid)
+        mock_get.assert_not_called()
+
+    def test_legacy_numeric_passes_through(self):
+        with patch('api.tiltify.requests.get') as mock_get:
+            self.assertEqual(tiltify._resolve_campaign_id('12345'), '12345')
+        mock_get.assert_not_called()
+
+    def test_slug_pair_resolves_and_caches(self):
+        body = _resp({'data': {'id': 'resolved-uuid', 'slug': 's'}})
+        with patch('api.tiltify.requests.get', return_value=body) as mock_get:
+            first = tiltify._resolve_campaign_id(
+                '@specialeffect/15th-anniversary-gaming-marathon-for-specialeffect',
+            )
+            second = tiltify._resolve_campaign_id(
+                '@specialeffect/15th-anniversary-gaming-marathon-for-specialeffect',
+            )
+        self.assertEqual(first, 'resolved-uuid')
+        self.assertEqual(second, 'resolved-uuid')
+        # Resolved once, then served from cache.
+        self.assertEqual(mock_get.call_count, 1)
+        # The @ is stripped from the user slug in the request URL.
+        called_url = mock_get.call_args[0][0]
+        self.assertIn(
+            '/campaigns/by/slugs/specialeffect/'
+            '15th-anniversary-gaming-marathon-for-specialeffect',
+            called_url,
+        )
+
+    def test_bare_slug_raises_with_guidance(self):
+        with self.assertRaises(tiltify.TiltifyError) as ctx:
+            tiltify._resolve_campaign_id('15th-anniversary-gaming-marathon-for-specialeffect')
+        self.assertIn('userslug/campaignslug', str(ctx.exception))
+
+    def test_slug_resolution_non_ok_raises(self):
+        with patch('api.tiltify.requests.get',
+                   return_value=_resp('nope', ok=False, status_code=404)):
+            with self.assertRaises(tiltify.TiltifyError):
+                tiltify._resolve_campaign_id('user/campaign')
+
+
+@override_settings(
+    TILTIFY_CLIENT_ID='cid', TILTIFY_CLIENT_SECRET='secret',
     TILTIFY_ACCESS_TOKEN='static',  # skip the token POST in these tests
 )
 class FetchCampaignDonationsTests(APITestCase):

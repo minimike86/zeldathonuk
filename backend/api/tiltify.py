@@ -25,6 +25,7 @@ signal — the same writer the webhooks and other pollers use.
 """
 from __future__ import annotations
 
+import re
 import time
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -38,6 +39,15 @@ from .webhooks import _active_event, _ingest
 
 # Tiltify v5 API host (OAuth token + public resources both live here).
 _API_BASE = 'https://v5api.tiltify.com'
+
+# A campaign UUID — used as-is against the donations/details endpoints.
+_UUID_RE = re.compile(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I,
+)
+
+# Resolved-slug cache: 'userslug/campaignslug' → campaign UUID. Saves a lookup
+# on every poll tick once a slug has been resolved.
+_campaign_id_cache: dict[str, str] = {}
 
 # How many donations to request per page, and a safety ceiling on pages so a
 # misconfigured campaign id can't spin forever.
@@ -146,6 +156,60 @@ def event_pages(event: 'models.Event') -> list[dict]:
     return pages
 
 
+def _resolve_campaign_id(raw: str) -> str:
+    """Resolve a DonationPage ``external_id`` to a Tiltify campaign id usable
+    against the public endpoints.
+
+    Accepts three forms:
+
+    * a campaign **UUID** (``a1b2…``) — returned as-is;
+    * a **legacy numeric id** (``12345``) — returned as-is;
+    * a **``userslug/campaignslug``** pair — looked up via
+      ``/api/public/campaigns/by/slugs/{user}/{campaign}`` and resolved to the
+      UUID (cached thereafter).
+
+    A bare campaign slug (no ``/``) can't be resolved — the user/team slug is
+    required — so it raises :class:`TiltifyError` with guidance. The endpoints
+    reject a slug as ``legacy_campaign_id is invalid`` (HTTP 422), so we resolve
+    before calling them.
+    """
+    value = (raw or '').strip().strip('/')
+    if not value:
+        raise TiltifyError('Page has no campaign id (external_id).')
+    if _UUID_RE.match(value) or value.isdigit():
+        return value
+    if '/' in value:
+        if value in _campaign_id_cache:
+            return _campaign_id_cache[value]
+        user_slug, _, campaign_slug = value.partition('/')
+        user_slug = user_slug.lstrip('@').strip()
+        campaign_slug = campaign_slug.strip().strip('/')
+        url = f'{_API_BASE}/api/public/campaigns/by/slugs/{user_slug}/{campaign_slug}'
+        try:
+            resp = requests.get(url, headers=_auth_headers(), timeout=_TIMEOUT)
+        except requests.RequestException as exc:
+            raise TiltifyError(f'Tiltify request failed: {exc}') from exc
+        if not resp.ok:
+            raise TiltifyError(
+                f'Tiltify could not resolve campaign slug '
+                f'"{user_slug}/{campaign_slug}" ({resp.status_code}): '
+                f'{resp.text[:200]}'
+            )
+        data = (resp.json() or {}).get('data') or {}
+        resolved = str(data.get('id') or '')
+        if not resolved:
+            raise TiltifyError(
+                f'Tiltify returned no id for slug "{user_slug}/{campaign_slug}".'
+            )
+        _campaign_id_cache[value] = resolved
+        return resolved
+    raise TiltifyError(
+        f'"{value}" is a bare campaign slug — Tiltify needs the campaign UUID, '
+        'a legacy numeric id, or the "userslug/campaignslug" pair from the '
+        'campaign URL (tiltify.com/@USERSLUG/CAMPAIGNSLUG).'
+    )
+
+
 def fetch_campaign_donations(
     campaign_id: str,
     *,
@@ -163,6 +227,7 @@ def fetch_campaign_donations(
     it. Raises :class:`TiltifyError` on a non-OK response.
     """
     base = api_base()
+    resolved_id = _resolve_campaign_id(campaign_id)
     collected: list[dict] = []
     after: str | None = None
     page = 0
@@ -170,7 +235,7 @@ def fetch_campaign_donations(
         params: dict = {'limit': page_size}
         if after:
             params['after'] = after
-        url = f'{base}/api/public/campaigns/{campaign_id}/donations'
+        url = f'{base}/api/public/campaigns/{resolved_id}/donations'
         try:
             resp = requests.get(
                 url, headers=_auth_headers(), params=params, timeout=_TIMEOUT,
@@ -234,7 +299,8 @@ def fetch_campaign_summary(campaign_id: str) -> dict:
     :class:`TiltifyError` on a non-OK response.
     """
     base = api_base()
-    url = f'{base}/api/public/campaigns/{campaign_id}'
+    resolved_id = _resolve_campaign_id(campaign_id)
+    url = f'{base}/api/public/campaigns/{resolved_id}'
     try:
         resp = requests.get(url, headers=_auth_headers(), timeout=_TIMEOUT)
     except requests.RequestException as exc:
