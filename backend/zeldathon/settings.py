@@ -116,6 +116,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# During tests, redirect uploads to a throwaway temp dir so the upload views
+# never write stub files into the real (git-tracked) media/ tree. Without this
+# every `manage.py test` run leaves orphan PNGs in media/uploads, media/logos,
+# etc. The dir is created per test process and left for the OS to reap.
+if 'test' in sys.argv:
+    import tempfile
+
+    MEDIA_ROOT = Path(tempfile.mkdtemp(prefix='zeldathon-test-media-'))
+
 # ──────────────────────────────────────────────────────────────────────────────
 # CORS — frontend dev server + production origin(s)
 # ──────────────────────────────────────────────────────────────────────────────
