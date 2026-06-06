@@ -14,9 +14,12 @@ export default defineConfig({
     port: 5173,
     // Allow any hostname in dev — docker compose service names, host.docker.internal,
     // LAN IPs, etc. Vite 7 blocks unknown hosts by default.
-    allowedHosts: true,
+    allowedHosts: ['.zeldathon.co.uk'],
     watch: {
       usePolling: true,
     },
+    hmr: {
+      overlay: false
+    }
   },
 });

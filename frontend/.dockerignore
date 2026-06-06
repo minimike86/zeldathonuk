@@ -1,7 +1,13 @@
+**/node_modules/
 node_modules
+**/dist/
 dist
+**/.vite/
+.vite
+**/.git/
+.git
+**/.next/
+**/.svelte-kit/
+*.tsbuildinfo
 .env
 .env.local
-.git
-.vite
-*.tsbuildinfo
