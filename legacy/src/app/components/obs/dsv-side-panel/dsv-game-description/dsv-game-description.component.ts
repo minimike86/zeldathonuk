@@ -5,6 +5,7 @@ import {CurrentlyPlayingService} from '../../../../services/firebase/currently-p
 import {CurrentlyPlayingId} from '../../../../services/firebase/currently-playing/currently-playing';
 import {map} from 'rxjs/operators';
 import {GameLineupService} from '../../../../services/firebase/game-lineup/game-lineup.service';
+import {GameLineUpId} from '../../../../services/firebase/game-lineup/game-lineup';
 
 @Component({
   selector: 'app-dsv-game-description',

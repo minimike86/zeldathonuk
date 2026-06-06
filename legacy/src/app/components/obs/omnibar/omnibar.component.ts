@@ -47,6 +47,7 @@ export class OmnibarComponent implements OnInit, AfterViewInit {
   public activeTiltifyPageId$: BehaviorSubject<FundraisingPage> = new BehaviorSubject<FundraisingPage>(null);
 
   public donationAlert: HTMLAudioElement;
+  public donationHighlight: HighlightedDonation = {donation: null, show: false};
 
 constructor( private omnibarContentService: OmnibarContentService,
              private fundraisingPagesService: FundraisingPagesService,

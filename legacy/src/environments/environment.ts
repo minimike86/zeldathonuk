@@ -16,6 +16,10 @@ export const environment = {
   }
 };
 
+export const fbEnvironment = {
+  fundraisingId: 855003971855785,
+};
+
 export const jgEnvironment = {
   production: false,
   justgiving: {

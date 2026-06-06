@@ -73,7 +73,7 @@ export class OmnibarDonationsComponent implements OnInit, AfterViewInit {
         return trackedDonationIds.find(x => x.id === 'DONATIONS')?.donations;
       }),
       map((trackedDonations: TrackedDonation[]) => {
-        trackedDonations.sort((a: TrackedDonation, b: TrackedDonation) => {
+        trackedDonations?.sort((a: TrackedDonation, b: TrackedDonation) => {
           return b.donationDate.toDate().getTime() - a.donationDate.toDate().getTime();
         });
         this.lastTenDonations = trackedDonations.slice(0, 10);

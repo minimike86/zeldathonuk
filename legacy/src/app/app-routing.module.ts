@@ -44,6 +44,7 @@ const routes: Routes = [
   { path: 'tracking/:game', component: GameTrackingComponent },
   { path: 'api/timers', component: TimersComponent },
   { path: 'api/count-up', component: CountupComponent },
+  { path: 'oauth', component: TwitchOAuthComponent },
   { path: '**', component: PageNotFoundComponent }
 ];
 

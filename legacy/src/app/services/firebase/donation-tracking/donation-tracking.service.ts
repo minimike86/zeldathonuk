@@ -50,11 +50,11 @@ export class DonationTrackingService {
   }
 
   addTrackedDonation(trackedDonation: TrackedDonation[]): void {
-    console.log('addTrackedDonation: ', trackedDonation);
+    // console.log('addTrackedDonation: ', trackedDonation);
     this.trackedDonationDoc.ref.update({
       donations: FieldValue.arrayUnion(...trackedDonation)
     }).then(() => {
-      console.log('TrackedDonation Document successfully written!');
+      // console.log('TrackedDonation Document successfully written!');
     });
   }
 

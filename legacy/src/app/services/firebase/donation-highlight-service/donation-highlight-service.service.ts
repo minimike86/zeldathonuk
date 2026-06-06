@@ -39,7 +39,7 @@ export class DonationHighlightService {
 
   setDonationHighlight(highlightedDonation: HighlightedDonation) {
     this.highlightedDonationDoc.set({donation: highlightedDonation.donation, show: highlightedDonation.show}).then(() => {
-      console.log('DonationHighlight Document successfully written!');
+      // console.log('DonationHighlight Document successfully written!');
     });
   }
 
