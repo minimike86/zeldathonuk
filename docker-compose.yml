@@ -105,31 +105,6 @@ services:
       - backend
     command: npm run dev -- --host 0.0.0.0
 
-  # Production-built SPA served by nginx (static, gzipped, hashed assets) —
-  # what the public www.zeldathon.co.uk tunnel should point at instead of the
-  # Vite dev server (which is slow under real traffic). The `frontend` service
-  # above stays for local HMR development. Rebuild after frontend changes:
-  #   docker compose up -d --build web
-  # Point the Cloudflare tunnel's www hostname at http://web:80.
-  web:
-    profiles: ["web"]
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: prod
-      args:
-        # Baked into the bundle at build time — the public API origin.
-        VITE_API_URL: https://api.zeldathon.co.uk
-        # Clerk publishable key for the prod instance (pk_live_…). Inlined at
-        # build time; set it in your shell or the root .env before building web.
-        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
-    container_name: zeldathon-web
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    depends_on:
-      - backend
-
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: zeldathon-cloudflared
