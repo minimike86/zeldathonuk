@@ -1,0 +1,101 @@
+.tts-stage {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  pointer-events: none;
+}
+
+.tts-card {
+  background: linear-gradient(135deg, rgba(76, 19, 36, 0.95), rgba(115, 28, 55, 0.95));
+  border: 2px solid #b92753;
+  border-radius: 12px;
+  padding: 2rem;
+  color: #fff;
+  box-shadow: 0 0 40px rgba(231, 19, 71, 0.5);
+  text-align: center;
+  max-width: 60vw;
+}
+
+.tts-donor {
+  font-family: 'Bungee', sans-serif;
+  font-size: 2.5rem;
+}
+
+.tts-amount {
+  font-family: 'VT323', monospace;
+  font-size: 4rem;
+  background: linear-gradient(45deg, #e71347, #da4471, #e7364b, #da4471, #e71347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+}
+
+.tts-message {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 1.5rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* "+N more" pill in the bottom-right of the card showing how many
+ * donations are queued behind the current one. Lets the operator see
+ * at a glance that the announcer is making progress rather than
+ * wondering if a long utterance has hung the queue. */
+.tts-queue-pip {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.75rem;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 210, 58, 0.9);
+  letter-spacing: 0.06em;
+}
+
+.tts-card {
+  position: relative;
+}
+
+/* Click-to-enable overlay shown in regular browsers because
+ * speechSynthesis is gated behind a user gesture. OBS auto-starts
+ * via the OBS/ UA detection so this overlay never paints there. */
+.tts-start-gesture {
+  pointer-events: auto;
+  background: linear-gradient(135deg, rgba(76, 19, 36, 0.95), rgba(115, 28, 55, 0.95));
+  border: 2px solid #b92753;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  color: #fff;
+  font-family: 'Bungee', sans-serif;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 0 40px rgba(231, 19, 71, 0.5);
+}
+
+.tts-start-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.tts-start-label {
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+}
+
+.tts-start-hint {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 28rem;
+  text-align: center;
+}

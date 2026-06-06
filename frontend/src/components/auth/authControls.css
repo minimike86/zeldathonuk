@@ -1,0 +1,58 @@
+/* Shared privileged-surface auth controls — used by the public navbar
+ * (components/auth/NavAuth) and the control panel header (routes/control), so
+ * the two stay visually identical. */
+
+/* Hazard-striped button: muted amber/black stripe under a dark wash, soft
+ * rounded edges. Home page's CONTROL button + control panel's HOME button. */
+.hazard-btn {
+  background:
+    linear-gradient(rgba(20, 16, 6, 0.58), rgba(20, 16, 6, 0.58)),
+    repeating-linear-gradient(45deg, #d4a017 0 14px, #2a2206 14px 28px);
+  border: 1px solid rgba(212, 160, 23, 0.55);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  color: #ffe6ab;
+  font-family: 'Bungee', cursive;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1.2;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+  transition: filter 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.hazard-btn:hover,
+.hazard-btn:focus {
+  color: #fff;
+  border-color: rgba(212, 160, 23, 0.85);
+  filter: brightness(1.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Clerk's username element (userButtonOuterIdentifier). Legible on dark chrome;
+ * for operators it becomes a column so the role chip sits directly under the
+ * name (the avatar stays to the right of this element). */
+.user-identifier {
+  color: var(--theme-text, #fff);
+}
+.user-identifier.is-operator {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.05;
+}
+.user-identifier.is-operator::after {
+  content: 'Operator';
+  margin-top: 0.15rem;
+  /* Slight upward bias — Bungee sits high in its line box. */
+  padding: 0.12rem 0.55rem 0.06rem;
+  border-radius: 999px;
+  background: #d4a017;
+  color: #1a1a1a;
+  border: 1px solid #1a1a1a;
+  font-family: 'Bungee', cursive;
+  letter-spacing: 0.08em;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

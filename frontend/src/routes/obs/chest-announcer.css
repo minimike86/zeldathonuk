@@ -1,0 +1,498 @@
+/* ChestAnnouncer — pixel-art hero who walks to a chest and pulls each
+ * incoming donation out as a card.
+ *
+ * Everything sizes from the container height (`--ca-h`) via a container
+ * query, so this overlay scales correctly whether OBS positions it over
+ * the 554×204 ad-panel, the 1366×204 runner+desc strip, the full 1920×204
+ * bottom band, or the entire 1920×1080 stage. No fixed pixel sizes.
+ *
+ * Theme tinting: card, ground line and confetti all read --obs-accent
+ * etc. from obs.css so the active theme (Bloodmoon, Golden Goddess…)
+ * re-skins the announcer live.
+ */
+
+.ca-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  container-type: size;
+  container-name: ca;
+
+  /* Sprite SIZES hang off --ca-h (container height). cqh covers modern
+   * browsers; a ResizeObserver in the component writes a px fallback for
+   * engines where container queries on the root element misbehave.
+   *
+   * The whole scene is intentionally compact relative to the container:
+   * hero ~35% of the height, chest ~29%, card ~18%. The ground baseline,
+   * however, is pinned to a FIXED 95px above the bottom of the browser
+   * window (see --ca-ground) rather than a percentage, so the walking
+   * line sits at a constant height regardless of source size. On a tall
+   * (e.g. full-window) source this leaves ample headroom above the card
+   * for the confetti burst to stay inside the OBS capture rect; on very
+   * short capture rects the scene rides higher. */
+  --ca-h: 100cqh;
+  /* Operator scene-size multiplier from /control/chest-announcer
+   * (ChestAnnouncerSettings.scale). 1 = legacy size. The component
+   * overrides this inline; the default keeps the overlay correct before
+   * the settings poll returns. --ca-uh ("used height") is the scaled
+   * height that every scene element sizes off — sprites, card, fonts and
+   * confetti all reference --ca-uh, NOT raw --ca-h, so a single knob
+   * shrinks/grows the whole scene together. The ground baseline below
+   * stays on fixed px, so scaling pivots around the floor line. */
+  --ca-scale: 1;
+  --ca-uh: calc(var(--ca-h) * var(--ca-scale));
+  --ca-hero-px: calc(var(--ca-uh) * 0.35);
+  --ca-chest-px: calc(var(--ca-uh) * 0.29);
+  /* Walking line pinned 95px above the bottom of the browser window — the
+   * character's feet and the top of the ground stripe both sit here.
+   * Fixed px, unaffected by --ca-scale (sprite sizes scale, the floor
+   * stays put). */
+  --ca-ground: 95px;
+  --ca-card-w: min(calc(var(--ca-uh) * 1.3), 80cqw);
+  --ca-card-h: calc(var(--ca-uh) * 0.24);
+}
+
+/* One-time gesture gate. Renders fullscreen until the operator clicks
+ * once; that gesture both unlocks the AudioContext (Chrome's autoplay
+ * policy) and mounts the rest of the chest scene. Pointer-events:auto
+ * overrides the .ca-root rule so the button is actually clickable. */
+.ca-start-gate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--ca-h) * 0.02);
+  pointer-events: auto;
+  cursor: pointer;
+  background: linear-gradient(
+    180deg,
+    var(--obs-bg-from, #4c1324) 0%,
+    var(--obs-bg-to, #1a0a10) 100%
+  );
+  border: 2px dashed var(--obs-accent, #e71347);
+  color: var(--theme-text, #fff);
+  font-family: 'Bungee', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  transition: background 200ms ease, transform 120ms ease;
+}
+.ca-start-gate:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    var(--obs-accent-muted, rgba(231, 19, 71, 0.4)) 0%,
+    var(--obs-bg-to, #1a0a10) 100%
+  );
+}
+.ca-start-gate:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.ca-start-gate:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.ca-start-title {
+  font-size: max(18px, calc(var(--ca-h) * 0.1));
+  color: var(--obs-accent-bright, #ffd166);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.7),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+.ca-start-hint {
+  font-size: max(11px, calc(var(--ca-h) * 0.045));
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ground line — same idiom as the camera-frame trim in obs.css: a muted
+ * accent stripe with a thin hot-accent highlight on top. Reads as a
+ * subtle stage floor without dominating the scene. */
+.ca-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--ca-ground) - 4px);
+  height: 4px;
+  background: var(--obs-accent-muted, rgba(231, 19, 71, 0.4));
+  box-shadow: inset 0 1px 0 var(--obs-accent, #e71347);
+}
+
+/* Shared sprite-element rules — every animated sprite uses these. */
+.ca-sprite {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────
+ *
+ * --ca-hero-x: percentage along the walk path. Component drives it via
+ * inline style. The walk path runs 0% → 100% of the container width;
+ * a transform: translateX(-50%) centres the hero around that anchor.
+ *
+ * --ca-hero-dir: 1 for walking right (toward chest), -1 for walking left
+ * (off-screen). Used to mirror the walk-cycle sprite.
+ */
+.ca-hero {
+  bottom: var(--ca-ground);
+  width: var(--ca-hero-px);
+  height: var(--ca-hero-px);
+  left: var(--ca-hero-x, -20%);
+  transform: translateX(-50%) scaleX(var(--ca-hero-dir, 1));
+  transform-origin: center bottom;
+  transition: left var(--ca-walk-ms, 3000ms) linear;
+}
+
+.ca-hero[data-anim='walk'] {
+  background-image: var(--ca-hero-walk-src);
+  background-size: calc(var(--ca-hero-px) * 4) var(--ca-hero-px);
+  animation: ca-step-4 500ms steps(4) infinite;
+}
+
+.ca-hero[data-anim='idle'] {
+  background-image: var(--ca-hero-idle-src);
+  background-size: calc(var(--ca-hero-px) * 2) var(--ca-hero-px);
+  animation: ca-step-2 900ms steps(2) infinite;
+}
+
+.ca-hero[data-anim='reach'] {
+  background-image: var(--ca-hero-reach-src);
+  background-size: calc(var(--ca-hero-px) * 2) var(--ca-hero-px);
+  animation: ca-step-2-once 500ms steps(2) 1 forwards;
+}
+
+.ca-hero[data-anim='hold'] {
+  background-image: var(--ca-hero-hold-src);
+  background-size: var(--ca-hero-px) var(--ca-hero-px);
+  animation: ca-hero-bob 1200ms ease-in-out infinite alternate;
+}
+
+@keyframes ca-step-4 {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-hero-px) * -4) 0; }
+}
+@keyframes ca-step-2 {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-hero-px) * -2) 0; }
+}
+@keyframes ca-step-2-once {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-hero-px) * -2) 0; }
+}
+@keyframes ca-hero-bob {
+  from { transform: translateX(-50%) translateY(0) scaleX(var(--ca-hero-dir, 1)); }
+  to   { transform: translateX(-50%) translateY(-3%) scaleX(var(--ca-hero-dir, 1)); }
+}
+
+/* ── Chest ────────────────────────────────────────────────────────────
+ *
+ * Always positioned at --ca-chest-x (default 50% of the container).
+ * Stepping plays forward for opening and reverse for closing. The
+ * `data-state` attribute drives which animation applies.
+ */
+.ca-chest {
+  bottom: var(--ca-ground);
+  left: var(--ca-chest-x, 50%);
+  width: var(--ca-chest-px);
+  height: var(--ca-chest-px);
+  transform: translateX(-50%);
+  background-image: var(--ca-chest-src);
+  background-size: calc(var(--ca-chest-px) * 4) var(--ca-chest-px);
+  background-position: 0 0;
+}
+
+.ca-chest[data-state='closed'] { background-position: 0 0; }
+.ca-chest[data-state='open']   { background-position: calc(var(--ca-chest-px) * -3) 0; }
+
+/* Opening = a short rattle (anticipation) immediately followed by the
+ * frame-stepped lid animation. Two CSS animations chained via
+ * animation-delay so the second only starts once the wobble finishes,
+ * all within the existing 600ms CHEST_OPEN_MS budget. */
+.ca-chest[data-state='opening'] {
+  animation:
+    ca-chest-rattle 160ms ease-in-out 0s 1,
+    ca-chest-open 440ms steps(3) 160ms 1 forwards;
+}
+.ca-chest[data-state='closing'] {
+  animation: ca-chest-close 500ms steps(3) 1 forwards;
+}
+
+/* Rattle preserves the base translateX(-50%) centring while jittering
+ * the chest left/right and lifting it slightly to imply weight straining
+ * against the lid. Lands back at the neutral position on the 100% stop
+ * so there's no jump into the frame-stepped open animation that follows. */
+@keyframes ca-chest-rattle {
+  0%,
+  100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
+  20%  { transform: translateX(calc(-50% - 1.5px)) translateY(-1px) rotate(-1.4deg); }
+  40%  { transform: translateX(calc(-50% + 1.5px)) translateY(-2px) rotate(1.4deg); }
+  60%  { transform: translateX(calc(-50% - 1px))   translateY(-3px) rotate(-1deg); }
+  80%  { transform: translateX(calc(-50% + 1px))   translateY(-1px) rotate(0.8deg); }
+}
+
+@keyframes ca-chest-open {
+  from { background-position: 0 0; }
+  to   { background-position: calc(var(--ca-chest-px) * -3) 0; }
+}
+@keyframes ca-chest-close {
+  from { background-position: calc(var(--ca-chest-px) * -3) 0; }
+  to   { background-position: 0 0; }
+}
+
+/* Yellow glow that bursts out of the chest the instant it reaches the
+ * fully-open frame, then settles into a slow pulse. Sells the "treasure
+ * inside" feeling without needing a separate sprite. */
+.ca-chest-glow {
+  position: absolute;
+  left: var(--ca-chest-x, 50%);
+  bottom: calc(var(--ca-ground) + var(--ca-chest-px) * 0.45);
+  width: calc(var(--ca-chest-px) * 1.6);
+  height: calc(var(--ca-chest-px) * 0.7);
+  transform: translateX(-50%) scale(0.3);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 220, 0.85) 0%,
+    rgba(255, 243, 160, 0.55) 30%,
+    rgba(255, 200, 90, 0.2) 60%,
+    transparent 80%
+  );
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.ca-chest-glow[data-visible='true'] {
+  opacity: 1;
+  /* Burst first (overshoots then settles), then hand off to the pulse
+   * loop. The 380ms delay on the pulse matches the burst duration so
+   * there's no jolt at the handoff. */
+  animation:
+    ca-glow-burst 380ms cubic-bezier(0.22, 1, 0.36, 1) 0s 1 forwards,
+    ca-glow-pulse 1.6s ease-in-out 380ms infinite alternate;
+}
+@keyframes ca-glow-burst {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.3); }
+  55%  { opacity: 1; transform: translateX(-50%) scale(1.3); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+@keyframes ca-glow-pulse {
+  from { transform: translateX(-50%) scale(0.95); }
+  to   { transform: translateX(-50%) scale(1.1); }
+}
+
+/* Queue depth indicator. Sits just above-right of the chest and shows
+ * "+N more" whenever there are donations queued behind the imminent
+ * reveal. Modelled on the /obs/tts overlay's `.tts-queue-pip` so the
+ * two surfaces feel consistent. Re-mounted via React `key={queuedAhead}`
+ * each time N changes, so the pop-in animation replays — gives the
+ * operator a visible bounce every time the queue ticks.
+ */
+.ca-queue-pip {
+  position: absolute;
+  /* Chest is centred on --ca-chest-x with width --ca-chest-px, so its
+   * right edge is at chest-x + half-px. Nudge a touch further right
+   * to clear the chest silhouette. */
+  left: calc(var(--ca-chest-x, 50%) + var(--ca-chest-px) * 0.55);
+  bottom: calc(var(--ca-ground) + var(--ca-chest-px) * 0.95);
+
+  font-family: 'Bungee', sans-serif;
+  font-size: max(11px, calc(var(--ca-uh) * 0.06));
+  letter-spacing: 0.06em;
+  color: var(--obs-accent-bright, #ffd166);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--obs-accent, #e71347);
+  padding: calc(var(--ca-uh) * 0.008) calc(var(--ca-uh) * 0.018);
+  border-radius: 999px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: ca-pip-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+}
+
+@keyframes ca-pip-in {
+  0%   { transform: scale(0.3) translateY(6px); opacity: 0; }
+  60%  { transform: scale(1.1) translateY(-1px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ── Donation card + confetti ─────────────────────────────────────────
+ *
+ * The card pops out of the chest, floats above the hero, then bursts
+ * into confetti. All themed via --obs-accent so the active palette
+ * re-skins this live.
+ */
+.ca-card-wrap {
+  position: absolute;
+  /* Centre the card on the hero, but clamp the centre so the card's
+   * edges always stay inside the container — without this, the card
+   * gets cut off on the left/right when the hero is near an edge. */
+  left: clamp(
+    calc(var(--ca-card-w) / 2),
+    var(--ca-card-x, 50%),
+    calc(100% - var(--ca-card-w) / 2)
+  );
+  /* Sit at the top of the hero's head — small overlap with the hero
+   * sprite reads as the character holding the card overhead. */
+  bottom: calc(var(--ca-ground) + var(--ca-hero-px) * 0.88);
+  transform: translateX(-50%);
+  width: var(--ca-card-w);
+  height: var(--ca-card-h);
+  pointer-events: none;
+  transition: left 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ca-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  /* Padding sized off --ca-uh (scaled container height) — NOT
+   * percentages. Percentage padding in CSS references the containing
+   * block's WIDTH, so `padding: 4% 6%` here resolved to `4% × card_width`
+   * of vertical padding (huge when card_w > card_h, which is the normal
+   * case), and the donor line was getting pushed clean off the top of the
+   * card. */
+  padding: calc(var(--ca-uh) * 0.015) calc(var(--ca-uh) * 0.03);
+  /* The card background is ALWAYS the dark OBS stage gradient (below),
+   * regardless of the active site theme — so the text has to be light to
+   * contrast with it. We deliberately do NOT use --theme-text here: that
+   * tracks the *website's* body text colour, which is dark on light
+   * themes (Golden Goddess et al.), producing unreadable dark-on-dark
+   * donor names. The dark text-shadows below assume light text too. */
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    var(--obs-bg-from, #4c1324) 0%,
+    var(--obs-bg-to, #1a0a10) 100%
+  );
+  border: 2px solid var(--obs-accent, #e71347);
+  border-radius: 6px;
+  box-shadow:
+    0 0 12px var(--obs-accent-75, rgba(231, 19, 71, 0.75)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  font-family: 'Bungee', sans-serif;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.7),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+}
+
+.ca-card[data-phase='enter'] {
+  animation: ca-card-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) 1 forwards;
+}
+.ca-card[data-phase='hold'] {
+  opacity: 1;
+  animation: ca-card-float 1.4s ease-in-out infinite alternate;
+}
+.ca-card[data-phase='burst'] {
+  opacity: 1;
+  animation: ca-card-burst 200ms ease-in 1 forwards;
+}
+
+@keyframes ca-card-pop {
+  0%   { transform: scale(0.2) translateY(40%); opacity: 0; }
+  60%  { transform: scale(1.06) translateY(-6%); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes ca-card-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-4%); }
+}
+@keyframes ca-card-burst {
+  from { transform: scale(1); opacity: 1; }
+  to   { transform: scale(1.35); opacity: 0; }
+}
+
+.ca-card-donor {
+  font-size: calc(var(--ca-uh) * 0.07);
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* `width: 100%` (not max-width) is what gives text-overflow: ellipsis
+   * something to clip against — under `align-items: center` a flex
+   * child sizes to its content by default, which leaves the donor line
+   * to expand past the card edge instead of truncating. */
+  width: 100%;
+  line-height: 1.1;
+  /* Height-referenced gap, not `%` — see the note on .ca-card padding. */
+  margin-bottom: calc(var(--ca-uh) * 0.012);
+  /* Light text on the dark card — not --theme-text. See .ca-card. */
+  color: #fff;
+}
+.ca-card-amount {
+  font-size: calc(var(--ca-uh) * 0.105);
+  color: var(--obs-accent-bright, #ffd166);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+/* Donor message under the amount. A display font (Bungee) is unreadable
+ * for prose, so drop to a plain sans here. Wraps and clamps to a few
+ * lines so a long message can't blow the card off-screen — the spoken
+ * readout carries the full text regardless. */
+.ca-card-message {
+  margin-top: calc(var(--ca-uh) * 0.018);
+  max-width: 92%;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: calc(var(--ca-uh) * 0.04);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  /* Clamp to 3 lines with an ellipsis. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Confetti — 18 spans laid out around the card centre. Each particle
+ * gets a deterministic angle via --i and a colour pulled from --c.
+ * Pure CSS, no JS animation loop. */
+.ca-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ca-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--ca-uh) * 0.035);
+  height: calc(var(--ca-uh) * 0.035);
+  background: var(--c, var(--obs-accent, #e71347));
+  border-radius: 1px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: ca-particle-fly 900ms cubic-bezier(0.16, 1, 0.3, 1) 1 forwards;
+}
+@keyframes ca-particle-fly {
+  0% {
+    transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg)) translateX(0)
+      rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    /* Travel distance kept tight so particles stay inside the OBS
+     * capture rect — confetti is a celebration cue, not a screen-
+     * filling burst, and overflowing past the source's edges just
+     * looks like a glitch. Card centre sits at ~42% from the top after
+     * the scene was scaled down, so 0.3×h gives ~12% headroom even on
+     * the tightest upward trajectory. */
+    transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg))
+      translateX(calc(var(--ca-uh) * 0.3)) rotate(540deg);
+    opacity: 0;
+  }
+}

@@ -1,0 +1,484 @@
+/* Ported from legacy/src/app/components/incentives/incentives.component.css,
+ * then uplifted for the React remaster — see Incentives.tsx. */
+
+.text-bloodmoon {
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
+}
+
+.bg-bloodmoon {
+  background-color: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.bg-bloodmoon::before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary-bright, #ffc2e0),
+    var(--theme-primary, #e59fcb),
+    var(--theme-secondary, #d96da9)
+  );
+  opacity: 0.15;
+  z-index: -1;
+}
+
+/* ── Page headings ──────────────────────────────────────────────────────
+ * Flat heading in the theme's heading font with a centred gradient accent
+ * rule, matching the donor-wall treatment on the Donations page. */
+.incentives-hero-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+  font-size: clamp(2rem, 5vw, 3rem);
+  color: var(--theme-text, #fff);
+  margin: 0;
+}
+
+.incentives-section-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  color: var(--theme-text, #fff);
+  margin-bottom: 0.75rem;
+}
+
+.incentives-section-title::after {
+  content: '';
+  display: block;
+  margin-top: 0.5rem;
+  width: 3.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary, #e71347),
+    var(--theme-secondary, #731c37)
+  );
+}
+
+/* ── Card grid ──────────────────────────────────────────────────────── */
+.incentive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 1.25rem;
+}
+
+.incentive-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border-radius: 14px;
+  overflow: hidden;
+  /* Per-card accent (data-accent → --btn-tint). Background + border
+   * both mix the per-card colour with the legacy translucent black so
+   * the four-card row paints four distinct hues on multi-colour themes
+   * while single-accent themes keep their classic look via the
+   * fallback chain. */
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 12%, transparent) 0%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 35%, transparent);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.incentive-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 60%, transparent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.incentive-card--reached {
+  border-color: color-mix(in srgb, var(--theme-primary-bright, #da4471) 75%, transparent);
+}
+
+/* A raffle that's live right now (its required game is being played) gets a
+ * pulsing red glow + twinkling sparkles to grab attention. */
+.incentive-card--live,
+.incentive-card--live:hover {
+  position: relative;
+  border-color: #ff3b30;
+}
+
+.incentive-card--live {
+  animation: incentive-card-live-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes incentive-card-live-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(255, 59, 48, 0.85), 0 0 14px rgba(255, 59, 48, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(255, 59, 48, 1), 0 0 28px rgba(255, 59, 48, 0.75);
+  }
+}
+
+/* Three dense twinkle layers, out of phase and at different speeds, scattered
+ * across the card so it really glitters. Pointer-events off so they never
+ * block the Enter-now button; clipped by the card's overflow:hidden so they
+ * stay inside the rounded frame. A bright drop-shadow gives each point a glow. */
+.incentive-card--live::before,
+.incentive-card--live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+  animation: incentive-sparkle 1.1s ease-in-out infinite;
+}
+
+.incentive-card--live::before {
+  background-image:
+    radial-gradient(2.5px 2.5px at 18% 28%, #fff, transparent 62%),
+    radial-gradient(3px 3px at 72% 18%, rgba(255, 225, 160, 1), transparent 62%),
+    radial-gradient(2px 2px at 86% 58%, #fff, transparent 62%),
+    radial-gradient(2.5px 2.5px at 34% 76%, #fff, transparent 62%),
+    radial-gradient(2px 2px at 55% 48%, rgba(255, 225, 160, 1), transparent 62%),
+    radial-gradient(3px 3px at 12% 52%, #fff, transparent 62%),
+    radial-gradient(2px 2px at 60% 70%, #fff, transparent 62%),
+    radial-gradient(2.5px 2.5px at 44% 34%, rgba(255, 225, 160, 1), transparent 62%),
+    radial-gradient(2px 2px at 92% 80%, #fff, transparent 62%);
+}
+
+.incentive-card--live::after {
+  background-image:
+    radial-gradient(2.5px 2.5px at 10% 64%, #fff, transparent 62%),
+    radial-gradient(2px 2px at 46% 14%, rgba(255, 225, 160, 1), transparent 62%),
+    radial-gradient(3px 3px at 90% 34%, #fff, transparent 62%),
+    radial-gradient(2px 2px at 64% 84%, #fff, transparent 62%),
+    radial-gradient(2.5px 2.5px at 26% 46%, rgba(255, 225, 160, 1), transparent 62%),
+    radial-gradient(2px 2px at 78% 66%, #fff, transparent 62%),
+    radial-gradient(3px 3px at 38% 60%, #fff, transparent 62%),
+    radial-gradient(2px 2px at 6% 22%, rgba(255, 225, 160, 1), transparent 62%),
+    radial-gradient(2.5px 2.5px at 70% 40%, #fff, transparent 62%);
+  animation-duration: 1.6s;
+  animation-delay: 0.55s;
+}
+
+@keyframes incentive-sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25) rotate(12deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incentive-card--live {
+    animation: none;
+    box-shadow: 0 0 0 1px rgba(255, 59, 48, 1), 0 0 20px rgba(255, 59, 48, 0.6);
+  }
+  .incentive-card--live::before,
+  .incentive-card--live::after {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
+.incentive-card-media {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  filter: hue-rotate(var(--theme-image-hue-rotate, 0deg));
+}
+
+/* Prizes are studio shots that look best uncropped — shown contained over
+ * an ambient blurred backdrop of the same art so the letterbox gaps fill
+ * with the image's own edge colours. */
+.incentive-prize-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Zoomed + blurred fill behind the contained image. scale() hides the
+ * soft blurred edges; brightness keeps it from overpowering the subject. */
+.incentive-prize-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.2);
+  filter: blur(22px) brightness(0.65);
+  z-index: 0;
+}
+
+.incentive-prize-img {
+  position: relative;
+  z-index: 1;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* Status blip (Open / Coming soon / Drawn) pinned to the image's top
+ * corner rather than competing with the title. */
+.incentive-card-status {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+
+.incentive-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.incentive-card-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.05rem;
+  line-height: 1.2;
+  color: var(--theme-text, #fff);
+  margin: 0;
+}
+
+.incentive-card-desc {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
+  margin: 0;
+}
+
+.incentive-inline-link {
+  color: var(--theme-link, #ffc107);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.incentive-inline-link:hover {
+  color: var(--theme-link-hover, #fff);
+  text-decoration: underline;
+}
+
+/* "LIVE — game is being played now" indicator on a raffle whose required
+ * game is the current playthrough (which is what unlocked it). */
+.incentive-live {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--theme-text, #fff);
+}
+
+.incentive-live strong {
+  color: #ff3b30;
+  letter-spacing: 0.05em;
+}
+
+.incentive-live-dot {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #ff3b30;
+  box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7);
+  animation: incentive-live-pulse 1.6s ease-out infinite;
+}
+
+@keyframes incentive-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(255, 59, 48, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incentive-live-dot {
+    animation: none;
+  }
+}
+
+/* Enter-now CTA — 1.5× the default btn-sm height for a chunkier tap target.
+ * `.btn.` prefix outranks Bootstrap's `.btn-sm` padding (equal-specificity
+ * rule that would otherwise win on source order). */
+.btn.incentive-enter-btn {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+/* Prefix label sitting to the left of the delivery-method blip. */
+.incentive-delivery-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+}
+
+/* ── Status badges ──────────────────────────────────────────────────── */
+.incentive-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.incentive-badge--free {
+  background: color-mix(in srgb, var(--theme-secondary, #731c37) 35%, transparent);
+  border-color: color-mix(in srgb, var(--theme-secondary, #731c37) 60%, transparent);
+  color: #fff;
+}
+
+.incentive-badge--open {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--theme-line, rgba(255, 255, 255, 0.2));
+  color: var(--theme-text, #fff);
+}
+
+.incentive-badge--unlocked {
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 30%, transparent);
+  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 65%, transparent);
+  color: #fff;
+}
+
+/* ── Progress bar ───────────────────────────────────────────────────── */
+.incentive-progress {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+  overflow: hidden;
+}
+
+.incentive-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--pct, 0%);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471)
+  );
+  transition: width 0.4s ease;
+}
+
+.incentive-amounts {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.incentive-amount-current {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.1rem;
+  color: var(--theme-primary, #e71347);
+}
+
+.incentive-amount-goal {
+  font-size: 0.85rem;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
+}
+
+/* ── Bid-war options ────────────────────────────────────────────────── */
+.incentive-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.incentive-option {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+}
+
+.incentive-option::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--share, 0%);
+  /* Per-option accent fill — each bid-war row's bar paints its own
+   * theme colour so a head-to-head contest reads as a four-colour
+   * stack rather than identical bars. */
+  background: color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 28%, transparent);
+  transition: width 0.4s ease;
+  z-index: 0;
+}
+
+.incentive-option--leading::before {
+  background: color-mix(in srgb, var(--btn-tint, var(--theme-primary, #e71347)) 45%, transparent);
+}
+
+.incentive-option-name,
+.incentive-option-pct {
+  position: relative;
+  z-index: 1;
+}
+
+.incentive-option-name {
+  font-weight: 600;
+  color: var(--theme-text, #fff);
+}
+
+.incentive-option-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
+}

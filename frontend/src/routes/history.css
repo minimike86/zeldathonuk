@@ -1,0 +1,295 @@
+/* Ported from legacy/src/app/components/history/history.component.css
+ * Vertical alternating timeline. Replaces PrimeNG's p-timeline.
+ */
+
+/* Heading on /history — "N Years of" followed by the ZeldathonUK wordmark
+ * SVG instead of plain text. Matches the /about heading treatment. */
+.history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.history-heading-text {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3em);
+  /* Match the /donations "Thank you to all our donors!" heading: theme
+   * heading font, solid theme text colour (not the .text-bloodmoon
+   * gradient wordmark). */
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  color: var(--theme-text, #fff);
+}
+
+.history-heading-logo {
+  display: inline-block;
+  height: clamp(2.4rem, 5.5vw, 4rem);
+  width: auto;
+}
+
+.history-intro {
+  max-width: 40rem;
+  margin: -1.5rem auto 3rem;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
+  line-height: 1.5;
+}
+
+/* Fundraising page links on each timeline card. Mirrors the `.charity-link`
+ * pill treatment from /charity (charity.css is route-scoped, so the rules are
+ * duplicated here to keep /history self-contained). */
+.history-fundraiser-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.history-fundraiser-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.history-fundraiser-link:hover {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--theme-secondary, #439abe) 85%, transparent);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.zth-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+.zth-timeline::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  margin-left: -2px;
+  background: linear-gradient(
+    180deg,
+    var(--theme-secondary, #731c37),
+    var(--theme-primary, #b92753),
+    var(--theme-secondary, #731c37)
+  );
+  border-radius: 2px;
+}
+
+.zth-timeline-item {
+  position: relative;
+  width: 50%;
+  padding: 2rem 2.5rem;
+  box-sizing: border-box;
+}
+
+.zth-timeline-item.left {
+  left: 0;
+  text-align: right;
+}
+
+.zth-timeline-item.right {
+  left: 50%;
+  text-align: left;
+}
+
+.zth-timeline-marker {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text, #fff);
+  border-radius: 50%;
+  position: absolute;
+  top: 2rem;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  background: var(--theme-secondary, #62182f);
+}
+
+/* The first (current/upcoming) marker tints with the active theme's
+ * primary, every historical marker uses the muted secondary so the
+ * latest event stands out. */
+.zth-timeline-marker.is-current {
+  /* Latest event = brand primary regardless of the per-item accent —
+   * it's the star marker, deliberately distinct from the historical
+   * cards behind it. */
+  background: var(--theme-primary, #e71347);
+  animation: zth-marker-pulse 2.4s ease-out infinite;
+}
+
+/* Past markers honour the per-item shuffled accent so the timeline
+ * dots show off the four-colour palette down the page. */
+.zth-timeline-item[data-accent] .zth-timeline-marker.is-past {
+  background: var(--btn-tint);
+}
+
+@keyframes zth-marker-pulse {
+  0% {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.4),
+      0 0 0 0 color-mix(in srgb, var(--theme-primary, #e71347) 55%, transparent);
+  }
+  70% {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.4),
+      0 0 0 12px transparent;
+  }
+  100% {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.4),
+      0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zth-timeline-marker.is-current {
+    animation: none;
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.4),
+      0 0 0 4px var(--theme-line, rgba(231, 19, 71, 0.35));
+  }
+}
+
+.zth-timeline-item.left .zth-timeline-marker {
+  right: -1rem;
+}
+
+.zth-timeline-item.right .zth-timeline-marker {
+  left: -1rem;
+}
+
+.zth-timeline-card {
+  /* Theme-driven wash so each historical card tints to the active
+   * palette. color-mix blends the primary/secondary stops down to a
+   * subtle 10% overlay over whatever the page background is. */
+  background: linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--theme-primary-bright, #ffc2e0) 12%, transparent),
+    color-mix(in srgb, var(--theme-primary, #e59fcb) 12%, transparent),
+    color-mix(in srgb, var(--theme-secondary, #d96da9) 12%, transparent)
+  );
+  color: var(--theme-text, #fff);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--theme-line, rgba(229, 159, 203, 0.25));
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+/* Accent strip across the top of each card, tying it to the timeline
+ * spine. Now driven by the per-item accent so the strip's colour
+ * follows the deck → multi-colour bar of stripes down the page. */
+.zth-timeline-card::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--btn-tint, var(--theme-primary, #e71347)),
+    color-mix(in srgb, var(--btn-tint, var(--theme-secondary, #731c37)) 60%, #000)
+  );
+}
+
+.zth-timeline-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 55%, transparent);
+}
+
+.zth-card-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--theme-line, rgba(229, 159, 203, 0.25));
+}
+
+.zth-card-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: var(--theme-text, #fff);
+}
+
+.zth-card-date {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.15));
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+}
+
+/* Branded placeholder shown behind the media while a YouTube embed or
+ * JustGiving image is still loading — fills the otherwise-blank square
+ * with a dimmed ZeldathonUK logo on a dark wash. In-flow media paints on
+ * top and fully covers it once loaded. */
+.zth-card-media {
+  min-height: 200px;
+  background-color: rgba(0, 0, 0, 0.55);
+  background-image: url('/assets/img/brand/logo/Zeldathon-2026-White.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: clamp(110px, 40%, 200px);
+  background-blend-mode: soft-light;
+}
+
+.zth-card-media iframe,
+.zth-card-media img {
+  display: block;
+}
+
+.text-bloodmoon {
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .zth-timeline::before {
+    left: 1rem;
+  }
+  .zth-timeline-item,
+  .zth-timeline-item.left,
+  .zth-timeline-item.right {
+    width: 100%;
+    left: 0;
+    text-align: left;
+    padding-left: 3rem;
+    padding-right: 1rem;
+  }
+  .zth-timeline-item.left .zth-timeline-marker,
+  .zth-timeline-item.right .zth-timeline-marker {
+    left: 0;
+    right: auto;
+  }
+}

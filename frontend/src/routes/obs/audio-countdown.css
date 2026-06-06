@@ -1,0 +1,316 @@
+/* All colour stops are driven by CSS custom properties set on .ac-stage from
+ * the per-game theme picker in game-themes.ts. The defaults below match
+ * the bloodmoon scheme so the page still looks like the rest of the site
+ * when no track is loaded. */
+.ac-stage {
+  --ac-bg-from: #4c1324;
+  --ac-bg-to: #1a0a10;
+  --ac-primary: #e71347;
+  --ac-secondary: #62182f;
+  --ac-tertiary: #da4471;
+  --ac-glow: rgba(231, 19, 71, 0.8);
+
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, var(--ac-bg-from) 0%, var(--ac-bg-to) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  transition: background 1.2s ease;
+}
+
+/* Thin bar at the very top of the stage. Starts full-width and shrinks
+ * (right-to-left feel) as the current track's remaining time decreases.
+ * Driven by inline `transform: scaleX(...)` set from the component. */
+.ac-track-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--ac-primary), var(--ac-tertiary));
+  box-shadow: 0 0 8px var(--ac-glow);
+  transform-origin: left center;
+  transition: transform 0.25s linear;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.ac-title {
+  font-family: 'Bungee', sans-serif;
+  /* Scale down on narrow viewports so phrases like "15TH ANNIVERSARY" stay
+   * on one line. */
+  font-size: clamp(2.5rem, 6vw, 5.5rem);
+  color: #fff;
+  letter-spacing: 0.05em;
+  margin: 0 0 1.5rem;
+  text-align: center;
+  line-height: 1.1;
+  max-width: min(960px, 88vw);
+  position: relative;
+  z-index: 3;
+  /* `pretty` avoids single-word orphans on the last line (browser keeps
+   * "15TH ANNIVERSARY" together instead of breaking after "15TH"). */
+  text-wrap: pretty;
+  /* Layered shadows: tight black for contrast, broader blur for depth. */
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.5),
+    0 3px 8px rgba(0, 0, 0, 0.8),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+  padding: 0 0.5em;
+  /* Title used to be raw text; it's now a logo SVG (driven by the
+   * active theme's logo_url, falling back to the gold-flash wordmark)
+   * stacked above the event tagline ("15TH ANNIVERSARY" etc.). */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.ac-title-logo {
+  /* Height tracks the original text size so the logo lands on the same
+   * baseline the wordmark used to. Width auto-fits, capped to the
+   * heading's existing 960px / 88vw bound to keep wide marks legible. */
+  height: clamp(3rem, 8vw, 7rem);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  /* Drop-shadow gives the SVG the same depth the text-shadow gave the
+   * wordmark — without it the logo floats flat against the scene. */
+  filter:
+    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.5))
+    drop-shadow(0 3px 8px rgba(0, 0, 0, 0.8))
+    drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
+}
+
+/* Event tagline ("15TH ANNIVERSARY", "GAMEBLAST 2026" …) — smaller
+ * than the original wordmark since the logo now carries the brand,
+ * but still typographically prominent so the year/edition reads from
+ * across a stream. */
+.ac-title-event {
+  font-family: 'Bungee', sans-serif;
+  font-size: clamp(1.25rem, 2.8vw, 2.5rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: #ffd23a;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.5),
+    0 3px 8px rgba(0, 0, 0, 0.7);
+}
+
+.ac-clock {
+  font-family: 'VT323', monospace;
+  font-size: clamp(3rem, 11vw, 14rem);
+  line-height: 1;
+  /* Soft dark drop-shadow for separation; no themed glow. */
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  max-width: 95vw;
+  text-align: center;
+  position: relative;
+  z-index: 3;
+}
+
+.ac-sub {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.5rem;
+  color: #fff;
+  letter-spacing: 0.2em;
+  margin-bottom: 2rem;
+  /* Layered shadow keeps the text legible on light scene backgrounds. */
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 3px 8px rgba(0, 0, 0, 0.85),
+    0 0 18px rgba(0, 0, 0, 0.55);
+  position: relative;
+  z-index: 3;
+}
+
+/* When the event is live: name of the game currently being played, shown
+ * above the per-game countdown clock. */
+.ac-now-game {
+  font-family: 'Bungee', sans-serif;
+  font-size: clamp(2rem, 4.5vw, 4rem);
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.4rem;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 3px 10px rgba(0, 0, 0, 0.85),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+  position: relative;
+  z-index: 3;
+}
+
+/* Break variant — same layout as the game header but tinted warm yellow
+ * so viewers immediately register "we're away" rather than gameplay. */
+.ac-now-game--break {
+  color: #ffe69b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 3px 10px rgba(0, 0, 0, 0.85),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.ac-break-icon {
+  display: inline-block;
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+/* Fallback small clock for the "LIVE — no entry selected" state. */
+.ac-clock-small {
+  font-size: clamp(2rem, 6vw, 6rem);
+}
+
+/* Up-next preview chip, sits beneath the per-game clock. */
+.ac-up-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 1.5rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  position: relative;
+  /* Scene crossfade layers (gloom hands etc.) sit at z-index 1-2; lift the
+   * foreground HUD above them so nothing eats the text. */
+  z-index: 3;
+}
+
+.ac-up-next-label {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ac-up-next-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.ac-visualiser {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 25vh;
+  opacity: 0.85;
+}
+
+.ac-nowplaying {
+  position: absolute;
+  left: 50%;
+  bottom: 4vh;
+  transform: translateX(-50%);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 2;
+}
+
+.ac-np-label {
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ac-np-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.ac-np-artist {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Tiny themed tag on the now-playing card. */
+.ac-np-theme {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: var(--ac-primary);
+  color: #0a0a0a;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+.ac-start-gesture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 10;
+}
+
+.ac-start-gesture:hover .ac-start-icon {
+  transform: scale(1.05);
+  background: linear-gradient(45deg, var(--ac-primary), var(--ac-tertiary), var(--ac-secondary));
+}
+
+.ac-start-icon {
+  font-family: 'Bungee', sans-serif;
+  font-size: 6rem;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 50%;
+  background: linear-gradient(45deg, var(--ac-primary), var(--ac-secondary));
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 0.4rem;
+  transition: all 0.15s;
+}
+
+.ac-start-label {
+  font-family: 'Bungee', sans-serif;
+  font-size: 1.75rem;
+  letter-spacing: 0.1em;
+}
+
+.ac-start-hint {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 28rem;
+  text-align: center;
+}

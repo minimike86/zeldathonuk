@@ -1,0 +1,399 @@
+@import 'bootstrap/dist/css/bootstrap.css';
+
+@import url('https://fonts.googleapis.com/css2?family=VT323');
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+@import url('https://fonts.googleapis.com/css?family=Bungee');
+@import url('https://fonts.googleapis.com/css?family=Passion+One');
+@import url('https://fonts.googleapis.com/css?family=Mukta');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Legacy global styles (ported verbatim from legacy/src/styles.css).
+ * ──────────────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Theme variable defaults — overridden at runtime by <ThemeProvider> via
+ * /api/theme/. Keeping them here means everything still renders with the
+ * default bloodmoon palette before the API has loaded. */
+:root {
+  --theme-primary: #e71347;
+  --theme-primary-bright: #da4471;
+  --theme-secondary: #731c37;
+  --theme-bg-from: #4c1324;
+  --theme-bg-to: #1a0a10;
+  --theme-text: #ffffff;
+  --theme-text-muted: rgba(255, 255, 255, 0.6);
+  --theme-line: rgba(185, 39, 83, 0.5);
+  --theme-button-from: #4c1324;
+  --theme-button-to: #b92753;
+  --theme-button-text: #ffffff;
+  --theme-button-border: rgba(255, 255, 255, 0.4);
+  --theme-divider-thickness: 2px;
+  --theme-image-hue-rotate: -50deg;
+  --theme-link: #ffc2e0;
+  --theme-link-hover: #ffffff;
+  --theme-font-heading: 'Bungee', sans-serif;
+  --theme-font-body: 'Open Sans', sans-serif;
+  --theme-bg-image: none;
+  --theme-bg-video: '';
+  --theme-logo: '';
+  --theme-logo-small: '';
+}
+
+html,
+body {
+  height: 100%;
+  font-family: var(--theme-font-body, 'Open Sans', sans-serif);
+  /* The whole site sits on a dark bloodmoon palette, so tell the browser
+   * (and Bootstrap, via data-bs-theme on <html>) to render with the dark
+   * colour-scheme — keeps button text, form controls and scrollbars
+   * readable against the dark backgrounds. */
+  color-scheme: dark;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  /* Transparent body — OBS browser sources need the page's root
+   * background to be transparent so the green-screen would otherwise show
+   * through any unstyled area. RootLayout adds its own opaque
+   * `.zeldathon-bg` gradient for the regular site, and ObsLayout leaves
+   * everything transparent so OBS composites against whatever sits
+   * behind the browser source. */
+  background-color: transparent;
+  margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * App shell — ported from legacy/src/app/app.component.css
+ * ──────────────────────────────────────────────────────────────────────── */
+.zeldathon-bg {
+  background:
+    linear-gradient(var(--theme-bg-angle, 180deg), var(--theme-bg-from, #4c1324) 0%, var(--theme-bg-to, #1a0a10) 100%);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Optional background image — driven by --theme-bg-image. When the
+ * theme's image URL is blank the var is "none" and nothing renders. */
+.zeldathon-bg::before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100vw;
+  height: 100vh;
+  background-image: var(--theme-bg-image, none);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.2;
+  z-index: -1;
+}
+
+/* Router outlet fills whatever vertical space is left between navbar and
+ * footer. Avoids the legacy's brittle calc(100vh - 46px - 20px) which
+ * breaks when the navbar grows past 46px. */
+.router-outlet {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.router-outlet-obs {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* PrimeNG/PrimeIcons compatibility — minimal set used by ported pages. */
+i[class^='pi pi-']::before,
+i[class*=' pi pi-']::before {
+  font-family: 'primeicons', sans-serif;
+  display: inline-block;
+}
+
+/* Inline anchors inherit the active theme's link colours so they tint
+ * along with the rest of the palette. The Bootstrap `link-*` modifiers
+ * are kept (they're used for branded buttons), but generic <a> tags in
+ * page copy follow the theme. */
+.router-outlet a:not([class*='btn']):not([class*='nav']),
+.router-outlet-obs a:not([class*='btn']):not([class*='nav']) {
+  color: var(--theme-link, #ffc2e0);
+}
+
+.router-outlet a:not([class*='btn']):not([class*='nav']):hover,
+.router-outlet-obs a:not([class*='btn']):not([class*='nav']):hover {
+  color: var(--theme-link-hover, #ffffff);
+}
+
+/* Bootstrap's `.link-danger` / `.link-warning` modifiers ship with
+ * `color: …!important` derived from --bs-danger-rgb / --bs-warning-rgb,
+ * which overrides the generic anchor rule above. Re-route both to the
+ * theme link palette so they still feel branded but follow the active
+ * theme instead of the Bootstrap defaults. */
+.link-danger,
+.link-danger:focus,
+a.link-danger {
+  color: var(--theme-primary, #dc3545) !important;
+}
+.link-danger:hover {
+  color: var(--theme-primary-bright, #ff6b85) !important;
+}
+.link-warning,
+.link-warning:focus,
+a.link-warning {
+  color: var(--theme-link, #ffc107) !important;
+}
+.link-warning:hover {
+  color: var(--theme-link-hover, #ffd866) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Primary themed button.
+ *
+ * Single source of truth — page-level CSS used to redeclare this with a
+ * 5-stop `from → secondary → to → secondary → from` gradient which jammed
+ * the (often unrelated) `--theme-secondary` colour into the middle of the
+ * button and produced ugly bands for any palette that wasn't bloodmoon.
+ * The theme model only exposes a `from` and a `to`, so honour just those
+ * two — clean linear gradient, soft inner highlight, brightness lift on
+ * hover instead of a second gradient redefinition.
+ * ──────────────────────────────────────────────────────────────────────── */
+.btn-bloodmoon {
+  color: var(--theme-button-text, #fff);
+  background: linear-gradient(
+    var(--theme-button-angle, 180deg),
+    var(--theme-button-to, #b92753) 0%,
+    var(--theme-button-from, #4c1324) 100%
+  );
+  border: 1px solid var(--theme-button-border, rgba(255, 255, 255, 0.4));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  transition: filter 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-bloodmoon:hover,
+.btn-bloodmoon:focus-visible {
+  color: var(--theme-button-text, #fff);
+  filter: brightness(1.1);
+  border-color: var(--theme-primary-bright, rgba(255, 255, 255, 0.7));
+}
+
+.btn-bloodmoon:active {
+  filter: brightness(0.95);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.btn-bloodmoon:disabled,
+.btn-bloodmoon.disabled {
+  filter: grayscale(0.4) brightness(0.7);
+  cursor: not-allowed;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Per-element accent cycling — any element marked
+ *   data-accent="0|1|2|3"
+ * inherits a single colour from the theme's four-colour cluster (primary
+ * + accent_1/2/3). The deck assigner (see `useAccentDeck` in
+ * frontend/src/lib/accentDeck.ts) shuffles indices per mount so the
+ * homepage's row of buttons and the navbar's seven items each show off
+ * the full palette without two adjacent elements sharing a colour.
+ *
+ * `--btn-tint` is the resolved colour. Elements that want to consume
+ * it (e.g. `.btn-bloodmoon[data-accent]`) read `--btn-tint`; the
+ * data-accent rules below resolve it to the right CSS var per index.
+ * Themes without explicit accent_1/2/3 get sensible fallbacks via the
+ * applyTheme bridge so the deck still cycles, just with a duller
+ * single-hue palette.
+ * ──────────────────────────────────────────────────────────────────────── */
+[data-accent="0"] { --btn-tint: var(--theme-primary, #e71347); }
+[data-accent="1"] { --btn-tint: var(--theme-accent-1, var(--theme-primary-bright, #da4471)); }
+[data-accent="2"] { --btn-tint: var(--theme-accent-2, var(--theme-primary, #e71347)); }
+[data-accent="3"] { --btn-tint: var(--theme-accent-3, var(--theme-secondary, #731c37)); }
+
+/* Bloodmoon button variant: when data-accent is set, the gradient
+ * recolours to a single-hue based on the resolved --btn-tint instead
+ * of the default button_from → button_to. Same lighting (top sheen,
+ * bottom shoulder) so the buttons read as one family with each face
+ * picking a different SNES colour. */
+.btn-bloodmoon[data-accent] {
+  background: linear-gradient(
+    var(--theme-button-angle, 180deg),
+    color-mix(in srgb, var(--btn-tint) 88%, #fff 12%) 0%,
+    color-mix(in srgb, var(--btn-tint) 92%, #000 8%) 100%
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--btn-tint) 50%,
+    var(--theme-button-border, rgba(255, 255, 255, 0.4))
+  );
+}
+.btn-bloodmoon[data-accent]:hover,
+.btn-bloodmoon[data-accent]:focus-visible {
+  border-color: color-mix(in srgb, var(--btn-tint) 85%, #fff 15%);
+}
+
+/* Optional video background — rendered by <ThemeProvider> when the theme
+ * defines `background_video_url`. Sits behind every other element. */
+.theme-bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  opacity: 0.35;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Theme accents — override Bootstrap's success / warning / danger
+ * registers so multi-colour themes get to drive every status badge,
+ * outline button, and contextual text colour. The bridge in
+ * ThemeProvider supplies sensible fallbacks (primary_bright / primary
+ * / secondary) when a theme doesn't explicitly set the accent slots,
+ * so existing single-accent themes keep their current look while a
+ * theme that DOES set them (SNES PAL → green / yellow / red) gets
+ * those colours surfaced across the whole control panel.
+ *
+ * Bootstrap classes targeted here are the ones already in use across
+ * /control/* and the omnibar — see badge/btn-outline usage in
+ * Schedule.tsx, Timer.tsx, Audio.tsx etc.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+.badge.bg-success {
+  background-color: var(--theme-accent-1, #198754) !important;
+  color: #fff;
+}
+.badge.bg-warning {
+  background-color: var(--theme-accent-2, #ffc107) !important;
+  /* Bootstrap pairs warning with dark text; preserve that since
+   * yellow/amber accents read better with a dark label. */
+  color: #1a1a1a !important;
+}
+.badge.bg-danger {
+  background-color: var(--theme-accent-3, #dc3545) !important;
+  color: #fff;
+}
+
+/* Outline button accents — border + text colour swap to the matching
+ * accent at rest, then flood-fill on hover so the press affordance is
+ * unambiguous. */
+.btn-outline-success {
+  color: var(--theme-accent-1, #198754);
+  border-color: var(--theme-accent-1, #198754);
+}
+.btn-outline-success:hover,
+.btn-outline-success:focus-visible {
+  background-color: var(--theme-accent-1, #198754);
+  border-color: var(--theme-accent-1, #198754);
+  color: #fff;
+}
+.btn-outline-warning {
+  color: var(--theme-accent-2, #ffc107);
+  border-color: var(--theme-accent-2, #ffc107);
+}
+.btn-outline-warning:hover,
+.btn-outline-warning:focus-visible {
+  background-color: var(--theme-accent-2, #ffc107);
+  border-color: var(--theme-accent-2, #ffc107);
+  color: #1a1a1a;
+}
+.btn-outline-danger {
+  color: var(--theme-accent-3, #dc3545);
+  border-color: var(--theme-accent-3, #dc3545);
+}
+.btn-outline-danger:hover,
+.btn-outline-danger:focus-visible {
+  background-color: var(--theme-accent-3, #dc3545);
+  border-color: var(--theme-accent-3, #dc3545);
+  color: #fff;
+}
+
+/* btn-outline-light — Bootstrap's neutral outline button, used for
+ * secondary actions across /control/*. The default white-on-white was
+ * invisible on bright themes (SNES, Game Boy). Anchor to the surface
+ * text colour so the button reads against whatever card surface it's
+ * sitting in. */
+.btn-outline-light {
+  color: var(--theme-surface-text, var(--theme-text, #fff));
+  border-color: color-mix(
+    in srgb,
+    var(--theme-surface-text, var(--theme-text, #fff)) 55%,
+    transparent
+  );
+}
+.btn-outline-light:hover,
+.btn-outline-light:focus-visible {
+  color: var(--theme-button-text, #fff);
+  background-color: var(--theme-surface-text, var(--theme-text, #fff));
+  border-color: var(--theme-surface-text, var(--theme-text, #fff));
+}
+
+/* Contextual text utilities — same accent triad applied to inline
+ * status copy ("Unsaved changes", error toasts, success confirmation
+ * lines etc.) so the page reads consistently. */
+.text-success { color: var(--theme-accent-1, #198754) !important; }
+.text-warning { color: var(--theme-accent-2, #ffc107) !important; }
+.text-danger  { color: var(--theme-accent-3, #dc3545) !important; }
+
+/* Anchors wearing .text-warning across the control panel were never
+ * really "warning" colour — they were being repurposed because the
+ * bloodmoon palette happened to make yellow links readable on dark
+ * cards. Anchors now resolve to --theme-link (the proper themed
+ * link colour) so SNES / Game Boy / Wind Waker get their own link
+ * tone instead of a hardcoded amber that clashes with their palette.
+ * Status `<span>`s / `<div>`s wearing .text-warning still resolve to
+ * the warning register above. */
+a.text-warning {
+  color: var(--theme-link, var(--theme-primary-bright, #ffc2e0)) !important;
+}
+a.text-warning:hover,
+a.text-warning:focus-visible {
+  color: var(--theme-link-hover, #fff) !important;
+}
+
+/* Bootstrap white-text utilities — used HEAVILY across the control
+ * panel (~300+ occurrences) and elsewhere as "primary body copy on a
+ * dark surface". Anchor them to --theme-text so a light theme's dark
+ * text colour still resolves to readable on bright surfaces. The
+ * operator panel forces a dark card surface (see control.css) so
+ * white still wins there; this rule benefits the public site cards
+ * (charity, donations, schedule, etc.). */
+.text-white       { color: var(--theme-text, #fff) !important; }
+.text-white-50    { color: color-mix(in srgb, var(--theme-text, #fff) 50%, transparent) !important; }
+.text-white-75    { color: color-mix(in srgb, var(--theme-text, #fff) 75%, transparent) !important; }
+.text-light       { color: var(--theme-text, #fff) !important; }
+/* Bootstrap text-muted is grey by default; remap to the theme's
+ * muted register so it stays readable on light surfaces. */
+.text-muted       { color: var(--theme-text-muted, rgba(255, 255, 255, 0.6)) !important; }
+
+/* Inline anchors — already themed via --theme-link but the default
+ * Bootstrap `a` colour wins in places where no other rule scopes the
+ * link. Hard-codes the accents so e.g. control-card body copy honours
+ * the theme. */
+a {
+  color: var(--theme-link, #ffc2e0);
+}
+a:hover,
+a:focus-visible {
+  color: var(--theme-link-hover, #fff);
+}

@@ -1,0 +1,280 @@
+/* Ported from legacy/src/app/components/home/home.component.css */
+
+/* Flat secondary-coloured panel heading — no gradient, used for the
+ * Currently Playing / queue / Benefitting section titles. Mirrors the
+ * typography of `.text-bloodmoon` (bold, uppercase, 1.5em inside the
+ * bloodmoon panel) but paints a solid secondary colour instead. */
+.home-section-heading {
+  display: inline-block;
+  color: var(--theme-secondary, #731c37);
+  font-weight: bold;
+  font-size: 1.65em;
+  text-transform: uppercase;
+}
+
+.bg-bloodmoon h6.home-section-heading {
+  font-size: 1.5em;
+}
+
+.bg-bloodmoon {
+  background-color: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.bg-bloodmoon::before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100%;
+  height: 100%;
+  /* Soft wash painted over the bg-bloodmoon container — uses the
+   * theme palette so each theme repaints the wash automatically.
+   * The fallback hex chain is the legacy bloodmoon-pink set. */
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary-bright, #ffc2e0),
+    var(--theme-primary, #e59fcb),
+    var(--theme-secondary, #d96da9)
+  );
+  opacity: 0.15;
+  z-index: -1;
+}
+
+.text-specialeffect-blurb {
+  display: -webkit-box;
+  max-width: 100%;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Benefitting block — SpecialEffect logo + blurb + CTA button packaged
+ * inside a single panel so it reads as one branded callout rather than
+ * loose elements stacked on the page. */
+.benefitting-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  /* Driven by the theme palette via `color-mix` so each theme tints
+   * the beneficiary callout automatically. Earlier SpecialEffect-only
+   * blue tones lived here; charity-specific brand colours now ride on
+   * `.btn-specialeffect` (and analogues), keeping the card itself in
+   * the site's voice. */
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--theme-primary, #b92753) 16%, transparent) 0%,
+    color-mix(in srgb, var(--theme-secondary, #731c37) 10%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 45%, transparent);
+  border-radius: 10px;
+}
+
+.benefitting-logo {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.benefitting-logo:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.benefitting-logo img {
+  display: block;
+  height: 3rem;
+  width: auto;
+  /* The bundled SVG declares width="100%" height="100%" so without an
+   * explicit `height` it collapses to zero inside the flex column. */
+  max-width: 12rem;
+  object-fit: contain;
+}
+
+.benefitting-body {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+  .benefitting-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .benefitting-body {
+    text-align: left;
+  }
+}
+
+.text-bloodmoon {
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 1.65em;
+  text-transform: uppercase;
+}
+
+/* SpecialEffect brand button — bespoke blue gradient + bright white
+ * rim. Selectors are double-classed (`.btn.btn-specialeffect`) so
+ * specificity beats Bootstrap's plain `.btn`, which sets `border` via
+ * its own CSS variables (`--bs-btn-border-*`). Single-class selectors
+ * lose to Bootstrap when route CSS loads before vendor styles, which
+ * was making the white rim disappear. */
+.btn.btn-specialeffect {
+  font-family: 'Bungee', 'Open Sans', cursive !important;
+  color: #fff;
+  background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
+  /* Border + inset highlight/shadow lifted directly from `.btn-bloodmoon`
+   * so the rim brightness matches the paired donate button. Only the
+   * background gradient differs (SpecialEffect blue vs theme bloodmoon
+   * wine). */
+  border: 1px solid var(--theme-button-border, rgba(255, 255, 255, 0.4));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  transition: filter 0.15s ease, border-color 0.15s ease;
+}
+
+.btn.btn-specialeffect:hover,
+.btn.btn-specialeffect:focus-visible {
+  color: #fff;
+  background: linear-gradient(45deg, #439abe, #0072b6, #025b90);
+  /* Same hover border lift as `.btn-bloodmoon` — `--theme-primary-bright`
+   * with a fully-white fallback. */
+  border-color: var(--theme-primary-bright, rgba(255, 255, 255, 0.7));
+  filter: brightness(1.1);
+  /* Restate the rest-state inset shadows so Bootstrap's default
+   * `.btn:focus-visible` box-shadow (a 0.25rem outer ring) doesn't
+   * paint a halo around the button after it has been clicked, which
+   * reads as the button "growing" on hover. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  outline: none;
+}
+
+.btn.btn-specialeffect:active {
+  filter: brightness(0.95);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* Bump up Currently Playing / Up Next / Benefitting text — Bootstrap's
+ * default h5 was reading too small inside the 0.80em row. */
+.bg-bloodmoon h5 {
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
+.bg-bloodmoon h6.text-bloodmoon {
+  font-size: 1.5em;
+}
+
+/* Cycling Up Next card — keyed so React remounts the node each rotation and
+ * the slide-in animation re-runs. Game card swipes in from the right. */
+.upnext-card {
+  animation: upnext-slide-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes upnext-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Twitch player ratio container — caps the player so the rest of the
+ * homepage fits in the viewport at 100% zoom. The cap scales DOWN as
+ * the viewport gets shorter so the bottom card (Currently Playing +
+ * Up Next + charity panel) doesn't get pushed below the fold on
+ * laptops and smaller monitors. Width-driven 16:9 means each step
+ * also narrows the player, but that's the right trade — staying
+ * scroll-free beats a slightly larger window. */
+.twitch-player-ratio {
+  max-height: 60vh;
+}
+@media (max-height: 899px) {
+  .twitch-player-ratio { max-height: 55vh; }
+}
+@media (max-height: 799px) {
+  .twitch-player-ratio { max-height: 50vh; }
+}
+@media (max-height: 699px) {
+  .twitch-player-ratio { max-height: 45vh; }
+}
+@media (max-height: 599px) {
+  .twitch-player-ratio { max-height: 40vh; }
+}
+
+/* Live pill — sits next to the channel name on the homepage's
+ * "currently streaming" header. The dot pulses with a soft red halo
+ * so peripheral vision picks it up as "this is happening NOW". */
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.55rem 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 60, 60, 0.18);
+  border: 1px solid rgba(255, 60, 60, 0.45);
+  color: #ff6e6e;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.live-pill-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #ff2a2a;
+  box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.6);
+  animation: live-pill-pulse 1.4s ease-out infinite;
+}
+
+@keyframes live-pill-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 0.55rem rgba(255, 42, 42, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 42, 42, 0);
+  }
+}
+
+/* WaveText is styled in its own component CSS (components/WaveText.css).
+ * Here we just override the per-character colour when the wave is used
+ * inside a .text-bloodmoon ancestor — that class paints text via a
+ * gradient background with transparent -webkit-text-fill-color, which
+ * would otherwise leave every wave character invisible. */
+.text-bloodmoon .wave-text > span {
+  -webkit-text-fill-color: var(--theme-primary, #e71347);
+  color: var(--theme-primary, #e71347);
+}

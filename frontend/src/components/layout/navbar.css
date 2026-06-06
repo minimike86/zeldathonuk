@@ -1,0 +1,76 @@
+/* Ported verbatim from legacy/src/app/components/navbar/navbar.component.css */
+
+.navbar {
+  --bs-navbar-padding-y: 0 !important;
+  --bs-navbar-padding-x: 0 !important;
+  background:
+    linear-gradient(180deg, var(--theme-navbar-tint, #2b1b25), hsla(0, 0%, 100%, 0)),
+    var(--theme-bg-from, #4c1324) !important;
+  border-bottom: var(--theme-divider-thickness, 1px) solid
+    var(--theme-primary, #bb225e);
+  min-height: 46px;
+}
+
+.navbar .navbar-nav {
+  --bs-nav-link-padding-y: 0 !important;
+}
+
+.nav-item {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.navbar-brand {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* No navbar-specific overrides on `.btn-bloodmoon` — the navbar Donate
+ * button is intentionally identical to the page-content "Follow Us On
+ * Twitch" CTA, so it inherits the default `.btn-bloodmoon` treatment
+ * from index.css with no scope-specific border / shadow tweaks. */
+
+.nav-link-dark {
+  font-weight: 500;
+  color: white !important;
+  text-shadow: 1px 1px 2px black;
+}
+
+/* Per-item accent — each nav <li> carries data-accent="0|1|2|3"
+ * (Navbar.tsx assigns via useAccentDeck). The shared --btn-tint var
+ * (defined in index.css) resolves to one of the four theme colours,
+ * so each item paints a different hue on hover + drives its icon
+ * colour with the matching accent. Without a data-accent attribute
+ * the original bloodmoon look survives via the fallback. */
+.nav-item-bloodmoon:hover {
+  background:
+    linear-gradient(180deg, var(--btn-tint, var(--theme-primary, #b92753)), hsla(0, 0%, 100%, 0)),
+    var(--btn-tint, var(--theme-primary, #b92753)) !important;
+}
+
+.nav-icon-bloodmoon {
+  color: var(--btn-tint, var(--theme-secondary, #731c37));
+  /* Subtle stroke makes the icon read against either light surfaces
+   * (SNES grey navbar) or dark ones (bloodmoon). The shadow uses the
+   * inverse of the surface text colour so it self-balances. */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+}
+
+.nav-item-bloodmoon:hover .nav-icon-bloodmoon {
+  /* On hover the cell paints the accent colour as its background — flip
+   * the icon to a dark stamp so it reads on top regardless of which
+   * accent is showing. */
+  color: #111421 !important;
+}
+
+.golden-text {
+  background: linear-gradient(45deg, #f6b100, #fff, #f6b100);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+/* Operator auth controls (Control button, username + role pill) now live in
+ * components/auth/authControls.{tsx,css} so the navbar and the control panel
+ * share one implementation. */
