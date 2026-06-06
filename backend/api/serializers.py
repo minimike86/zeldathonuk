@@ -358,6 +358,7 @@ class RecurringChatMessageSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     donation_pages = DonationPageSerializer(many=True, read_only=True)
+    donation_platform_profiles = serializers.SerializerMethodField()
     twitch_channels = EventTwitchChannelSerializer(many=True, read_only=True)
     chat_announcements = ChatAnnouncementSerializer(many=True, read_only=True)
     recurring_chat_messages = RecurringChatMessageSerializer(many=True, read_only=True)
@@ -388,10 +389,37 @@ class EventSerializer(serializers.ModelSerializer):
             'omnibar_layout',
             'omnibar_transitions',
             'donation_pages',
+            'donation_platform_profiles',
             'event_charities',
             'chat_announcements',
             'recurring_chat_messages',
         ]
+
+    def _platform_profiles(self):
+        cache = self.context.setdefault('_event_platform_profiles', None)
+        if cache is None:
+            cache = {
+                p.platform: p
+                for p in models.DonationPlatformProfile.objects.all()
+            }
+            self.context['_event_platform_profiles'] = cache
+        return cache
+
+    def get_donation_platform_profiles(self, obj) -> dict:
+        choice_labels = dict(models.DonationPlatform.choices)
+        return {
+            key: {
+                'platform': key,
+                'platform_label': choice_labels.get(key, key),
+                'display_label': profile.display_label or choice_labels.get(key, key),
+                'logo_url': profile.logo_url,
+                'fees_url': profile.fees_url,
+                'gift_aid_url': profile.gift_aid_url,
+                'fee_warning': profile.fee_warning,
+                'minimum_donation_amount': str(profile.minimum_donation_amount),
+            }
+            for key, profile in self._platform_profiles().items()
+        }
 
     def get_primary_twitch_channel(self, obj) -> str:
         # Iterate the (prefetched) list rather than a filtered query so this
