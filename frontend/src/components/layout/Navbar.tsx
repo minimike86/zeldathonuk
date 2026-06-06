@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { NavAuth } from '@/components/auth/NavAuth';
 import { env, resolveMediaUrl } from '@/lib/env';
-import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { eventDonationOptions, obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onThemeChanged } from '@/lib/themeBus';
 import { useAccentDeck } from '@/lib/accentDeck';
 import './navbar.css';
@@ -92,7 +92,7 @@ export function Navbar() {
   const { data: theme } = usePolledQuery(obsApi.themeSettings, 30000, [themeBump], {
     cacheKey: 'zeldathon-theme',
   });
-  const donationPages = event?.donation_pages ?? [];
+  const donationPages = eventDonationOptions(event);
   const logoSrc = resolveMediaUrl(theme?.logo_url) || DEFAULT_LOGO;
   // Per-mount shuffled deck — each nav item picks one of the four
   // theme accents (primary + accent_1/2/3) so the bar shows off the

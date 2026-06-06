@@ -293,6 +293,19 @@ export interface DonationPage {
   minimum_donation_amount: string; // DecimalField serialises as string.
 }
 
+export type DonationPlatformProfile = Pick<
+  DonationPage,
+  | 'platform'
+  | 'display_label'
+  | 'logo_url'
+  | 'fees_url'
+  | 'gift_aid_url'
+  | 'fee_warning'
+  | 'minimum_donation_amount'
+> & {
+  platform_label: string;
+};
+
 export interface EventTwitchChannel {
   id: number;
   event: number;
@@ -482,6 +495,7 @@ export interface EventModel {
    *    panels: { "<panel-id>": { ...overrides } } }. */
   omnibar_transitions: Record<string, unknown>;
   donation_pages: DonationPage[];
+  donation_platform_profiles: Partial<Record<DonationPlatformKey, DonationPlatformProfile>>;
   /** Per-trigger Twitch chat announcement config (enable + template).
    *  Read-only here; written via /api/chat-announcements/. */
   chat_announcements: ChatAnnouncement[];
@@ -503,28 +517,29 @@ export function eventDonationOptions(
   event: EventModel | null | undefined,
 ): DonationPage[] {
   if (!event) return [];
+  const twitchProfile = event.donation_platform_profiles?.twitch;
   const twitchRows: DonationPage[] = (event.twitch_channels ?? [])
     .filter((c) => c.track_charity && c.is_active && c.login)
     .map((c) => ({
       id: -c.id, // negative so it never collides with a real page id (React key)
       event: event.id,
       platform: 'twitch' as DonationPlatformKey,
-      display_label: 'Twitch Charity',
-      logo_url: '',
+      display_label: twitchProfile?.display_label || 'Twitch Charity',
+      logo_url: twitchProfile?.logo_url || '',
       label: c.display_name || c.login,
       url: `https://www.twitch.tv/charity/${c.login}`,
       external_id: c.charity_slug,
-      is_primary: false,
-      order: 100 + c.order,
+      is_primary: c.is_primary,
+      order: c.order,
       total_raised: null,
       total_donation_count: null,
       total_currency: '',
       total_status: '',
       total_synced_at: null,
-      fees_url: '',
-      gift_aid_url: '',
-      fee_warning: '',
-      minimum_donation_amount: '0',
+      fees_url: twitchProfile?.fees_url || '',
+      gift_aid_url: twitchProfile?.gift_aid_url || '',
+      fee_warning: twitchProfile?.fee_warning || '',
+      minimum_donation_amount: twitchProfile?.minimum_donation_amount || '0',
     }));
   return [...event.donation_pages, ...twitchRows];
 }
