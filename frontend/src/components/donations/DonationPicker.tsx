@@ -44,6 +44,10 @@ export function DonationPicker({
 
   const sorted = [...pages].sort((a, b) => {
     if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+    if (a.platform !== b.platform) {
+      if (a.platform === 'twitch') return -1;
+      if (b.platform === 'twitch') return 1;
+    }
     if (a.order !== b.order) return a.order - b.order;
     return a.id - b.id;
   });
@@ -128,9 +132,11 @@ function DonationRow({
 }) {
   const meta = PLATFORM_META[page.platform];
   // Always show the platform's display_label (controlled by the
-  // DonationPlatformProfile); the per-page `label` field is kept for
-  // internal/admin use but doesn't override the user-facing heading.
+  // DonationPlatformProfile); Twitch Charity rows also surface their
+  // channel label because several channels can fundraise in one event.
   const title = page.display_label;
+  const subtitle =
+    page.platform === 'twitch' && page.label.trim() ? page.label.trim() : '';
   const emphasised = isFirst || page.is_primary;
   const minAmount = parseFloat(page.minimum_donation_amount || '0');
   const minDonation = minAmount > 0
@@ -185,6 +191,11 @@ function DonationRow({
               </span>
             )}
           </div>
+          {subtitle && (
+            <div className="small text-white-50 mt-1">
+              {subtitle}
+            </div>
+          )}
           <div className="small text-white-50 d-flex gap-2 flex-wrap mt-1">
             {page.fees_url && (
               <a
