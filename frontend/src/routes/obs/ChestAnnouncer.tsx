@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { Donation } from '@/lib/obsApi';
-import { cleanForDisplay } from '@/lib/profanity';
+import { cleanForDisplay, cleanForTTS } from '@/lib/profanity';
+import { useTTS } from '@/lib/useTTS';
 import {
   HERO_WALK_SRC,
   HERO_IDLE_SRC,
@@ -13,11 +14,12 @@ import { pickTrigger, playSound } from './chestSoundTriggers';
 import './chest-announcer.css';
 
 /**
- * /obs/chest-announcer — silent visual companion to the omnibar's TTS
- * donation announcer. A pixel hero walks in from off-screen, opens a
- * chest, and holds each incoming donation overhead as a card (donor +
- * amount). Card confettis, hero pulls next donation if more are queued,
- * walks off when the queue is empty.
+ * /obs/chest-announcer — the donation announcer. A pixel hero walks in
+ * from off-screen, opens a chest, and holds each incoming donation
+ * overhead as a card (donor + amount + message) while reading it aloud
+ * via browser TTS (when `tts_enabled`). Card confettis, hero pulls next
+ * donation if more are queued, walks off when the queue is empty. Once a
+ * card has been read it's marked `already_announced` so it never replays.
  *
  *   off ──▶ walk_in ──▶ at_chest ──▶ opening ──▶ pulling ──▶ showing
  *                                                              │
@@ -140,6 +142,9 @@ interface ActiveCard {
   donor: string;
   amount: string;
   currency: string;
+  /** Raw donor message (may be empty). Cleaned at render via
+   *  cleanForDisplay and for speech via cleanForTTS. */
+  message: string;
 }
 
 /**
@@ -202,6 +207,19 @@ function ChestAnnouncerScene() {
   );
   const audioEnabledRef = useRef(false);
   audioEnabledRef.current = settings?.audio_enabled === true;
+  // Spoken-readout toggle — independent of the fanfare `audio_enabled`.
+  // Default true: the omnibar no longer speaks donations, so the chest
+  // is the primary readout. Read inside the timer-driven phase effect.
+  const ttsEnabledRef = useRef(true);
+  ttsEnabledRef.current = settings?.tts_enabled !== false;
+  // Browser TTS handle. Captured in a ref so the phase effect can speak
+  // without `speak` becoming a dep (it's stable, but the ref keeps the
+  // effect's dep list focused on phase transitions).
+  const { speak, cancel: cancelTts } = useTTS();
+  const ttsSpeakRef = useRef(speak);
+  ttsSpeakRef.current = speak;
+  const cancelTtsRef = useRef(cancelTts);
+  cancelTtsRef.current = cancelTts;
   // Clamp the inter-card delay to a sane range — server validates with
   // PositiveIntegerField but accidentally setting 10 minutes shouldn't
   // freeze the queue.
@@ -363,6 +381,11 @@ function ChestAnnouncerScene() {
   const [heroDir, setHeroDir] = useState<1 | -1>(1);
   const [walkMs, setWalkMs] = useState(WALK_MS);
   const [card, setCard] = useState<ActiveCard | null>(null);
+  // Mirror of `card` for the timer-driven phase effect to read without
+  // `card` becoming an effect dep (which would re-run the confetti
+  // branch when the card is cleared to null mid-burst).
+  const cardRef = useRef<ActiveCard | null>(null);
+  cardRef.current = card;
   const [cardPhase, setCardPhase] = useState<'enter' | 'hold' | 'burst' | null>(null);
   const [chestState, setChestState] = useState<
     'closed' | 'opening' | 'open' | 'closing'
@@ -445,6 +468,7 @@ function ChestAnnouncerScene() {
         donor: cleanForDisplay(donation.donor_name || 'Anonymous'),
         amount: Number(donation.amount).toFixed(2),
         currency: currencySymbol(donation.currency, event?.currency_symbol ?? '£'),
+        message: donation.message ?? '',
       };
       scheduleTimer(() => {
         // Start audio *before* transitioning to showing_card so the
@@ -495,18 +519,21 @@ function ChestAnnouncerScene() {
       // animation finishes (~260ms) so the float bob kicks in.
       scheduleTimer(() => setCardPhase('hold'), 260);
 
-      // Advance to confetti only after BOTH:
+      // Advance to confetti only after ALL of:
       //   1. CARD_HOLD_MS minimum elapsed — the card always gets a
       //      readable beat on screen, even for ultra-short sounds.
       //   2. The currently-playing sound's `ended` Promise resolves —
       //      so a long sting plays out fully before the next donation.
-      // Capped at MAX_CARD_HOLD_MS so a runaway upload can't freeze
-      // the queue.
+      //   3. The spoken readout (TTS) finishes — the chest is the
+      //      donation announcer now, so the card holds until it's read.
+      // Capped at MAX_CARD_HOLD_MS so a runaway upload / long message
+      // can't freeze the queue.
       let minHoldElapsed = false;
       let soundEnded = currentPlaybackRef.current === null;
+      let ttsEnded = true;
       const tryAdvance = () => {
         if (cancelled) return;
-        if (minHoldElapsed && soundEnded) setPhase('confetti');
+        if (minHoldElapsed && soundEnded && ttsEnded) setPhase('confetti');
       };
       scheduleTimer(() => {
         minHoldElapsed = true;
@@ -519,11 +546,30 @@ function ChestAnnouncerScene() {
           tryAdvance();
         });
       }
-      // Safety cap regardless of audio state.
+      // Spoken readout — gated by the separate `tts_enabled` toggle (not
+      // the fanfare `audio_enabled`). Build the utterance from the card:
+      // donor + amount, plus the (TTS-cleaned) message when present.
+      const showing = cardRef.current;
+      if (ttsEnabledRef.current && showing) {
+        const spokenMsg = showing.message.trim() ? cleanForTTS(showing.message) : '';
+        const utterance = spokenMsg
+          ? `${showing.donor} just donated ${showing.currency}${showing.amount} and says: ${spokenMsg}`
+          : `${showing.donor} just donated ${showing.currency}${showing.amount}.`;
+        ttsEnded = false;
+        void ttsSpeakRef.current(utterance).then(() => {
+          ttsEnded = true;
+          tryAdvance();
+        });
+      }
+      // Safety cap regardless of audio/TTS state.
       scheduleTimer(() => {
         if (!cancelled) setPhase('confetti');
       }, cardMaxHoldMsRef.current);
     } else if (phase === 'confetti') {
+      // The card has been fully held up + read — mark the donation
+      // read/announced so it's muted from any future readout (chest or
+      // omnibar takeover) and never replays on a reopened browser source.
+      if (cardRef.current) void obsApi.markDonationRead(cardRef.current.donationId);
       setCardPhase('burst');
       scheduleTimer(() => {
         setCard(null);
@@ -611,18 +657,24 @@ function ChestAnnouncerScene() {
   }, [queueLen, phase]);
 
   // ── Live-mute abort ─────────────────────────────────────────────────
-  // If the operator mutes the donation currently on screen (or about
-  // to come on, mid pulling_item), cut everything immediately: stop
-  // the audio, drop the card, and skip straight to the next reveal
-  // (or walk-out if the queue is empty). Confetti is skipped — there's
-  // nothing to celebrate when the donation has been recalled.
+  // If the operator mutes the donation currently on screen, cut
+  // everything immediately: stop the audio + readout, drop the card,
+  // and skip straight to the next reveal (or walk-out if the queue is
+  // empty). Confetti is skipped — there's nothing to celebrate when the
+  // donation has been recalled.
+  //
+  // Only fires during `showing_card`: the chest auto-marks each donation
+  // read (`already_announced`) at the confetti transition, so once we're
+  // in confetti the donation is *expected* to be muted — reacting to that
+  // here would needlessly cut the burst short.
   useEffect(() => {
     if (!card || !donations) return;
-    if (phase !== 'showing_card' && phase !== 'confetti') return;
+    if (phase !== 'showing_card') return;
     const live = donations.find((d) => d.id === card.donationId);
     if (!live || !live.is_muted) return;
     currentPlaybackRef.current?.cancel();
     currentPlaybackRef.current = null;
+    cancelTtsRef.current();
     setCard(null);
     setCardPhase(null);
     if (queueRef.current.length > 0) {
@@ -722,6 +774,11 @@ function ChestAnnouncerScene() {
               {card.currency}
               {card.amount}
             </div>
+            {card.message.trim() && (
+              <div className="ca-card-message">
+                “{cleanForDisplay(card.message)}”
+              </div>
+            )}
           </div>
           {cardPhase === 'burst' && (
             <div className="ca-confetti" aria-hidden>

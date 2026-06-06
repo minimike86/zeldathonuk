@@ -32,6 +32,14 @@ router.register('charity-videos', views.CharityVideoViewSet)
 router.register('charity-images', views.CharityImageViewSet)
 router.register('charity-impact-tiers', views.CharityImpactTierViewSet)
 router.register('event-charities', views.EventCharityViewSet)
+router.register('event-twitch-channels', views.EventTwitchChannelViewSet)
+router.register('chat-announcements', views.ChatAnnouncementViewSet)
+router.register('twitch-predictions', views.TwitchPredictionViewSet)
+router.register('recurring-chat-messages', views.RecurringChatMessageViewSet)
+router.register('shoutout-requests', views.ShoutoutRequestViewSet)
+router.register('scheduled-jobs', views.ScheduledJobViewSet)
+router.register('reward-mappings', views.RewardMappingViewSet)
+router.register('reward-actions', views.RewardActionViewSet)
 router.register(
     'chest-announcer/sound-triggers',
     views.ChestAnnouncerSoundTriggerViewSet,
@@ -73,8 +81,10 @@ urlpatterns = [
     path('webhooks/justgiving/', webhooks.justgiving_webhook, name='wh-justgiving'),
     path('webhooks/tiltify/', webhooks.tiltify_webhook, name='wh-tiltify'),
     path('webhooks/donation/', webhooks.generic_webhook, name='wh-generic'),
-    # Twitch — push the active schedule to the channel's Twitch schedule.
+    # Twitch — push the active schedule to the channel's Twitch schedule, or
+    # clear every segment off it.
     path('twitch/push-schedule/', twitch.push_schedule, name='twitch-push'),
+    path('twitch/clear-schedule/', twitch.clear_schedule, name='twitch-clear'),
     # Read-only live-status check used by the public homepage to decide
     # whether to show the "<channel> is Offline" placeholder.
     path('twitch/stream-status/', twitch.stream_status, name='twitch-stream-status'),
@@ -85,6 +95,32 @@ urlpatterns = [
         views.twitch_charity_campaign,
         name='twitch-charity-campaign',
     ),
+    # In-app device-code OAuth to connect a channel (operator-only). start →
+    # returns a user code + Twitch URL; poll → completes + saves the connection.
+    path('twitch/connect/start/', views.twitch_connect_start, name='twitch-connect-start'),
+    path('twitch/connect/poll/', views.twitch_connect_poll, name='twitch-connect-poll'),
+    # Per-event shoutout settings (GET public, PATCH operator).
+    path('shoutout-config/', views.shoutout_config, name='shoutout-config'),
+    # Twitch EventSub dashboard: list current subs + sync/prune (operator).
+    path('twitch/eventsub/subscriptions/', views.eventsub_subscriptions,
+         name='eventsub-subscriptions'),
+    path('twitch/eventsub/sync/', views.eventsub_sync, name='eventsub-sync'),
+    # Scheduler loop liveness (heartbeat) for the automation page.
+    path('scheduler-status/', views.scheduler_status, name='scheduler-status'),
+    # JustGiving ingestion: config/last-poll snapshot (GET public) + an
+    # operator "fetch now" that ingests the active event's pages immediately.
+    path('justgiving/status/', views.justgiving_status, name='justgiving-status'),
+    path('justgiving/test/', views.justgiving_test, name='justgiving-test'),
+    # Tiltify ingestion: config/last-poll snapshot (GET public) + an operator
+    # "fetch now" that ingests the active event's campaigns immediately.
+    path('tiltify/status/', views.tiltify_status, name='tiltify-status'),
+    path('tiltify/test/', views.tiltify_test, name='tiltify-test'),
+    # Channel's custom channel-point rewards (for the reward-action picker).
+    path('twitch/rewards/', views.twitch_custom_rewards, name='twitch-rewards'),
+    # Send an arbitrary message to all connected channels' chat (operator);
+    # global emotes for the composer's emote picker.
+    path('twitch/chat/send/', views.twitch_chat_send, name='twitch-chat-send'),
+    path('twitch/emotes/', views.twitch_emotes, name='twitch-emotes'),
     # Twitch EventSub push intake (follow/sub/raid/bits). Writes to
     # ExternalEvent; omnibar polls for these on a 1.5s tick.
     path('twitch/eventsub/', eventsub.eventsub_webhook, name='twitch-eventsub'),

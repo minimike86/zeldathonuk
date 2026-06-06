@@ -172,6 +172,11 @@ export interface GameObjective {
   game: number;
   name: string;
   image_url: string;
+  /** Read-only: the linked GameItem's sprite, so an "item get" objective can
+   *  fall back to the item's image when it has no own `image_url`. Empty when
+   *  there's no linked item (or it has no image). Use
+   *  `image_url || linked_item_image_url` when rendering. */
+  linked_item_image_url: string;
   category: string;
   /** Optional run-section label used to cluster objectives in the library
    *  editor and the timer splits (e.g. "Prologue", "Endgame"). Falls back to
@@ -270,6 +275,16 @@ export interface DonationPage {
   external_id: string;
   is_primary: boolean;
   order: number;
+  // Cached aggregate from the platform (JustGiving), synced via
+  // syncDonationPageTotal. JustGiving stops exposing itemized donations once
+  // a page is "Completed", but still reports these totals — so a past event's
+  // total stays visible. null/'' until first synced. NOT summed into the
+  // event's itemized donation total (separate stat).
+  total_raised: string | null;
+  total_donation_count: number | null;
+  total_currency: string;
+  total_status: string;
+  total_synced_at: string | null;
   // Denormalised from DonationPlatformProfile — same for every page of the
   // same platform. Kept on the page payload so the picker UI stays flat.
   fees_url: string;
@@ -278,16 +293,178 @@ export interface DonationPage {
   minimum_donation_amount: string; // DecimalField serialises as string.
 }
 
+export interface EventTwitchChannel {
+  id: number;
+  event: number;
+  login: string;
+  display_name: string;
+  /** The main stream channel — leads the homepage embed. One per event. */
+  is_primary: boolean;
+  /** Poll / EventSub this channel for Twitch Charity donations. */
+  track_charity: boolean;
+  /** Optional Twitch Charity campaign slug (e.g. "msec-gameblast26"). */
+  charity_slug: string;
+  order: number;
+  is_active: boolean;
+  /** Whether an OAuth token has been connected for this channel. */
+  is_connected: boolean;
+  /** Granted OAuth scopes on the linked connection (read-only). */
+  connection_scopes: string[];
+}
+
+export interface ChatAnnouncement {
+  id: number;
+  event: number;
+  trigger: string;
+  /** Human label for the trigger (e.g. "Donation received"). */
+  trigger_display: string;
+  enabled: boolean;
+  template: string;
+  /** Post as a highlighted Twitch /announce instead of a normal message. */
+  as_announcement: boolean;
+  /** Highlight colour when posted as an announcement. */
+  announcement_color: string;
+  /** Placeholder fields this trigger's template supports (editor hints). */
+  placeholders: string[];
+}
+
+export interface TwitchPredictionOutcome {
+  id: string;
+  title: string;
+  color?: string;
+  users?: number;
+  channel_points?: number;
+}
+
+export interface TwitchPrediction {
+  id: number;
+  event: number;
+  prediction_id: string;
+  title: string;
+  /** ACTIVE | LOCKED | RESOLVED | CANCELED */
+  status: string;
+  outcomes: TwitchPredictionOutcome[];
+  winning_outcome_id: string;
+  window_seconds: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShoutoutConfig {
+  id: number;
+  event: number;
+  enabled: boolean;
+  shout_donations: boolean;
+  shout_raids: boolean;
+  min_donation_amount: string;
+  only_when_live: boolean;
+  global_cooldown_seconds: number;
+  target_cooldown_seconds: number;
+  max_age_minutes: number;
+}
+
+export interface ShoutoutRequest {
+  id: number;
+  event: number;
+  target_login: string;
+  target_display: string;
+  reason: string;
+  reason_display: string;
+  note: string;
+  status: string;
+  status_display: string;
+  requested_at: string;
+  sent_at: string | null;
+  detail: string;
+}
+
+export interface RewardAction {
+  id: number;
+  mapping: number;
+  action_type: string;
+  action_type_display: string;
+  params: Record<string, unknown>;
+  enabled: boolean;
+  order: number;
+}
+
+export interface RewardMapping {
+  id: number;
+  event: number;
+  reward_id: string;
+  reward_title: string;
+  enabled: boolean;
+  order: number;
+  actions: RewardAction[];
+}
+
+export interface CustomReward {
+  id: string;
+  title: string;
+  cost: number;
+}
+
+export interface TwitchEmote {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface ScheduledJob {
+  id: number;
+  key: string;
+  label: string;
+  command: string;
+  description: string;
+  enabled: boolean;
+  interval_seconds: number;
+  last_run_at: string | null;
+  last_status: string;
+  last_output: string;
+  is_due: boolean;
+  updated_at: string;
+}
+
+export interface EventSubSubscription {
+  id: string;
+  type: string;
+  version: string;
+  status: string;
+  condition: Record<string, unknown>;
+  callback: string;
+}
+
+export interface RecurringChatMessage {
+  id: number;
+  event: number;
+  label: string;
+  template: string;
+  interval_minutes: number;
+  only_when_live: boolean;
+  enabled: boolean;
+  last_posted_at: string | null;
+  order: number;
+  is_due: boolean;
+  placeholders: string[];
+}
+
 export interface EventModel {
   id: number;
   name: string;
   start_time: string;
   currency_symbol: string;
   is_active: boolean;
-  /** Twitch channel login name (the bit after twitch.tv/) for the
-   *  embedded stream, chat, and Follow buttons. Lowercase 4-25 chars
-   *  per Twitch's rules. Blank → consumers fall back to "zeldathonuk". */
-  twitch_channel: string;
+  /** Twitch channels for this event — each drives live status; those with
+   *  track_charity + a connection are charity sources. Managed in
+   *  /control/events; written via /api/event-twitch-channels/. */
+  twitch_channels: EventTwitchChannel[];
+  /** The primary channel's login (the bit after twitch.tv/) for the
+   *  embedded stream, chat, and Follow buttons. '' when no channels. */
+  primary_twitch_channel: string;
+  /** On game change, set the primary channel's Twitch category to the game. */
+  update_twitch_category: boolean;
+  /** Optional title template applied on game change ({game}, {event}). */
+  twitch_title_template: string;
   logo_url: string;
   banner_url: string;
   /** SpecialEffect's current GameBlast campaign logo for this event.
@@ -305,11 +482,51 @@ export interface EventModel {
    *    panels: { "<panel-id>": { ...overrides } } }. */
   omnibar_transitions: Record<string, unknown>;
   donation_pages: DonationPage[];
+  /** Per-trigger Twitch chat announcement config (enable + template).
+   *  Read-only here; written via /api/chat-announcements/. */
+  chat_announcements: ChatAnnouncement[];
+  /** Recurring chat messages (e.g. a periodic donation CTA). Read-only here;
+   *  written via /api/recurring-chat-messages/. */
+  recurring_chat_messages: RecurringChatMessage[];
   /** Charities this event is fundraising for, ordered + with the
    *  primary beneficiary flagged. Read-only on the EventModel —
    *  mutations go through `obsApi.createEventCharity` /
    *  `updateEventCharity` / `deleteEventCharity`. */
   event_charities: EventCharityLink[];
+}
+
+/** Donation options for an event's public donate UI: the stored donation_pages
+ *  (JustGiving / Tiltify / …) plus a synthesized Twitch Charity link per
+ *  charity-tracking channel — Twitch channels replaced the manual twitch
+ *  donation pages, but viewers still need a donate link per channel. */
+export function eventDonationOptions(
+  event: EventModel | null | undefined,
+): DonationPage[] {
+  if (!event) return [];
+  const twitchRows: DonationPage[] = (event.twitch_channels ?? [])
+    .filter((c) => c.track_charity && c.is_active && c.login)
+    .map((c) => ({
+      id: -c.id, // negative so it never collides with a real page id (React key)
+      event: event.id,
+      platform: 'twitch' as DonationPlatformKey,
+      display_label: 'Twitch Charity',
+      logo_url: '',
+      label: c.display_name || c.login,
+      url: `https://www.twitch.tv/charity/${c.login}`,
+      external_id: c.charity_slug,
+      is_primary: false,
+      order: 100 + c.order,
+      total_raised: null,
+      total_donation_count: null,
+      total_currency: '',
+      total_status: '',
+      total_synced_at: null,
+      fees_url: '',
+      gift_aid_url: '',
+      fee_warning: '',
+      minimum_donation_amount: '0',
+    }));
+  return [...event.donation_pages, ...twitchRows];
 }
 
 export interface TimerRun {
@@ -453,6 +670,10 @@ export interface Donation {
   external_id: string;
   gift_aid_amount: string | null;
   image_url: string;
+  /** For multi-channel platforms (Twitch Charity), the broadcaster login
+   *  the donation came through (e.g. "zeldathonuk", "msec"). Empty string
+   *  for single-source platforms. */
+  source_channel: string;
   /** Operator-set reason this donation is muted. Empty string = not
    *  muted. /obs/tts and /obs/omnibar still read the read-only
    *  `is_muted` boolean (derived server-side from `mute_reason !== ''`)
@@ -461,6 +682,68 @@ export interface Donation {
   /** Read-only convenience flag — backend property derived from
    *  `mute_reason !== ''`. Don't PATCH this; PATCH `mute_reason`. */
   is_muted: boolean;
+}
+
+/** Config + last-poll snapshot for the JustGiving ingestion card. */
+export interface JustGivingStatus {
+  /** Whether the JustGiving App ID (JUSTGIVING_API_KEY) is configured. */
+  app_id_present: boolean;
+  /** Target API environment — 'production' | 'staging'. */
+  env: string;
+  /** Resolved API host root. */
+  api_base: string;
+  /** The active event's JustGiving page(s) the poller will pull from. */
+  pages: Array<{
+    short_name: string;
+    label: string;
+    url: string;
+    is_primary: boolean;
+  }>;
+  /** The shared `poll_donations` scheduled job's last run, or null if absent. */
+  poll_job: {
+    enabled: boolean;
+    last_run_at: string | null;
+    last_status: string;
+    interval_seconds: number;
+  } | null;
+}
+
+/** Result of an operator "fetch now" against JustGiving. */
+export interface JustGivingTestResult {
+  pages: Array<{ short_name: string; fetched: number; ingested: number }>;
+  total_ingested: number;
+}
+
+/** Config + last-poll snapshot for the Tiltify ingestion card. */
+export interface TiltifyStatus {
+  /** Whether OAuth credentials (client id + secret, or a manual access
+   *  token) are configured. */
+  creds_present: boolean;
+  /** Whether the webhook signing secret is configured (real-time deliveries
+   *  are HMAC-verified when set). */
+  webhook_secret_present: boolean;
+  /** Resolved API host root. */
+  api_base: string;
+  /** The active event's Tiltify campaign(s) the poller will pull from. */
+  campaigns: Array<{
+    campaign_id: string;
+    label: string;
+    url: string;
+    is_primary: boolean;
+  }>;
+  /** The shared `poll_donations` scheduled job's last run, or null if absent. */
+  poll_job: {
+    enabled: boolean;
+    last_run_at: string | null;
+    last_status: string;
+    interval_seconds: number;
+  } | null;
+}
+
+/** Result of an operator "fetch now" against Tiltify. */
+export interface TiltifyTestResult {
+  pages: Array<{ campaign_id: string; fetched: number; ingested: number }>;
+  total_ingested: number;
 }
 
 export interface ThemeSettings {
@@ -559,8 +842,12 @@ export interface ThemeSettings {
 
 export interface ChestAnnouncerSettings {
   /** When true, /obs/chest-announcer plays its fanfare on each card reveal.
-   *  Default false so the omnibar's TTS isn't competing with the fanfare. */
+   *  Default false to avoid competing with the spoken readout. */
   audio_enabled: boolean;
+  /** When true, /obs/chest-announcer reads each donation (donor, amount,
+   *  message) aloud via browser TTS as the card is held up. Independent of
+   *  `audio_enabled` (fanfare). Default true — the omnibar no longer speaks. */
+  tts_enabled: boolean;
   /** Pause in milliseconds between donation cards when multiple
    *  donations are queued. Hero stays idle at the chest for this long
    *  before reaching in for the next reveal. Default 1500. */
@@ -837,6 +1124,10 @@ export interface Milestone {
   flash_color: string;
   order: number;
   is_reached: boolean;
+  /** Set once the omnibar has played this milestone's flash/celebration.
+   *  Persistent replay guard — the omnibar only fires when
+   *  `is_reached && !announced`. Cleared by the Reset action. */
+  announced: boolean;
   created_at: string;
 }
 
@@ -1125,6 +1416,36 @@ export const obsApi = {
         body: { event_id: eventId, mute_reason: reason },
       },
     ),
+  /** Mark one donation read/announced (overlay-driven). The chest
+   *  announcer POSTs this after reading the card aloud; the backend
+   *  sets `mute_reason='already_announced'` (unless already muted) so
+   *  it's skipped from future readouts. AllowAny endpoint. */
+  markDonationRead: (id: number) =>
+    api<Donation>(`/api/donations/${id}/mark_read/`, { method: 'POST' }),
+  /** Mark one milestone's celebration as already played (overlay-driven).
+   *  The omnibar POSTs this right after firing the flash/celebration so a
+   *  reopened browser source never replays it. AllowAny endpoint. */
+  markMilestoneAnnounced: (id: number) =>
+    api<Milestone>(`/api/milestones/${id}/mark_announced/`, { method: 'POST' }),
+  /** JustGiving ingestion config + last-poll snapshot for the
+   *  /control/donations card. Public read. */
+  justGivingStatus: () => api<JustGivingStatus>('/api/justgiving/status/'),
+  /** Operator "Fetch now": pull + ingest the active event's JustGiving
+   *  donations immediately; returns per-page counts. */
+  runJustGivingFetch: () =>
+    api<JustGivingTestResult>('/api/justgiving/test/', { method: 'POST' }),
+  /** Tiltify ingestion config + last-poll snapshot for the
+   *  /control/automation card. Public read. */
+  tiltifyStatus: () => api<TiltifyStatus>('/api/tiltify/status/'),
+  /** Operator "Fetch now": pull + ingest the active event's Tiltify
+   *  donations immediately; returns per-campaign counts. */
+  runTiltifyFetch: () =>
+    api<TiltifyTestResult>('/api/tiltify/test/', { method: 'POST' }),
+  /** Refresh a JustGiving donation page's cached aggregate total (raised /
+   *  donation count / status). Works for any event's page, including
+   *  completed/past ones whose itemized feed has gone empty. */
+  syncDonationPageTotal: (id: number) =>
+    api<DonationPage>(`/api/donation-pages/${id}/sync_total/`, { method: 'POST' }),
   /** Twitch live-status probe. Returns is_live=true when the named
    *  channel is currently streaming, with optional metadata (game,
    *  title, viewer count, started_at). Omit `login` to fall back to
@@ -1529,7 +1850,7 @@ export const obsApi = {
   updateEvent: (
     eventId: number,
     patch: Partial<Pick<EventModel,
-      'name' | 'start_time' | 'currency_symbol' | 'twitch_channel'
+      'name' | 'start_time' | 'currency_symbol'
       | 'logo_url' | 'banner_url' | 'gameblast_logo_url'
     >> & {
       omnibar_layout?: Record<string, unknown>;
@@ -1936,6 +2257,226 @@ export const obsApi = {
   deleteEventCharity: (id: number) =>
     api<void>(`/api/event-charities/${id}/`, { method: 'DELETE' }),
 
+  // ── Per-event Twitch channels + device-code connect ───────────────
+  createEventTwitchChannel: (body: {
+    event: number;
+    login: string;
+    is_primary?: boolean;
+    track_charity?: boolean;
+    charity_slug?: string;
+    order?: number;
+  }) =>
+    api<EventTwitchChannel>('/api/event-twitch-channels/', { method: 'POST', body }),
+  updateEventTwitchChannel: (
+    id: number,
+    patch: Partial<{
+      login: string;
+      is_primary: boolean;
+      track_charity: boolean;
+      charity_slug: string;
+      order: number;
+      is_active: boolean;
+    }>,
+  ) =>
+    api<EventTwitchChannel>(`/api/event-twitch-channels/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteEventTwitchChannel: (id: number) =>
+    api<void>(`/api/event-twitch-channels/${id}/`, { method: 'DELETE' }),
+  /** Begin the device-code OAuth flow to connect a channel. Returns a short
+   *  user_code + verification_uri the broadcaster opens on their own device,
+   *  plus the device_code to pass to twitchConnectPoll. */
+  twitchConnectStart: (login: string, role: 'charity' | 'primary' = 'charity') =>
+    api<{
+      login: string;
+      device_code: string;
+      user_code: string;
+      verification_uri: string;
+      interval: number;
+      expires_in: number;
+      scopes: string;
+    }>('/api/twitch/connect/start/', { method: 'POST', body: { login, role } }),
+  /** Poll a pending device authorization. status 'authorized' once the
+   *  broadcaster approves (connection saved server-side). */
+  twitchConnectPoll: (deviceCode: string, login: string) =>
+    api<{
+      status: 'authorized' | 'pending' | 'slow_down' | 'expired' | 'error';
+      message?: string;
+      connection?: {
+        login: string;
+        broadcaster_id: string;
+        display_name: string;
+        scopes: string;
+      };
+    }>('/api/twitch/connect/poll/', {
+      method: 'POST',
+      body: { device_code: deviceCode, login },
+    }),
+
+  // ── Twitch chat announcements (per-event, per-trigger) ────────────
+  updateChatAnnouncement: (
+    id: number,
+    patch: Partial<{
+      enabled: boolean;
+      template: string;
+      as_announcement: boolean;
+      announcement_color: string;
+    }>,
+  ) =>
+    api<ChatAnnouncement>(`/api/chat-announcements/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+
+  // ── Recurring chat messages (e.g. periodic donation CTA) ──────────
+  createRecurringChatMessage: (body: {
+    event: number;
+    label?: string;
+    template: string;
+    interval_minutes?: number;
+    only_when_live?: boolean;
+    enabled?: boolean;
+  }) =>
+    api<RecurringChatMessage>('/api/recurring-chat-messages/', {
+      method: 'POST',
+      body,
+    }),
+  updateRecurringChatMessage: (
+    id: number,
+    patch: Partial<{
+      label: string;
+      template: string;
+      interval_minutes: number;
+      only_when_live: boolean;
+      enabled: boolean;
+    }>,
+  ) =>
+    api<RecurringChatMessage>(`/api/recurring-chat-messages/${id}/`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  deleteRecurringChatMessage: (id: number) =>
+    api<void>(`/api/recurring-chat-messages/${id}/`, { method: 'DELETE' }),
+
+  // ── Twitch shoutouts (cooldown-managed queue) ─────────────────────
+  shoutoutConfig: () => api<ShoutoutConfig>('/api/shoutout-config/'),
+  updateShoutoutConfig: (
+    patch: Partial<Omit<ShoutoutConfig, 'id' | 'event'>>,
+  ) =>
+    api<ShoutoutConfig>('/api/shoutout-config/', { method: 'PATCH', body: patch }),
+  shoutoutRequests: (eventId?: number) =>
+    api<ShoutoutRequest[]>(
+      `/api/shoutout-requests/${eventId ? `?event=${eventId}` : ''}`,
+    ),
+  createShoutout: (body: { target_login: string; note?: string }) =>
+    api<ShoutoutRequest>('/api/shoutout-requests/', { method: 'POST', body }),
+  cancelShoutout: (id: number) =>
+    api<ShoutoutRequest>(`/api/shoutout-requests/${id}/cancel/`, {
+      method: 'POST',
+    }),
+
+  // ── Automation: scheduled jobs + EventSub dashboard ───────────────
+  schedulerStatus: () =>
+    api<{ last_tick_at: string | null; seconds_ago: number | null; alive: boolean }>(
+      '/api/scheduler-status/',
+    ),
+  scheduledJobs: () => api<ScheduledJob[]>('/api/scheduled-jobs/'),
+  updateScheduledJob: (
+    id: number,
+    patch: Partial<{ enabled: boolean; interval_seconds: number; label: string }>,
+  ) =>
+    api<ScheduledJob>(`/api/scheduled-jobs/${id}/`, { method: 'PATCH', body: patch }),
+  runScheduledJob: (id: number) =>
+    api<ScheduledJob>(`/api/scheduled-jobs/${id}/run/`, { method: 'POST' }),
+  eventsubSubscriptions: () =>
+    api<{
+      subscriptions: EventSubSubscription[];
+      counts: Record<string, number>;
+    }>('/api/twitch/eventsub/subscriptions/'),
+  eventsubSync: (prune = false) =>
+    api<{ output: string }>('/api/twitch/eventsub/sync/', {
+      method: 'POST',
+      body: { prune },
+    }),
+
+  // ── Channel-point reward → action mappings ────────────────────────
+  rewardMappings: (eventId?: number) =>
+    api<RewardMapping[]>(
+      `/api/reward-mappings/${eventId ? `?event=${eventId}` : ''}`,
+    ),
+  createRewardMapping: (body: {
+    event: number;
+    reward_id?: string;
+    reward_title: string;
+  }) => api<RewardMapping>('/api/reward-mappings/', { method: 'POST', body }),
+  updateRewardMapping: (
+    id: number,
+    patch: Partial<{ reward_id: string; reward_title: string; enabled: boolean }>,
+  ) => api<RewardMapping>(`/api/reward-mappings/${id}/`, { method: 'PATCH', body: patch }),
+  deleteRewardMapping: (id: number) =>
+    api<void>(`/api/reward-mappings/${id}/`, { method: 'DELETE' }),
+  createRewardAction: (body: {
+    mapping: number;
+    action_type: string;
+    params?: Record<string, unknown>;
+    enabled?: boolean;
+  }) => api<RewardAction>('/api/reward-actions/', { method: 'POST', body }),
+  updateRewardAction: (
+    id: number,
+    patch: Partial<{
+      action_type: string;
+      params: Record<string, unknown>;
+      enabled: boolean;
+    }>,
+  ) => api<RewardAction>(`/api/reward-actions/${id}/`, { method: 'PATCH', body: patch }),
+  deleteRewardAction: (id: number) =>
+    api<void>(`/api/reward-actions/${id}/`, { method: 'DELETE' }),
+  twitchCustomRewards: () => api<CustomReward[]>('/api/twitch/rewards/'),
+  /** Create a NEW channel-point reward on the active event's primary channel
+   *  (operator) so it appears for viewers to redeem. Returns the created
+   *  reward; map actions to it via its returned id. */
+  createTwitchReward: (body: {
+    title: string;
+    cost: number;
+    prompt?: string;
+    require_input?: boolean;
+    background_color?: string;
+  }) => api<CustomReward>('/api/twitch/rewards/', { method: 'POST', body }),
+
+  // ── Send arbitrary chat message + emote picker ────────────────────
+  twitchEmotes: () => api<TwitchEmote[]>('/api/twitch/emotes/'),
+  twitchChatSend: (body: {
+    message: string;
+    announcement?: boolean;
+    color?: string;
+  }) => api<{ sent: boolean }>('/api/twitch/chat/send/', { method: 'POST', body }),
+
+  // ── Twitch predictions ────────────────────────────────────────────
+  twitchPredictions: (eventId?: number) =>
+    api<TwitchPrediction[]>(
+      `/api/twitch-predictions/${eventId ? `?event=${eventId}` : ''}`,
+    ),
+  createTwitchPrediction: (body: {
+    title: string;
+    outcomes: string[];
+    window_seconds: number;
+  }) =>
+    api<TwitchPrediction>('/api/twitch-predictions/', { method: 'POST', body }),
+  resolveTwitchPrediction: (id: number, winningOutcomeId: string) =>
+    api<TwitchPrediction>(`/api/twitch-predictions/${id}/resolve/`, {
+      method: 'POST',
+      body: { winning_outcome_id: winningOutcomeId },
+    }),
+  cancelTwitchPrediction: (id: number) =>
+    api<TwitchPrediction>(`/api/twitch-predictions/${id}/cancel/`, {
+      method: 'POST',
+    }),
+  lockTwitchPrediction: (id: number) =>
+    api<TwitchPrediction>(`/api/twitch-predictions/${id}/lock/`, {
+      method: 'POST',
+    }),
+
   // ── Sound assets + schedule-entry sound triggers ──────────────────
   // Reusable audio library + per-entry trigger rows. The backend SSE
   // evaluator fires due triggers automatically; the omnibar consumes
@@ -2047,7 +2588,7 @@ export function usePolledQuery<T>(
   // is present on first render instead of flashing a default until the first
   // fetch lands. Only use for small, safe-to-show-stale payloads.
   options?: { cacheKey?: string },
-): { data: T | null; error: Error | null } {
+): { data: T | null; error: Error | null; loading: boolean } {
   const cacheKey = options?.cacheKey;
   const [data, setData] = useState<T | null>(() => {
     if (!cacheKey) return null;
@@ -2059,6 +2600,12 @@ export function usePolledQuery<T>(
     }
   });
   const [error, setError] = useState<Error | null>(null);
+  // True until the FIRST fetch settles (resolve OR reject). Lets callers
+  // tell "still loading" apart from "loaded and the result was null/empty"
+  // — e.g. so a page can show a spinner instead of a "nothing here" notice
+  // during the initial round trip. Stays false after the first settle (a
+  // deps-driven re-fetch keeps showing the last data rather than flashing).
+  const [loading, setLoading] = useState(true);
   // Keep the latest fn in a ref so closures created with dynamic state
   // (e.g. `() => obsApi.schedule(event.id)`) always read the current value
   // instead of being frozen at the mount-time closure.
@@ -2084,6 +2631,8 @@ export function usePolledQuery<T>(
         }
       } catch (e) {
         if (!cancelled) setError(e as Error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
       if (!cancelled) {
         timer = window.setTimeout(tick, intervalMs);
@@ -2097,5 +2646,5 @@ export function usePolledQuery<T>(
     };
   }, [intervalMs, cacheKey, ...deps]);
 
-  return { data, error };
+  return { data, error, loading };
 }

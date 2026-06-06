@@ -178,6 +178,7 @@ export function ScheduleControl() {
   const [showBreaks, setShowBreaks] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [pushingTwitch, setPushingTwitch] = useState(false);
+  const [clearingTwitch, setClearingTwitch] = useState(false);
   const [twitchMsg, setTwitchMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -343,14 +344,35 @@ export function ScheduleControl() {
     setPushingTwitch(true);
     setTwitchMsg(null);
     try {
-      const res = await api<{ segment_count: number }>('/api/twitch/push-schedule/', {
-        method: 'POST',
-      });
-      setTwitchMsg(`Pushed ${res.segment_count} segments to Twitch.`);
+      const res = await api<{ segment_count: number; categorised_count: number }>(
+        '/api/twitch/push-schedule/',
+        { method: 'POST' },
+      );
+      const cat =
+        res.categorised_count < res.segment_count
+          ? ` (${res.categorised_count} with a category — set Twitch game ids in Games for the rest)`
+          : '';
+      setTwitchMsg(`Pushed ${res.segment_count} segments to Twitch${cat}.`);
     } catch (e) {
       setTwitchMsg(`Failed: ${(e as Error).message}`);
     } finally {
       setPushingTwitch(false);
+    }
+  };
+
+  const clearTwitch = async () => {
+    if (!confirm('Delete every segment from the Twitch channel schedule?')) return;
+    setClearingTwitch(true);
+    setTwitchMsg(null);
+    try {
+      const res = await api<{ deleted_segments: number }>('/api/twitch/clear-schedule/', {
+        method: 'POST',
+      });
+      setTwitchMsg(`Cleared ${res.deleted_segments} segments from Twitch.`);
+    } catch (e) {
+      setTwitchMsg(`Failed: ${(e as Error).message}`);
+    } finally {
+      setClearingTwitch(false);
     }
   };
 
@@ -402,9 +424,17 @@ export function ScheduleControl() {
         <button
           className="btn btn-sm btn-outline-light"
           onClick={pushToTwitch}
-          disabled={pushingTwitch}
+          disabled={pushingTwitch || clearingTwitch}
         >
           {pushingTwitch ? 'Pushing…' : 'Push to Twitch schedule'}
+        </button>
+        <button
+          className="btn btn-sm btn-outline-danger"
+          onClick={clearTwitch}
+          disabled={pushingTwitch || clearingTwitch}
+          title="Delete every segment from the Twitch channel schedule"
+        >
+          {clearingTwitch ? 'Clearing…' : 'Clear Twitch schedule'}
         </button>
         {twitchMsg && <span className="small text-white-50">{twitchMsg}</span>}
         <div className="form-check form-switch ms-auto m-0">

@@ -107,15 +107,10 @@ class Event(models.Model):
     start_time = models.DateTimeField()
     currency_symbol = models.CharField(max_length=4, default='£')
     is_active = models.BooleanField(default=False, help_text='Only one event can be active at a time.')
-    twitch_channel = models.CharField(
-        max_length=50,
-        blank=True,
-        default='zeldathonuk',
-        help_text='Twitch channel login name (the bit after twitch.tv/) used '
-                  'for the embedded stream, chat, and "Follow Us On Twitch" '
-                  'links. Lowercase, 4-25 chars per Twitch rules. Blank → '
-                  'consumers fall back to "zeldathonuk".',
-    )
+    # Twitch channels for this event live in the related EventTwitchChannel
+    # model (each drives live status; some are charity sources). The primary
+    # channel's login is exposed as `primary_twitch_channel` on the serializer
+    # for single-channel consumers.
     # CharField (not URLField) on every operator-set media URL so the
     # /control/events form accepts site-relative paths
     # (/assets/img/foo.svg) alongside absolute URLs. URLField's
@@ -139,6 +134,17 @@ class Event(models.Model):
                   'GB23…). Surfaced in the OBS omnibar and ad-panel carousel. '
                   'Refresh this each year when the campaign rebrands. '
                   'Absolute URL or site-relative path.',
+    )
+    update_twitch_category = models.BooleanField(
+        default=False,
+        help_text='On a game/run change, set the primary channel\'s Twitch '
+                  'category to the new game (uses Game.twitch_game_id). Needs '
+                  'the primary connection to have channel:manage:broadcast.',
+    )
+    twitch_title_template = models.CharField(
+        max_length=200, blank=True,
+        help_text='Optional: also set the stream title on game change. '
+                  'Supports {game} and {event}. Blank → leave the title alone.',
     )
     omnibar_layout = models.JSONField(
         default=dict,
@@ -847,6 +853,23 @@ class DonationPage(models.Model):
         help_text='Promotes this page above others on landing CTAs.',
     )
     order = models.PositiveIntegerField(default=0)
+    # ── Aggregate page total (synced from the platform) ────────────────────
+    # JustGiving stops exposing the itemized donation feed once a page is
+    # "Completed", but the page-details endpoint still reports the running
+    # total + donation count. These cache that aggregate so past events'
+    # totals stay visible. Written only by the totals sync; null = never
+    # synced. Kept separate from the itemized Donation rows (never summed
+    # into the event grand total) to avoid double-counting live pages.
+    total_raised = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    total_donation_count = models.PositiveIntegerField(null=True, blank=True)
+    total_currency = models.CharField(max_length=8, blank=True)
+    total_status = models.CharField(
+        max_length=40, blank=True,
+        help_text='Platform page status, e.g. JustGiving "Active" / "Completed".',
+    )
+    total_synced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -1263,21 +1286,21 @@ class TwitchCharityCampaign(models.Model):
         return cls.objects.filter(is_active=True).order_by('-started_at').first()
 
 
-class TwitchCharityChannel(models.Model):
-    """An *additional* Twitch channel whose charity donations we ingest, beyond
-    the primary broadcaster (whose token lives in TwitchOAuthToken).
+class TwitchChannelConnection(models.Model):
+    """A durable OAuth connection to one Twitch channel, keyed by ``login`` and
+    reused across events.
 
-    Twitch's charity API is per-broadcaster and token-gated: reading a channel's
-    charity campaign/donations requires THAT channel's own user OAuth token with
-    the ``channel:read:charity`` scope (the broadcaster_id in the request must
-    match the token's user id). So each extra channel stores its own token here,
-    minted via ``manage.py twitch_login --channel <login>`` (the broadcaster
-    authorises the app once). Same field shape as TwitchOAuthToken so the
-    refresh helper in twitch.py works on either.
+    Twitch's per-broadcaster APIs (charity campaign/donations, chat-as-bot,
+    redemptions, predictions) are token-gated: each requires THAT channel's own
+    user OAuth token (the broadcaster_id in the request must match the token's
+    user id). So we store one connection per channel here, acquired in-app via
+    the device-code flow (``/api/twitch/connect/start`` + ``…/poll``) or
+    ``manage.py twitch_login --channel <login>``. Same field shape as
+    TwitchOAuthToken so the refresh helper in twitch.py works on either.
 
-    EventSub also needs that one-time authorisation; once present,
-    ``manage.py twitch_eventsub`` registers the charity subscriptions for this
-    channel's broadcaster id against the shared callback.
+    ``EventTwitchChannel`` rows reference a connection to mark which of an
+    event's channels are charity sources (and, later, chat/redemption sources).
+    The granted ``scopes`` determine what the connection can do.
     """
 
     login = models.CharField(
@@ -1286,7 +1309,7 @@ class TwitchCharityChannel(models.Model):
     )
     broadcaster_id = models.CharField(
         max_length=64, blank=True,
-        help_text='Numeric Twitch user id, resolved from the token at login.',
+        help_text='Numeric Twitch user id, resolved from the token at connect.',
     )
     display_name = models.CharField(max_length=100, blank=True)
     access_token = models.CharField(max_length=200, blank=True)
@@ -1303,10 +1326,412 @@ class TwitchCharityChannel(models.Model):
 
     class Meta:
         ordering = ['login']
-        verbose_name = 'Twitch charity channel'
+        verbose_name = 'Twitch channel connection'
 
     def __str__(self) -> str:
         return f'{self.display_name or self.login} ({"active" if self.is_active else "off"})'
+
+    def has_scope(self, scope: str) -> bool:
+        return scope in (self.scopes or '').split()
+
+
+class EventTwitchChannel(models.Model):
+    """One Twitch channel attached to an Event.
+
+    Every channel on an event is checked for **live status**. A channel is also
+    a **charity source** when ``track_charity`` is set and a ``connection`` is
+    linked — its donations are polled / pushed (EventSub) and merge into the
+    event total, tagged with ``Donation.source_channel = login``. This supports
+    both "one live channel, several broadcasters fundraising for it" and "several
+    channels live together sharing donations".
+    """
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='twitch_channels',
+    )
+    login = models.CharField(
+        max_length=50,
+        help_text='Twitch channel login (the bit after twitch.tv/).',
+    )
+    display_name = models.CharField(max_length=100, blank=True)
+    is_primary = models.BooleanField(
+        default=False,
+        help_text='The main stream channel — leads the homepage embed and is '
+                  'the fallback for single-channel consumers. One per event.',
+    )
+    track_charity = models.BooleanField(
+        default=False,
+        help_text='Poll / EventSub this channel for Twitch Charity donations. '
+                  'Requires a linked connection with channel:read:charity.',
+    )
+    charity_slug = models.CharField(
+        max_length=200, blank=True,
+        help_text='Optional Twitch Charity campaign slug (e.g. '
+                  '"msec-gameblast26") used as the donate-link external id.',
+    )
+    connection = models.ForeignKey(
+        TwitchChannelConnection,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='event_channels',
+        help_text='The OAuth connection (token) for this channel, set once the '
+                  'broadcaster has connected. Null = live-status-only.',
+    )
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+        unique_together = [('event', 'login')]
+
+    def __str__(self) -> str:
+        return f'{self.event} → {self.login}{" (primary)" if self.is_primary else ""}'
+
+    def save(self, *args, **kwargs):
+        self.login = (self.login or '').strip().lower()
+        super().save(*args, **kwargs)
+        # One primary channel per event — demote the others in the same event.
+        if self.is_primary:
+            EventTwitchChannel.objects.filter(
+                event_id=self.event_id, is_primary=True,
+            ).exclude(pk=self.pk).update(is_primary=False)
+
+
+class AnnouncementColor(models.TextChoices):
+    PRIMARY = 'primary', 'Channel accent'
+    BLUE = 'blue', 'Blue'
+    GREEN = 'green', 'Green'
+    ORANGE = 'orange', 'Orange'
+    PURPLE = 'purple', 'Purple'
+
+
+class ChatTrigger(models.TextChoices):
+    DONATION = 'donation', 'Donation received'
+    MILESTONE = 'milestone', 'Milestone reached'
+    GAME_CHANGE = 'game_change', 'Game / run change'
+    SUB = 'sub', 'New subscription'
+    FOLLOW = 'follow', 'New follow'
+    RAID = 'raid', 'Incoming raid'
+    CHEER = 'cheer', 'Bits cheered'
+    REDEMPTION = 'redemption', 'Channel-point redemption'
+
+
+class ChatAnnouncement(models.Model):
+    """Per-event Twitch chat announcement config for one trigger.
+
+    When the trigger fires, the active event's PRIMARY connected channel posts
+    the rendered ``template`` into its own chat (best-effort — a send failure
+    never blocks ingest). Available placeholders depend on the trigger; see
+    ``api.chat.DEFAULT_TEMPLATES`` for the defaults and the supported fields.
+    """
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='chat_announcements',
+    )
+    trigger = models.CharField(max_length=20, choices=ChatTrigger.choices)
+    enabled = models.BooleanField(default=False)
+    template = models.TextField(
+        blank=True,
+        help_text='Message posted to chat. Supports {placeholder} fields — see '
+                  'the per-trigger hints in /control.',
+    )
+    as_announcement = models.BooleanField(
+        default=False,
+        help_text='Post as a highlighted Twitch /announce (needs '
+                  'moderator:manage:announcements) instead of a normal message.',
+    )
+    announcement_color = models.CharField(
+        max_length=10, choices=AnnouncementColor.choices,
+        default=AnnouncementColor.PRIMARY,
+        help_text='Highlight colour when posted as an announcement.',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['event', 'trigger']
+        unique_together = [('event', 'trigger')]
+
+    def __str__(self) -> str:
+        state = 'on' if self.enabled else 'off'
+        return f'{self.event} → chat:{self.trigger} ({state})'
+
+
+class RecurringChatMessage(models.Model):
+    """A chat message posted on a timer to the active event's primary connected
+    channel — e.g. a periodic "donate here" CTA. Driven by
+    ``manage.py post_chat_reminders`` on a cron tick (best-effort, like the
+    per-trigger announcements). Placeholders: ``{donate_url} {total} {charity}
+    {channel}`` (see ``api.chat.recurring_context``)."""
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='recurring_chat_messages',
+    )
+    label = models.CharField(
+        max_length=80, blank=True,
+        help_text='Operator label (e.g. "Donation CTA"). Not posted.',
+    )
+    template = models.TextField()
+    interval_minutes = models.PositiveIntegerField(
+        default=15, help_text='Minimum minutes between posts.',
+    )
+    only_when_live = models.BooleanField(
+        default=True,
+        help_text='Only post while the primary channel is live on Twitch.',
+    )
+    enabled = models.BooleanField(default=False)
+    last_posted_at = models.DateTimeField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+
+    def __str__(self) -> str:
+        state = 'on' if self.enabled else 'off'
+        return f'{self.event} → recurring:{self.label or self.pk} ({state})'
+
+    @property
+    def is_due(self) -> bool:
+        if not self.enabled:
+            return False
+        if self.last_posted_at is None:
+            return True
+        from datetime import timedelta
+        return timezone.now() - self.last_posted_at >= timedelta(
+            minutes=self.interval_minutes,
+        )
+
+
+class ScheduledJob(models.Model):
+    """A periodic management command the operator can enable + schedule from the
+    control panel. A single cron tick (``manage.py run_scheduled_jobs``) runs
+    every enabled job whose interval has elapsed; the panel also offers a
+    "Run now". Keeps the recurring chores (donation polling, chat reminders,
+    shoutout draining) configurable without editing crontabs."""
+
+    key = models.CharField(max_length=50, unique=True)
+    label = models.CharField(max_length=120)
+    command = models.CharField(
+        max_length=200,
+        help_text='manage.py command + args, e.g. "poll_donations --twitch".',
+    )
+    description = models.CharField(max_length=300, blank=True)
+    enabled = models.BooleanField(default=False)
+    interval_seconds = models.PositiveIntegerField(default=60)
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    last_status = models.CharField(max_length=20, blank=True)  # ok / error / running
+    last_output = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['key']
+
+    def __str__(self) -> str:
+        return f'{self.label} ({"on" if self.enabled else "off"})'
+
+    @property
+    def is_due(self) -> bool:
+        if not self.enabled:
+            return False
+        if self.last_run_at is None:
+            return True
+        from datetime import timedelta
+        return timezone.now() - self.last_run_at >= timedelta(
+            seconds=self.interval_seconds,
+        )
+
+
+class SchedulerHeartbeat(models.Model):
+    """Singleton 'last tick' timestamp written by ``run_scheduled_jobs --loop``
+    every pass, so the control panel can show whether the scheduler service is
+    actually alive (independent of whether any job is enabled)."""
+
+    last_tick_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def beat(cls) -> None:
+        cls.objects.update_or_create(pk=1, defaults={'last_tick_at': timezone.now()})
+
+
+class ShoutoutConfig(models.Model):
+    """Per-event shoutout settings. Donors (Twitch Charity, who carry a Twitch
+    login) and raiders can be auto-queued for a ``/shoutout``; the queue is
+    drained by ``manage.py process_shoutouts`` respecting Twitch's cooldowns
+    (2-min global, 60-min per target) and the from-channel-must-be-live rule."""
+
+    event = models.OneToOneField(
+        Event, on_delete=models.CASCADE, related_name='shoutout_config',
+    )
+    enabled = models.BooleanField(default=False)
+    shout_donations = models.BooleanField(default=True)
+    shout_raids = models.BooleanField(default=True)
+    min_donation_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text='Only shout out donors who gave at least this much.',
+    )
+    only_when_live = models.BooleanField(default=True)
+    global_cooldown_seconds = models.PositiveIntegerField(
+        default=120, help_text='Min seconds between any two shoutouts (Twitch ≥120).',
+    )
+    target_cooldown_seconds = models.PositiveIntegerField(
+        default=3600, help_text='Min seconds before shouting the same channel again.',
+    )
+    max_age_minutes = models.PositiveIntegerField(
+        default=30, help_text='Drop queued shoutouts older than this (stale).',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f'Shoutout config for {self.event} ({"on" if self.enabled else "off"})'
+
+
+class ShoutoutReason(models.TextChoices):
+    DONATION = 'donation', 'Donation'
+    RAID = 'raid', 'Raid'
+    MANUAL = 'manual', 'Manual'
+
+
+class ShoutoutStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    SENT = 'sent', 'Sent'
+    SKIPPED = 'skipped', 'Skipped'
+    CANCELED = 'canceled', 'Canceled'
+    FAILED = 'failed', 'Failed'
+
+
+class ShoutoutRequest(models.Model):
+    """One queued ``/shoutout``. Drained one-at-a-time by the cron, oldest first,
+    skipping targets on per-target cooldown — so a burst of donations drip-feeds
+    out within Twitch's rate limits instead of being dropped."""
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='shoutout_requests',
+    )
+    target_login = models.CharField(max_length=50)
+    target_display = models.CharField(max_length=100, blank=True)
+    reason = models.CharField(
+        max_length=12, choices=ShoutoutReason.choices, default=ShoutoutReason.MANUAL,
+    )
+    note = models.CharField(max_length=200, blank=True)
+    status = models.CharField(
+        max_length=12, choices=ShoutoutStatus.choices,
+        default=ShoutoutStatus.PENDING, db_index=True,
+    )
+    requested_at = models.DateTimeField(default=timezone.now, db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    detail = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ['-requested_at']
+        indexes = [models.Index(fields=['event', 'status'])]
+
+    def __str__(self) -> str:
+        return f'shoutout {self.target_login} ({self.status})'
+
+    def save(self, *args, **kwargs):
+        self.target_login = (self.target_login or '').strip().lower()
+        super().save(*args, **kwargs)
+
+
+class RewardMapping(models.Model):
+    """A channel-point reward (matched by Twitch reward id, or by title as a
+    fallback) mapped to one or more actions. When the reward is redeemed
+    (``channel.channel_points_custom_reward_redemption.add``), its enabled
+    actions run in order. See ``api.rewards``."""
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='reward_mappings',
+    )
+    reward_id = models.CharField(
+        max_length=100, blank=True,
+        help_text='Twitch custom-reward id (preferred match). Blank → match by title.',
+    )
+    reward_title = models.CharField(
+        max_length=200,
+        help_text='Reward name — shown in the panel and used to match when no id.',
+    )
+    enabled = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['event', 'order', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.event} → reward:{self.reward_title}'
+
+    def matches(self, reward_id: str, reward_title: str) -> bool:
+        if self.reward_id:
+            return self.reward_id == (reward_id or '')
+        return self.reward_title.strip().lower() == (reward_title or '').strip().lower()
+
+
+class RewardActionType(models.TextChoices):
+    CHAT = 'chat', 'Post chat message'
+    SHOUTOUT = 'shoutout', 'Shout out the redeemer'
+    DEATH_COUNTER = 'death_counter', 'Adjust death counter'
+    WEBHOOK = 'webhook', 'Call a webhook (HTTP)'
+    ALERT = 'alert', 'On-stream alert + sound'
+
+
+class RewardAction(models.Model):
+    """One action run when a ``RewardMapping`` is redeemed. ``params`` holds the
+    per-type config: chat → {template, as_announcement, color}; shoutout → {};
+    death_counter → {delta}; webhook → {url, method, headers, body,
+    content_type}; alert → {text, sound_url, duration_ms}."""
+
+    mapping = models.ForeignKey(
+        RewardMapping, on_delete=models.CASCADE, related_name='actions',
+    )
+    action_type = models.CharField(max_length=20, choices=RewardActionType.choices)
+    params = models.JSONField(default=dict, blank=True)
+    enabled = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['mapping', 'order', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.mapping.reward_title} → {self.action_type}'
+
+
+class TwitchPrediction(models.Model):
+    """A Twitch Prediction opened from the control panel (e.g. "Beat the boss
+    first try?"). Mirrors the Helix prediction so the operator can resolve or
+    cancel it later. Created on the active event's primary connected channel
+    (needs the channel:manage:predictions scope)."""
+
+    STATUS_ACTIVE = 'ACTIVE'
+    STATUS_LOCKED = 'LOCKED'
+    STATUS_RESOLVED = 'RESOLVED'
+    STATUS_CANCELED = 'CANCELED'
+
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='predictions',
+    )
+    prediction_id = models.CharField(max_length=200, unique=True)
+    broadcaster_id = models.CharField(max_length=64, blank=True)
+    title = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, default=STATUS_ACTIVE)
+    # Mirror of Twitch's outcomes: [{id, title, color, users, channel_points}].
+    outcomes = models.JSONField(default=list, blank=True)
+    winning_outcome_id = models.CharField(max_length=200, blank=True)
+    window_seconds = models.PositiveIntegerField(default=120)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Twitch prediction'
+
+    def __str__(self) -> str:
+        return f'{self.title} ({self.status})'
 
 
 class LayoutPreset(models.Model):
@@ -2084,6 +2509,14 @@ class Milestone(models.Model):
                   'Markdown not supported — plain text only.',
     )
     reached_at = models.DateTimeField(null=True, blank=True)
+    announced = models.BooleanField(
+        default=False,
+        help_text='Set once the omnibar has played the flash/celebration for '
+                  'this milestone. Persistent so reopening (or adding a second) '
+                  'OBS browser source never replays an already-celebrated '
+                  'milestone. Independent of reached_at — cleared by Reset so '
+                  'the celebration can re-arm.',
+    )
     audio_url = models.CharField(
         max_length=500,
         blank=True,
@@ -2582,9 +3015,18 @@ class ChestAnnouncerSettings(models.Model):
         help_text=(
             'When true, the chest announcer plays a short procedural '
             'fanfare on each donation card reveal. Default false '
-            'because the omnibar already announces donations via TTS '
-            '— leave off when both overlays are in the scene to avoid '
-            'overlapping audio.'
+            'to avoid overlapping with the spoken readout — leave off '
+            'unless you want a fanfare sting under the TTS.'
+        ),
+    )
+    tts_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            'When true, the chest announcer reads each donation (donor, '
+            'amount and message) aloud via browser TTS as the card is '
+            'held up. Independent of audio_enabled, which only gates the '
+            'fanfare/trigger SFX. The omnibar no longer speaks donations, '
+            'so this is the primary readout — default true.'
         ),
     )
     between_cards_ms = models.PositiveIntegerField(

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { DonateButton } from '@/components/donations/DonateButton';
 import { WaveText } from '@/components/WaveText';
-import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { eventDonationOptions, obsApi, usePolledQuery } from '@/lib/obsApi';
 import type { DonationPage, EventCharityLink, ScheduleEntry } from '@/lib/obsApi';
 import { useAccentDeck } from '@/lib/accentDeck';
 import { resolveMediaUrl } from '@/lib/env';
@@ -33,6 +33,43 @@ function useInnerWidth() {
   return w;
 }
 
+// A compact live/offline pip for an extra event channel (co-streamer). Polls
+// Twitch directly on a 30s cadence, same as the primary embed's status probe.
+function ChannelLivePip({ login, label }: { login: string; label: string }) {
+  const { data } = usePolledQuery(
+    () => obsApi.twitchStreamStatus(login),
+    30_000,
+    [login],
+  );
+  const live = !!data?.is_live;
+  return (
+    <a
+      href={`https://www.twitch.tv/${login}`}
+      target="_blank"
+      rel="noreferrer"
+      className="badge text-decoration-none d-inline-flex align-items-center gap-1"
+      style={{
+        background: live ? 'rgba(231,19,71,0.18)' : 'rgba(255,255,255,0.06)',
+        border: `1px solid ${live ? 'rgba(231,19,71,0.6)' : 'rgba(255,255,255,0.15)'}`,
+        color: '#fff',
+      }}
+      title={live ? `${label} is live` : `${label} is offline`}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: live ? '#e71347' : 'rgba(255,255,255,0.35)',
+          boxShadow: live ? '0 0 6px #e71347' : 'none',
+        }}
+      />
+      {label}
+    </a>
+  );
+}
+
 export function Home() {
   const innerWidth = useInnerWidth();
   // Shuffled-per-mount accent deck. Each CTA on the page reads one of
@@ -42,8 +79,13 @@ export function Home() {
   // are harmless. Reshuffles on hard refresh, stable while navigating.
   const homeAccents = useAccentDeck(6);
   const { data: event } = usePolledQuery(obsApi.activeEvent, 10_000);
-  const donationPages = event?.donation_pages ?? [];
-  const twitchChannel = event?.twitch_channel || 'zeldathonuk';
+  const donationPages = eventDonationOptions(event);
+  const twitchChannel = event?.primary_twitch_channel || 'zeldathonuk';
+  // Every channel on the event drives live status; the primary leads the
+  // embed below. Extra channels (co-streamers) surface as live pips.
+  const extraChannels = (event?.twitch_channels ?? []).filter(
+    (c) => c.login && c.login !== twitchChannel,
+  );
   // Display version of the channel login for headers like "<x> is
   // Offline" — Twitch logins are forced lowercase, but a capitalised
   // form reads better in body copy. Preserves the rest of the handle
@@ -188,6 +230,19 @@ export function Home() {
           />
         )}
       </div>
+
+      {extraChannels.length > 0 && (
+        <div className="d-flex flex-wrap gap-2 mb-2 align-items-center px-1">
+          <span className="text-white-50 small">Also fundraising live:</span>
+          {extraChannels.map((c) => (
+            <ChannelLivePip
+              key={c.id}
+              login={c.login}
+              label={c.display_name || c.login}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="d-block bg-bloodmoon p-2 mb-2">
         <div className="row g-3 text-white" style={{ fontSize: '0.8em' }}>

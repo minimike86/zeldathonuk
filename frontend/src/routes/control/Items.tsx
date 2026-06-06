@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   DndContext,
   DragOverlay,
@@ -141,10 +142,55 @@ const SET_KINDS: readonly (readonly [ItemSetKind, string])[] = [
 ] as const;
 
 export function ItemsControl() {
-  // Bumping this forces an immediate re-poll of currently-playing, so a
-  // collect/clear/reset shows instantly instead of waiting up to 2s.
+  // Bumping this forces an immediate re-poll of currently-playing + the
+  // selected game, so a collect/clear/reset/edit shows instantly.
   const [refreshTick, setRefreshTick] = useState(0);
+  // Catalog list for the picker (id/title only); heavy + rarely changes, so
+  // poll slowly and NOT on every edit.
+  const { data: games } = usePolledQuery(obsApi.games, 30000);
   const { data: cp } = usePolledQuery(obsApi.currentlyPlaying, 2000, [refreshTick]);
+  const liveEntry = cp?.schedule_entry_detail ?? null;
+  const liveGameId = liveEntry?.game?.id ?? null;
+
+  // Optional ?game=<id> deep link (e.g. from /control/schedule). Wins over the
+  // live default until the operator changes the picker; stripped after applying.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryGameId = (() => {
+    const raw = searchParams.get('game');
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  })();
+  const [selectedId, setSelectedId] = useState<number | null>(queryGameId);
+
+  // Default to the live game once data lands; the operator can switch to any
+  // other game from the picker. A ?game=<id> wins over the live default —
+  // apply once, then drop the param.
+  useEffect(() => {
+    if (queryGameId != null) {
+      setSelectedId(queryGameId);
+      const next = new URLSearchParams(searchParams);
+      next.delete('game');
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    if (selectedId != null) return;
+    if (liveGameId != null) setSelectedId(liveGameId);
+    else if (games && games.length) setSelectedId(games[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryGameId, selectedId, liveGameId, games]);
+
+  // Only the SELECTED game's detail is polled (cheap vs the whole catalog), so
+  // edits stay snappy regardless of catalog size.
+  const { data: game } = usePolledQuery(
+    () => (selectedId != null ? obsApi.game(selectedId) : Promise.resolve(null)),
+    15000,
+    [selectedId, refreshTick],
+  );
+  // Per-run collection state only applies when the selected game is the live
+  // ("Currently Playing") one; otherwise this is pure library editing.
+  const entry = game && liveGameId === game.id ? liveEntry : null;
+
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -178,12 +224,12 @@ export function ItemsControl() {
   // Mirror of `working` for synchronous reads in drag handlers (state is async).
   const workingRef = useRef<Map<string, number[]> | null>(null);
 
-  // Clear overrides the server has caught up to (leave pending ones, so an
-  // in-flight poll with the old order can't revert the optimistic move).
+  // Clear overrides the server (the SELECTED game's poll) has caught up to
+  // (leave pending ones, so an in-flight poll with the old order can't revert
+  // the optimistic move).
   useEffect(() => {
-    const se = cp?.schedule_entry_detail;
-    const gameItems = se?.game?.items ?? [];
-    const gameSets = se?.game?.item_sets ?? [];
+    const gameItems = game?.items ?? [];
+    const gameSets = game?.item_sets ?? [];
     setOrderOverrides((prev) => {
       if (!Object.keys(prev.items).length && !Object.keys(prev.sets).length) return prev;
       const items = { ...prev.items };
@@ -212,33 +258,47 @@ export function ItemsControl() {
       }
       return changed ? { group, category, setIds } : prev;
     });
-  }, [cp]);
+  }, [game]);
 
-  const entry = cp?.schedule_entry_detail ?? null;
+  // The game picker — shown both in the "no game" placeholder and the editor.
+  const picker = (
+    <label className="d-flex flex-column mb-3" style={{ maxWidth: 420 }}>
+      <small className="text-white-50">Game</small>
+      <select
+        className="form-select"
+        value={selectedId ?? ''}
+        onChange={(e) => setSelectedId(Number(e.target.value))}
+      >
+        {!games && <option value="">Loading…</option>}
+        {games?.map((g) => (
+          <option key={g.id} value={g.id}>
+            {g.title}
+            {g.id === liveGameId ? ' — LIVE' : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 
-  if (!entry) {
-    return (
-      <div className="control-card">
-        <h2>Items collected</h2>
-        <p className="text-warning">
-          No game is currently set as "Currently Playing". Pick one in{' '}
-          <a className="text-warning" href="/control/schedule">
-            Schedule
-          </a>{' '}
-          first.
-        </p>
-      </div>
-    );
-  }
-
-  const game = entry.game;
   if (!game) {
     return (
       <div className="control-card">
         <h2>Items collected</h2>
-        <p className="text-warning">
-          The current schedule entry has no game attached, so it has no item checklist.
+        <p className="text-white-50">
+          Pick any game to edit its item checklist. When the picked game is the
+          live ("Currently Playing") one, clicking a tile also collects it for
+          the run.
         </p>
+        {picker}
+        {games && games.length === 0 && (
+          <p className="text-warning">
+            No games yet — add one in{' '}
+            <a className="text-warning" href="/control/games">
+              Games
+            </a>
+            .
+          </p>
+        )}
       </div>
     );
   }
@@ -250,8 +310,10 @@ export function ItemsControl() {
   const items = game.items
     .slice()
     .sort((a, b) => itemOrder(a) - itemOrder(b) || a.name.localeCompare(b.name));
-  const collectedIds = new Set(entry.collected_item_ids);
-  const collectedCounts = entry.collected_item_counts ?? {};
+  // No `entry` ⇒ editing a non-live game's library: there's no run, so nothing
+  // is "collected" and the collect/adjust/reset actions are inert.
+  const collectedIds = new Set(entry?.collected_item_ids ?? []);
+  const collectedCounts = entry?.collected_item_counts ?? {};
   const nextOrder = items.reduce((max, i) => Math.max(max, i.order), -1) + 1;
 
   // Cluster items into sections: by their `group` label, falling back to the
@@ -293,6 +355,7 @@ export function ItemsControl() {
   const itemNameById = new Map(items.map((i) => [i.id, i.name]));
 
   const toggle = async (itemId: number) => {
+    if (!entry) return;
     setBusy(true);
     setErr(null);
     try {
@@ -306,6 +369,7 @@ export function ItemsControl() {
   };
 
   const adjust = async (itemId: number, delta: number) => {
+    if (!entry) return;
     setBusy(true);
     setErr(null);
     try {
@@ -480,6 +544,7 @@ export function ItemsControl() {
   // Clear every collected item for this run, then re-apply the game's
   // starting items (server-side, via reset_collected).
   const resetToStart = async () => {
+    if (!entry) return;
     if (!confirm('Clear all collected items for this run and re-apply the starting items?')) return;
     setBusy(true);
     setErr(null);
@@ -522,13 +587,28 @@ export function ItemsControl() {
       <div key={item.id} className="item-cell">
         <button
           disabled={busy}
-          onClick={() => (item.countable ? adjust(item.id, 1) : toggle(item.id))}
+          onClick={() => {
+            // Live game → collect; otherwise clicking opens the editor (there's
+            // no run to collect against).
+            if (!entry) {
+              setAdding(false);
+              setEditing(item);
+            } else if (item.countable) {
+              adjust(item.id, 1);
+            } else {
+              toggle(item.id);
+            }
+          }}
           className="item-tile"
-          data-collected={collected}
+          // Omit data-collected off-run so library tiles aren't greyed —
+          // sprites stay fully visible for editing.
+          data-collected={entry ? collected : undefined}
           title={
-            item.countable
-              ? `${item.name} — click to add one (×${count})`
-              : `${item.name} — click to toggle collected`
+            !entry
+              ? `${item.name} — click to edit`
+              : item.countable
+                ? `${item.name} — click to add one (×${count})`
+                : `${item.name} — click to toggle collected`
           }
         >
           {item.image_url ? (
@@ -570,7 +650,7 @@ export function ItemsControl() {
               </button>
             </>
           )}
-          {item.countable && (
+          {item.countable && entry && (
             <button
               type="button"
               className="item-action"
@@ -806,23 +886,35 @@ export function ItemsControl() {
 
   return (
     <div className="control-card">
+      <h2 className="m-0">Items</h2>
+      {picker}
+      {!entry && (
+        <p className="text-white-50 small mt-1 mb-2">
+          This game isn’t live — editing its item library only. Collect items
+          for a run when the game is Currently Playing.
+        </p>
+      )}
       <header className="d-flex justify-content-between align-items-baseline">
-        <h2 className="m-0">
-          Items — {game.title}{' '}
-          <span className="text-white-50 fs-6">
-            ({collectedIds.size} / {items.length} collected)
+        <h3 className="m-0 fs-6">
+          {game.title}{' '}
+          <span className="text-white-50">
+            {entry
+              ? `(${collectedIds.size} / ${items.length} collected)`
+              : `(${items.length} item${items.length === 1 ? '' : 's'})`}
           </span>
-        </h2>
+        </h3>
         {!adding && !editing && (
           <div className="d-flex gap-2">
-            <button
-              className="btn btn-outline-light btn-sm"
-              disabled={busy}
-              title="Clear all collected items, then re-apply the game's starting items"
-              onClick={resetToStart}
-            >
-              Reset to start
-            </button>
+            {entry && (
+              <button
+                className="btn btn-outline-light btn-sm"
+                disabled={busy}
+                title="Clear all collected items, then re-apply the game's starting items"
+                onClick={resetToStart}
+              >
+                Reset to start
+              </button>
+            )}
             <button className="btn btn-bloodmoon btn-sm" onClick={() => setAdding(true)}>
               + Add item
             </button>
@@ -890,7 +982,7 @@ export function ItemsControl() {
                 <h3 className="item-group-head">
                   {sec.label}{' '}
                   <span className="text-white-50">
-                    ({got}/{sec.items.length})
+                    {entry ? `(${got}/${sec.items.length})` : `(${sec.items.length})`}
                   </span>
                   <span className="set-head-actions" style={{ marginLeft: '0.4rem' }}>
                     <button
@@ -1009,9 +1101,11 @@ export function ItemsControl() {
                 <div
                   className="item-tile"
                   data-collected={
-                    activeItem.countable
-                      ? (collectedCounts[String(activeItem.id)] ?? 0) > 0
-                      : collectedIds.has(activeItem.id)
+                    !entry
+                      ? undefined
+                      : activeItem.countable
+                        ? (collectedCounts[String(activeItem.id)] ?? 0) > 0
+                        : collectedIds.has(activeItem.id)
                   }
                 >
                   {activeItem.image_url ? (

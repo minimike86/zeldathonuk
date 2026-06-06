@@ -189,7 +189,7 @@ export function Schedule() {
                       slot={slot}
                       isPlaying={!isGhost && currentEntryId === slot.entry.id}
                       isGhost={isGhost}
-                      twitchChannel={event?.twitch_channel || 'zeldathonuk'}
+                      twitchChannel={event?.primary_twitch_channel || 'zeldathonuk'}
                       accent={cardAccents[globalIdx]}
                     />
                   );
@@ -251,7 +251,7 @@ function ScheduleHero({
             No event scheduled — check back closer to the next stream.
           </p>
         )}
-        {event?.twitch_channel && (
+        {event?.primary_twitch_channel && (
           // Follow CTA — anchored under the dates so it sits at the
           // top of the hero where it'll catch viewers who land
           // pre-stream. Mirrors the Bungee + amber-bordered style of
@@ -260,10 +260,10 @@ function ScheduleHero({
           <div className="schedule-hero-cta">
             <a
               className="btn btn-bloodmoon"
-              href={`https://www.twitch.tv/${event.twitch_channel}`}
+              href={`https://www.twitch.tv/${event.primary_twitch_channel}`}
               target="_blank"
               rel="noreferrer"
-              title={`Follow ${event.twitch_channel} on Twitch`}
+              title={`Follow ${event.primary_twitch_channel} on Twitch`}
             >
               <FontAwesomeIcon icon={faTwitch} aria-hidden />
               <span>Follow on Twitch</span>

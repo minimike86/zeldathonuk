@@ -47,11 +47,21 @@ class GameItemSerializer(serializers.ModelSerializer):
 
 
 class GameObjectiveSerializer(serializers.ModelSerializer):
+    # The linked GameItem's sprite, so an "item get" objective can fall back to
+    # the item's image when it has no own `image_url`. Read-only; consumers use
+    # `image_url || linked_item_image_url`. Relies on callers prefetching
+    # `…objectives__linked_item` to stay query-cheap.
+    linked_item_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = models.GameObjective
-        fields = ['id', 'game', 'name', 'image_url', 'category', 'group',
+        fields = ['id', 'game', 'name', 'image_url', 'linked_item_image_url',
+                  'category', 'group',
                   'linked_item', 'order', 'link_mode',
                   'setpiece_role', 'setpiece_name', 'clears_setpiece']
+
+    def get_linked_item_image_url(self, obj) -> str:
+        return obj.linked_item.image_url if obj.linked_item else ''
 
 
 class GameSerializer(serializers.ModelSerializer):
@@ -141,10 +151,19 @@ class DonationPageSerializer(serializers.ModelSerializer):
             'external_id',
             'is_primary',
             'order',
+            'total_raised',
+            'total_donation_count',
+            'total_currency',
+            'total_status',
+            'total_synced_at',
             'fees_url',
             'gift_aid_url',
             'fee_warning',
             'minimum_donation_amount',
+        ]
+        read_only_fields = [
+            'total_raised', 'total_donation_count', 'total_currency',
+            'total_status', 'total_synced_at',
         ]
 
     def _profile(self, obj):
@@ -189,8 +208,161 @@ class DonationPageSerializer(serializers.ModelSerializer):
         return str(p.minimum_donation_amount) if p else '0.00'
 
 
+class EventTwitchChannelSerializer(serializers.ModelSerializer):
+    """A Twitch channel attached to an event. Read nested on the event tree and
+    written via the dedicated /api/event-twitch-channels/ endpoint. Exposes
+    whether the channel is OAuth-connected + its granted scopes, but never the
+    tokens themselves."""
+
+    is_connected = serializers.SerializerMethodField()
+    connection_scopes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.EventTwitchChannel
+        fields = [
+            'id', 'event', 'login', 'display_name', 'is_primary',
+            'track_charity', 'charity_slug', 'order', 'is_active',
+            'is_connected', 'connection_scopes',
+        ]
+
+    def get_is_connected(self, obj) -> bool:
+        c = obj.connection
+        return bool(c and c.is_active and (c.access_token or c.refresh_token))
+
+    def get_connection_scopes(self, obj) -> list:
+        c = obj.connection
+        return (c.scopes or '').split() if c else []
+
+
+class ChatAnnouncementSerializer(serializers.ModelSerializer):
+    """Per-event, per-trigger Twitch chat announcement config. ``placeholders``
+    lists the template fields the trigger supports (for the editor's hints)."""
+
+    trigger_display = serializers.CharField(source='get_trigger_display', read_only=True)
+    placeholders = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.ChatAnnouncement
+        fields = [
+            'id', 'event', 'trigger', 'trigger_display', 'enabled', 'template',
+            'as_announcement', 'announcement_color', 'placeholders',
+        ]
+
+    def get_placeholders(self, obj) -> list:
+        from . import chat
+        return chat.TEMPLATE_PLACEHOLDERS.get(obj.trigger, [])
+
+
+class RewardActionSerializer(serializers.ModelSerializer):
+    action_type_display = serializers.CharField(
+        source='get_action_type_display', read_only=True,
+    )
+
+    class Meta:
+        model = models.RewardAction
+        fields = [
+            'id', 'mapping', 'action_type', 'action_type_display', 'params',
+            'enabled', 'order',
+        ]
+
+
+class RewardMappingSerializer(serializers.ModelSerializer):
+    """A channel-point reward mapped to one-or-more actions (read nested)."""
+
+    actions = RewardActionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = models.RewardMapping
+        fields = [
+            'id', 'event', 'reward_id', 'reward_title', 'enabled', 'order',
+            'actions',
+        ]
+
+
+class ScheduledJobSerializer(serializers.ModelSerializer):
+    is_due = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = models.ScheduledJob
+        fields = [
+            'id', 'key', 'label', 'command', 'description', 'enabled',
+            'interval_seconds', 'last_run_at', 'last_status', 'last_output',
+            'is_due', 'updated_at',
+        ]
+        read_only_fields = [
+            'key', 'command', 'last_run_at', 'last_status', 'last_output',
+            'is_due', 'updated_at',
+        ]
+
+
+class ShoutoutConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ShoutoutConfig
+        fields = [
+            'id', 'event', 'enabled', 'shout_donations', 'shout_raids',
+            'min_donation_amount', 'only_when_live', 'global_cooldown_seconds',
+            'target_cooldown_seconds', 'max_age_minutes',
+        ]
+        read_only_fields = ['id', 'event']
+
+
+class ShoutoutRequestSerializer(serializers.ModelSerializer):
+    reason_display = serializers.CharField(source='get_reason_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = models.ShoutoutRequest
+        fields = [
+            'id', 'event', 'target_login', 'target_display', 'reason',
+            'reason_display', 'note', 'status', 'status_display', 'requested_at',
+            'sent_at', 'detail',
+        ]
+        read_only_fields = [
+            'event', 'target_display', 'reason_display', 'status', 'status_display',
+            'requested_at', 'sent_at', 'detail',
+        ]
+
+
+class TwitchPredictionSerializer(serializers.ModelSerializer):
+    """Read-only mirror of a Twitch Prediction. Created/resolved via the
+    viewset's custom actions, not direct writes."""
+
+    class Meta:
+        model = models.TwitchPrediction
+        fields = [
+            'id', 'event', 'prediction_id', 'title', 'status', 'outcomes',
+            'winning_outcome_id', 'window_seconds', 'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+
+class RecurringChatMessageSerializer(serializers.ModelSerializer):
+    """A recurring chat message (e.g. a periodic donation CTA)."""
+
+    is_due = serializers.BooleanField(read_only=True)
+    placeholders = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.RecurringChatMessage
+        fields = [
+            'id', 'event', 'label', 'template', 'interval_minutes',
+            'only_when_live', 'enabled', 'last_posted_at', 'order',
+            'is_due', 'placeholders',
+        ]
+        read_only_fields = ['last_posted_at', 'is_due', 'placeholders']
+
+    def get_placeholders(self, obj) -> list:
+        from . import chat
+        return chat.RECURRING_PLACEHOLDERS
+
+
 class EventSerializer(serializers.ModelSerializer):
     donation_pages = DonationPageSerializer(many=True, read_only=True)
+    twitch_channels = EventTwitchChannelSerializer(many=True, read_only=True)
+    chat_announcements = ChatAnnouncementSerializer(many=True, read_only=True)
+    recurring_chat_messages = RecurringChatMessageSerializer(many=True, read_only=True)
+    # Primary channel login for single-channel consumers (Follow link, embed).
+    primary_twitch_channel = serializers.SerializerMethodField()
     # Charities are read here via the through-table so consumers get the
     # per-event ordering + is_primary flag, with the full Charity nested
     # so the public /event landing can render branding without a second
@@ -206,7 +378,10 @@ class EventSerializer(serializers.ModelSerializer):
             'start_time',
             'currency_symbol',
             'is_active',
-            'twitch_channel',
+            'twitch_channels',
+            'primary_twitch_channel',
+            'update_twitch_category',
+            'twitch_title_template',
             'logo_url',
             'banner_url',
             'gameblast_logo_url',
@@ -214,7 +389,18 @@ class EventSerializer(serializers.ModelSerializer):
             'omnibar_transitions',
             'donation_pages',
             'event_charities',
+            'chat_announcements',
+            'recurring_chat_messages',
         ]
+
+    def get_primary_twitch_channel(self, obj) -> str:
+        # Iterate the (prefetched) list rather than a filtered query so this
+        # stays cheap across the events list.
+        chans = list(obj.twitch_channels.all())
+        primary = next((c for c in chans if c.is_primary), None) or (
+            chans[0] if chans else None
+        )
+        return primary.login if primary else ''
 
     def get_event_charities(self, obj):
         # Forward-declared serializer — `EventCharitySerializer` is
@@ -736,7 +922,7 @@ class MilestoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Milestone
         fields = ['id', 'event', 'name', 'threshold_amount',
-                  'celebration_message', 'reached_at', 'audio_url',
+                  'celebration_message', 'reached_at', 'announced', 'audio_url',
                   'tag_color_from', 'tag_color_to',
                   'heading_color', 'sub_color', 'flash_color',
                   'order', 'is_reached', 'created_at']
@@ -818,6 +1004,7 @@ class ChestAnnouncerSettingsSerializer(serializers.ModelSerializer):
         model = models.ChestAnnouncerSettings
         fields = [
             'audio_enabled',
+            'tts_enabled',
             'between_cards_ms',
             'card_min_hold_ms',
             'card_max_hold_ms',

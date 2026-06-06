@@ -130,6 +130,12 @@
   font-size: 0.95rem;
 }
 
+/* Leading icon on each nav link — fixedWidth keeps the labels aligned. */
+.control-nav-icon {
+  margin-right: 0.55rem;
+  opacity: 0.85;
+}
+
 .control-nav-link:hover {
   background: color-mix(
     in srgb,
@@ -488,6 +494,16 @@
 }
 .btn-setpiece-clear:disabled {
   opacity: 0.55;
+}
+
+/* Inset tile used by /control/automation — the scheduled-job rows and the
+ * JustGiving panel share it so they read as one family. Sits on the (always
+ * dark) operator card; statuses inside use solid `badge bg-*` for contrast
+ * rather than Bootstrap's low-contrast text-success/-danger hues. */
+.automation-tile {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
 }
 
 /* Horizontal-scroll wrapper used by the /control/donations table.
@@ -1180,4 +1196,235 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+/* ── Connect-Twitch device-code modal ──────────────────────────────
+ *
+ * Portaled to <body>, so it sits OUTSIDE .control-shell and can't borrow
+ * the operator card override. It therefore styles its own OPAQUE surface
+ * (the default .control-card fill is semi-transparent and let the page
+ * bleed through). Theme-aware via color-mix, but always fully opaque. */
+.connect-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 3, 6, 0.74);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: connect-modal-fade 0.16s ease-out;
+}
+
+.connect-modal__card {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 14px;
+  overflow: hidden;
+  color: #fff;
+  /* Opaque surface mixed from the theme background stops. */
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 50%, #000),
+    color-mix(in srgb, var(--theme-bg-to, #150a0f) 68%, #000)
+  );
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 45%, transparent);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: connect-modal-pop 0.18s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.connect-modal__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 14%, transparent);
+}
+
+.connect-modal__glyph {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: #9146ff; /* Twitch purple — brand cue, theme-independent */
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.connect-modal__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.connect-modal__close {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.connect-modal__close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.connect-modal__body {
+  padding: 1.25rem;
+}
+
+.connect-modal__lead {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.connect-modal__steps {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: connect-step;
+  display: grid;
+  gap: 0.85rem;
+}
+.connect-modal__steps li {
+  counter-increment: connect-step;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+}
+.connect-modal__steps li::before {
+  content: counter(connect-step);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 55%, transparent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  align-self: start;
+}
+
+.connect-modal__link {
+  color: var(--theme-primary-bright, #ffc2e0);
+  word-break: break-all;
+}
+
+.connect-modal__code-row {
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.connect-modal__code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 1.4rem;
+  letter-spacing: 0.18em;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.connect-modal__copy {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border-radius: 7px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.connect-modal__copy:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.connect-modal__status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+.connect-modal__status--waiting {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.78);
+}
+.connect-modal__status--done {
+  background: rgba(40, 167, 69, 0.16);
+  border: 1px solid rgba(40, 167, 69, 0.45);
+  color: #8ff0a4;
+}
+.connect-modal__status--error {
+  background: rgba(220, 53, 69, 0.16);
+  border: 1px solid rgba(220, 53, 69, 0.45);
+  color: #ff9aa6;
+}
+
+.connect-modal__spinner {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--theme-primary-bright, #ffc2e0);
+  animation: connect-modal-spin 0.7s linear infinite;
+}
+
+.connect-modal__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@keyframes connect-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes connect-modal-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes connect-modal-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connect-modal__backdrop,
+  .connect-modal__card,
+  .connect-modal__spinner {
+    animation: none;
+  }
 }

@@ -70,7 +70,7 @@ export function About() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const { data: event } = usePolledQuery(obsApi.activeEvent, 30_000);
-  const twitchChannel = event?.twitch_channel || 'zeldathonuk';
+  const twitchChannel = event?.primary_twitch_channel || 'zeldathonuk';
 
   useEffect(() => {
     if (paused) return;

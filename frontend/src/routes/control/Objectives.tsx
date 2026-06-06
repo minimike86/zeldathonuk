@@ -31,6 +31,7 @@ import {
   type ScheduleEntry,
 } from '@/lib/obsApi';
 import { onObjectivesChanged } from '@/lib/objectiveBus';
+import { objectiveImageUrl } from '@/routes/obs/objectiveSection';
 
 /** A drop-zone wrapper so a tile can be dropped into a section even when the
  *  pointer is over empty space within it. */
@@ -554,8 +555,8 @@ function ObjectiveLibrary({
               : `${o.name} — click to edit`
           }
         >
-          {o.image_url ? (
-            <img src={o.image_url} alt={o.name} />
+          {objectiveImageUrl(o) ? (
+            <img src={objectiveImageUrl(o)} alt={o.name} />
           ) : (
             <div className="obj-placeholder">{o.name.slice(0, 3)}</div>
           )}
@@ -762,8 +763,8 @@ function ObjectiveLibrary({
             {activeObj ? (
               <div className="obj-cell drag-overlay" style={{ width: 110 }}>
                 <div className="obj-tile" data-status={statusOf(activeObj.id)}>
-                  {activeObj.image_url ? (
-                    <img src={activeObj.image_url} alt={activeObj.name} />
+                  {objectiveImageUrl(activeObj) ? (
+                    <img src={objectiveImageUrl(activeObj)} alt={activeObj.name} />
                   ) : (
                     <div className="obj-placeholder">{activeObj.name.slice(0, 3)}</div>
                   )}

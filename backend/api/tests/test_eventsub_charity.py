@@ -103,6 +103,26 @@ class CharityEventSubTests(TestCase):
         self.assertEqual(donation.source_channel, 'msec')  # normalised lowercase
         self.assertEqual(donation.event_id, self.event.id)  # same combined total
 
+    def test_redemption_creates_external_event(self):
+        payload = {
+            'subscription': {
+                'type': 'channel.channel_points_custom_reward_redemption.add',
+                'version': '1',
+            },
+            'event': {
+                'id': 'redeem-1',
+                'user_name': 'Kris',
+                'reward': {'title': 'Hydrate!'},
+            },
+        }
+        resp = self._post(payload)
+        self.assertEqual(resp.status_code, 202)
+        ev = models.ExternalEvent.objects.filter(
+            source=models.ExternalEvent.SOURCE_TWITCH, kind='twitch-redemption',
+        ).first()
+        self.assertIsNotNone(ev)
+        self.assertEqual(ev.payload.get('user_name'), 'Kris')
+
     def test_redelivery_dedupes(self):
         # Same donation id, different message id (a real Twitch retry) → still one row.
         self._post(self._donate_payload(donation_id='don-2'), msg_id='msg-a')

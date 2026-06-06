@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faBox, faEnvelope, faKey, faGift } from '@fortawesome/free-solid-svg-icons';
 import { faTwitch, faDiscord } from '@fortawesome/free-brands-svg-icons';
-import { obsApi, usePolledQuery } from '@/lib/obsApi';
+import { eventDonationOptions, obsApi, usePolledQuery } from '@/lib/obsApi';
 import { onRafflesChanged } from '@/lib/raffleBus';
 import type {
   DonationPage,
@@ -138,9 +138,9 @@ export function Incentives() {
   const liveEntryId = nowPlaying?.schedule_entry ?? null;
   const liveGameTitle = nowPlaying?.schedule_entry_detail?.display_title ?? '';
 
-  const twitchChannel = event?.twitch_channel || 'zeldathonuk';
+  const twitchChannel = event?.primary_twitch_channel || 'zeldathonuk';
   const symbol = event?.currency_symbol || '£';
-  const donationPages = event?.donation_pages ?? [];
+  const donationPages = eventDonationOptions(event);
 
   // Freebie always leads; real incentives follow in their stored order.
   const cards: IncentiveCard[] = [

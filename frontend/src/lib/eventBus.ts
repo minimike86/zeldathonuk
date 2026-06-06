@@ -35,8 +35,12 @@ if (typeof window !== 'undefined') {
   });
 }
 
-/** Fire-and-forget: tell every other tab an Event row changed. */
+/** Fire-and-forget: tell this tab AND every other tab an Event row changed.
+ *  BroadcastChannel/`storage` events never fire in the tab that triggered them,
+ *  so we also notify local subscribers directly — otherwise the page that made
+ *  the mutation (e.g. /control/events) wouldn't refresh until its next poll. */
 export function notifyEventChanged(): void {
+  listeners.forEach((l) => l());
   channel?.postMessage('event-changed');
   try {
     window.localStorage?.setItem(STORAGE_KEY, String(Date.now()));

@@ -3,12 +3,15 @@ import hmac
 import random
 import secrets
 from collections import Counter
+from io import StringIO
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import quote
 
+import requests
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.core.management import call_command
 from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -109,7 +112,8 @@ class GameViewSet(viewsets.ModelViewSet):
         # `items__unlocks_with` is required: GameItemSerializer emits
         # unlocks_with_ids, so without it each item fires its own M2M query
         # (a 500-item catalog turned /api/games/ into a ~3.5s N+1).
-        'items', 'items__sets', 'items__unlocks_with', 'objectives', 'item_sets',
+        'items', 'items__sets', 'items__unlocks_with',
+        'objectives', 'objectives__linked_item', 'item_sets',
     )
     serializer_class = serializers.GameSerializer
 
@@ -281,13 +285,26 @@ class RunnerViewSet(viewsets.ModelViewSet):
 
 
 class EventViewSet(viewsets.ModelViewSet):
-    queryset = models.Event.objects.all().order_by('-start_time')
+    queryset = (
+        models.Event.objects.all()
+        .order_by('-start_time')
+        .prefetch_related(
+            'twitch_channels__connection', 'donation_pages', 'chat_announcements',
+            'recurring_chat_messages',
+        )
+    )
     serializer_class = serializers.EventSerializer
 
     def perform_create(self, serializer):
         event = serializer.save()
         if event.is_active:
             models.Event.objects.exclude(pk=event.pk).filter(is_active=True).update(is_active=False)
+        # Seed the default (disabled) chat announcement rows so the control
+        # editor lists every trigger for the new event, plus a donation-CTA
+        # recurring message.
+        from . import chat
+        chat.ensure_announcements(event)
+        chat.ensure_recurring_defaults(event)
 
     def perform_update(self, serializer):
         event = serializer.save()
@@ -778,7 +795,8 @@ class ScheduleEntryViewSet(viewsets.ModelViewSet):
             # (same N+1 that made /api/schedule/ ~3.5s on a full schedule).
             'runners', 'game__items', 'game__items__sets',
             'game__items__unlocks_with', 'game__item_sets',
-            'game__objectives', 'collected_items', 'objective_statuses',
+            'game__objectives', 'game__objectives__linked_item',
+            'collected_items', 'objective_statuses',
             'setpieces',
         )
     )
@@ -1369,6 +1387,28 @@ class DonationViewSet(viewsets.ModelViewSet):
         )
         return Response({'updated': updated, 'mute_reason': reason})
 
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def mark_read(self, request: Request, pk=None) -> Response:
+        """Mark a single donation as read/announced (overlay-driven).
+
+        Called by the /obs/chest-announcer overlay once it has read a
+        donation's card aloud. Sets `mute_reason='already_announced'` so
+        the donation is muted from future readouts (the chest announcer
+        and the omnibar takeover both skip `is_muted` donations) — this
+        is what durably stops replay on a re-opened browser source.
+
+        AllowAny because OBS browser sources are unauthenticated. Never
+        clobbers a stronger existing mute (naughty_*): only an as-yet
+        unmuted donation is flipped to `already_announced`. Muting
+        suppresses the announcement only — the donation still counts
+        toward totals and still shows in the ICYMI reel.
+        """
+        donation = self.get_object()
+        if not donation.mute_reason:
+            donation.mute_reason = models.MuteReason.ALREADY_ANNOUNCED
+            donation.save(update_fields=['mute_reason'])
+        return Response(self.get_serializer(donation).data)
+
 
 class DonationPageViewSet(viewsets.ModelViewSet):
     queryset = models.DonationPage.objects.all()
@@ -1380,6 +1420,521 @@ class DonationPageViewSet(viewsets.ModelViewSet):
         if event_id:
             qs = qs.filter(event_id=event_id)
         return qs
+
+    @action(detail=True, methods=['post'])
+    def sync_total(self, request: Request, pk=None) -> Response:
+        """Refresh a page's cached aggregate total (raised / donation count /
+        status) from the platform's campaign-details endpoint. Works for any
+        event's page — including completed/past ones whose itemized donation
+        feed has gone empty — so operators can see what a past event raised.
+        Supported for JustGiving and Tiltify. Operator-only (default
+        permission on POST)."""
+        page = self.get_object()
+        from . import justgiving, tiltify
+        if page.platform == models.DonationPlatform.JUSTGIVING:
+            syncer, error = justgiving.sync_page_total, justgiving.JustGivingError
+        elif page.platform == models.DonationPlatform.TILTIFY:
+            syncer, error = tiltify.sync_page_total, tiltify.TiltifyError
+        else:
+            return Response(
+                {'detail': 'Totals sync is JustGiving/Tiltify-only.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            syncer(page)
+        except error as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(page).data)
+
+
+class EventTwitchChannelViewSet(viewsets.ModelViewSet):
+    """Per-event Twitch channels — each drives live status; those with
+    track_charity + a connection are charity sources. Tokens are attached via
+    the device-code connect flow (which links the connection to every event
+    channel of the same login)."""
+    queryset = models.EventTwitchChannel.objects.select_related('connection').all()
+    serializer_class = serializers.EventTwitchChannelSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+
+class ChatAnnouncementViewSet(viewsets.ModelViewSet):
+    """Per-event Twitch chat announcement config (enable + template per
+    trigger). The active event's primary connected channel posts the rendered
+    message when a trigger fires (see api.chat)."""
+    queryset = models.ChatAnnouncement.objects.all()
+    serializer_class = serializers.ChatAnnouncementSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+
+class RewardMappingViewSet(viewsets.ModelViewSet):
+    """Channel-point reward → actions mappings (one reward, many actions).
+    Filtered by event (default active)."""
+    queryset = models.RewardMapping.objects.prefetch_related('actions').all()
+    serializer_class = serializers.RewardMappingSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            return qs.filter(event_id=event_id)
+        active = models.Event.objects.filter(is_active=True).first()
+        return qs.filter(event=active) if active else qs.none()
+
+
+class RewardActionViewSet(viewsets.ModelViewSet):
+    """The child actions of a reward mapping."""
+    queryset = models.RewardAction.objects.all()
+    serializer_class = serializers.RewardActionSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        mapping_id = self.request.query_params.get('mapping')
+        if mapping_id:
+            return qs.filter(mapping_id=mapping_id)
+        return qs
+
+
+@api_view(['POST'])
+def twitch_chat_send(request: Request) -> Response:
+    """Operator: send an arbitrary message to every connected channel's chat for
+    the active event (Twitch emote names render as emotes)."""
+    active = models.Event.objects.filter(is_active=True).first()
+    if not active:
+        return Response({'detail': 'No active event.'}, status=status.HTTP_400_BAD_REQUEST)
+    message = (request.data.get('message') or '').strip()
+    if not message:
+        return Response({'detail': 'message required.'}, status=status.HTTP_400_BAD_REQUEST)
+    from . import chat
+    sent = chat.broadcast(
+        active, message[:500],
+        announcement=bool(request.data.get('announcement')),
+        color=request.data.get('color') or 'primary',
+    )
+    return Response({'sent': sent})
+
+
+@api_view(['GET'])
+def twitch_emotes(request: Request) -> Response:
+    """Twitch global emotes (name + image) for the chat composer's emote picker."""
+    return Response(twitch.fetch_global_emotes())
+
+
+@api_view(['GET', 'POST'])
+def twitch_custom_rewards(request: Request) -> Response:
+    """The active event's primary channel's custom channel-point rewards.
+
+    GET (public): list ``{id, title, cost}`` so the operator can map actions to
+    an existing reward. POST (operator): create a NEW reward on the channel via
+    Helix so it actually appears for viewers to redeem — body
+    ``{title, cost, prompt?, require_input?, background_color?}``. Returns the
+    created reward; the panel then maps it by its returned id."""
+    active = models.Event.objects.filter(is_active=True).first()
+    conn = twitch.event_primary_connection(active) if active else None
+    if not conn:
+        if request.method == 'POST':
+            return Response(
+                {'detail': 'No active event with a connected primary channel.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response([])
+    bid = twitch.ensure_connection_broadcaster_id(conn)
+    if not bid:
+        if request.method == 'POST':
+            return Response(
+                {'detail': 'Could not resolve the channel broadcaster id.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response([])
+
+    if request.method == 'POST':
+        title = (request.data.get('title') or '').strip()
+        try:
+            cost = int(request.data.get('cost'))
+        except (TypeError, ValueError):
+            cost = 0
+        if not title or cost < 1:
+            return Response(
+                {'detail': 'A title and a cost of at least 1 are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        resp = twitch.create_custom_reward(
+            conn, bid, title=title, cost=cost,
+            prompt=(request.data.get('prompt') or '').strip(),
+            require_input=bool(request.data.get('require_input')),
+            background_color=(request.data.get('background_color') or '').strip(),
+        )
+        if not resp.ok:
+            return Response(
+                {'detail': f'Twitch rejected the reward ({resp.status_code}): '
+                           f'{resp.text[:200]}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        r = (resp.json().get('data') or [{}])[0]
+        return Response(
+            {'id': r.get('id'), 'title': r.get('title'), 'cost': r.get('cost')},
+            status=status.HTTP_201_CREATED,
+        )
+
+    rewards = twitch.fetch_custom_rewards(conn, bid)
+    return Response([
+        {'id': r.get('id'), 'title': r.get('title'), 'cost': r.get('cost')}
+        for r in rewards
+    ])
+
+
+@api_view(['GET'])
+def scheduler_status(request: Request) -> Response:
+    """Liveness of the scheduler loop — its last tick + whether it's recent.
+    Lets /control/automation show the heartbeat without shell access."""
+    hb = models.SchedulerHeartbeat.objects.filter(pk=1).first()
+    last = hb.last_tick_at if hb else None
+    seconds = (timezone.now() - last).total_seconds() if last else None
+    return Response({
+        'last_tick_at': last,
+        'seconds_ago': int(seconds) if seconds is not None else None,
+        # The loop ticks every ~30s; allow a few missed ticks before "down".
+        'alive': bool(seconds is not None and seconds < 120),
+    })
+
+
+@api_view(['GET'])
+def justgiving_status(request: Request) -> Response:
+    """Config + last-poll snapshot for the /control/donations JustGiving card.
+
+    Public read (no secrets — only whether the App ID is set). Reports the
+    target API environment, the active event's resolved JustGiving page short
+    name(s), and the shared `poll_donations` job's last run so the operator
+    can see at a glance whether ingestion is wired up and running."""
+    from . import justgiving
+    event = models.Event.objects.filter(is_active=True).first()
+    pages = justgiving.event_pages(event) if event else []
+    job = models.ScheduledJob.objects.filter(key='poll_donations').first()
+    return Response({
+        'app_id_present': bool(settings.JUSTGIVING_API_KEY),
+        'env': (settings.JUSTGIVING_ENV or 'production').strip().lower(),
+        'api_base': justgiving.api_base(),
+        'pages': pages,
+        'poll_job': {
+            'enabled': job.enabled,
+            'last_run_at': job.last_run_at,
+            'last_status': job.last_status,
+            'interval_seconds': job.interval_seconds,
+        } if job else None,
+    })
+
+
+@api_view(['POST'])
+def justgiving_test(request: Request) -> Response:
+    """Operator "Fetch now" — pull + ingest the active event's JustGiving
+    donations immediately and return the per-page counts. Operator-only
+    (default ReadOnlyOrOperator on a POST). Shares api.justgiving.ingest_event
+    with the scheduler, so a manual fetch behaves exactly like a poll tick."""
+    from . import justgiving
+    try:
+        result = justgiving.ingest_active_event()
+    except justgiving.JustGivingError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(result)
+
+
+@api_view(['GET'])
+def tiltify_status(request: Request) -> Response:
+    """Config + last-poll snapshot for the /control/automation Tiltify card.
+
+    Public read (no secrets — only whether the OAuth credentials + webhook
+    secret are set). Reports the active event's resolved Tiltify campaign id(s)
+    and the shared `poll_donations` job's last run so the operator can see at a
+    glance whether ingestion is wired up and running."""
+    from . import tiltify
+    event = models.Event.objects.filter(is_active=True).first()
+    campaigns = tiltify.event_pages(event) if event else []
+    creds_present = bool(
+        (settings.TILTIFY_CLIENT_ID and settings.TILTIFY_CLIENT_SECRET)
+        or settings.TILTIFY_ACCESS_TOKEN
+    )
+    job = models.ScheduledJob.objects.filter(key='poll_donations').first()
+    return Response({
+        'creds_present': creds_present,
+        'webhook_secret_present': bool(settings.TILTIFY_WEBHOOK_SECRET),
+        'api_base': tiltify.api_base(),
+        'campaigns': campaigns,
+        'poll_job': {
+            'enabled': job.enabled,
+            'last_run_at': job.last_run_at,
+            'last_status': job.last_status,
+            'interval_seconds': job.interval_seconds,
+        } if job else None,
+    })
+
+
+@api_view(['POST'])
+def tiltify_test(request: Request) -> Response:
+    """Operator "Fetch now" — pull + ingest the active event's Tiltify
+    donations immediately and return the per-campaign counts. Operator-only
+    (default ReadOnlyOrOperator on a POST). Shares api.tiltify.ingest_event
+    with the scheduler, so a manual fetch behaves exactly like a poll tick."""
+    from . import tiltify
+    try:
+        result = tiltify.ingest_active_event()
+    except tiltify.TiltifyError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(result)
+
+
+class ScheduledJobViewSet(viewsets.ModelViewSet):
+    """Periodic management commands the operator manages from /control/automation.
+    A single `manage.py run_scheduled_jobs` cron tick runs due enabled jobs;
+    `run` triggers one immediately."""
+    queryset = models.ScheduledJob.objects.all()
+    serializer_class = serializers.ScheduledJobSerializer
+    http_method_names = ['get', 'patch', 'post']
+
+    @action(detail=True, methods=['post'])
+    def run(self, request: Request, pk=None) -> Response:
+        from . import jobs
+        job = jobs.run_job(self.get_object())
+        return Response(self.get_serializer(job).data)
+
+
+@api_view(['GET'])
+def eventsub_subscriptions(request: Request) -> Response:
+    """List the app's Twitch EventSub subscriptions (type + status + callback)
+    for the control-panel dashboard."""
+    try:
+        subs = twitch.list_eventsub_subscriptions()
+    except twitch.TwitchAuthError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as exc:  # noqa: BLE001 — transport/timeout: surface, don't 500
+        # A bare 500 reaches the browser as an opaque "Failed to fetch" (the
+        # error page carries no CORS headers); return a clean JSON error so the
+        # panel can show what actually went wrong.
+        return Response(
+            {'detail': f'Could not reach Twitch: {exc}'},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    rows = [{
+        'id': s.get('id'),
+        'type': s.get('type'),
+        'version': s.get('version'),
+        'status': s.get('status'),
+        'condition': s.get('condition'),
+        'callback': (s.get('transport') or {}).get('callback'),
+    } for s in subs]
+    rows.sort(key=lambda r: (r['status'] != 'enabled', r['type'] or ''))
+    return Response({
+        'subscriptions': rows,
+        'counts': dict(Counter(s.get('status') for s in subs)),
+    })
+
+
+@api_view(['POST'])
+def eventsub_sync(request: Request) -> Response:
+    """Register/sync the Twitch EventSub subscriptions (operator). Pass
+    {"prune": true} to also drop stale ones. Runs `manage.py twitch_eventsub`
+    and returns its output."""
+    args = ['--prune'] if request.data.get('prune') else []
+    out = StringIO()
+    try:
+        call_command('twitch_eventsub', *args, stdout=out, stderr=out)
+    except Exception as exc:  # noqa: BLE001 — surface the command error to the UI
+        return Response(
+            {'detail': str(exc), 'output': out.getvalue()},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response({'output': out.getvalue()})
+
+
+@api_view(['GET', 'PATCH'])
+def shoutout_config(request: Request) -> Response:
+    """Per-event shoutout settings. Operates on the active event, or ?event=<id>.
+    GET is public; PATCH needs operator (default permission)."""
+    event_id = request.query_params.get('event')
+    if event_id:
+        event = models.Event.objects.filter(pk=event_id).first()
+    else:
+        event = models.Event.objects.filter(is_active=True).first()
+    if not event:
+        return Response({'detail': 'No event.'}, status=status.HTTP_400_BAD_REQUEST)
+    from . import shoutouts
+    cfg = shoutouts.get_config(event)
+    if request.method == 'PATCH':
+        ser = serializers.ShoutoutConfigSerializer(cfg, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+    return Response(serializers.ShoutoutConfigSerializer(cfg).data)
+
+
+class ShoutoutRequestViewSet(viewsets.ModelViewSet):
+    """The shoutout queue. List (filtered by event, default active), manually
+    enqueue (POST {target_login, note}), and cancel a pending one."""
+    queryset = models.ShoutoutRequest.objects.all()
+    serializer_class = serializers.ShoutoutRequestSerializer
+    http_method_names = ['get', 'post']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            return qs.filter(event_id=event_id)
+        active = models.Event.objects.filter(is_active=True).first()
+        return qs.filter(event=active) if active else qs.none()
+
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        active = models.Event.objects.filter(is_active=True).first()
+        if not active:
+            return Response({'detail': 'No active event.'}, status=status.HTTP_400_BAD_REQUEST)
+        login = (request.data.get('target_login') or request.data.get('login') or '').strip().lower()
+        if not login:
+            return Response({'detail': 'target_login required.'}, status=status.HTTP_400_BAD_REQUEST)
+        req = models.ShoutoutRequest.objects.create(
+            event=active, target_login=login,
+            reason=models.ShoutoutReason.MANUAL,
+            note=(request.data.get('note') or '').strip(),
+        )
+        return Response(self.get_serializer(req).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request: Request, pk=None) -> Response:
+        req = self.get_object()
+        if req.status == models.ShoutoutStatus.PENDING:
+            req.status = models.ShoutoutStatus.CANCELED
+            req.save()
+        return Response(self.get_serializer(req).data)
+
+
+class RecurringChatMessageViewSet(viewsets.ModelViewSet):
+    """Per-event recurring chat messages (e.g. a periodic donation CTA). Posted
+    by `manage.py post_chat_reminders` on a cron tick."""
+    queryset = models.RecurringChatMessage.objects.all()
+    serializer_class = serializers.RecurringChatMessageSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+
+class TwitchPredictionViewSet(viewsets.ModelViewSet):
+    """Twitch Predictions opened from the control panel. ``create`` opens one on
+    the active event's primary connected channel; ``resolve``/``cancel``/``lock``
+    end it. Operator-gated (default permission). GET list is public."""
+    queryset = models.TwitchPrediction.objects.all()
+    serializer_class = serializers.TwitchPredictionSerializer
+    http_method_names = ['get', 'post']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            qs = qs.filter(event_id=event_id)
+        return qs
+
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        active = models.Event.objects.filter(is_active=True).first()
+        if not active:
+            return Response({'detail': 'No active event.'}, status=status.HTTP_400_BAD_REQUEST)
+        conn = twitch.event_primary_connection(active)
+        if not conn:
+            return Response(
+                {'detail': 'No connected primary Twitch channel for the active event.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        title = (request.data.get('title') or '').strip()
+        outcomes = [
+            str(o).strip() for o in (request.data.get('outcomes') or [])
+            if str(o).strip()
+        ]
+        try:
+            window = int(request.data.get('window_seconds') or 120)
+        except (TypeError, ValueError):
+            window = 120
+        if not title or len(outcomes) < 2:
+            return Response(
+                {'detail': 'A title and at least two outcomes are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        bid = twitch.ensure_connection_broadcaster_id(conn)
+        if not bid:
+            return Response(
+                {'detail': 'Could not resolve the channel broadcaster id.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            data = twitch.create_prediction(conn, bid, title, outcomes, window)
+        except (twitch.TwitchAuthError, requests.RequestException) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        if not data:
+            return Response(
+                {'detail': 'Twitch did not return a prediction.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pred = models.TwitchPrediction.objects.create(
+            event=active,
+            prediction_id=data.get('id', ''),
+            broadcaster_id=bid,
+            title=data.get('title', title),
+            status=data.get('status', models.TwitchPrediction.STATUS_ACTIVE),
+            outcomes=data.get('outcomes', []),
+            window_seconds=data.get('prediction_window', window),
+        )
+        return Response(self.get_serializer(pred).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def resolve(self, request: Request, pk=None) -> Response:
+        winning = (request.data.get('winning_outcome_id') or '').strip()
+        if not winning:
+            return Response(
+                {'detail': 'winning_outcome_id required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return self._end(self.get_object(), 'RESOLVED', winning)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request: Request, pk=None) -> Response:
+        return self._end(self.get_object(), 'CANCELED', '')
+
+    @action(detail=True, methods=['post'])
+    def lock(self, request: Request, pk=None) -> Response:
+        return self._end(self.get_object(), 'LOCKED', '')
+
+    def _end(self, pred, new_status: str, winning_outcome_id: str) -> Response:
+        conn = twitch.event_primary_connection(pred.event)
+        if not conn:
+            return Response(
+                {'detail': 'No connected channel for this prediction.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        bid = pred.broadcaster_id or twitch.ensure_connection_broadcaster_id(conn)
+        try:
+            data = twitch.end_prediction(
+                conn, bid, pred.prediction_id, new_status, winning_outcome_id,
+            )
+        except (twitch.TwitchAuthError, requests.RequestException) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        pred.status = (data or {}).get('status', new_status)
+        if data and data.get('winning_outcome_id'):
+            pred.winning_outcome_id = data['winning_outcome_id']
+        elif winning_outcome_id:
+            pred.winning_outcome_id = winning_outcome_id
+        if data and data.get('outcomes'):
+            pred.outcomes = data['outcomes']
+        pred.save()
+        return Response(self.get_serializer(pred).data)
 
 
 class BrbTimerViewSet(viewsets.ModelViewSet):
@@ -1406,6 +1961,71 @@ def twitch_charity_campaign(_request: Request) -> Response:
     return Response(serializers.TwitchCharityCampaignSerializer(campaign).data)
 
 
+# Scope sets requested when connecting a channel. Charity sources get the read
+# scope PLUS chat write + announce so the event's chat announcements can post to
+# every charity channel's own chat (not just the primary). The primary/bot
+# channel gets the full feature set.
+_CONNECT_SCOPES = {
+    'charity': 'channel:read:charity user:write:chat moderator:manage:announcements',
+    'primary': twitch.DEFAULT_USER_SCOPES,
+}
+
+
+@api_view(['POST'])
+def twitch_connect_start(request: Request) -> Response:
+    """Operator-only: begin the device-code flow to connect a Twitch channel.
+
+    Body ``{ login, role: 'charity'|'primary' }``. Returns the ``user_code`` +
+    ``verification_uri`` the broadcaster opens on their own device, plus the
+    ``device_code`` the client passes back to the poll endpoint."""
+    login = (request.data.get('login') or '').strip().lower()
+    role = (request.data.get('role') or 'charity').strip()
+    if not login:
+        return Response({'detail': 'login required'}, status=status.HTTP_400_BAD_REQUEST)
+    scopes = _CONNECT_SCOPES.get(role, _CONNECT_SCOPES['charity'])
+    try:
+        dev = twitch.start_device_authorization(scopes)
+    except twitch.TwitchAuthError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({
+        'login': login,
+        'device_code': dev.get('device_code'),
+        'user_code': dev.get('user_code'),
+        'verification_uri': dev.get('verification_uri_complete') or dev.get('verification_uri'),
+        'interval': dev.get('interval', 5),
+        'expires_in': dev.get('expires_in', 1800),
+        'scopes': scopes,
+    })
+
+
+@api_view(['POST'])
+def twitch_connect_poll(request: Request) -> Response:
+    """Operator-only: poll a pending device authorization. Body
+    ``{ device_code, login }``. While the broadcaster hasn't authorised yet the
+    status is ``pending``/``slow_down``; on success the connection is saved and
+    returned."""
+    device_code = (request.data.get('device_code') or '').strip()
+    login = (request.data.get('login') or '').strip().lower()
+    if not device_code:
+        return Response({'detail': 'device_code required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        result = twitch.poll_device_token(device_code)
+    except twitch.TwitchAuthError as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    if result['status'] != 'authorized':
+        return Response({'status': result['status'], 'message': result.get('message', '')})
+    conn = twitch.save_connection(login, result['token'])
+    return Response({
+        'status': 'authorized',
+        'connection': {
+            'login': conn.login,
+            'broadcaster_id': conn.broadcaster_id,
+            'display_name': conn.display_name,
+            'scopes': conn.scopes,
+        },
+    })
+
+
 @api_view(['GET', 'PUT'])
 def currently_playing(request: Request) -> Response:
     if request.method == 'GET':
@@ -1426,15 +2046,36 @@ def currently_playing(request: Request) -> Response:
                 'schedule_entry__game__items__sets',
                 'schedule_entry__game__items__unlocks_with',
                 'schedule_entry__game__objectives',
+                'schedule_entry__game__objectives__linked_item',
                 'schedule_entry__game__item_sets',
             )
             .get(pk=1)
         )
         return Response(serializers.CurrentlyPlayingSerializer(cp).data)
     cp = models.CurrentlyPlaying.get()
+    old_entry_id = cp.schedule_entry_id
     schedule_entry_id = request.data.get('schedule_entry')
     cp.schedule_entry_id = schedule_entry_id
     cp.save()
+    # Game-change chat announcement (best-effort) when the live entry actually
+    # changes to a game slot.
+    if schedule_entry_id and schedule_entry_id != old_entry_id:
+        entry = (
+            models.ScheduleEntry.objects
+            .select_related('game', 'event')
+            .prefetch_related('runners')
+            .filter(pk=schedule_entry_id)
+            .first()
+        )
+        if entry and entry.game_id:
+            from . import chat
+            chat.announce(entry.event, 'game_change', {
+                'game': entry.game.title,
+                'runner': ', '.join(r.name for r in entry.runners.all()),
+            })
+            # Opt-in: set the primary channel's Twitch category (+ title) to the
+            # new game. Best-effort — never blocks the schedule advance.
+            twitch.update_channel_for_game(entry.event, entry)
     return Response(serializers.CurrentlyPlayingSerializer(cp).data)
 
 
@@ -2210,19 +2851,43 @@ class MilestoneViewSet(viewsets.ModelViewSet):
             obj.save(update_fields=['reached_at'])
         return Response(self.get_serializer(obj).data)
 
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def mark_announced(self, request: Request, pk=None) -> Response:
+        """Mark a milestone's celebration as already played (overlay-driven).
+
+        The omnibar POSTs this right after it fires the flash/celebration
+        for a milestone. `announced` is a persistent marker so reopening
+        (or adding a second) OBS browser source never replays the
+        celebration — the omnibar only fires when `is_reached &&
+        !announced`. AllowAny because OBS browser sources are
+        unauthenticated. Idempotent.
+        """
+        obj = self.get_object()
+        if not obj.announced:
+            obj.announced = True
+            obj.save(update_fields=['announced'])
+        return Response(self.get_serializer(obj).data)
+
     @action(detail=True, methods=['post'])
     def reset(self, request: Request, pk=None) -> Response:
-        """Clear `reached_at` so the milestone is pending again.
+        """Clear `reached_at` + `announced` so the milestone is pending again.
 
         Mirrors `IncentiveViewSet.reset` — combined with the omnibar's
         self-cleaning `reachedIdsRef` set, this means the milestone's
         celebration banner will fire again the next time the running
-        donation total crosses the threshold.
+        donation total crosses the threshold. Clearing `announced` too
+        re-arms the persistent replay guard.
         """
         obj = self.get_object()
+        fields = []
         if obj.reached_at is not None:
             obj.reached_at = None
-            obj.save(update_fields=['reached_at'])
+            fields.append('reached_at')
+        if obj.announced:
+            obj.announced = False
+            fields.append('announced')
+        if fields:
+            obj.save(update_fields=fields)
         return Response(self.get_serializer(obj).data)
 
 

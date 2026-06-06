@@ -5,7 +5,7 @@ import { SectionChip } from './_shared/SectionChip';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 import type { GameObjective } from '@/lib/obsApi';
-import { selectObjectiveSection } from '@/routes/obs/objectiveSection';
+import { objectiveImageUrl, selectObjectiveSection } from '@/routes/obs/objectiveSection';
 
 /**
  * Live objectives checklist for the current game, scoped to the
@@ -62,22 +62,25 @@ function Panel({ data }: PanelProps<Data>) {
       {data.sectionLabel && <SectionChip label={data.sectionLabel} />}
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <MarqueeOnOverflow>
-          {data.rows.map(({ objective, obtained, count }) => (
+          {data.rows.map(({ objective, obtained, count }) => {
+            const img = objectiveImageUrl(objective);
+            return (
             <span
               key={objective.id}
               style={tileStyle(count != null ? count > 0 : obtained)}
               title={objective.name}
             >
-              {objective.image_url ? (
+              {img ? (
                 <span className="ob-item-icon" aria-hidden>
-                  <img src={objective.image_url} alt="" />
+                  <img src={img} alt="" />
                 </span>
               ) : (
                 <span className="ob-text-strong">{objective.name}</span>
               )}
               {count != null && <span className="ob-text-strong">×{count}</span>}
             </span>
-          ))}
+            );
+          })}
         </MarqueeOnOverflow>
       </div>
       <span className="ob-text-muted ob-items-count">

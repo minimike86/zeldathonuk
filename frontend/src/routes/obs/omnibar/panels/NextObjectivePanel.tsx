@@ -3,6 +3,7 @@ import { MarqueeOnOverflow } from './_shared/MarqueeOnOverflow';
 import { PanelRow } from './_shared/Row';
 import { registerPanel, type PanelProps } from './registry';
 import type { GameObjective } from '@/lib/obsApi';
+import { objectiveImageUrl } from '@/routes/obs/objectiveSection';
 
 /**
  * "Next up" lane panel — surfaces the very next outstanding objective
@@ -47,14 +48,15 @@ interface Data {
 
 function Panel({ data }: PanelProps<Data>) {
   const { objective, position, remaining } = data;
+  const img = objectiveImageUrl(objective);
   return (
     <PanelRow tag="NEXT OBJECTIVE" arrow>
       <GameChip title={data.gameTitle} boxArtUrl={data.boxArtUrl} />
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <MarqueeOnOverflow>
-          {objective.image_url && (
+          {img && (
             <span className="ob-item-icon" aria-hidden>
-              <img src={objective.image_url} alt="" />
+              <img src={img} alt="" />
             </span>
           )}
           <span className="ob-text-strong">{objective.name}</span>

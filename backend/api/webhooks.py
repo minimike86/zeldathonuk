@@ -13,9 +13,12 @@ publicly (HMAC headers vary per platform).
 """
 from __future__ import annotations
 
-from decimal import Decimal
+import hashlib
+import hmac
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from django.conf import settings
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -93,26 +96,63 @@ def justgiving_webhook(request: Request) -> Response:
     return Response({'id': donation.id, 'status': 'ok'}, status=201)
 
 
+def _tiltify_signature_ok(request: Request) -> bool:
+    """Verify a Tiltify webhook's HMAC-SHA256 signature.
+
+    Tiltify signs the `{X-Tiltify-Timestamp}.{raw_body}` string with the
+    webhook's signing secret and sends the base64 digest in
+    `X-Tiltify-Signature`. With no secret configured we don't verify (dev /
+    not-yet-wired) and accept. Uses the raw request body so re-serialisation
+    can't change the signed bytes.
+    """
+    secret = (settings.TILTIFY_WEBHOOK_SECRET or '').strip()
+    if not secret:
+        return True
+    import base64
+
+    signature = request.META.get('HTTP_X_TILTIFY_SIGNATURE', '')
+    timestamp = request.META.get('HTTP_X_TILTIFY_TIMESTAMP', '')
+    if not signature or not timestamp:
+        return False
+    signed = f'{timestamp}.'.encode() + request.body
+    digest = hmac.new(secret.encode(), signed, hashlib.sha256).digest()
+    expected = base64.b64encode(digest).decode()
+    return hmac.compare_digest(expected, signature)
+
+
+def _decimal(value, default: str = '0') -> Decimal:
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal(default)
+
+
 # ──────────────────────────────────────────────────────────────────────────────
-# Tiltify webhook — campaign:donation.created
+# Tiltify webhook — v5 donation event (envelope: {meta, data})
 # https://developers.tiltify.com/webhooks-events
 # ──────────────────────────────────────────────────────────────────────────────
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def tiltify_webhook(request: Request) -> Response:
+    if not _tiltify_signature_ok(request):
+        return Response({'error': 'invalid signature'}, status=401)
     payload = request.data or {}
     data = payload.get('data', payload)
     external_id = str(data.get('id') or '')
     if not external_id:
         return Response({'error': 'id required'}, status=400)
+    amount = data.get('amount')
+    if isinstance(amount, dict):
+        value = amount.get('value', '0')
+        currency = amount.get('currency', 'GBP')
+    else:
+        value, currency = amount, 'GBP'
     donation = _ingest(
         platform=models.DonationPlatform.TILTIFY,
         external_id=external_id,
         donor_name=data.get('donor_name', 'Anonymous'),
-        amount=Decimal(str(data.get('amount', {}).get('value', data.get('amount', '0')))),
-        currency=data.get('amount', {}).get('currency', 'GBP')
-        if isinstance(data.get('amount'), dict)
-        else 'GBP',
+        amount=_decimal(value),
+        currency=currency or 'GBP',
         message=data.get('donor_comment', '') or data.get('comment', '') or '',
     )
     if donation is None:

@@ -1,0 +1,32 @@
+[run]
+source = api
+branch = False
+omit =
+    api/tests/*
+    api/migrations/*
+    api/apps.py
+    api/__init__.py
+    api/admin.py
+    # Interactive / operational CLI tooling — bootstrap + scrapers + cache warmers.
+    # Thin argparse wrappers around module functions that ARE unit-tested; the
+    # prompts/loops aren't meaningful to unit-test.
+    api/management/commands/twitch_login.py
+    api/management/commands/twitch_eventsub.py
+    api/management/commands/scrape_ocremix.py
+    api/management/commands/prewarm_audio_cache.py
+    # DEBUG-only dev scene editor (rewrites frontend files); not a runtime path.
+    api/dev_scenes.py
+    # Long-lived SSE generator (streaming loop) — exercised by integration, not units.
+    api/sse.py
+
+[report]
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    \.\.\.

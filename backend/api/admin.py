@@ -438,17 +438,86 @@ class TwitchCharityCampaignAdmin(ModelAdmin):
         return False
 
 
-@admin.register(models.TwitchCharityChannel)
-class TwitchCharityChannelAdmin(ModelAdmin):
-    """Additional Twitch channels whose charity donations we ingest. Tokens are
-    minted via `manage.py twitch_login --channel <login>`; toggle `is_active` to
-    stop polling/registering a channel without deleting its token."""
+@admin.register(models.TwitchChannelConnection)
+class TwitchChannelConnectionAdmin(ModelAdmin):
+    """Durable per-channel OAuth connections (charity / chat / redemptions).
+    Acquired via the in-app device-code connect flow or `manage.py twitch_login
+    --channel <login>`; toggle `is_active` to stop using a channel without
+    deleting its token."""
     list_display = ['login', 'display_name', 'broadcaster_id', 'is_active',
                     'expires_at', 'updated_at']
     list_filter = ['is_active']
     list_editable = ['is_active']
     search_fields = ['login', 'display_name', 'broadcaster_id']
     readonly_fields = ['expires_at', 'scopes', 'created_at', 'updated_at']
+
+
+@admin.register(models.EventTwitchChannel)
+class EventTwitchChannelAdmin(ModelAdmin):
+    """Twitch channels attached to an event — each drives live status; those
+    with track_charity + a connection are charity sources."""
+    list_display = ['event', 'login', 'is_primary', 'track_charity',
+                    'connection', 'order', 'is_active']
+    list_filter = ['is_active', 'track_charity', 'is_primary']
+    search_fields = ['login', 'event__name']
+
+
+@admin.register(models.ChatAnnouncement)
+class ChatAnnouncementAdmin(ModelAdmin):
+    """Per-event Twitch chat announcement config (enable + template per
+    trigger)."""
+    list_display = ['event', 'trigger', 'enabled', 'updated_at']
+    list_filter = ['enabled', 'trigger']
+    list_editable = ['enabled']
+    search_fields = ['event__name', 'template']
+
+
+class RewardActionInline(admin.TabularInline):
+    model = models.RewardAction
+    extra = 0
+
+
+@admin.register(models.RewardMapping)
+class RewardMappingAdmin(ModelAdmin):
+    list_display = ['reward_title', 'event', 'reward_id', 'enabled']
+    list_filter = ['enabled']
+    search_fields = ['reward_title', 'reward_id', 'event__name']
+    inlines = [RewardActionInline]
+
+
+@admin.register(models.ScheduledJob)
+class ScheduledJobAdmin(ModelAdmin):
+    list_display = ['key', 'label', 'enabled', 'interval_seconds',
+                    'last_run_at', 'last_status']
+    list_filter = ['enabled', 'last_status']
+    list_editable = ['enabled']
+    readonly_fields = ['last_run_at', 'last_status', 'last_output', 'updated_at']
+
+
+@admin.register(models.ShoutoutConfig)
+class ShoutoutConfigAdmin(ModelAdmin):
+    list_display = ['event', 'enabled', 'shout_donations', 'shout_raids',
+                    'min_donation_amount', 'only_when_live']
+    list_filter = ['enabled']
+
+
+@admin.register(models.ShoutoutRequest)
+class ShoutoutRequestAdmin(ModelAdmin):
+    list_display = ['target_login', 'event', 'reason', 'status',
+                    'requested_at', 'sent_at']
+    list_filter = ['status', 'reason']
+    search_fields = ['target_login', 'event__name']
+    readonly_fields = ['requested_at', 'sent_at', 'detail']
+
+
+@admin.register(models.TwitchPrediction)
+class TwitchPredictionAdmin(ModelAdmin):
+    """Twitch Predictions opened from the control panel (read-only mirror)."""
+    list_display = ['title', 'event', 'status', 'created_at']
+    list_filter = ['status']
+    search_fields = ['title', 'event__name']
+    readonly_fields = ['prediction_id', 'broadcaster_id', 'outcomes',
+                       'winning_outcome_id', 'created_at', 'updated_at']
 
 
 # ── Omnibar v2 ─────────────────────────────────────────────────────────────

@@ -177,7 +177,73 @@ def eventsub_webhook(request: Request) -> Response:
         payload=payload,
         occurred_at=occurred_at,
     )
+    # Best-effort Twitch chat announcement for the configured trigger
+    # (sub/follow/raid/cheer/redemption) on the active event.
+    _announce_external_chat(sub_type, event)
+    # Queue a shoutout for raiders (cooldown-managed; see api/shoutouts.py).
+    if sub_type == 'channel.raid':
+        from . import shoutouts
+        from .webhooks import _active_event
+        active = _active_event()
+        raider = (event.get('from_broadcaster_user_login') or '').strip().lower()
+        if active and raider:
+            shoutouts.enqueue(
+                active, raider, reason='raid',
+                display=event.get('from_broadcaster_user_name') or '',
+                note=f"raided with {event.get('viewers', '')}",
+            )
+    # Run any per-reward actions for a channel-point redemption.
+    if sub_type == 'channel.channel_points_custom_reward_redemption.add':
+        from . import rewards
+        from .webhooks import _active_event
+        active = _active_event()
+        if active:
+            rewards.handle_redemption(
+                active, event.get('reward') or {},
+                user_login=event.get('user_login') or '',
+                user_name=event.get('user_name') or '',
+                user_input=event.get('user_input') or '',
+            )
     return Response({'ok': True}, status=status.HTTP_202_ACCEPTED)
+
+
+# Maps a Twitch subscription.type to a (chat trigger, context-builder) pair so
+# the configured chat announcement fires from the EventSub notification path.
+_EXTERNAL_CHAT = {
+    'channel.subscribe': ('sub', lambda e: {
+        'user': e.get('user_name'), 'tier': e.get('tier'),
+    }),
+    'channel.subscription.message': ('sub', lambda e: {
+        'user': e.get('user_name'), 'tier': e.get('tier'),
+    }),
+    'channel.subscription.gift': ('sub', lambda e: {
+        'user': e.get('user_name'), 'tier': e.get('tier'),
+    }),
+    'channel.follow': ('follow', lambda e: {'user': e.get('user_name')}),
+    'channel.raid': ('raid', lambda e: {
+        'user': e.get('from_broadcaster_user_name'), 'viewers': e.get('viewers'),
+    }),
+    'channel.cheer': ('cheer', lambda e: {
+        'user': e.get('user_name'), 'bits': e.get('bits'),
+    }),
+    'channel.channel_points_custom_reward_redemption.add': ('redemption', lambda e: {
+        'user': e.get('user_name'), 'reward': (e.get('reward') or {}).get('title'),
+    }),
+}
+
+
+def _announce_external_chat(sub_type: str, event: dict) -> None:
+    """Fire the configured chat announcement for an EventSub event, if any.
+    Best-effort — chat.announce never raises."""
+    mapping = _EXTERNAL_CHAT.get(sub_type)
+    if not mapping:
+        return
+    trigger, build_ctx = mapping
+    from . import chat
+    from .webhooks import _active_event
+    active = _active_event()
+    if active:
+        chat.announce(active, trigger, build_ctx(event))
 
 
 def _charity_currency() -> str:
@@ -263,6 +329,15 @@ def _ingest_charity_donation(event: dict, occurred_at) -> bool:
                 'source_channel': source_channel,
             },
         )
+        # Queue a shoutout for the donor's Twitch channel (if they're a Twitch
+        # user). Cooldown-managed + best-effort; see api/shoutouts.py.
+        donor_login = (event.get('user_login') or '').strip().lower()
+        if donor_login:
+            from . import shoutouts
+            shoutouts.enqueue(
+                donation.event, donor_login, reason='donation', amount=amount,
+                display=donor, note=f'donated {currency}{amount}',
+            )
     return True
 
 
@@ -309,6 +384,7 @@ def _normalise_kind(twitch_type: str) -> str:
         'channel.subscription.message': 'twitch-resub',
         'channel.raid': 'twitch-raid',
         'channel.cheer': 'twitch-bits',
+        'channel.channel_points_custom_reward_redemption.add': 'twitch-redemption',
     }.get(twitch_type, f'twitch:{twitch_type}')
 
 
