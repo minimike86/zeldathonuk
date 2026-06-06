@@ -1,0 +1,185 @@
+<nav class="navbar navbar-expand-lg">
+
+  <a class="navbar-brand ms-3 me-4" routerLink="/" routerLinkActive="active-link">
+    <img src="../../../assets/img/1gxaef91xpst0u.png" class="position-absolute"
+         style="max-width: 32px; max-height: 32px; top: 8px; left: 115px; filter: opacity(0.75); transform: rotate(10deg);"
+         title="GB Flag" alt="GB Flag">
+    <img src="../../../assets/img/Zeldathon-Logo-WW-white.svg" style="min-width: 120px; max-height: 1.5em; filter: opacity(0.95);" title="ZeldathonUK" alt="ZeldathonUK">
+  </a>
+
+  <button class="navbar-toggler border border-dark" type="button" data-toggle="collapse" data-target="#navbarToggleExternalContent"
+          aria-controls="navbarToggleExternalContent" (click)="isCollapsed = !isCollapsed"
+          aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon text-white">
+      <fa-icon [icon]="faBars" [styles]="{'margin-top': '0.25em'}"></fa-icon>
+    </span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarToggleExternalContent" [ngbCollapse]="isCollapsed">
+    <div class="d-flex flex-fill justify-content-around">
+
+      <div class="d-flex flex-shrink-0 justify-content-center mx-2">
+        <ul class="navbar-nav">
+          <li class="nav-item nav-item-bloodmoon">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/" routerLinkActive="active-link">
+              <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faHeart" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Home
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-bloodmoon">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/schedule" routerLinkActive="active-link">
+              <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faListOl" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Schedule
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-bloodmoon">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/donations" routerLinkActive="active-link">
+              <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faPoundSign" transform="shrink-7" [styles]="{'margin-top': '-0.45em'}"></fa-icon>
+                  <fa-icon [icon]="faHandHolding" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Donations
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-bloodmoon">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/incentives" routerLinkActive="active-link">
+              <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faCarrot" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Incentives
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-bloodmoon">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/charity" routerLinkActive="active-link">
+              <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faGamepad" transform="shrink-4" [styles]="{'margin-top': '-0.05em'}"></fa-icon>
+                  <fa-icon [icon]="faAccessibleIcon" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                Charity
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-bloodmoon">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/history" routerLinkActive="active-link">
+              <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faHistory" transform="shrink-4" [styles]="{'margin-top': '-0.25em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                History
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-bloodmoon">
+            <a class="nav-link nav-link-dark pb-0" routerLink="/about" routerLinkActive="active-link">
+              <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+                <fa-layers>
+                  <fa-icon [icon]="faCaretUp" transform="shrink-4" [styles]="{'margin-top': '-0.45em'}"></fa-icon>
+                  <fa-icon [icon]="faCaretUp" transform="shrink-4" [styles]="{'margin-top': '-0.15em', 'margin-left': '0.45em'}"></fa-icon>
+                  <fa-icon [icon]="faCaretUp" transform="shrink-4" [styles]="{'margin-top': '-0.15em', 'margin-right': '0.42em'}"></fa-icon>
+                </fa-layers>
+              </div>
+              <div class="position-relative" style="margin-top: -1.1em;">
+                About
+              </div>
+            </a>
+          </li>
+          <li class="nav-item nav-item-bloodmoon" *ngIf="this.user">
+            <div class="nav-icon-bloodmoon text-center" style="font-size: 2em;">
+              <fa-layers>
+                <fa-icon [icon]="faChromecast" transform="shrink-4" [styles]="{'margin-top': '0.10em'}"></fa-icon>
+              </fa-layers>
+            </div>
+            <div class="position-relative" style="margin-top: -1.1em;">
+              <a class="nav-link nav-link-dark pb-0" routerLink="/obs" routerLinkActive="active-link">OBS</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="d-flex flex-grow-1 justify-content-center">
+        <div class="d-flex align-items-center me-3">
+      <!--
+          <app-combined-total></app-combined-total>
+      -->
+        </div>
+      </div>
+
+      <div class="d-flex flex-shrink-0 align-items-center">
+        <ul class="navbar-nav">
+          <li class="nav-item d-flex ms-2" [ngClass]="!isCollapsed ? 'p-1' : ''">
+            <div class="align-self-center">
+              <button class="btn btn-sm btn-bloodmoon" (click)="donateFacebook();" style="font-family: 'Bungee', cursive;">
+                <div class="d-flex" title="Donate via Facebook!">
+                  <div class="d-flex align-self-center" style="width: .9em;">
+                    <fa-icon [icon]="faFacebook" style="position: relative; top: 2px;"></fa-icon>
+                  </div>
+                  <span style="position: relative; top: 2px;">&nbsp;Donate</span>
+                </div>
+              </button>
+            </div>
+          </li>
+          <li class="nav-item d-flex ms-2" [ngClass]="!isCollapsed ? 'p-1' : ''">
+            <div class="align-self-center">
+              <button class="btn btn-sm btn-bloodmoon" (click)="donateTiltify();" style="font-family: 'Bungee', cursive;">
+                <div class="d-flex" title="Donate via Tiltify!">
+                  <div class="d-flex align-self-center" style="width: .9em;">
+                    <img style="max-width: .9em; filter: brightness(10);"
+                         src="../../../assets/img/Tiltify_Logo.png" alt="Tiltify logo">
+                  </div>
+                  <span style="position: relative; top: 1px;">&nbsp;Donate</span>
+                </div>
+              </button>
+            </div>
+          </li>
+          <li class="nav-item d-flex ms-2" [ngClass]="!isCollapsed ? 'p-1' : ''">
+            <div class="align-self-center">
+              <button class="btn btn-sm btn-bloodmoon" (click)="confirm($event);" style="font-family: 'Bungee', cursive;">
+                <div class="d-flex" title="Donate via JustGiving!">
+                  <div class="d-flex align-self-center" style="width: .9em;">
+                    <img style="max-width: .9em; filter: brightness(10);"
+                         src="../../../assets/img/justgiving-g.svg" alt="JustGiving logo">
+                  </div>
+                  <span style="position: relative; top: 1px;">&nbsp;Donate</span>
+                </div>
+              </button>
+            </div>
+          </li>
+          <li class="nav-item d-flex mx-2" [ngClass]="!isCollapsed ? 'p-1' : ''" *ngIf="this.user">
+            <div class="align-self-center">
+              <button class="btn btn-sm btn-bloodmoon" title="Logout" (click)="logout();">
+                <fa-icon [icon]="faSignOutAlt"></fa-icon>
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</nav>

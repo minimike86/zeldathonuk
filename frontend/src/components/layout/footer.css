@@ -1,0 +1,22 @@
+/* Ported from legacy/src/app/components/footer/footer.component.css */
+
+.footer {
+  height: 20px;
+  background:
+    linear-gradient(180deg, var(--theme-bg-to, #310c17), hsla(0, 0%, 100%, 0)),
+    var(--theme-bg-from, #2b1b25) !important;
+  border-top: var(--theme-divider-thickness, 1px) solid
+    var(--theme-primary, #bb225e);
+}
+
+.footer-text {
+  font-weight: 500;
+  color: var(--theme-text, white) !important;
+  font-size: x-small;
+  text-decoration: none;
+}
+
+.footer-text:hover {
+  text-decoration: underline;
+  color: var(--theme-primary-bright, #ffc2e0) !important;
+}

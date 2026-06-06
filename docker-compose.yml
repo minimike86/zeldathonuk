@@ -1,0 +1,168 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: zeldathon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-zeldathon}
+      POSTGRES_USER: ${POSTGRES_USER:-zeldathon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeldathon}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeldathon} -d ${POSTGRES_DB:-zeldathon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: zeldathon-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-zeldathon}:${POSTGRES_PASSWORD:-zeldathon}@postgres:5432/${POSTGRES_DB:-zeldathon}
+      DJANGO_DEBUG: "1"
+      # Public host(s) included so Cloudflare-tunnelled requests (Twitch
+      # EventSub verification hits /api/twitch/eventsub/ with this Host) aren't
+      # rejected with a 400 DisallowedHost.
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend,zeldathon.co.uk,www.zeldathon.co.uk,api.zeldathon.co.uk"
+      # Public site is a separate origin from the API (cross-origin + CORS), so
+      # the prod www host must be allowed alongside the local dev server. Extra
+      # origins can also be added live in the Django admin (Auth & access).
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,https://www.zeldathon.co.uk,https://zeldathon.co.uk"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      # Mounted so /api/dev/scenes/unregister/ can rewrite zelda-themes.ts
+      # and delete scene .tsx files in dev. Endpoint is DEBUG-gated.
+      - ./frontend:/frontend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  # In-stack scheduler: the single ticker that drives the enabled ScheduledJob
+  # rows (donation polling, chat reminders, shoutout draining). Managed from
+  # /control/automation — no host cron needed. Shares the backend image + env.
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: zeldathon-scheduler
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-zeldathon}:${POSTGRES_PASSWORD:-zeldathon}@postgres:5432/${POSTGRES_DB:-zeldathon}
+      DJANGO_DEBUG: "1"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    command: >
+      sh -c "python manage.py run_scheduled_jobs --loop --interval 30"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: zeldathon-frontend
+    restart: unless-stopped
+    env_file:
+      - ./frontend/.env
+    environment:
+      VITE_API_URL: http://localhost:8000
+      # This one dev server is reached both locally (localhost:5173 → localhost:8000)
+      # and publicly via the Cloudflare tunnel (www.zeldathon.co.uk). When served
+      # publicly, resolveApiUrl() (lib/env.ts) swaps the loopback VITE_API_URL for
+      # this public API origin so the public site hits the right backend.
+      VITE_PUBLIC_API_URL: https://api.zeldathon.co.uk
+      # NOTE: VITE_CLERK_PUBLISHABLE_KEY is intentionally NOT set here — put it in
+      # frontend/.env (loaded via env_file above). A value in this `environment:`
+      # block is applied to process.env last and would override the .env file
+      # (Vite reads process.env after .env), so an empty default would win.
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev -- --host 0.0.0.0
+
+  # Production-built SPA served by nginx (static, gzipped, hashed assets) —
+  # what the public www.zeldathon.co.uk tunnel should point at instead of the
+  # Vite dev server (which is slow under real traffic). The `frontend` service
+  # above stays for local HMR development. Rebuild after frontend changes:
+  #   docker compose up -d --build web
+  # Point the Cloudflare tunnel's www hostname at http://web:80.
+  web:
+    profiles: ["web"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        # Baked into the bundle at build time — the public API origin.
+        VITE_API_URL: https://api.zeldathon.co.uk
+        # Clerk publishable key for the prod instance (pk_live_…). Inlined at
+        # build time; set it in your shell or the root .env before building web.
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+    container_name: zeldathon-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: zeldathon-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARED_TOKEN}
+    # IMPORTANT (prod): in the Cloudflare tunnel ingress, point the `www`
+    # hostname at http://web:80 (the prod nginx build) and `api` at
+    # http://backend:8000. If `www` points at the Vite dev server (frontend:5173)
+    # the dev bundle bakes VITE_API_URL=localhost and the public site falls back
+    # to same-origin /api/ → 404s. Bring the prod SPA up with the `web` profile:
+    #   docker compose --profile web up -d --build web
+    depends_on:
+      - backend
+
+  # Legacy Angular 13 app — kept runnable for reference. Opt in with the
+  # `legacy` profile so `docker compose up` doesn't start it by default:
+  #   docker compose --profile legacy up legacy
+  legacy:
+    profiles: ["legacy"]
+    build:
+      context: ./legacy
+      dockerfile: Dockerfile
+    container_name: zeldathon-legacy
+    restart: unless-stopped
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./legacy:/app
+      - legacy-node-modules:/app/node_modules
+
+volumes:
+  postgres-data:
+  frontend-node-modules:
+  legacy-node-modules:

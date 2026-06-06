@@ -1,0 +1,19 @@
+<ng-template [ngIf]="isApiCall" [ngIfElse]="notApiCall">
+  <div class="d-flex flex-column flex-grow-1">
+    <div class="overflow-auto router-outlet-obs h-100">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #notApiCall>
+  <div class="d-flex flex-column flex-fill zeldathon-bg">
+    <div class="header">
+      <app-navbar></app-navbar>
+    </div>
+    <div class="overflow-auto router-outlet">
+      <router-outlet></router-outlet>
+    </div>
+    <app-footer></app-footer>
+  </div>
+</ng-template>

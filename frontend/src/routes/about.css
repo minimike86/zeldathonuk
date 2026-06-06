@@ -1,0 +1,433 @@
+/* Ported from legacy/src/app/components/about/about.component.css */
+
+.faq-row {
+  padding-bottom: 2.5em;
+  border-width: 0 0 var(--theme-divider-thickness, 2px);
+  border-style: solid;
+  border-image-slice: 1;
+  border-image-source: linear-gradient(
+    90deg,
+    var(--theme-secondary, #731c37),
+    var(--theme-primary, #b92753)
+  );
+}
+
+/* FAQ question — theme heading font with a short gradient accent rule,
+ * matching the section headings on the Donations / Charity pages. */
+.faq-question {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+  color: var(--theme-text, #fff);
+}
+
+.faq-question::after {
+  content: '';
+  display: block;
+  margin-top: 0.5rem;
+  width: 2.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary, #e71347),
+    var(--theme-secondary, #731c37)
+  );
+}
+
+.faq-answer {
+  line-height: 1.6;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
+}
+
+.faq-answer strong {
+  color: var(--theme-text, #fff);
+}
+
+/* Plain bullet lists (e.g. "ways to help") keep markers but get breathing
+ * room; link lists drop the markers and wrap as pill chips. */
+.faq-answer ul {
+  margin-bottom: 0;
+}
+
+.faq-link-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ── Sister marathons section ──────────────────────────────────────
+ *
+ * Replaces the old `.faq-marathon-list` (label + small pill link)
+ * with a card grid: each tile is a clickable link with a country
+ * flag, marathon name, country, host label, and a corner arrow.
+ *
+ * Theme-aware:
+ *   • Eyebrow heading + hover border use --theme-primary, so the
+ *     register changes per theme (bloodmoon red, SNES blue, Wind
+ *     Waker coral, etc.).
+ *   • Card body text uses --theme-text so dark themes get white,
+ *     light themes get dark.
+ *   • Background colour-mix keeps cards visibly distinct from the
+ *     surrounding bg-bloodmoon FAQ wash on every theme.
+ */
+.sister-marathons {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--theme-text, #fff) 6%, transparent);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-text, #fff) 14%,
+    transparent
+  );
+}
+
+.sister-marathons-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.sister-marathons-eyebrow {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  color: var(--theme-primary-bright, var(--theme-primary, #e71347));
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 18%,
+    transparent
+  );
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 55%,
+    transparent
+  );
+}
+
+.sister-marathons-blurb {
+  margin: 0.75rem auto 0;
+  max-width: 38rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+}
+
+.sister-marathons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.sister-marathon-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-decoration: none;
+  color: var(--theme-text, #fff);
+  transition: transform 0.18s ease, border-color 0.18s ease,
+    background 0.18s ease, box-shadow 0.18s ease;
+  text-align: left;
+}
+
+.sister-marathon-card:hover,
+.sister-marathon-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 75%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 14%,
+    rgba(0, 0, 0, 0.32)
+  );
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  color: var(--theme-text, #fff);
+}
+
+.sister-marathon-flag {
+  font-size: 1.85rem;
+  line-height: 1;
+  /* Slight drop-shadow so flag glyphs sit cleanly against any
+   * theme background tint underneath. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  flex-shrink: 0;
+}
+
+.sister-marathon-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sister-marathon-name {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 0.95rem;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.sister-marathon-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sister-marathon-country {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.sister-marathon-sep {
+  opacity: 0.6;
+}
+
+.sister-marathon-host {
+  font-family: 'VT323', monospace;
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.sister-marathon-arrow {
+  font-size: 1.05rem;
+  line-height: 1;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.sister-marathon-card:hover .sister-marathon-arrow,
+.sister-marathon-card:focus-visible .sister-marathon-arrow {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+/* Carousel image — desaturated then re-tinted to the active theme via a
+ * sepia + hue-rotate trick. The hue-rotate amount is theme-tunable via
+ * --theme-image-hue-rotate (defaults to 0 = neutral sepia). */
+.about-carousel-img {
+  filter:
+    grayscale(100%)
+    brightness(45%)
+    sepia(60%)
+    saturate(300%)
+    hue-rotate(var(--theme-image-hue-rotate, 0deg))
+    contrast(0.85);
+}
+
+.text-bloodmoon {
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #e71347),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e7364b),
+    var(--theme-primary-bright, #da4471),
+    var(--theme-primary, #e71347)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 3em;
+  text-transform: uppercase;
+}
+
+.bg-bloodmoon {
+  background-color: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.bg-bloodmoon::before {
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary-bright, #ffc2e0),
+    var(--theme-primary, #e59fcb),
+    var(--theme-secondary, #d96da9)
+  );
+  opacity: 0.15;
+  z-index: -1;
+}
+
+/* Heading on the /about page — "About" word followed by the ZeldathonUK
+ * wordmark SVG instead of plain text. */
+.about-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.about-heading-text {
+  margin: 0;
+  /* Match the wordmark's height so the baselines line up. */
+  font-size: clamp(2rem, 4vw, 3em);
+  /* Match the /donations "Thank you to all our donors!" heading: theme
+   * heading font, solid theme text colour (not the .text-bloodmoon
+   * gradient wordmark). */
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  color: var(--theme-text, #fff);
+}
+
+.about-heading-logo {
+  display: inline-block;
+  height: clamp(2.4rem, 5.5vw, 4rem);
+  width: auto;
+}
+
+/* Year badge floating over the press-photo carousel. */
+.about-carousel-year {
+  display: inline-block;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  color: #fff;
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 55%, rgba(0, 0, 0, 0.7));
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #e71347) 70%, transparent);
+}
+
+/* Constrain the stage so the prev/next arrows hug the image edges rather
+ * than the full page width. inline-block shrinks to the centred image;
+ * the parent's `text-center` keeps it centred. */
+.about-carousel-stage {
+  display: inline-block;
+}
+
+/* Prev / next carousel controls, centred over the image.
+ *
+ * Background mixes the theme's bg-from with a dark wash so the
+ * button body is always darker than the surrounding page:
+ *   • Dark theme (bloodmoon): deep red mixed with black → very dark.
+ *   • Light theme (SNES grey): light grey mixed with 55% black →
+ *     medium-dark wash that still reads against a light page.
+ * The chevron itself stays white because the body is now reliably
+ * dark on every theme. */
+.about-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-text, #fff) 25%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--theme-bg-from, #000) 45%,
+    rgba(0, 0, 0, 0.55)
+  );
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.about-carousel-arrow:hover {
+  background: color-mix(in srgb, var(--theme-primary, #e71347) 55%, rgba(0, 0, 0, 0.6));
+  border-color: color-mix(in srgb, var(--theme-primary, #e71347) 70%, transparent);
+}
+
+.about-carousel-arrow--prev {
+  left: 0.5rem;
+}
+
+.about-carousel-arrow--next {
+  right: 0.5rem;
+}
+
+/* Carousel position dots — active dot widens and takes the theme
+ * accent. Inactive dots use the muted text colour at 45% so they
+ * stay visible against both dark (white-text) and light (dark-text)
+ * themes. The previous fixed white-translucent dots disappeared on
+ * SNES / Game Boy. */
+.about-carousel-dot {
+  width: 24px;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: color-mix(in srgb, var(--theme-text, #fff) 45%, transparent);
+  cursor: pointer;
+  transition: background 0.15s ease, width 0.15s ease;
+}
+
+.about-carousel-dot.is-active {
+  width: 36px;
+  background: var(--theme-primary, #e71347);
+}
+
+/* Pill-style links, mirroring `.charity-link` on the Charity page so the
+ * FAQ's external links read as tappable chips rather than raw underlined
+ * text. Hover border tracks the active theme's secondary accent. */
+/* Chip styling mirrors /charity's `.charity-link` verbatim so the
+ * About FAQ's marathon list reads as the same UI element. The chips
+ * float on top of the (now transparent) bg-bloodmoon wrapper so
+ * they sit against the page background — same condition as the
+ * /charity page — which gives consistent contrast on both dark and
+ * light themes without needing a per-page tint dance. */
+.charity-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.charity-link:hover {
+  color: #fff;
+  border-color: rgba(67, 154, 190, 0.85);
+  background: rgba(0, 0, 0, 0.5);
+}

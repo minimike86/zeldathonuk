@@ -1,0 +1,127 @@
+<div>
+
+  <div class="row mb-2">
+
+    <table class="bg-light">
+      <tbody>
+
+        <tr class="table-played">
+          <td class="align-middle small">
+            <div> Sat 20 </div>
+            <div class="text-muted"> Feb 2021 </div>
+          </td>
+          <td class="align-middle small">
+            <div> 09:00 </div>
+            <div class="text-muted"> AM </div>
+          </td>
+          <td class="align-middle text-center">
+            <div class="d-none d-md-block">
+              <div class="badge rounded-pill bg-secondary p-2">{{ selectedPlatform }}</div>
+            </div>
+          </td>
+          <td class="align-middle">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex flex-column me-2">
+              <img style="max-height: 50px; max-width: 50px;" [src]="zeldaGame.gameDetail.boxArt"
+                   [alt]="zeldaGame.gameDetail.title + 'Cover Art'" [title]="zeldaGame.gameDetail.title + 'Cover Art'">
+            </div>
+            <div class="text-center w-100">
+              <div class="mb-1 small">
+                {{ zeldaGame.gameDetail.title }} ({{ zeldaGame.gameDetail.detail.releases.EU | date:'yyyy' }}) <!-- <span class="badge bg-warning m-2"> COMPLETED </span> -->
+              </div>
+              <div class="d-flex justify-content-center">
+                <ng-container *ngFor="let badge of (selectedBadges$ | async); index as i;">
+                  <div (click)="deleteBadge(i)">
+                    <span class="badge m-2" [ngClass]="badge.type" [title]="badge.tooltip">
+                      <a target="_blank" class="text-white" *ngIf="badge.url.length >= 1"
+                         [href]="badge.url">
+                        {{ badge.name }}
+                      </a>
+                      <ng-container *ngIf="badge.url.length === 0">
+                        {{ badge.name }}
+                      </ng-container>
+                    </span>
+                  </div>
+                </ng-container>
+                <div>
+                    <span class="badge m-2 bg-info">
+                      <a target="_blank" class="text-white"
+                         [href]="'https://howlongtobeat.com/game?id=' + zeldaGame.gameDetail.id">
+                        {{ getTimeToBeatMainStory(zeldaGame.gameDetail) }}
+                      </a>
+                    </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+          <td class="align-middle text-center">
+            <ng-container *ngFor="let runner of (selectedRunners$ | async); index as i;">
+              <div (click)="deleteRunner(i)">
+                <ng-container *ngIf="runner.streamer; else showNonStreamerBadge;">
+                  <a target="_blank" [href]="runner.channelUrl">
+                    <span class="badge rounded-pill bg-secondary p-2">{{ runner.name }}</span>
+                  </a>
+                </ng-container>
+                <ng-template #showNonStreamerBadge>
+                  <span class="badge rounded-pill bg-secondary p-2">{{ runner.name }}</span>
+                </ng-template>
+              </div>
+            </ng-container>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+
+  </div>
+
+  <div class="mb-2">
+    <h6>What badges to add?</h6>
+    <div class="d-flex justify-content-start">
+      <div class="flex-fill">
+        <input class="w-100" type="text" pInputText placeholder="name" [(ngModel)]="tempBadge.name">
+      </div>
+      <div class="flex-fill">
+        <p-dropdown [options]="badgeTypes" [(ngModel)]="tempBadge.type"
+                    optionLabel="name" optionValue="value" placeholder="Select type"></p-dropdown>
+      </div>
+      <div class="flex-fill">
+        <input class="w-100" type="text" pInputText placeholder="tooltip" [(ngModel)]="tempBadge.tooltip">
+      </div>
+    </div>
+    <div class="d-flex justify-content-evenly">
+      <div class="flex-fill">
+        <input class="w-100" type="text" pInputText placeholder="url" [(ngModel)]="tempBadge.url">
+      </div>
+      <button class="p-button-secondary" pButton type="button" label="Add Badge" icon="pi pi-plus"
+              (click)="addBadge()"></button>
+    </div>
+  </div>
+
+  <div class="mb-2">
+    <h6>Who's playing?</h6>
+    <div class="p-grid">
+      <div class="p-col-12">
+        <div class="p-inputgroup">
+          <input type="text" pInputText placeholder="name" [(ngModel)]="tempRunner.name">
+          <input type="text" pInputText placeholder="channelUrl" [(ngModel)]="tempRunner.channelUrl">
+          <button class="p-button-secondary" pButton type="button" label="Add Runner" icon="pi pi-plus"
+                  (click)="addRunner()"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-2">
+    <h6>Which platform?</h6>
+    <p-selectButton [options]="zeldaGame.gameDetail.detail.platforms" [(ngModel)]="selectedPlatform"></p-selectButton>
+  </div>
+
+  <div class="d-flex justify-content-end">
+    <button pButton type="button" label="Add to Schedule" icon="pi pi-check" class="p-button"
+            [disabled]=""
+            (click)="scheduleGame()"></button>
+  </div>
+
+</div>

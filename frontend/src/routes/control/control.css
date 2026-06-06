@@ -1,0 +1,1430 @@
+/* /control shell — the operator surface.
+ *
+ * Two design goals here, working together:
+ *   1. Honour the active site theme so a SNES / Game Boy / Wind Waker
+ *      operator session reads as that theme's colour world, not the
+ *      hardcoded bloodmoon palette this used to ship.
+ *   2. Make it visually obvious that this IS the admin / operator
+ *      area — a privileged access surface, not the public site.
+ *      That register stays constant across themes via the amber/black
+ *      hazard stripe across the top of the header + the "Operator"
+ *      pill next to the page title.
+ *
+ * The background colour-mixes each theme bg stop with ~28% black so
+ * the operator panel always reads a touch darker / heavier than the
+ * matching public theme — same palette, lower brightness, "back of
+ * house" feel.
+ */
+.control-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: var(--theme-text, #fff);
+  background: linear-gradient(
+    var(--theme-bg-angle, 180deg),
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 72%, #000),
+    color-mix(in srgb, var(--theme-bg-to, #1a0a10) 80%, #000)
+  );
+}
+
+.control-header {
+  /* Layered background, top → bottom:
+   *   1. Hazard stripe (amber + near-black) painted as a 4px-tall
+   *      band along the top edge — the privileged-access cue. Sits
+   *      above the theme tint so it survives any palette swap.
+   *   2. Theme navbar tint over the top stop of the page bg, fading
+   *      into transparency — matches the public navbar treatment so
+   *      operators recognise the chrome.
+   *   3. Theme bg-from at the bottom of the layer stack so the band
+   *      reads as a single piece of chrome instead of letting the
+   *      page bg show through. */
+  background:
+    repeating-linear-gradient(
+      45deg,
+      #d4a017 0 10px,
+      #1a1a1a 10px 20px
+    ) top / 100% 4px no-repeat,
+    linear-gradient(180deg, var(--theme-navbar-tint, #2b1b25), hsla(0, 0%, 100%, 0)),
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 80%, #000);
+  border-bottom: 1px solid var(--theme-primary, #bb225e);
+  /* Extra top padding so the page title doesn't kiss the hazard
+   * stripe; standard bottom padding for the nav row beneath. */
+  padding: 1.25rem 1.5rem 1rem;
+}
+
+/* Title + Operator pill share a flex row so the pill anchors next
+ * to "Control Panel" rather than wrapping to its own line. */
+.control-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.5rem;
+}
+
+.control-header h1 {
+  /* Flat white to match the card h2 rule — no shimmery gradient on
+   * the page title. The Operator pill carries the colour accent. */
+  color: #fff;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  margin: 0;
+  font-size: 2rem;
+}
+
+/* "Operator" hazard pill — same amber as the hazard stripe so the
+ * two read as one warning system. Constant across themes; this is
+ * privileged-access signage, not theme chrome. */
+.control-operator-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem 0.15rem;
+  border-radius: 999px;
+  background: rgba(212, 160, 23, 0.18);
+  color: #f0c64a;
+  border: 1px solid rgba(212, 160, 23, 0.55);
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The pill's leading dot — pulses gently so the warning register
+ * reads "live system" rather than passive label. */
+.control-operator-pill::before {
+  content: '';
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #f0c64a;
+  box-shadow: 0 0 6px rgba(240, 198, 74, 0.85);
+  animation: control-operator-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes control-operator-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control-operator-pill::before {
+    animation: none;
+  }
+}
+
+.control-header nav {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.control-nav-link {
+  padding: 0.4rem 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* Leading icon on each nav link — fixedWidth keeps the labels aligned. */
+.control-nav-icon {
+  margin-right: 0.55rem;
+  opacity: 0.85;
+}
+
+.control-nav-link:hover {
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #b92753) 30%,
+    transparent
+  );
+  color: #fff;
+}
+
+.control-nav-link.active {
+  /* Active section painted in the theme's primary gradient so
+   * operators land on the same colour world as the public site —
+   * just shifted darker (the .control-shell background tint). */
+  background: linear-gradient(
+    45deg,
+    var(--theme-primary, #b92753),
+    var(--theme-secondary, #731c37)
+  );
+  color: var(--theme-button-text, #fff);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-primary-bright, rgba(255, 255, 255, 0.6)) 60%,
+    transparent
+  );
+}
+
+/* Hamburger toggle for the collapsed mobile nav. Hidden on wide screens;
+ * the @media block below reveals it and collapses the link row. Styled like
+ * a nav link so it reads as part of the same chrome across themes. */
+.control-nav-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #fff;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 45%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+.control-nav-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.control-nav-toggle-caret {
+  transition: transform 0.15s ease;
+}
+.control-nav-toggle[aria-expanded='true'] .control-nav-toggle-caret {
+  transform: rotate(180deg);
+}
+
+.control-main {
+  padding: 1.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ── Narrow widths: collapse the 17-link nav behind the hamburger ──────────
+ * Above this the full wrapping link row (above) is unchanged. At/below 768px
+ * the header stays one row (title + Operator pill + toggle) and the links
+ * become a full-width dropdown revealed by the toggle. */
+@media (max-width: 768px) {
+  .control-header {
+    padding: 1rem 1rem 0.75rem;
+  }
+  .control-nav-toggle {
+    display: flex;
+  }
+  /* Hide the link row by default; reveal it (stacked) when open. */
+  .control-header nav.control-nav {
+    display: none;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+  .control-header nav.control-nav.is-open {
+    display: flex;
+    /* Cap the stacked link list to the space under the title/toggle and
+     * let it scroll on its own. Without this the ~17 links run off the
+     * bottom of the viewport inside the fixed-height shell with no way to
+     * reach the lower entries (Theme, etc.). dvh tracks the mobile URL
+     * bar; the vh line is the fallback for older engines. */
+    max-height: calc(100vh - 8rem);
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .control-nav-link {
+    display: block;
+    padding: 0.55rem 0.9rem;
+  }
+}
+
+.control-card {
+  /* Theme-driven surface — defaults preserve the previous bloodmoon
+   * card look on dark themes (semi-transparent black) while bright
+   * themes (SNES, Game Boy) get to override with a solid light fill
+   * via theme.surface_color. This rule applies outside the operator
+   * area (e.g. embedded previews on the public site). Inside
+   * .control-shell the operator scope overrides this — see below. */
+  background: var(--theme-surface, linear-gradient(135deg, rgba(43, 27, 37, 0.6), rgba(76, 19, 36, 0.6)));
+  border: 1px solid var(--theme-surface-border, var(--theme-line, rgba(185, 39, 83, 0.5)));
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--theme-surface-text, var(--theme-text, #fff));
+}
+
+/* Vertical stack of operator cards. A single-column grid whose track is
+ * capped with `minmax(0, 1fr)` — the `0` minimum is what stops a card
+ * with wide intrinsic content (a fixed-width table, a long unbreakable
+ * URL) from forcing the column, and therefore every sibling card, wider
+ * than the viewport. A bare `display: grid` defaults the track to `auto`,
+ * which sizes to the widest card's min-content and blew the /control
+ * pages past the browser edge on narrow screens. Pairs with the
+ * `min-width: 0` on `.control-card` above so the cards actually shrink
+ * into the capped track. */
+.control-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+/* ── Operator-area card override ───────────────────────────────────
+ *
+ * The control panel intentionally diverges from the public theme
+ * here: cards always paint in the THEME'S DEEP REGISTER (mix the
+ * bg-from / bg-to stops with ~55-65% black) regardless of whether
+ * the theme has opted into a bright surface for the public site.
+ *
+ * Why force this:
+ *
+ *   1. Accessibility — bright themes (SNES, Game Boy) ship light
+ *      surface_color values for their public cards, but the operator
+ *      panel has 300+ Bootstrap `text-white*` / hardcoded white-on-
+ *      dark assumptions baked across 17 control files. A light
+ *      operator card breaks all of them at once. Holding the surface
+ *      dark fixes the entire control-panel contrast register without
+ *      refactoring every TSX.
+ *
+ *   2. Privileged-access cue — the operator chrome should feel
+ *      heavier / darker than the public view it's branding. Dark
+ *      theme-tinted cards under the amber hazard stripe sell that
+ *      "back of house" signal regardless of which theme is active.
+ *
+ * The theme palette still bleeds through via the bg-from gradient
+ * stops and the primary-tinted border, so SNES still reads as SNES
+ * (deep blue/purple chrome), Game Boy still reads as Game Boy etc.
+ * — they just don't go fully light. */
+.control-shell .control-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 45%, rgba(0, 0, 0, 0.65)),
+    color-mix(in srgb, var(--theme-bg-to, #1a0a10) 55%, rgba(0, 0, 0, 0.75))
+  );
+  border: 1px solid color-mix(
+    in srgb,
+    var(--theme-primary, #b92753) 35%,
+    transparent
+  );
+  color: rgba(255, 255, 255, 0.92);
+  /* Let the card shrink when it's a grid/flex item (e.g. inside
+   * `.control-stack`). Grid/flex items default to min-width:auto
+   * (= min-content), so a card holding a fixed-width table or a long
+   * unbreakable string would otherwise refuse to shrink and push itself
+   * — and every sibling card sharing the track — past the viewport on
+   * narrow screens. min-width:0 hands overflow back to the card's own
+   * content (the table's scroll wrapper, text wrapping). No effect on
+   * cards used as plain blocks elsewhere. */
+  min-width: 0;
+  /* Operator cards are guaranteed dark by the rule above, so scope
+   * the theme text vars back to white-based inside. Without this the
+   * global Bootstrap utility overrides (text-white / text-white-50 /
+   * text-muted) resolve via --theme-text which is DARK on light
+   * themes (SNES, Game Boy) — producing dark text on dark cards.
+   * Forcing the vars white inside the card keeps every utility
+   * readable regardless of the active theme. */
+  --theme-text: #fff;
+  --theme-text-muted: rgba(255, 255, 255, 0.7);
+  /* Same logic for the surface text var which other rules cascade
+   * through. */
+  --theme-surface-text: #fff;
+}
+
+/* And the same scope on the operator shell itself so any text living
+ * OUTSIDE a card (e.g. .control-header h1, .control-nav-link copy)
+ * also stays white-readable on bright themes. Children inside cards
+ * still pick up the var override above; this catches the chrome. */
+.control-shell {
+  --theme-text: #fff;
+  --theme-text-muted: rgba(255, 255, 255, 0.7);
+  --theme-surface-text: #fff;
+}
+
+.control-card h2 {
+  margin-top: 0;
+  /* Flat white headings across the entire /control surface — the
+   * previous accent gradient (background-clip: text trick) read as
+   * shimmery / chromatic-aberration noise on most palettes, which
+   * made longer titles hard to skim. Single solid colour keeps every
+   * card heading scannable regardless of which theme is active. */
+  color: #fff;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  font-size: 1.5rem;
+}
+
+.control-card code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  /* Theme-aware inline-code chip. Falls back through
+   * primary_bright → bloodmoon pink so existing themes are unchanged
+   * but multi-colour themes (SNES PAL etc.) tint the chip with their
+   * own accent. */
+  color: var(--theme-primary-bright, #ffc2e0);
+}
+
+/* index.css hides every scrollbar globally (`::-webkit-scrollbar{display:none}`)
+ * for the clean public/OBS look. On a <textarea> the native resize gripper is
+ * painted in the scrollbar-corner layer, so that global rule also removes the
+ * gripper once the textarea engages its scroll layer (i.e. when it has
+ * content) — which is why resizing worked on an empty "add" box but vanished
+ * on a pre-filled "edit" box. Re-enable a slim scrollbar + the resizer for
+ * control-panel textareas so they stay resizable. */
+.control-card textarea::-webkit-scrollbar {
+  display: block;
+  width: 10px;
+  height: 10px;
+}
+.control-card textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.control-card textarea::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
+}
+.control-card textarea::-webkit-resizer {
+  display: block;
+}
+
+.control-table {
+  width: 100%;
+  color: #fff;
+  border-collapse: collapse;
+}
+
+.control-table th,
+.control-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.control-table th {
+  /* Theme-tinted header band — 30% of the primary mixed with the
+   * dark card surface. Bloodmoon resolves to the original rose-pink
+   * wash; SNES blue, Wind Waker sail-red, etc. all carry through. */
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #b92753) 30%,
+    transparent
+  );
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.control-btn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Setpiece controls ──────────────────────────────────────────────────
+ * The add row carries labelled inputs (a <small> caption stacked above the
+ * field). Bottom-align everything so the Imminent/Active buttons line up with
+ * the input boxes rather than stretching to the full label+input height. */
+.setpiece-add {
+  align-items: flex-end;
+}
+/* Match the stage buttons' box metrics to .control-card inputs so they read as
+ * the same height as the fields to their left. */
+.setpiece-stage-btn {
+  align-self: flex-end;
+  padding: 0.45rem 1rem;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.setpiece-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.setpiece-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+.setpiece-row-info {
+  color: #fff;
+}
+.setpiece-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+.setpiece-badge--imminent {
+  background: rgba(255, 193, 7, 0.22);
+  color: #ffd454;
+}
+.setpiece-badge--active {
+  background: rgba(220, 53, 69, 0.28);
+  color: #ff8a96;
+}
+.setpiece-badge--auto {
+  background: rgba(255, 255, 255, 0.14);
+  color: #cfd6dd;
+}
+
+/* Solid, readable "Defeated / Cleared" button — the old btn-outline-success
+ * was transparent green-on-dark and near-impossible to read. */
+.btn-setpiece-clear {
+  background: #2e7d32;
+  border: 1px solid #2e7d32;
+  color: #fff;
+}
+.btn-setpiece-clear:hover:not(:disabled),
+.btn-setpiece-clear:focus:not(:disabled) {
+  background: #276a2b;
+  border-color: #276a2b;
+  color: #fff;
+}
+.btn-setpiece-clear:disabled {
+  opacity: 0.55;
+}
+
+/* Inset tile used by /control/automation — the scheduled-job rows and the
+ * JustGiving panel share it so they read as one family. Sits on the (always
+ * dark) operator card; statuses inside use solid `badge bg-*` for contrast
+ * rather than Bootstrap's low-contrast text-success/-danger hues. */
+.automation-tile {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+/* Horizontal-scroll wrapper used by the /control/donations table.
+ * The action column carries three labelled buttons (Replay TTS,
+ * Mute, Delete) which together push the row past the viewport on
+ * narrower laptops; scrolling preserves the dense layout. The min
+ * width is the rough total of all columns at their natural sizes,
+ * including the action cell — below this the table actually shrinks
+ * (no scroll), above it the wrapper scrolls and the row stays
+ * comfortable. */
+.control-table-scroll {
+  overflow-x: auto;
+  /* Smooth out the scroll on touchpads / phones. */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Schedule-sound trigger table: 12 columns of inputs + selects + an
+ * action cluster. To fit inside the control card without horizontal
+ * scrolling we tighten cell padding, shrink inputs to their column,
+ * and use square icon buttons for the per-row actions. */
+.trigger-table th,
+.trigger-table td {
+  padding: 0.35rem 0.4rem;
+}
+.trigger-table input[type='text'],
+.trigger-table input[type='number'],
+.trigger-table select {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.35rem;
+}
+.trigger-table select {
+  /* Long sound names get clipped with ellipsis instead of pushing
+   * the column wider. */
+  text-overflow: ellipsis;
+}
+.trigger-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.control-table-scroll > .control-table {
+  /* No fixed min-width — every column is drag-resizable now, so the
+   * table sizes to the sum of the operator's column widths. The
+   * scroll wrapper above still kicks in when the total exceeds the
+   * viewport, and the per-column `COLUMN_MIN_PX` floor in
+   * useResizableColumns prevents any single column from being
+   * dragged below the readable threshold. */
+}
+
+/* Keep the action-cell buttons on one line — flex-wrap inside a
+ * scrolled table just stacks them awkwardly and undoes the point of
+ * the scroll. The 🔊 NOW READING pip beside the donor also benefits
+ * from staying inline. */
+.control-table-scroll .control-btn-row {
+  flex-wrap: nowrap;
+}
+
+/* Pin the action cells to the right edge so Replay/Mute/Delete stay
+ * visible no matter where the operator has scrolled horizontally —
+ * otherwise the very buttons they need are the first thing to slide
+ * off-screen on a narrow display. `position: sticky` works inside the
+ * scroll wrapper above; the cell needs an opaque background so the
+ * scrolled rows behind it don't bleed through. */
+.control-table-scroll thead th:last-child,
+.control-table-scroll tbody td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  /* Match the card surface so the pinned cells blend in with the
+   * card chrome rather than showing through to the scrolled row. */
+  background: #2b1b25;
+  /* Subtle left shadow makes it obvious the column is floating over
+   * the scrolled content, not part of the underlying row. */
+  box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.55);
+}
+
+.control-table-scroll thead th:last-child {
+  /* Header keeps its bloodmoon tint from `.control-table th`; layer
+   * it over the sticky-cell base so the colour stays consistent when
+   * the row scrolls under it. */
+  background: linear-gradient(rgba(185, 39, 83, 0.3), rgba(185, 39, 83, 0.3)), #2b1b25;
+}
+
+/* Preserve the live-row highlight on the sticky action cell. The base
+ * `.donation-row-live > td` pulse uses a 12%-alpha gold — fine on the
+ * non-sticky cells which sit on the card surface, but the sticky
+ * cell needs to stay opaque so scrolled rows don't bleed through it
+ * during the keyframe trough. Layer a constant gold tint over the
+ * card surface and drop the pulse animation here — the non-sticky
+ * cells still pulse to draw attention; the sticky cell holds a
+ * steady gold-tint backdrop so the action buttons stay readable. */
+.donation-row-live > td:last-child {
+  background:
+    linear-gradient(rgba(255, 210, 58, 0.18), rgba(255, 210, 58, 0.18)),
+    #2b1b25;
+  animation: none;
+}
+
+/* /control/donations — row highlight when /obs/tts is currently
+ * narrating this donation. Soft golden glow + left accent bar so the
+ * operator can spot the live row at a glance and decide whether to
+ * 🔇 mute it mid-utterance. Animates so a quick reader doesn't miss
+ * the state change. */
+.donation-row-live > td {
+  background: rgba(255, 210, 58, 0.12);
+  box-shadow: inset 4px 0 0 0 #ffd23a;
+  animation: donation-row-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes donation-row-live-pulse {
+  0%, 100% { background: rgba(255, 210, 58, 0.12); }
+  50% { background: rgba(255, 210, 58, 0.22); }
+}
+
+/* "Now reading" + mute-reason pips — flipped to a SOLID accent fill
+ * with a dark stamp inside so the chip reads as a proper coloured
+ * tag instead of low-contrast accent-on-accent. Theme-driven via
+ * accent_2 (warning register) so bloodmoon stays in the red family,
+ * SNES PAL goes yellow, Wind Waker coral, etc. */
+.donation-now-reading-pip {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--theme-accent-2, #ffd23a);
+  color: #1a1a1a;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+  animation: donation-now-reading-pip-pulse 1.6s ease-in-out infinite;
+}
+
+/* Pip next to a muted donation's message text — surfaces *why* the
+ * operator suppressed the row (naughty name / message / image, already
+ * announced, etc.) so the next operator scrolling the list can see the
+ * audit trail without opening the dropdown. */
+.donation-mute-reason-pip {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--theme-accent-2, #ffc107);
+  color: #1a1a1a;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-style: normal;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  opacity: 1;
+}
+
+/* Mute-reason dropdown in the action column. Fixed width so the column
+ * doesn't shift size as rows toggle between muted/unmuted; yellow tint
+ * when a reason is set so the operator can scan the table and see at a
+ * glance which rows are suppressed. Slimmed alongside the data
+ * columns — the longest reason label still fits at 10rem. */
+.donation-mute-select {
+  width: 10rem;
+  min-width: 9rem;
+  cursor: pointer;
+}
+
+/* Muted-state select — solid accent-2 fill so the muted row stands
+ * out as "this is suppressed" rather than blending into the normal
+ * yellow-tint-on-dark register. Dark text against the bright fill
+ * keeps contrast > AA on every theme. */
+.donation-mute-select.is-muted {
+  background-color: var(--theme-accent-2, #ffc107);
+  border-color: color-mix(in srgb, var(--theme-accent-2, #ffc107) 80%, #000);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* Compact side-by-side action column. Replay + Delete are icon-only
+ * (tooltips carry the label) so the column shrinks to roughly the
+ * width of the Mute select + two icon chips — about 13rem total
+ * instead of the original 26rem. Real estate gained goes to the
+ * Message column. */
+.donation-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.donation-action-btn {
+  /* Icon-only buttons — match the select's height (btn-sm) and stay
+   * square-ish so they read as glyph affordances rather than empty
+   * pills. Tooltip on the button itself supplies the label. */
+  width: 2.25rem;
+  padding-left: 0;
+  padding-right: 0;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Message column wraps within whatever width the operator's dragged
+ * the column to. No max-width — the header's explicit width (driven
+ * by useResizableColumns) is the truth; the cell just wraps to fit. */
+.donation-message-cell {
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  vertical-align: top;
+}
+
+/* Drag-to-resize handle pinned to the right edge of each <th>.
+ * Invisible by default; faint accent on hover so the operator can
+ * find the hit zone without it cluttering the header chrome. Lives
+ * inside a `position: relative` th — see SortableTh / the plain
+ * Message/Actions th declarations. */
+.control-table-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  /* Above the th's text so the hover hit zone reliably wins clicks
+   * over the header's sort onClick (which is also stopped via
+   * stopPropagation in the handler). */
+  z-index: 1;
+  user-select: none;
+}
+
+.control-table-resize-handle:hover,
+.control-table-resize-handle:active {
+  background: rgba(255, 210, 58, 0.4);
+}
+
+/* Inline "Show more / Show less" toggle. `btn btn-link` from Bootstrap
+ * provides the underline + link-tone colour; we just shrink it and
+ * strip padding so it reads as inline prose rather than a button
+ * chip in the middle of the message. */
+.donation-message-toggle {
+  padding: 0;
+  font-size: 0.85em;
+  vertical-align: baseline;
+  text-decoration: underline;
+}
+
+.donation-message-toggle:hover {
+  text-decoration: underline;
+  filter: brightness(1.2);
+}
+
+/* Sound-triggers table — paired with `table-layout: fixed` on the
+ * <table> itself (see ChestAnnouncer.tsx). Form controls have a
+ * built-in ~200px intrinsic min-width that prevents columns from
+ * shrinking past it; clearing min-width on inputs/selects/buttons
+ * inside cells lets the <th> drag-resize actually shrink the
+ * column. `overflow: hidden` on cells clips runaway content so a
+ * long URL or game title can't blow the cell back open. */
+.chest-trigger-table td,
+.chest-trigger-table th {
+  overflow: hidden;
+}
+
+.chest-trigger-table td input,
+.chest-trigger-table td select,
+.chest-trigger-table td button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Text-overflow inside the Match column when content is wider than
+ * the cell — applies to whichever element the operator is reading
+ * (the cell itself when collapsed, the input when expanded). */
+.chest-trigger-table td {
+  text-overflow: ellipsis;
+}
+
+@keyframes donation-now-reading-pip-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; box-shadow: 0 0 8px rgba(255, 210, 58, 0.45); }
+}
+
+/* /control/theme — picker on the left, editor on the right. The
+ * shell fills its parent (`.control-main`, which is the scroll
+ * container) so the page itself never scrolls; instead the rail's
+ * theme list and the editor each get their own independent scroll.
+ * This stops the previous awkward behaviour where the page scrolled
+ * vertically AND moved the rail+editor together. */
+.theme-shell {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.25rem;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 991px) {
+  .theme-shell {
+    grid-template-columns: 1fr;
+    /* Below the grid breakpoint the rail and editor stack, so let
+     * the page scroll normally rather than trapping each column in
+     * its own scroller (which feels wrong on a single-column phone
+     * layout). */
+    height: auto;
+    min-height: 0;
+  }
+}
+
+.theme-rail {
+  /* The rail is itself a `.control-card`; override its default
+   * `margin-bottom` so the grid track height matches the viewport
+   * exactly (otherwise that margin reads as an unexplained gap
+   * below the rail card). */
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Hide overflow on the rail container so only the list (which
+   * gets `overflow-y: auto`) scrolls, keeping the header pinned. */
+  overflow: hidden;
+}
+
+.theme-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  /* Fill the rail's remaining height and scroll independently from
+   * the editor on the right. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.theme-list-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.theme-list-item.is-selected {
+  /* Selected highlight follows the live theme's primary so the
+   * selection state still reads as "this is the one" on every
+   * palette, not just bloodmoon's red. */
+  border-color: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 55%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #e71347) 12%,
+    transparent
+  );
+}
+
+.theme-list-item.is-active {
+  /* Outline stays amber to match the operator-area "active /
+   * privileged" register (matches the .control-operator-pill
+   * amber + the header hazard stripe). */
+  outline: 1px solid rgba(212, 160, 23, 0.6);
+}
+
+.theme-list-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.6rem;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-list-swatch {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.theme-list-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-list-actions {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0 0.5rem 0.55rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.theme-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  /* Same dance as `.theme-rail`: take the full grid-cell height,
+   * own its scroll, so wheeling over the editor doesn't drag the
+   * rail along with it. */
+  min-height: 0;
+  overflow-y: auto;
+  /* Breathing room next to the scrollbar so the rightmost form
+   * controls don't visually butt against the track. */
+  padding-right: 0.25rem;
+}
+
+@media (max-width: 991px) {
+  /* On stacked mobile layout the editor scrolls with the page. */
+  .theme-editor {
+    overflow-y: visible;
+  }
+}
+
+.theme-editor .control-card {
+  margin-bottom: 0;
+}
+
+
+.schedule-form {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.schedule-form .form-control,
+.schedule-form .form-select {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.schedule-form .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.schedule-form .form-select option {
+  background: #2b1b25;
+  color: #fff;
+}
+
+/* Mini /obs/audio-countdown scene preview tiles on the Music page.
+ * The inner stage is rendered at 1920x1080 and CSS-scaled down so scene
+ * positioning (which is authored against a full 16:9 stage) still works. */
+.scene-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: radial-gradient(circle at center, var(--ac-bg-from, #4c1324) 0%, var(--ac-bg-to, #1a0a10) 100%);
+  flex: 0 0 auto;
+}
+
+.scene-preview-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.scene-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.scene-preview-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.scene-preview-tile-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.scene-preview-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.scene-preview-empty {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* ── Logs & Queue ──────────────────────────────────────────────────────── */
+/* Three side-by-side lanes (awaiting / processing / failed) that collapse to
+ * a single stack on narrow screens. Each lane is a soft-tinted card. */
+.control-queue-lanes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .control-queue-lanes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.control-queue-lane {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.control-queue-lane-awaiting {
+  border-top: 3px solid #d9a531;
+}
+.control-queue-lane-processing {
+  border-top: 3px solid #3fa7d6;
+}
+.control-queue-lane-failed {
+  border-top: 3px solid #d65745;
+}
+
+.control-queue-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.control-queue-lane-title {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.control-queue-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+.control-queue-count-awaiting { color: #f1c75a; }
+.control-queue-count-processing { color: #79c8ea; }
+.control-queue-count-failed { color: #f08a7c; }
+
+.control-queue-lane-sub {
+  font-size: 0.75rem;
+  margin: 0.1rem 0 0.6rem;
+}
+
+.control-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-queue-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.control-queue-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.control-queue-item-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
+  border-left: 2px solid rgba(214, 87, 69, 0.5);
+  padding-left: 0.5rem;
+}
+
+.control-queue-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.control-queue-item-label {
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+.control-queue-item-meta {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.control-queue-eta {
+  color: #f1c75a;
+}
+
+.control-queue-item-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Audit-log level badge — colour-coded pill matching the lane accents. */
+.control-log-level {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.control-log-level-info {
+  color: #79c8ea;
+  background: rgba(63, 167, 214, 0.15);
+}
+.control-log-level-warning {
+  color: #f1c75a;
+  background: rgba(217, 165, 49, 0.18);
+}
+.control-log-level-error {
+  color: #f08a7c;
+  background: rgba(214, 87, 69, 0.2);
+}
+
+.control-log-detail-row > td {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.control-log-detail pre {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
+  overflow: auto;
+}
+
+/* Auth gate — full-screen status while operator access resolves / is denied. */
+.control-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+  font-size: 1.1rem;
+  color: var(--theme-text, #fff);
+  opacity: 0.85;
+}
+
+/* HOME button + account badge in the header, pushed to the trailing edge. */
+.control-user-cluster {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ── Connect-Twitch device-code modal ──────────────────────────────
+ *
+ * Portaled to <body>, so it sits OUTSIDE .control-shell and can't borrow
+ * the operator card override. It therefore styles its own OPAQUE surface
+ * (the default .control-card fill is semi-transparent and let the page
+ * bleed through). Theme-aware via color-mix, but always fully opaque. */
+.connect-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 3, 6, 0.74);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: connect-modal-fade 0.16s ease-out;
+}
+
+.connect-modal__card {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 14px;
+  overflow: hidden;
+  color: #fff;
+  /* Opaque surface mixed from the theme background stops. */
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--theme-bg-from, #4c1324) 50%, #000),
+    color-mix(in srgb, var(--theme-bg-to, #150a0f) 68%, #000)
+  );
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 45%, transparent);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: connect-modal-pop 0.18s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.connect-modal__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 14%, transparent);
+}
+
+.connect-modal__glyph {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: #9146ff; /* Twitch purple — brand cue, theme-independent */
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.connect-modal__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.connect-modal__close {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.connect-modal__close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.connect-modal__body {
+  padding: 1.25rem;
+}
+
+.connect-modal__lead {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.connect-modal__steps {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: connect-step;
+  display: grid;
+  gap: 0.85rem;
+}
+.connect-modal__steps li {
+  counter-increment: connect-step;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+}
+.connect-modal__steps li::before {
+  content: counter(connect-step);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #b92753) 55%, transparent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  align-self: start;
+}
+
+.connect-modal__link {
+  color: var(--theme-primary-bright, #ffc2e0);
+  word-break: break-all;
+}
+
+.connect-modal__code-row {
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.connect-modal__code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 1.4rem;
+  letter-spacing: 0.18em;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.connect-modal__copy {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border-radius: 7px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.connect-modal__copy:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.connect-modal__status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+.connect-modal__status--waiting {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.78);
+}
+.connect-modal__status--done {
+  background: rgba(40, 167, 69, 0.16);
+  border: 1px solid rgba(40, 167, 69, 0.45);
+  color: #8ff0a4;
+}
+.connect-modal__status--error {
+  background: rgba(220, 53, 69, 0.16);
+  border: 1px solid rgba(220, 53, 69, 0.45);
+  color: #ff9aa6;
+}
+
+.connect-modal__spinner {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--theme-primary-bright, #ffc2e0);
+  animation: connect-modal-spin 0.7s linear infinite;
+}
+
+.connect-modal__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@keyframes connect-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes connect-modal-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes connect-modal-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connect-modal__backdrop,
+  .connect-modal__card,
+  .connect-modal__spinner {
+    animation: none;
+  }
+}

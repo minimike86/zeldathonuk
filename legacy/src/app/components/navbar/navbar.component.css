@@ -1,0 +1,252 @@
+.navbar {
+  background: linear-gradient(180deg, #2B1B25, hsla(0,0%,100%,0)), #4C1324 !important;
+  border-bottom: 1px solid #bb225e
+;
+  padding: 0;
+}
+
+.nav-item {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 10px;
+}
+
+.navbar-gold {
+  background-image: linear-gradient(-45deg, #CF972A, #FED851, #FCF4B3, #FED851, #CF972A);
+  border-bottom: 1px solid #CF972A;
+}
+
+.nav-link-dark {
+  font-weight: 500;
+  color: white !important;
+  text-shadow: 1px 1px 2px black;
+}
+
+.navbar-majoras-mask {
+ background-color: #46336b !important;
+ border-bottom: 1px solid #56437b !important;
+}
+
+.nav-item-pink:hover {
+  background: linear-gradient(180deg,#ff48a8 -.56%,rgba(255,72,168,0)),#ff2323!important;
+}
+
+.nav-icon-pink {
+  color: #ff2323;
+}
+
+.nav-item-pink:hover .nav-icon-pink {
+  color: #111421!important;
+}
+
+.nav-item-orange:hover {
+  background: linear-gradient(180deg,#ff9820,rgba(255,152,32,0)),#f66700!important;
+}
+
+.nav-icon-orange {
+  color: #f66700;
+}
+
+.nav-item-orange:hover .nav-icon-orange {
+  color: #111421!important;
+}
+
+.nav-item-gold:hover {
+   background: linear-gradient(180deg,#ffb21d,hsla(0,0%,100%,0)),#e1cb00!important;
+ }
+
+.nav-icon-gold {
+  color: #e1cb00;
+}
+
+.nav-item-gold:hover .nav-icon-gold {
+  color: #111421!important;
+}
+
+.nav-item-purple:hover {
+  background: linear-gradient(180deg,#ff20b3,hsla(0,0%,100%,0)),#c744ff!important;
+}
+
+.nav-icon-purple {
+  color: #c744ff;
+}
+
+.nav-item-purple:hover .nav-icon-purple {
+  color: #111421!important;
+}
+
+.nav-item-blurple:hover {
+  background: linear-gradient(180deg,#65beff,hsla(0,0%,100%,0)),#755fff!important;
+}
+
+.nav-icon-blurple {
+  color: #755fff;
+}
+
+.nav-item-blurple:hover .nav-icon-blurple {
+  color: #111421!important;
+}
+
+.nav-item-blue:hover {
+  background: linear-gradient(180deg,#b3e3ff,hsla(0,0%,100%,0)),#0fa0ff!important;
+}
+
+.nav-icon-blue {
+  color: #0fa0ff;
+}
+
+.nav-item-blue:hover .nav-icon-blue {
+  color: #111421!important;
+}
+
+.nav-item-green:hover {
+  background: linear-gradient(180deg,#20ff87,hsla(0,0%,100%,0)),#67ff20!important;
+}
+
+.nav-icon-green {
+  color: #67ff20;
+}
+
+.nav-item-green:hover .nav-icon-green {
+  color: #111421!important;
+}
+
+.golden-text {
+  background: linear-gradient(45deg,#f6b100,#fff,#f6b100);
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  background-clip: text;
+  -moz-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.nav-item-bloodmoon:hover {
+   background: linear-gradient(180deg, #B92753, hsla(0,0%,100%,0)), #B92753 !important;
+ }
+
+.nav-icon-bloodmoon {
+  color: #B92753;
+}
+
+.nav-item-bloodmoon:hover .nav-icon-bloodmoon {
+  color: #111421!important;
+}
+
+.btn-bloodmoon {
+  color: #fff;
+  background: linear-gradient(45deg, #B92753, #731C37, #62182F);
+  border-color: #2B1B25;
+}
+
+.btn-bloodmoon:hover {
+  color: #fff;
+  background: linear-gradient(45deg, #B92753, #731C37, #62182F);
+  border-color: #2B1B25;
+  filter: opacity(85%);
+}
+
+.gradient-button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(269.7deg,#c744ff 4.46%,#007bc2 96.97%);
+  border-radius: 4px;
+  padding: 6px 19px;
+  font-family: "IBM Plex Sans","Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 27px;
+  letter-spacing: .05em;
+  text-align: center;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.director-card[data-v-009e0e54] {
+  position: relative;
+  overflow: hidden;
+  max-width: 300px;
+  height: 336px;
+  border-radius: 16px;
+  background: linear-gradient(#111421,#111421) padding-box,linear-gradient(126.97deg,#c744ff 17.15%,#007bc2 86.42%) border-box;
+  border: 2px solid transparent;
+}
+
+.btn-tiltify {
+  color: #fff;
+  background: rgb(35, 38, 40);
+  border: 1px solid #4b3b45;
+}
+
+.btn-justgiving {
+  color: #fff;
+  background-color: #ad29b6;
+  border: 1px solid #4b3b45;
+}
+
+.btn-justgiving:hover {
+  color: #fff;
+  background-color: #bf49cf;
+  border: 1px solid #4b3b45;
+}
+
+.btn-justgiving:focus, .btn-justgiving.focus {
+  box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
+}
+
+.btn-justgiving.disabled, .btn-justgiving:disabled {
+  color: #fff;
+  background-color: #ad29b6;
+  border: 1px solid #4b3b45;
+}
+
+.btn-justgiving:not(:disabled):not(.disabled):active, .btn-justgiving:not(:disabled):not(.disabled).active,
+.show > .btn-justgiving.dropdown-toggle {
+  color: #fff;
+  background-color: #bf49cf;
+  border: 1px solid #4b3b45;
+}
+
+.btn-justgiving:not(:disabled):not(.disabled):active:focus, .btn-justgiving:not(:disabled):not(.disabled).active:focus,
+.show > .btn-justgiving.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(173, 41, 182, 0.5);
+}
+
+
+
+
+
+
+.btn-facebook {
+  color: #fff;
+  background-color: #3b5998;
+  border: 1px solid #4b3b45;
+}
+
+.btnfacebook:hover {
+  color: #fff;
+  background-color: #3b5998;
+  border: 1px solid #4b3b45;
+}
+
+.btnfacebook:focus, .btnfacebook.focus {
+  box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
+}
+
+.btnfacebook.disabled, .btnfacebook:disabled {
+  color: #fff;
+  background-color: #3b5998;
+  border: 1px solid #4b3b45;
+}
+
+.btnfacebook:not(:disabled):not(.disabled):active, .btnfacebook:not(:disabled):not(.disabled).active,
+.show > .btnfacebook.dropdown-toggle {
+  color: #fff;
+  background-color: #3b5998;
+  border: 1px solid #4b3b45;
+}
+
+.btnfacebook:not(:disabled):not(.disabled):active:focus, .btnfacebook:not(:disabled):not(.disabled).active:focus,
+.show > .btnfacebook.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.5);
+}

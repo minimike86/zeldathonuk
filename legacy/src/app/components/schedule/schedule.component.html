@@ -1,0 +1,136 @@
+<div class="container p-3 min-vh-100 text-white text-center">
+  <div class="my-3">
+
+    <div class="mb-5">
+      <h1 class="text-bloodmoon">Stream Schedule</h1>
+
+      <p class="text-light mt-2">
+        Check the dates and times below to see when (roughly) we will be playing your favourite titles so that you won't miss out!
+      </p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table bg-bloodmoon text-white" style="font-size: 12px;">
+        <thead>
+          <tr>
+            <th scope="col">Day</th>
+            <th scope="col">Time</th>
+            <th scope="col">
+              <div class="d-none d-md-block">
+                Console
+              </div>
+            </th>
+            <th scope="col">Game</th>
+            <th scope="col">
+              <div class="d-none d-md-block">
+                Runner(s)
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr *ngFor="let game of (activeSchedule$ | async); let i = index" [ngClass]="hasBeenPlayed(i) ? 'table-played' : isCurrentlyPlaying(i) ? 'table-currently-playing' : ''">
+
+            <td class="align-middle">
+              <div class="">
+                {{ calculateStartDate(i) | date:'EEE dd' }}
+              </div>
+              <div class="text-white-50">
+                {{ calculateStartDate(i) | date:'MMM yyyy' }}
+              </div>
+            </td>
+
+            <td class="align-middle">
+              <div class="">
+                {{ calculateStartDate(i) | date:'hh:mm' }}
+              </div>
+              <div class="text-white-50">
+                {{ calculateStartDate(i) | date:'aa' }}
+              </div>
+            </td>
+
+            <td class="align-middle text-center">
+              <div class="d-none d-md-block">
+                <div class="badge rounded-pill bg-secondary p-2">
+                  {{ game.platform }}
+                </div>
+              </div>
+            </td>
+
+            <td class="align-middle">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex flex-column me-2">
+                  <img [src]="game.gameDetail.boxArt" [alt]="game.gameDetail.title + ' Cover Art'" style="max-width: 50px;"
+                       [title]="game.gameDetail.title + ' Cover Art'">
+                </div>
+                <div class="text-center w-100">
+                  <div class="">
+                    {{ game.gameDetail.title }}
+                    ({{ (game.gameDetail.detail.releases.EU?.length >= 1 ?
+                           game.gameDetail.detail.releases.EU :
+                           game.gameDetail.detail.releases.NA?.length >= 1 ?
+                             game.gameDetail.detail.releases.NA :
+                             game.gameDetail.detail.releases.JP) | date:'yyyy' }})
+                    <ng-container *ngIf="hasBeenPlayed(i)">
+                      <div class="d-flex justify-content-center">
+                        <div class="rounded-pill bg-dark mt-1 w-50">
+                          COMPLETED
+                        </div>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="isCurrentlyPlaying(i) && isLive">
+                      <div class="d-inline-block m-2" (click)="routeToLiveView()">
+                        <div class="badge bg-light text-dark fw-bold p-2 px-4" style="cursor: pointer;" title="Watch Livestream">
+                          LIVE NOW! <span style="color: red;">
+                            <div class="d-inline-block live-circle ms-1"></div></span>
+                        </div>
+                      </div>
+                    </ng-container>
+                  </div>
+                  <ng-container *ngFor="let badge of game.badges">
+                    <ng-container *ngIf="badge.url">
+                        <span class="badge m-1" [ngClass]="badge.type" [title]="badge.tooltip">
+                          <a class="text-white" [href]="badge.url" target="_blank">{{ badge.name }}</a>
+                        </span>
+                    </ng-container>
+                    <ng-container *ngIf="!badge.url">
+                        <span class="badge m-1" [ngClass]="badge.type" [title]="badge.tooltip">
+                          {{ badge.name }}
+                        </span>
+                    </ng-container>
+                  </ng-container>
+                  <span class="badge m-2 bg-light">
+                      <a target="_blank" class="text-dark" title="How long to beat (Rushed)"
+                         [href]="'https://howlongtobeat.com/game?id=' + game.gameDetail.id">
+                        {{ getTimeToBeatMainStoryRushed(game.gameDetail) }}
+                      </a>
+                    </span>
+                </div>
+              </div>
+            </td>
+
+            <td class="align-middle text-center">
+              <div class="d-none d-md-block">
+                <ng-container *ngFor="let runner of game.runners">
+                  <ng-container *ngIf="runner.channelUrl.length >= 1">
+                    <a [href]="runner.channelUrl" target="_blank">
+                      <span class="badge rounded-pill bg-secondary p-2 m-1">{{ runner.name }}</span>
+                    </a>
+                  </ng-container>
+                  <ng-container *ngIf="runner.channelUrl.length === 0">
+                    <span class="badge rounded-pill bg-secondary p-2 m-1">{{ runner.name }}</span>
+                  </ng-container>
+                </ng-container>
+              </div>
+            </td>
+
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>

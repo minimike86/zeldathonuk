@@ -1,0 +1,5946 @@
+/* ───────────────────────────────────────────────────────────────────────────
+ * Shared scene container — sits behind the countdown text inside .ac-stage.
+ * Every game-specific scene root inherits this positioning.
+ * ───────────────────────────────────────────────────────────────────────── */
+.ww-scene,
+.oot-scene,
+.mm-scene,
+.botw-scene,
+.botw-dm-scene,
+.totk-scene,
+.ss-scene,
+.tp-scene,
+.alttp-scene,
+.nes-scene,
+.z2-scene,
+.ooa-scene,
+.oos-scene,
+.albw-scene,
+.mc-scene,
+.ph-scene,
+.fsa-scene,
+.st-scene,
+.tpc-scene,
+.tpw-scene,
+.la-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * ORACLE OF AGES — GBC time-travel scene with vortex, harp, Maku Tree
+ * ───────────────────────────────────────────────────────────────────────── */
+.ooa-scene {
+  background: linear-gradient(180deg,
+    #0a2a4a 0% 20%,
+    #1a548c 20% 38%,
+    #3aa4d6 38% 52%,
+    #4abca0 52% 70%,
+    #1a4a4a 70% 100%
+  );
+  image-rendering: pixelated;
+}
+
+.ooa-scene svg {
+  image-rendering: pixelated;
+}
+
+.ooa-past-tint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    #4a2a08 0% 20%,
+    #8c5a18 20% 38%,
+    #d6a83a 38% 52%,
+    #c8924a 52% 70%,
+    #4a2a18 70% 100%
+  );
+  opacity: 0;
+  mix-blend-mode: multiply;
+  animation: ooa-era-flip 24s ease-in-out infinite;
+}
+
+@keyframes ooa-era-flip {
+  0%, 45% { opacity: 0; }
+  50%, 95% { opacity: 0.75; }
+  100% { opacity: 0; }
+}
+
+.ooa-vortex {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, 60vw);
+  height: min(720px, 60vw);
+  animation: ooa-vortex-spin 40s linear infinite;
+  filter: drop-shadow(0 0 20px rgba(120, 200, 240, 0.45));
+  mix-blend-mode: screen;
+  /* Sits in front of the Maku Tree so the spinning effect is visible. */
+  z-index: 2;
+}
+
+@keyframes ooa-vortex-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.ooa-clockface {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(380px, 32vw);
+  height: min(380px, 32vw);
+  filter: drop-shadow(0 0 12px rgba(120, 200, 240, 0.55));
+  z-index: 2;
+}
+
+.ooa-hand {
+  transform-origin: 0 0;
+}
+
+.ooa-hand-hour {
+  animation: ooa-hand-sweep 60s steps(60, end) infinite;
+}
+
+.ooa-hand-minute {
+  animation: ooa-hand-sweep 8s steps(48, end) infinite;
+}
+
+@keyframes ooa-hand-sweep {
+  to { transform: rotate(360deg); }
+}
+
+.ooa-maku {
+  position: absolute;
+  bottom: 3vh;
+  left: 28vw;
+  width: min(460px, 34vw);
+  /* Background element — clock vortex paints on top of her. */
+  z-index: 0;
+  height: auto;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+  /* Override the scene's pixelated rendering so the artwork stays smooth. */
+  image-rendering: auto;
+  animation: ooa-maku-sway 5s ease-in-out infinite;
+}
+
+@keyframes ooa-maku-sway {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+.ooa-nayru {
+  position: absolute;
+  bottom: 4vh;
+  left: 4vw;
+  width: min(320px, 22vw);
+  height: auto;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.5));
+  image-rendering: auto;
+  /* Offset float so she doesn't bob in sync with Link. */
+  animation: ooa-nayru-float 5.2s ease-in-out infinite;
+  animation-delay: -1.3s;
+}
+
+@keyframes ooa-nayru-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.ooa-harp {
+  position: absolute;
+  bottom: 5vh;
+  right: 5vw;
+  width: min(320px, 22vw);
+  height: auto;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55));
+  /* Image artwork — keep smooth, don't pixelate */
+  image-rendering: auto;
+  animation: ooa-harp-float 4.5s ease-in-out infinite;
+}
+
+@keyframes ooa-harp-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Container that scopes the rising-note animations to the harp area */
+.ooa-notes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ooa-note {
+  position: absolute;
+  bottom: 28vh;
+  right: 20vw;
+  width: 36px;
+  height: 54px;
+  filter:
+    drop-shadow(0 0 6px rgba(255, 230, 130, 0.85))
+    drop-shadow(2px 2px 0 #5a3a04);
+  opacity: 0;
+  animation: ooa-note-rise 7s ease-in infinite;
+}
+
+/* Each note spawns from a slightly different horizontal offset, drifts on
+ * its own sway path, and takes a different duration so they don't sync. */
+.ooa-note-1 { right: 22vw; animation-delay: 0s;   animation-duration: 7s; }
+.ooa-note-2 { right: 18vw; animation-delay: -1.2s; animation-duration: 8s; }
+.ooa-note-3 { right: 24vw; animation-delay: -2.4s; animation-duration: 6.5s; }
+.ooa-note-4 { right: 16vw; animation-delay: -3.6s; animation-duration: 7.5s; }
+.ooa-note-5 { right: 21vw; animation-delay: -4.8s; animation-duration: 8.5s; }
+.ooa-note-6 { right: 19vw; animation-delay: -6.0s; animation-duration: 7s; }
+
+/* Nayru's harp notes — spawn from her position on the left side. Same
+ * base positioning + rise animation, just anchored on `left` not `right`. */
+.ooa-nayru-note-1,
+.ooa-nayru-note-2,
+.ooa-nayru-note-3,
+.ooa-nayru-note-4,
+.ooa-nayru-note-5,
+.ooa-nayru-note-6 {
+  right: auto;
+  bottom: 32vh;
+}
+
+.ooa-nayru-note-1 { left: 18vw; animation-delay: -0.4s; animation-duration: 7.5s; }
+.ooa-nayru-note-2 { left: 22vw; animation-delay: -1.8s; animation-duration: 8s; }
+.ooa-nayru-note-3 { left: 16vw; animation-delay: -3.0s; animation-duration: 6.5s; }
+.ooa-nayru-note-4 { left: 24vw; animation-delay: -4.2s; animation-duration: 8s; }
+.ooa-nayru-note-5 { left: 20vw; animation-delay: -5.4s; animation-duration: 7s; }
+.ooa-nayru-note-6 { left: 17vw; animation-delay: -6.6s; animation-duration: 7.5s; }
+
+/* Nayru's notes also get a soft blue glow instead of the golden one. */
+.ooa-nayru-note-1,
+.ooa-nayru-note-2,
+.ooa-nayru-note-3,
+.ooa-nayru-note-4,
+.ooa-nayru-note-5,
+.ooa-nayru-note-6 {
+  filter:
+    drop-shadow(0 0 6px rgba(168, 224, 255, 0.85))
+    drop-shadow(2px 2px 0 #1a4a8e);
+}
+
+@keyframes ooa-note-rise {
+  0% {
+    transform: translate(0, 0) rotate(-8deg) scale(0.7);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-20px, -28vh) rotate(8deg) scale(1);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(20px, -60vh) rotate(-6deg) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.ooa-sand {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 220, 130, 0.6) 1px, transparent 1.5px);
+  background-size: 100px 80px;
+  background-position: 0 0;
+  animation: ooa-sand-fall 10s linear infinite;
+  opacity: 0.6;
+  mix-blend-mode: screen;
+}
+
+@keyframes ooa-sand-fall {
+  from { background-position: 0 -80px; }
+  to { background-position: 30px 100vh; }
+}
+
+.ooa-scanlines {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.18) 0,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * ORACLE OF SEASONS — GBC pixel art cycling through Spring/Summer/Autumn/Winter
+ * Cycle is 40s total, 10s per season, with 1s crossfade between each.
+ * ───────────────────────────────────────────────────────────────────────── */
+.oos-scene {
+  background: #1a2a3a;
+  image-rendering: pixelated;
+}
+
+.oos-scene svg {
+  image-rendering: pixelated;
+}
+
+/* ── SKY LAYERS (one per season, opacity-cycled) ── */
+.oos-sky {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: oos-season-cycle 40s linear infinite;
+}
+
+.oos-sky-spring {
+  background: linear-gradient(180deg,
+    #f5b5d6 0% 30%,
+    #ffd6e8 30% 55%,
+    #a3d878 55% 75%,
+    #5a8a3a 75% 100%
+  );
+  animation-delay: 0s;
+}
+
+.oos-sky-summer {
+  background: linear-gradient(180deg,
+    #4cb4f5 0% 35%,
+    #87d2ff 35% 55%,
+    #5cc065 55% 80%,
+    #2a8a3a 80% 100%
+  );
+  animation-delay: -10s;
+}
+
+.oos-sky-autumn {
+  background: linear-gradient(180deg,
+    #c66433 0% 25%,
+    #e89a5a 25% 45%,
+    #d68a3a 45% 55%,
+    #a85a2a 55% 75%,
+    #4a2810 75% 100%
+  );
+  animation-delay: -20s;
+}
+
+.oos-sky-winter {
+  background: linear-gradient(180deg,
+    #6a8aa4 0% 25%,
+    #b8d4e8 25% 45%,
+    #d8e4ec 45% 65%,
+    #a8b8c4 65% 85%,
+    #5a6a78 85% 100%
+  );
+  animation-delay: -30s;
+}
+
+@keyframes oos-season-cycle {
+  /* visible 0-25% of cycle (~10s), crossfading at the bounds */
+  0%, 22.5% { opacity: 1; }
+  25%, 97.5% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ── DISTANT MOUNTAINS / VOLCANO (always visible) ── */
+.oos-mountains {
+  position: absolute;
+  bottom: 18vh;
+  left: 0;
+  width: 100%;
+  height: 16vh;
+  opacity: 0.85;
+}
+
+.oos-volcano {
+  position: absolute;
+  bottom: 22vh;
+  right: 10vw;
+  width: min(280px, 22vw);
+  filter: drop-shadow(0 0 12px rgba(229, 124, 42, 0.5));
+}
+
+.oos-volcano-flame {
+  transform-origin: 198px 30px;
+  animation: oos-flame-flicker 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes oos-flame-flicker {
+  from { transform: scale(0.9); opacity: 0.85; }
+  to { transform: scale(1.15) translateY(-2px); opacity: 1; }
+}
+
+/* ── FOREGROUND TREE — canopies cycle ──
+ * Sits between the pedestal and Link so the three foreground figures don't
+ * collide on the right side of the scene. */
+.oos-tree {
+  position: absolute;
+  bottom: 12vh;
+  right: 30vw;
+  width: min(240px, 18vw);
+  filter: drop-shadow(2px 4px 0 #1a0a04);
+}
+
+.oos-canopy {
+  opacity: 0;
+  animation: oos-season-cycle 40s linear infinite;
+}
+
+.oos-canopy-spring { animation-delay: 0s; }
+.oos-canopy-summer { animation-delay: -10s; }
+.oos-canopy-autumn { animation-delay: -20s; }
+.oos-canopy-winter { animation-delay: -30s; }
+
+/* ── GROUND BAND ── */
+.oos-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14vh;
+  opacity: 0;
+  animation: oos-season-cycle 40s linear infinite;
+  border-top: 4px solid;
+  image-rendering: pixelated;
+}
+
+.oos-ground-spring {
+  background:
+    repeating-linear-gradient(90deg, #5a8a3a 0 16px, #4a7a2a 16px 32px);
+  border-top-color: #a3d878;
+  animation-delay: 0s;
+}
+
+.oos-ground-summer {
+  background:
+    repeating-linear-gradient(90deg, #2a8a3a 0 16px, #1a6a28 16px 32px);
+  border-top-color: #5cc065;
+  animation-delay: -10s;
+}
+
+.oos-ground-autumn {
+  background:
+    repeating-linear-gradient(90deg, #8a4a1a 0 16px, #6a3208 16px 32px);
+  border-top-color: #e57c2a;
+  animation-delay: -20s;
+}
+
+.oos-ground-winter {
+  background:
+    repeating-linear-gradient(90deg, #e0ecf2 0 16px, #b8c8d4 16px 32px);
+  border-top-color: #ffffff;
+  animation-delay: -30s;
+}
+
+/* ── TEMPLE OF SEASONS PEDESTAL ── */
+.oos-pedestal {
+  position: absolute;
+  bottom: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(200px, 14vw);
+  filter: drop-shadow(0 6px 0 #2a2a36) drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+  z-index: 2;
+}
+
+/* ── ROD OF SEASONS ── */
+.oos-rod {
+  position: absolute;
+  bottom: 18vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(56px, 4vw);
+  height: auto;
+  filter: drop-shadow(0 0 8px rgba(255, 230, 130, 0.6))
+    drop-shadow(2px 2px 0 #2a1a04);
+  z-index: 3;
+  animation: oos-rod-rotate 40s linear infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes oos-rod-rotate {
+  0%   { transform: translateX(-50%) rotate(0deg); }
+  25%  { transform: translateX(-50%) rotate(90deg); }
+  50%  { transform: translateX(-50%) rotate(180deg); }
+  75%  { transform: translateX(-50%) rotate(270deg); }
+  100% { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* Whichever gem is "on top" during its quarter glows brighter */
+.oos-gem {
+  animation: oos-season-cycle 40s linear infinite;
+  filter: brightness(1);
+}
+
+.oos-gem-spring { animation-delay: 0s; }
+.oos-gem-summer { animation-delay: -10s; }
+.oos-gem-autumn { animation-delay: -20s; }
+.oos-gem-winter { animation-delay: -30s; }
+
+/* Override the cycle for gems — they should always be visible, just brighter
+ * during their season. */
+@keyframes oos-gem-pulse {
+  0%, 22.5% { filter: brightness(1.6) drop-shadow(0 0 4px currentColor); }
+  25%, 97.5% { filter: brightness(0.7); }
+  100% { filter: brightness(1.6); }
+}
+
+/* ── MAKU TREE (image) ── */
+.oos-maku {
+  position: absolute;
+  bottom: 3vh;
+  left: 4vw;
+  width: min(360px, 26vw);
+  height: auto;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6));
+  image-rendering: auto;
+  animation: oos-maku-sway 5s ease-in-out infinite;
+}
+
+@keyframes oos-maku-sway {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+/* ── LINK WITH THE ROD OF SEASONS (image) ──
+ * Foreground hero on the right side, balancing the Maku Tree on the left.
+ * Subtle idle bob so he's not perfectly static. */
+.oos-link {
+  position: absolute;
+  bottom: 4vh;
+  right: 4vw;
+  width: min(340px, 22vw);
+  height: auto;
+  z-index: 4;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+  image-rendering: auto;
+  animation: oos-link-bob 4.8s ease-in-out infinite;
+}
+
+@keyframes oos-link-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ── DIN, THE ORACLE OF SEASONS (image) ──
+ * Floats in the upper-mid of the scene mid-dance with a side-to-side sway
+ * plus a slight rotation and scale beat — reads as a continuous dance,
+ * not a metronome. Tinted with the active theme's --ac-glow. */
+.oos-din {
+  position: absolute;
+  top: 6vh;
+  left: 38vw;
+  width: min(260px, 18vw);
+  height: auto;
+  z-index: 3;
+  transform-origin: 50% 90%;
+  filter:
+    drop-shadow(0 10px 16px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 18px var(--ac-glow, rgba(245, 122, 42, 0.55)));
+  image-rendering: auto;
+  animation: oos-din-dance 4.6s ease-in-out infinite;
+}
+
+@keyframes oos-din-dance {
+  0%   { transform: translate(0, 0)       rotate(-3deg) scale(1); }
+  25%  { transform: translate(8px, -6px)  rotate(2deg)  scale(1.02); }
+  50%  { transform: translate(0, -12px)   rotate(-2deg) scale(1.04); }
+  75%  { transform: translate(-8px, -4px) rotate(3deg)  scale(1.02); }
+  100% { transform: translate(0, 0)       rotate(-3deg) scale(1); }
+}
+
+/* ── SEASON PARTICLES ── */
+.oos-particles {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  animation: oos-season-cycle 40s linear infinite;
+}
+
+/* Pink blossoms drifting diagonally during Spring */
+.oos-blossoms {
+  background-image:
+    radial-gradient(circle at center,
+      #ffc2da 0,
+      #ffc2da 2px,
+      #e88aae 2px,
+      #e88aae 3.5px,
+      transparent 3.5px),
+    radial-gradient(circle at center,
+      #ffd6e8 0,
+      #ffd6e8 1.5px,
+      transparent 1.5px);
+  background-size: 140px 220px, 90px 140px;
+  background-position: 0 0, 50px 70px;
+  animation:
+    oos-season-cycle 40s linear infinite,
+    oos-blossoms-drift 8s linear infinite;
+  animation-delay: 0s, 0s;
+  mix-blend-mode: screen;
+}
+
+@keyframes oos-blossoms-drift {
+  from { background-position: -140px -220px, -90px -140px; }
+  to { background-position: 0 100vh, 60px 100vh; }
+}
+
+/* Sun rays during Summer */
+.oos-sunrays {
+  background:
+    linear-gradient(105deg, transparent 30%, rgba(255, 240, 130, 0.18) 40%, transparent 50%),
+    linear-gradient(75deg, transparent 50%, rgba(255, 240, 130, 0.14) 60%, transparent 70%),
+    linear-gradient(115deg, transparent 60%, rgba(255, 240, 130, 0.16) 70%, transparent 80%);
+  filter: blur(2px);
+  animation:
+    oos-season-cycle 40s linear infinite,
+    oos-sunrays-pulse 7s ease-in-out infinite;
+  animation-delay: -10s, 0s;
+}
+
+@keyframes oos-sunrays-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Falling autumn leaves */
+.oos-leaves {
+  background-image:
+    radial-gradient(ellipse 3px 5px,
+      #e57c2a 0,
+      #e57c2a 2.5px,
+      #a8431a 2.5px,
+      #a8431a 4px,
+      transparent 4px),
+    radial-gradient(ellipse 2px 4px,
+      #f5b53a 0,
+      #f5b53a 2px,
+      transparent 2px);
+  background-size: 150px 200px, 90px 160px;
+  background-position: 0 0, 40px 80px;
+  animation:
+    oos-season-cycle 40s linear infinite,
+    oos-leaves-fall 9s linear infinite;
+  animation-delay: -20s, 0s;
+}
+
+@keyframes oos-leaves-fall {
+  from { background-position: -50px -200px, -30px -160px; }
+  to { background-position: 50px 100vh, 70px 100vh; }
+}
+
+/* Falling snowflakes */
+.oos-snow {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95) 1.5px, transparent 2.5px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 1px, transparent 2px);
+  background-size: 110px 180px, 70px 130px;
+  background-position: 0 0, 35px 60px;
+  animation:
+    oos-season-cycle 40s linear infinite,
+    oos-snow-fall 11s linear infinite;
+  animation-delay: -30s, 0s;
+}
+
+@keyframes oos-snow-fall {
+  from { background-position: 0 -180px, 30px -130px; }
+  to { background-position: 30px 100vh, 60px 100vh; }
+}
+
+/* ── SEASON LABEL ── */
+.oos-season-label {
+  position: absolute;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Bungee', sans-serif;
+  font-size: clamp(2rem, 4vw, 4rem);
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.85), 0 4px 12px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  /* Sit above Din (z:3) and Link (z:4) so the season name is readable. */
+  z-index: 5;
+  animation: oos-season-label 40s linear infinite;
+}
+
+.oos-label-spring { animation-delay: 0s;   color: #ffc2da; }
+.oos-label-summer { animation-delay: -10s; color: #a3ec9c; }
+.oos-label-autumn { animation-delay: -20s; color: #ffaa3a; }
+.oos-label-winter { animation-delay: -30s; color: #d8e4ec; }
+
+/* The label is only visible for the first 2 seconds of each 10-second slice */
+@keyframes oos-season-label {
+  0%, 5% { opacity: 1; transform: translate(-50%, 0); }
+  10%, 95% { opacity: 0; transform: translate(-50%, -20px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ── SCANLINES ── */
+.oos-scanlines {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.18) 0,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Crossfade wrapper for scene swaps when the playing track's game changes. */
+.ac-scene-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 1.2s ease;
+  z-index: 0;
+}
+
+.ac-scene-layer[data-state='entering'],
+.ac-scene-layer[data-state='exiting'] {
+  opacity: 0;
+}
+
+.ac-scene-layer[data-state='active'] {
+  opacity: 1;
+}
+
+/* The countdown text should sit on top of scenes. */
+.ac-stage > .ac-title,
+.ac-stage > .ac-clock,
+.ac-stage > .ac-sub {
+  position: relative;
+  z-index: 2;
+}
+
+.ac-visualiser {
+  z-index: 1;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * WIND WAKER — cel-shaded ocean, dragon boat, islands, gusts, foam swirls
+ *
+ * Hard colour stops on the linear-gradient give the banded cel-shaded look
+ * the game is known for — no smooth blend between sky/sea/depth zones.
+ * ───────────────────────────────────────────────────────────────────────── */
+.ww-scene {
+  /* Sky + horizon haze; the water area below 36% is fully covered by the
+   * tiled blob layers so the gradient doesn't need to handle water depth. */
+  background:
+    linear-gradient(180deg,
+      #00d1ff 0% 26%,        /* sky */
+      #5fd7eb 26% 32%,       /* upper haze */
+      #a3f1ee 32% 36%,       /* horizon fog */
+      #006bac 36% 100%       /* water base (mostly hidden by tiles) */
+    );
+}
+
+/* Layers from the old water system that conflict with the toon-shader look. */
+.ww-foam,
+.ww-patches,
+.ww-waves { display: none; }
+
+.ww-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 240, 200, 0.7) 0%,
+    rgba(255, 240, 200, 0) 70%
+  );
+  filter: blur(2px);
+}
+
+.ww-sun {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle,
+    rgba(255, 240, 200, 0.6) 0%,
+    rgba(255, 200, 120, 0.3) 35%,
+    rgba(255, 200, 120, 0) 70%
+  );
+  filter: blur(8px);
+}
+
+.ww-island {
+  position: absolute;
+  /* Anchored so the island base sits on the horizon line where the
+   * water-tiles layer begins (top: 36% = bottom: 64vh). */
+  bottom: 64vh;
+  opacity: 0.95;
+}
+
+.ww-island-ice {
+  left: -3vw;
+  width: 30vw;
+  filter: drop-shadow(0 0 12px rgba(140, 200, 240, 0.4));
+}
+
+.ww-island-volcano {
+  /* Slim spire profile — distinctly narrower than the original cone. */
+  right: 6vw;
+  width: 16vw;
+  filter: drop-shadow(0 0 18px rgba(255, 110, 32, 0.45));
+}
+
+/* Subtle sandbar hint at the volcano's waterline — reads as a soft tan
+ * shadow under the spire, not a full island. Slightly wider than the
+ * volcano base; sits just below the horizon with a small blur so the
+ * edges fade into the water. */
+.ww-volcano-sand {
+  position: absolute;
+  right: 5vw;
+  width: 18vw;
+  height: 2vw;
+  bottom: calc(64vh - 2vw);
+  pointer-events: none;
+  filter: blur(1.2px);
+}
+
+/* Matching subtle icy base under the ice island — pale cyan-white halo
+ * sitting just below the waterline. Mirrors the volcano sand shadow. */
+.ww-ice-base {
+  position: absolute;
+  left: -4vw;
+  width: 32vw;
+  height: 2vw;
+  bottom: calc(64vh - 2vw);
+  pointer-events: none;
+  filter: blur(1.2px);
+}
+
+/* Cloud ring wrapping around the upper third of the volcano spire, sitting
+ * just below Valoo's perch. Gentle horizontal drift gives it life. */
+.ww-volcano-cloud {
+  position: absolute;
+  right: 7vw;
+  width: 12vw;
+  bottom: calc(64vh + 10vw);
+  z-index: 1;
+  opacity: 0.92;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.18));
+  animation: ww-cloud-drift 12s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes ww-cloud-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-10px); }
+}
+
+.ww-flame {
+  transform-origin: 270px 25px;
+  animation: ww-flicker 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes ww-flicker {
+  from { transform: scale(0.95) translateY(0); opacity: 0.85; }
+  to { transform: scale(1.1) translateY(-2px); opacity: 1; }
+}
+
+/* Sky Spirit Valoo perched on top of the volcano. The volcano svg sits at
+ * `right: -3vw; width: 38vw; bottom: 22vh` with the lava-cap peak at viewBox
+ * (260, 30) — that lands roughly at right:15vw from the screen edge and
+ * 22vh + ~16vw up from the bottom. Values here put Valoo's base on the cap. */
+.ww-valoo {
+  position: absolute;
+  /* Aligned to the new thin volcano's peak. Volcano sits at right: 4vw with
+   * width 24vw, so SVG spans right 4–28vw. Peak x is at viewBox 152/280
+   * (54%), landing at right ~15vw in viewport space; valoo's 7vw width is
+   * centred on that with right: 11.5vw. Vertically the peak is at y=35/320
+   * of a 27.43vw-tall SVG above the 64vh horizon, so it sits at
+   * bottom: calc(64vh + 24vw); placing valoo's bottom there perches him on
+   * the lava cap, well above the cloud band at calc(64vh + 15vw). */
+  right: 10vw;
+  bottom: calc(64vh + 13.6vw);
+  width: 7vw;
+  z-index: 2;
+  transform-origin: 50% 90%;
+  /* Calm baseline plus a periodic rage burst. Two layered animations on
+   * coprime periods stack into one transform via custom props:
+   *   - ww-valoo-breathe: continuous gentle bob (calm baseline)
+   *   - ww-valoo-rage: long cycle that sits at zero for ~85% of the time
+   *     then erupts into a rapid thrashing window — Valoo briefly losing
+   *     his temper, then settling back to calm.
+   * Periods don't share factors so the rage burst doesn't sync to the
+   * breath. */
+  --valoo-jx: 0px;
+  --valoo-jy: 0px;
+  --valoo-jr: 0deg;
+  --valoo-rx: 0px;
+  --valoo-ry: 0px;
+  --valoo-rr: 0deg;
+  --valoo-rs: 1;
+  transform:
+    translate(
+      calc(var(--valoo-jx) + var(--valoo-rx)),
+      calc(var(--valoo-jy) + var(--valoo-ry))
+    )
+    rotate(calc(var(--valoo-jr) + var(--valoo-rr)))
+    scale(var(--valoo-rs));
+  animation:
+    ww-valoo-breathe 5.3s ease-in-out infinite alternate,
+    ww-valoo-rage 19s linear infinite;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Registered custom props so the two animations stack onto one transform
+ * without overwriting each other. */
+@property --valoo-jx { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --valoo-jy { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --valoo-jr { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+@property --valoo-rx { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --valoo-ry { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --valoo-rr { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+@property --valoo-rs { syntax: '<number>'; initial-value: 1;   inherits: false; }
+
+/* Calm breathing baseline — gentle bob and very subtle puff. Runs
+ * `alternate` so 0%→100% then 100%→0% gives a smooth in-out cycle. */
+@keyframes ww-valoo-breathe {
+  from { --valoo-jx: 0px;  --valoo-jy: 0px;     --valoo-jr: 0deg; }
+  to   { --valoo-jx: 0px;  --valoo-jy: -1.5px;  --valoo-jr: 0.4deg; }
+}
+
+/* Rage burst — sits at zero for the first ~76% of the cycle (calm),
+ * spikes into a rapid thrashing window from 78%-94%, then settles back
+ * to zero by the next loop. With cycle = 19s the rage window is ~3s of
+ * thrashing every 19s; the rest of the time only the gentle breathe
+ * keyframe is contributing motion. */
+@keyframes ww-valoo-rage {
+  0%    { --valoo-rx: 0px;  --valoo-ry: 0px;  --valoo-rr: 0deg;  --valoo-rs: 1; }
+  76%   { --valoo-rx: 0px;  --valoo-ry: 0px;  --valoo-rr: 0deg;  --valoo-rs: 1; }
+  /* Rage spikes in */
+  78%   { --valoo-rx: -5px; --valoo-ry: -3px; --valoo-rr: -3.5deg; --valoo-rs: 1.04; }
+  79.5% { --valoo-rx: 7px;  --valoo-ry: 2px;  --valoo-rr: 4deg;    --valoo-rs: 0.98; }
+  81%   { --valoo-rx: -4px; --valoo-ry: -5px; --valoo-rr: -2.5deg; --valoo-rs: 1.05; }
+  82.5% { --valoo-rx: 6px;  --valoo-ry: 1px;  --valoo-rr: 4.5deg;  --valoo-rs: 1.02; }
+  84%   { --valoo-rx: -7px; --valoo-ry: -2px; --valoo-rr: -4deg;   --valoo-rs: 1.04; }
+  85.5% { --valoo-rx: 5px;  --valoo-ry: 3px;  --valoo-rr: 3deg;    --valoo-rs: 0.99; }
+  87%   { --valoo-rx: -6px; --valoo-ry: -4px; --valoo-rr: -3deg;   --valoo-rs: 1.05; }
+  88.5% { --valoo-rx: 4px;  --valoo-ry: 1px;  --valoo-rr: 2.5deg;  --valoo-rs: 1.02; }
+  90%   { --valoo-rx: -3px; --valoo-ry: -2px; --valoo-rr: -2deg;   --valoo-rs: 1.03; }
+  92%   { --valoo-rx: 2px;  --valoo-ry: 0px;  --valoo-rr: 1deg;    --valoo-rs: 1.01; }
+  /* Settle back to calm */
+  94%   { --valoo-rx: 0px;  --valoo-ry: 0px;  --valoo-rr: 0deg;    --valoo-rs: 1; }
+  100%  { --valoo-rx: 0px;  --valoo-ry: 0px;  --valoo-rr: 0deg;    --valoo-rs: 1; }
+}
+
+/* Zephos on his cloud — drifts left-to-right across the upper sky on a
+ * wandering vertical path. Uses the same registered-property trick as the
+ * boat: one linear X traversal layered with two incommensurate Y wanders,
+ * so consecutive trips look like different flight paths. */
+@property --zephos-x {
+  syntax: '<length-percentage>';
+  initial-value: -18vw;
+  inherits: false;
+}
+@property --zephos-y1 {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+@property --zephos-y2 {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+.ww-zephos {
+  position: absolute;
+  top: 6vh;
+  left: 0;
+  width: min(80px, 6.2vw);
+  height: auto;
+  z-index: 3;
+  --zephos-x: -18vw;
+  --zephos-y1: 0px;
+  --zephos-y2: 0px;
+  transform: translate(var(--zephos-x), calc(var(--zephos-y1) + var(--zephos-y2)));
+  animation:
+    ww-zephos-x 96s linear infinite,
+    ww-zephos-y1 23s ease-in-out infinite,
+    ww-zephos-y2 13s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes ww-zephos-x {
+  from { --zephos-x: -18vw; }
+  to   { --zephos-x: 118vw; }
+}
+
+/* Primary lazy bob — broad vertical swings, asymmetric so it doesn't
+ * read as a clean sine wave. Amplitude ~40px so he genuinely climbs and
+ * dips on his cloud. */
+@keyframes ww-zephos-y1 {
+  0%   { --zephos-y1: 0px; }
+  11%  { --zephos-y1: -28px; }
+  24%  { --zephos-y1: 18px; }
+  38%  { --zephos-y1: -38px; }
+  51%  { --zephos-y1: 8px; }
+  63%  { --zephos-y1: 32px; }
+  76%  { --zephos-y1: -22px; }
+  88%  { --zephos-y1: 14px; }
+  100% { --zephos-y1: 0px; }
+}
+
+/* Smaller wobble on a shorter period — gusty pockets of wind layered on
+ * top so two trips never look the same. Amplitude ~12px. */
+@keyframes ww-zephos-y2 {
+  0%   { --zephos-y2: 0px; }
+  20%  { --zephos-y2: 10px; }
+  37%  { --zephos-y2: -12px; }
+  52%  { --zephos-y2: 6px; }
+  68%  { --zephos-y2: -9px; }
+  84%  { --zephos-y2: 11px; }
+  100% { --zephos-y2: 0px; }
+}
+
+/* Cyclos drifting right-to-left on his magenta cloud. Mirror of Zephos —
+ * starts off the right edge, ends off the left, with two incommensurate Y
+ * wanders on different periods (and different from Zephos's) so the two
+ * gods never appear in lockstep. */
+@property --cyclos-x {
+  syntax: '<length-percentage>';
+  initial-value: 118vw;
+  inherits: false;
+}
+@property --cyclos-y1 {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+@property --cyclos-y2 {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+.ww-cyclos {
+  position: absolute;
+  top: 13vh;
+  left: 0;
+  width: min(90px, 7vw);
+  height: auto;
+  z-index: 3;
+  --cyclos-x: 118vw;
+  --cyclos-y1: 0px;
+  --cyclos-y2: 0px;
+  transform: translate(var(--cyclos-x), calc(var(--cyclos-y1) + var(--cyclos-y2)));
+  animation:
+    ww-cyclos-x 108s linear infinite,
+    ww-cyclos-y1 31s ease-in-out infinite,
+    ww-cyclos-y2 19s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes ww-cyclos-x {
+  from { --cyclos-x: 118vw; }
+  to   { --cyclos-x: -20vw; }
+}
+
+/* Primary lazy bob — broad asymmetric swings, ~42px amplitude. */
+@keyframes ww-cyclos-y1 {
+  0%   { --cyclos-y1: 0px; }
+  9%   { --cyclos-y1: 22px; }
+  22%  { --cyclos-y1: -26px; }
+  36%  { --cyclos-y1: 34px; }
+  49%  { --cyclos-y1: -12px; }
+  62%  { --cyclos-y1: -32px; }
+  74%  { --cyclos-y1: 18px; }
+  87%  { --cyclos-y1: -14px; }
+  100% { --cyclos-y1: 0px; }
+}
+
+/* Secondary gust wobble on a shorter period — ~13px amplitude. */
+@keyframes ww-cyclos-y2 {
+  0%   { --cyclos-y2: 0px; }
+  17%  { --cyclos-y2: -11px; }
+  34%  { --cyclos-y2: 13px; }
+  51%  { --cyclos-y2: -7px; }
+  69%  { --cyclos-y2: 10px; }
+  85%  { --cyclos-y2: -12px; }
+  100% { --cyclos-y2: 0px; }
+}
+
+/* Fishman — pops up at random ocean spots. One long keyframe animation
+ * walks him through six positions; each pop is a fade-in → bob → fade-out
+ * envelope, and the teleport to the next spot happens while opacity is 0
+ * so the position jump is invisible. */
+.ww-fishman {
+  position: absolute;
+  width: min(72px, 5.5vw);
+  height: auto;
+  z-index: 4;
+  opacity: 0;
+  left: 16vw;
+  bottom: 7vh;
+  transform-origin: 50% 90%;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  animation: ww-fishman-pop 64s linear infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Six pop positions span the full vertical band Link's boat traverses
+ * (≈17vh–48vh). Half the pops use `scale(-S, S)` instead of `scale(S, S)`
+ * so fishman flips on the X axis — he reads as jumping rightward on some
+ * pops and leftward on others. */
+@keyframes ww-fishman-pop {
+  /* Pop 1 — left, lower band (facing right) */
+  0%   { left: 14vw; bottom: 18vh; opacity: 0; transform: translateY(20px) scale(0.7, 0.7); }
+  2%   { left: 14vw; bottom: 18vh; opacity: 1; transform: translateY(-18px) scale(1.05, 1.05); }
+  6%   { left: 14vw; bottom: 18vh; opacity: 1; transform: translateY(-12px) scale(1, 1); }
+  10%  { left: 14vw; bottom: 18vh; opacity: 0; transform: translateY(18px)  scale(0.85, 0.85); }
+  /* Pop 2 — centre, mid band (FLIPPED, facing left) */
+  16%  { left: 52vw; bottom: 30vh; opacity: 0; transform: translateY(22px) scale(-0.7, 0.7); }
+  18%  { left: 52vw; bottom: 30vh; opacity: 1; transform: translateY(-16px) scale(-1.05, 1.05); }
+  22%  { left: 52vw; bottom: 30vh; opacity: 1; transform: translateY(-10px) scale(-1, 1); }
+  26%  { left: 52vw; bottom: 30vh; opacity: 0; transform: translateY(18px)  scale(-0.85, 0.85); }
+  /* Pop 3 — right, high band (FLIPPED) */
+  32%  { left: 78vw; bottom: 42vh; opacity: 0; transform: translateY(22px) scale(-0.7, 0.7); }
+  34%  { left: 78vw; bottom: 42vh; opacity: 1; transform: translateY(-20px) scale(-1.05, 1.05); }
+  38%  { left: 78vw; bottom: 42vh; opacity: 1; transform: translateY(-14px) scale(-1, 1); }
+  42%  { left: 78vw; bottom: 42vh; opacity: 0; transform: translateY(18px)  scale(-0.85, 0.85); }
+  /* Pop 4 — left-centre, mid band (facing right) */
+  49%  { left: 26vw; bottom: 36vh; opacity: 0; transform: translateY(22px) scale(0.7, 0.7); }
+  51%  { left: 26vw; bottom: 36vh; opacity: 1; transform: translateY(-18px) scale(1.05, 1.05); }
+  55%  { left: 26vw; bottom: 36vh; opacity: 1; transform: translateY(-12px) scale(1, 1); }
+  59%  { left: 26vw; bottom: 36vh; opacity: 0; transform: translateY(18px)  scale(0.85, 0.85); }
+  /* Pop 5 — right-centre, high band (FLIPPED) */
+  66%  { left: 66vw; bottom: 46vh; opacity: 0; transform: translateY(22px) scale(-0.7, 0.7); }
+  68%  { left: 66vw; bottom: 46vh; opacity: 1; transform: translateY(-16px) scale(-1.05, 1.05); }
+  72%  { left: 66vw; bottom: 46vh; opacity: 1; transform: translateY(-10px) scale(-1, 1); }
+  76%  { left: 66vw; bottom: 46vh; opacity: 0; transform: translateY(18px)  scale(-0.85, 0.85); }
+  /* Pop 6 — centre, low band (facing right) */
+  83%  { left: 40vw; bottom: 22vh; opacity: 0; transform: translateY(22px) scale(0.7, 0.7); }
+  85%  { left: 40vw; bottom: 22vh; opacity: 1; transform: translateY(-20px) scale(1.05, 1.05); }
+  90%  { left: 40vw; bottom: 22vh; opacity: 1; transform: translateY(-14px) scale(1, 1); }
+  94%  { left: 40vw; bottom: 22vh; opacity: 0; transform: translateY(18px)  scale(0.85, 0.85); }
+  /* Loop back round */
+  100% { left: 14vw; bottom: 18vh; opacity: 0; transform: translateY(20px) scale(0.7, 0.7); }
+}
+
+/* Splash that fires at each of fishman's pop positions. Same six waypoints,
+ * shifted right by ~half-fishman-width so the centred SVG lines up with
+ * his body. Starts a fraction earlier than fishman with a scale-up + fade
+ * so it reads as the water breaking around him on entry. */
+.ww-fishman-splash {
+  position: absolute;
+  width: min(140px, 11vw);
+  height: auto;
+  z-index: 3;
+  opacity: 0;
+  left: 17vw;
+  bottom: 17vh;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.55));
+  animation: ww-fishman-splash-pop 64s linear infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Splash snaps in instantly at fishman's breach (2%, 18%, 34%, …) — no
+ * pre-ramp — then scales outward and fades. The "hidden" keyframes are
+ * placed immediately before each breach percent so the fade-in step
+ * happens in <0.01% of the cycle (effectively a hard switch). */
+@keyframes ww-fishman-splash-pop {
+  /* Splash 1 — fires at Pop 1 breach (2%) */
+  1.99% { left: 17vw; bottom: 17vh; opacity: 0; transform: translate(-50%, -2px) scale(0.7); }
+  2%    { left: 17vw; bottom: 17vh; opacity: 1; transform: translate(-50%, -4px) scale(0.95); }
+  4%    { left: 17vw; bottom: 17vh; opacity: 0.85; transform: translate(-50%, -10px) scale(1.3); }
+  7%    { left: 17vw; bottom: 17vh; opacity: 0; transform: translate(-50%, -14px) scale(1.55); }
+  /* Splash 2 — fires at Pop 2 breach (18%) */
+  17.99%{ left: 55vw; bottom: 29vh; opacity: 0; transform: translate(-50%, -2px) scale(0.7); }
+  18%   { left: 55vw; bottom: 29vh; opacity: 1; transform: translate(-50%, -4px) scale(0.95); }
+  20%   { left: 55vw; bottom: 29vh; opacity: 0.85; transform: translate(-50%, -10px) scale(1.3); }
+  23%   { left: 55vw; bottom: 29vh; opacity: 0; transform: translate(-50%, -14px) scale(1.55); }
+  /* Splash 3 — fires at Pop 3 breach (34%) */
+  33.99%{ left: 81vw; bottom: 41vh; opacity: 0; transform: translate(-50%, -2px) scale(0.7); }
+  34%   { left: 81vw; bottom: 41vh; opacity: 1; transform: translate(-50%, -4px) scale(0.95); }
+  36%   { left: 81vw; bottom: 41vh; opacity: 0.85; transform: translate(-50%, -10px) scale(1.3); }
+  39%   { left: 81vw; bottom: 41vh; opacity: 0; transform: translate(-50%, -14px) scale(1.55); }
+  /* Splash 4 — fires at Pop 4 breach (51%) */
+  50.99%{ left: 29vw; bottom: 35vh; opacity: 0; transform: translate(-50%, -2px) scale(0.7); }
+  51%   { left: 29vw; bottom: 35vh; opacity: 1; transform: translate(-50%, -4px) scale(0.95); }
+  53%   { left: 29vw; bottom: 35vh; opacity: 0.85; transform: translate(-50%, -10px) scale(1.3); }
+  56%   { left: 29vw; bottom: 35vh; opacity: 0; transform: translate(-50%, -14px) scale(1.55); }
+  /* Splash 5 — fires at Pop 5 breach (68%) */
+  67.99%{ left: 69vw; bottom: 45vh; opacity: 0; transform: translate(-50%, -2px) scale(0.7); }
+  68%   { left: 69vw; bottom: 45vh; opacity: 1; transform: translate(-50%, -4px) scale(0.95); }
+  70%   { left: 69vw; bottom: 45vh; opacity: 0.85; transform: translate(-50%, -10px) scale(1.3); }
+  73%   { left: 69vw; bottom: 45vh; opacity: 0; transform: translate(-50%, -14px) scale(1.55); }
+  /* Splash 6 — fires at Pop 6 breach (85%) */
+  84.99%{ left: 43vw; bottom: 21vh; opacity: 0; transform: translate(-50%, -2px) scale(0.7); }
+  85%   { left: 43vw; bottom: 21vh; opacity: 1; transform: translate(-50%, -4px) scale(0.95); }
+  87%   { left: 43vw; bottom: 21vh; opacity: 0.85; transform: translate(-50%, -10px) scale(1.3); }
+  90%   { left: 43vw; bottom: 21vh; opacity: 0; transform: translate(-50%, -14px) scale(1.55); }
+  100%  { left: 17vw; bottom: 17vh; opacity: 0; transform: translate(-50%, -2px) scale(0.7); }
+}
+
+/* Registered custom props so we can animate the boat's X and two
+ * independent Y components on separate prime-ish periods. Their LCM is
+ * many minutes long, so the boat visibly takes a different route across
+ * the screen on every trip rather than looping the same sine wave. */
+@property --boat-x {
+  syntax: '<length-percentage>';
+  initial-value: -15vw;
+  inherits: false;
+}
+@property --boat-y1 {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+@property --boat-y2 {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+.ww-boat {
+  position: absolute;
+  bottom: 32vh;
+  left: 0;
+  --boat-x: -15vw;
+  --boat-y1: 0px;
+  --boat-y2: 0px;
+  transform: translate(var(--boat-x), calc(var(--boat-y1) + var(--boat-y2)));
+  /* Three independent cycles: a slow X traversal plus two Y wanders at
+   * incommensurate periods. The longer one is the dominant heading;
+   * the shorter one adds little side-jukes on top. */
+  animation:
+    ww-sail-x 82s linear infinite,
+    ww-sail-y1 73s ease-in-out infinite,
+    ww-sail-y2 43s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+/* Wake fanning out behind the stern. Anchored to the .ww-boat container so
+ * it travels with the ship but sits outside the rocking <img>'s transform,
+ * keeping the foam planted on the waterline while the hull tips above it. */
+.ww-trail {
+  position: absolute;
+  bottom: 6%;
+  right: 88%;
+  width: min(110px, 9vw);
+  height: 22%;
+  pointer-events: none;
+  filter: blur(0.5px) drop-shadow(0 0 3px rgba(255, 255, 255, 0.45));
+}
+
+.ww-trail path {
+  animation: ww-trail-flow 1.8s linear infinite;
+}
+
+@keyframes ww-trail-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: 60; }
+}
+
+.ww-boat img {
+  display: block;
+  width: min(140px, 12vw);
+  height: auto;
+  /* Pivot the rocking around the waterline so the hull stays planted while
+   * the mast sways. Rocking lives on the <img> so it composes with the
+   * <div>'s horizontal sailing transform. Cycle is biased anticlockwise
+   * (negative rotation) so the boat doesn't appear to be leaning forward. */
+  transform-origin: 50% 85%;
+  animation: ww-boat-rock 4.6s ease-in-out infinite;
+}
+
+@keyframes ww-boat-rock {
+  0%   { transform: rotate(-12deg) translateY(0); }
+  20%  { transform: rotate(-8deg)  translateY(-3px); }
+  45%  { transform: rotate(-4deg)  translateY(1px); }
+  70%  { transform: rotate(-9deg)  translateY(-4px); }
+  100% { transform: rotate(-12deg) translateY(0); }
+}
+
+/* Salvage Corp ship — drifts the opposite way to the King of Red Lions
+ * (right → left). Higher on the canvas so it reads as a little further
+ * out in the ocean. */
+.ww-salvage {
+  position: absolute;
+  bottom: 22vh;
+  left: 0;
+  animation: ww-salvage-sail 78s linear infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+/* Trailing wake — anchored to the RIGHT side of the .ww-salvage container
+ * since this ship sails leftward, so the foam fans out behind its stern. */
+.ww-salvage-trail {
+  position: absolute;
+  bottom: 6%;
+  left: 88%;
+  width: min(96px, 8vw);
+  height: 22%;
+  pointer-events: none;
+  filter: blur(0.5px) drop-shadow(0 0 3px rgba(255, 255, 255, 0.45));
+}
+
+.ww-salvage-trail path {
+  animation: ww-trail-flow 1.8s linear infinite;
+}
+
+/* Soft whitewater drop-shadow under the hull — a wide flat foam halo that
+ * blurs into the water beneath the ship. Anchored below the bottom of the
+ * .ww-salvage box so the foam sits *under* the hull rather than overlapping
+ * the ship sprite from behind. */
+.ww-salvage-whitewater {
+  position: absolute;
+  left: -4%;
+  right: -12%;
+  bottom: -6%;
+  height: 18%;
+  pointer-events: none;
+  filter: blur(1.4px);
+  opacity: 0.9;
+}
+
+.ww-salvage img {
+  display: block;
+  width: min(220px, 18vw);
+  height: auto;
+  /* Same trick as the Red Lions: rock the hull on its own animation so it
+   * composes with the parent's horizontal sail transform without clobbering. */
+  transform-origin: 50% 85%;
+  animation: ww-salvage-rock 5.2s ease-in-out infinite;
+}
+
+/* Sail path now arcs in depth too: the ship enters from the right small
+ * and high (further away, near the horizon), comes forward and down
+ * toward the camera in the middle of the traversal — scaling up as it
+ * grows closer — then recedes toward the left/top again. */
+@keyframes ww-salvage-sail {
+  0%   { transform: translateX(115vw) translateY(-5vh)   scale(0.6); }
+  18%  { transform: translateX(92vw)  translateY(-3.5vh) scale(0.72); }
+  35%  { transform: translateX(68vw)  translateY(-1.5vh) scale(0.88); }
+  52%  { transform: translateX(45vw)  translateY(0.5vh)  scale(1.1); }
+  68%  { transform: translateX(22vw)  translateY(-1vh)   scale(0.92); }
+  85%  { transform: translateX(2vw)   translateY(-3vh)   scale(0.76); }
+  100% { transform: translateX(-18vw) translateY(-5vh)   scale(0.6); }
+}
+
+@keyframes ww-salvage-rock {
+  0%   { transform: rotate(-3deg) translateY(0); }
+  25%  { transform: rotate(2deg)  translateY(-3px); }
+  50%  { transform: rotate(5deg)  translateY(1px); }
+  75%  { transform: rotate(0deg)  translateY(-3px); }
+  100% { transform: rotate(-3deg) translateY(0); }
+}
+
+/* Horizontal traversal — single, linear sweep across the screen. */
+@keyframes ww-sail-x {
+  from { --boat-x: -15vw; }
+  to   { --boat-x: 115vw; }
+}
+
+/* Primary vertical wander — big slow swings, asymmetric so it doesn't
+ * read as a clean sine wave. Amplitude ~12vh so the boat genuinely roams
+ * across most of the middle of the scene rather than skimming a band. */
+@keyframes ww-sail-y1 {
+  0%   { --boat-y1: 0vh; }
+  10%  { --boat-y1: -7vh; }
+  22%  { --boat-y1: 5vh; }
+  34%  { --boat-y1: -11vh; }
+  46%  { --boat-y1: 3vh; }
+  57%  { --boat-y1: 10vh; }
+  69%  { --boat-y1: -8vh; }
+  82%  { --boat-y1: 6vh; }
+  93%  { --boat-y1: -4vh; }
+  100% { --boat-y1: 0vh; }
+}
+
+/* Secondary jitter on a shorter, incommensurate period — chop and gusts
+ * layered on the lazy heading. Amplitude ~3.5vh. */
+@keyframes ww-sail-y2 {
+  0%   { --boat-y2: 0vh; }
+  15%  { --boat-y2: 3vh; }
+  30%  { --boat-y2: -3.5vh; }
+  44%  { --boat-y2: 2vh; }
+  58%  { --boat-y2: -2.5vh; }
+  72%  { --boat-y2: 3.2vh; }
+  86%  { --boat-y2: -1.8vh; }
+  100% { --boat-y2: 0vh; }
+}
+
+.ww-waves {
+  position: absolute;
+  left: -10%;
+  width: 220%;
+  height: 60px;
+}
+
+.ww-waves-back {
+  bottom: 18vh;
+  animation: ww-wave 18s linear infinite;
+  opacity: 0.6;
+}
+
+.ww-waves-mid {
+  bottom: 8vh;
+  animation: ww-wave 12s linear infinite reverse;
+  opacity: 0.8;
+}
+
+.ww-waves-front {
+  bottom: 0;
+  animation: ww-wave 8s linear infinite;
+  height: 20vh;
+}
+
+@keyframes ww-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Old hard horizontal streaks replaced by the wispier ww-gust system below. */
+.ww-wind { display: none; }
+
+/* Wispy wind gusts confined entirely to the sky (above the 36vh horizon
+ * line where the water tiles begin). Heights shortened so the lowest
+ * gust still terminates before reaching the sea. */
+.ww-gust {
+  position: absolute;
+  left: -80vw;
+  width: 90vw;
+  /* Heights and tops use percentages of the scene container so they share a
+   * coordinate space with .ww-watertiles (top: 36%) — keeps the gusts above
+   * the horizon regardless of how tall .ac-stage actually is. */
+  height: 6%;
+  overflow: hidden;
+  filter: blur(0.6px) drop-shadow(0 0 6px rgba(255, 255, 255, 0.45));
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.ww-gust path {
+  stroke-linecap: round;
+  fill: none;
+  animation: ww-gust-flow 7s linear infinite;
+}
+
+.ww-gust-a {
+  top: 4%;
+  animation: ww-gust-sweep-a 11s linear infinite;
+}
+
+.ww-gust-b {
+  top: 13%;
+  animation: ww-gust-sweep-b 14s linear infinite;
+  animation-delay: -5s;
+  opacity: 0.9;
+}
+
+.ww-gust-c {
+  top: 22%;
+  animation: ww-gust-sweep-c 9s linear infinite;
+  animation-delay: -3s;
+  opacity: 0.75;
+}
+
+@keyframes ww-gust-sweep-a {
+  0%   { transform: translateX(0); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(200vw); opacity: 0; }
+}
+
+@keyframes ww-gust-sweep-b {
+  0%   { transform: translateX(0); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(200vw); opacity: 0; }
+}
+
+@keyframes ww-gust-sweep-c {
+  0%   { transform: translateX(0); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(200vw); opacity: 0; }
+}
+
+@keyframes ww-gust-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -160; }
+}
+
+/* Link's arm waves while sailing */
+.ww-link-arm {
+  transform-origin: -3px 4px;
+  animation: ww-wave-arm 1.6s ease-in-out infinite;
+}
+
+@keyframes ww-wave-arm {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(15deg); }
+}
+
+/* Bow wake pulses with the wave rhythm */
+.ww-wake {
+  animation: ww-wake-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ww-wake-pulse {
+  0%, 100% { opacity: 0.4; transform: scaleY(1); }
+  50% { opacity: 0.9; transform: scaleY(1.5); }
+}
+
+/* Seagulls — three of them on different loops + altitudes */
+.ww-gull {
+  position: absolute;
+  width: 4vw;
+  min-width: 36px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+  animation: ww-flap 1.4s ease-in-out infinite, ww-gull-glide 28s linear infinite;
+}
+
+.ww-gull-1 { top: 12vh; animation-duration: 1.4s, 28s; animation-delay: 0s, 0s; }
+.ww-gull-2 { top: 22vh; width: 3vw; animation-duration: 1.1s, 36s; animation-delay: -0.3s, -8s; opacity: 0.85; }
+.ww-gull-3 { top: 8vh;  width: 2.5vw; animation-duration: 1s, 22s; animation-delay: -0.7s, -14s; opacity: 0.75; }
+
+@keyframes ww-flap {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.5); }
+}
+
+@keyframes ww-gull-glide {
+  0% { transform: translateX(-10vw); }
+  100% { transform: translateX(115vw); }
+}
+
+/* Bright highlight patches drifting across the surface, blended onto the
+ * water to simulate sunlight catching the tops of swells. */
+.ww-patches {
+  position: absolute;
+  left: -10%;
+  bottom: 0;
+  width: 220%;
+  height: 38vh;
+  animation: ww-patches-drift 26s linear infinite;
+  filter: blur(0.6px);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+@keyframes ww-patches-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Continuously tiling cel-ripple texture across the lower half of the
+ * scene. Built from a tiny inline SVG that repeats — gives the water its
+ * "busy" toon look without any single shape being recognisable. */
+/* WebGL canvas that runs the toon-water fragment shader — covers the entire
+ * water region from the horizon line down to the bottom of the scene. */
+.ww-water-canvas {
+  position: absolute;
+  top: 36%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* The two CSS-tiled water layers below have been superseded by the WebGL
+ * canvas; left in place for reference and disabled. */
+.ww-watertiles,
+.ww-foam-blobs { display: none; }
+
+/* Toon-shader water surface, layer 1 — uniform sea of the darker base blue
+ * with overlapping circles of the lighter blue tone. Tiles seamlessly and
+ * drifts diagonally so the pattern wobbles like a parallax-distorted surface. */
+.ww-watertiles {
+  position: absolute;
+  top: 36%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #006bac;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><g fill='%230072ba'><circle cx='30' cy='28' r='24'/><circle cx='95' cy='44' r='30'/><circle cx='160' cy='30' r='22'/><circle cx='180' cy='80' r='28'/><circle cx='10' cy='90' r='26'/><circle cx='65' cy='100' r='32'/><circle cx='125' cy='95' r='25'/><circle cx='175' cy='150' r='30'/><circle cx='30' cy='160' r='28'/><circle cx='90' cy='175' r='26'/><circle cx='140' cy='170' r='24'/><circle cx='195' cy='195' r='18'/><circle cx='5' cy='10' r='16'/><circle cx='115' cy='10' r='14'/><circle cx='195' cy='5' r='12'/><circle cx='50' cy='65' r='15'/><circle cx='130' cy='60' r='14'/><circle cx='195' cy='115' r='13'/><circle cx='40' cy='130' r='18'/><circle cx='100' cy='135' r='16'/><circle cx='155' cy='200' r='14'/><circle cx='5' cy='195' r='14'/><circle cx='65' cy='200' r='12'/><circle cx='15' cy='50' r='10'/><circle cx='80' cy='15' r='8'/><circle cx='150' cy='130' r='12'/><circle cx='105' cy='70' r='10'/><circle cx='175' cy='195' r='9'/><circle cx='115' cy='150' r='10'/></g></svg>");
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  animation: ww-blobs-drift 34s linear infinite;
+  pointer-events: none;
+}
+
+/* Toon-shader water surface, layer 2 — sparser, smaller white foam circles
+ * scattered on top of the blue blobs, drifting in a different direction so
+ * the two layers slide over each other like wave parallax. */
+.ww-foam-blobs {
+  position: absolute;
+  top: 36%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Denser foam circle pattern. Sized & distributed so individual circles
+   * blend into irregular cel-shaded patches where they overlap, rather than
+   * reading as isolated dots — approximates the shader's foam look. Each
+   * patch is a small cluster of overlapping circles; smaller accent circles
+   * fill the gaps. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><g fill='%23cff5f6'><circle cx='38' cy='42' r='4'/><circle cx='46' cy='38' r='2.8'/><circle cx='32' cy='48' r='2.4'/><circle cx='110' cy='28' r='3.5'/><circle cx='118' cy='35' r='2.4'/><circle cx='180' cy='55' r='5'/><circle cx='188' cy='48' r='2.8'/><circle cx='172' cy='62' r='2.4'/><circle cx='220' cy='100' r='3.5'/><circle cx='60' cy='90' r='5'/><circle cx='68' cy='96' r='2.8'/><circle cx='52' cy='84' r='2.4'/><circle cx='150' cy='110' r='4'/><circle cx='158' cy='118' r='2.4'/><circle cx='30' cy='150' r='3'/><circle cx='38' cy='156' r='2'/><circle cx='95' cy='165' r='4.5'/><circle cx='104' cy='158' r='2.4'/><circle cx='200' cy='160' r='3'/><circle cx='130' cy='205' r='5'/><circle cx='138' cy='198' r='2.4'/><circle cx='50' cy='225' r='4'/><circle cx='180' cy='220' r='3.5'/><circle cx='188' cy='226' r='2'/><circle cx='10' cy='75' r='3'/><circle cx='115' cy='80' r='2.5'/><circle cx='225' cy='35' r='4'/><circle cx='75' cy='195' r='3'/><circle cx='160' cy='10' r='3.5'/><circle cx='65' cy='130' r='2.5'/><circle cx='205' cy='130' r='3'/><circle cx='40' cy='190' r='3.5'/><circle cx='140' cy='150' r='3'/><circle cx='75' cy='25' r='2'/><circle cx='100' cy='100' r='1.8'/><circle cx='25' cy='105' r='1.8'/><circle cx='125' cy='60' r='1.5'/><circle cx='165' cy='85' r='1.8'/><circle cx='205' cy='75' r='1.5'/><circle cx='165' cy='192' r='2'/></g></svg>");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+  animation: ww-foam-blobs-drift 22s linear infinite;
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+/* Both blob layers drift purely horizontally — no vertical motion that
+ * would make the foam look like falling snow. Opposite directions and
+ * different speeds give the shader-style parallax overlap as the two
+ * patterns slide across each other. */
+@keyframes ww-blobs-drift {
+  0%   { background-position: 0 0; }
+  100% { background-position: -200px 0; }
+}
+
+@keyframes ww-foam-blobs-drift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 240px 0; }
+}
+
+/* Cel-shaded foam highlights on the water — drift slowly L-R */
+.ww-foam {
+  position: absolute;
+  left: -10%;
+  bottom: 0;
+  width: 220%;
+  height: 22vh;
+  animation: ww-foam-drift 14s linear infinite;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+}
+
+@keyframes ww-foam-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Curling wind wisps — same trick the BotW Malice tendrils use: each path
+ * has a dashed stroke and the dashoffset is animated so the dashes appear
+ * to flow along the curve. Layered with a slow opacity pulse so wisps
+ * breathe in and out of view. No horizontal translate — these stay put
+ * and read as living air currents, not parallax streaks. */
+.ww-wisps {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100vw;
+  /* Confined to the sky portion of the scene. The water tiles start at
+   * top: 36%; a 32% cap on the wisps SVG keeps every dashed stroke above
+   * the horizon line regardless of how tall .ac-stage is rendered. */
+  height: 32%;
+  overflow: hidden;
+  pointer-events: none;
+  filter: blur(0.4px) drop-shadow(0 0 6px rgba(220, 240, 255, 0.55));
+}
+
+.ww-wisp {
+  stroke-dasharray: 22 14 6 18 10 22;
+  animation:
+    ww-wisp-flow 6s linear infinite,
+    ww-wisp-pulse 5.5s ease-in-out infinite;
+  will-change: stroke-dashoffset, opacity;
+}
+
+@keyframes ww-wisp-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -184; }
+}
+
+@keyframes ww-wisp-pulse {
+  0%, 100% { opacity: 0.25; }
+  45%      { opacity: 1; }
+  60%      { opacity: 0.95; }
+}
+
+/* Each wisp gets its own cadence so they never march in step. */
+.ww-wisp-1 { animation-duration: 6.2s, 5.4s; animation-delay: 0s, -0.6s; stroke-width: 2.8; }
+.ww-wisp-2 { animation-duration: 7.1s, 6.2s; animation-delay: -1.4s, -2.1s; stroke-width: 2.4; }
+.ww-wisp-3 { animation-duration: 5.6s, 4.8s; animation-delay: -3.1s, -1.2s; stroke-width: 2.2; opacity: 0.9; }
+.ww-wisp-4 { animation-duration: 8.0s, 7.0s; animation-delay: -2.0s, -3.6s; stroke-width: 2.6; }
+.ww-wisp-5 { animation-duration: 6.8s, 5.2s; animation-delay: -4.2s, -0.9s; stroke-width: 2.0; opacity: 0.85; }
+.ww-wisp-6 { animation-duration: 7.5s, 6.6s; animation-delay: -0.5s, -2.8s; stroke-width: 2.3; opacity: 0.8; }
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * OCARINA OF TIME — Kokiri Forest greens, blue ocarina, gold light shafts
+ * ───────────────────────────────────────────────────────────────────────── */
+.oot-scene {
+  background:
+    radial-gradient(ellipse at 60% 30%, rgba(255, 220, 120, 0.32) 0%, transparent 50%),
+    linear-gradient(180deg,
+      #1a3a22 0%,
+      #2a6238 30%,
+      #1c4e2c 55%,
+      #0c2a18 80%,
+      #050f0a 100%
+    );
+}
+
+.oot-light-shafts {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(105deg, transparent 30%, rgba(255, 220, 120, 0.16) 40%, transparent 50%),
+    linear-gradient(75deg, transparent 50%, rgba(255, 220, 120, 0.10) 60%, transparent 70%),
+    linear-gradient(115deg, transparent 60%, rgba(255, 220, 120, 0.13) 70%, transparent 80%);
+  filter: blur(3px);
+  animation: oot-shafts 14s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 4;
+}
+
+@keyframes oot-shafts {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* Warm dawn bloom centred on where the Deku Tree stands, giving the
+ * scene its iconic golden-hour glow. */
+.oot-deku-aura {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70vw;
+  height: 60vh;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 50%,
+      rgba(255, 220, 130, 0.30) 0%,
+      rgba(255, 200, 110, 0.18) 30%,
+      rgba(255, 180, 90,  0.08) 60%,
+      transparent 85%
+    );
+  filter: blur(6px);
+  z-index: 1;
+  animation: oot-deku-aura-pulse 8s ease-in-out infinite;
+}
+
+@keyframes oot-deku-aura-pulse {
+  0%, 100% { opacity: 0.78; }
+  50%      { opacity: 1; }
+}
+
+/* Horizontal mist bands drifting between the tree layers — adds depth
+ * separation without being a hard fog. */
+.oot-mist {
+  position: absolute;
+  bottom: 14vh;
+  left: 0;
+  width: 100%;
+  height: 28vh;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg,
+      rgba(220, 220, 200, 0) 0%,
+      rgba(220, 220, 200, 0.18) 40%,
+      rgba(220, 220, 200, 0.12) 70%,
+      rgba(220, 220, 200, 0) 100%
+    );
+  filter: blur(8px);
+  z-index: 2;
+  animation: oot-mist-drift 16s ease-in-out infinite alternate;
+}
+
+@keyframes oot-mist-drift {
+  from { transform: translateX(0)    scaleY(1);    opacity: 0.85; }
+  to   { transform: translateX(20px) scaleY(1.04); opacity: 1; }
+}
+
+/* Far-back tree silhouettes — softest, mistiest layer */
+.oot-trees-far {
+  position: absolute;
+  bottom: 12vh;
+  left: 0;
+  width: 100%;
+  height: 24vh;
+  opacity: 0.7;
+  filter: blur(1.5px);
+  z-index: 1;
+}
+
+/* The Great Deku Tree — centre-back */
+.oot-deku {
+  position: absolute;
+  bottom: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(620px, 48vw);
+  height: auto;
+  z-index: 2;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55));
+  animation: oot-deku-breathe 6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes oot-deku-breathe {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50%      { transform: translateX(-50%) scale(1.01); }
+}
+
+/* Mid-range trees framing the sides */
+.oot-trees-mid {
+  position: absolute;
+  bottom: 0;
+  width: min(280px, 22vw);
+  height: 56vh;
+  z-index: 3;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+.oot-trees-mid.oot-trees-left  { left: -2vw; }
+.oot-trees-mid.oot-trees-right { right: -2vw; transform: scaleX(-1); }
+
+/* The Ocarina of Time — floating front-and-centre, anchored near the top
+ * of the scene so the event-title overlay sits beneath it rather than on
+ * top of the instrument. */
+.oot-ocarina {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(320px, 26vw);
+  filter:
+    drop-shadow(0 0 28px rgba(80, 160, 240, 0.7))
+    drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+  animation: oot-bob 5s ease-in-out infinite;
+  z-index: 5;
+}
+
+@keyframes oot-bob {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-3deg); }
+  50%      { transform: translate(-50%, -54%) rotate(3deg); }
+}
+
+/* Forest floor — rolling silhouette across the bottom */
+.oot-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 18vh;
+  z-index: 6;
+  filter: drop-shadow(0 -4px 12px rgba(0, 0, 0, 0.5));
+}
+
+.oot-fireflies {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 210, 58, 0.85) 1.5px, transparent 2.5px),
+    radial-gradient(circle, rgba(160, 230, 130, 0.7) 1px, transparent 2px),
+    radial-gradient(circle, rgba(255, 210, 58, 0.6) 1px, transparent 2px);
+  background-size: 220px 180px, 160px 140px, 100px 90px;
+  background-position: 0 0, 80px 40px, 50px 100px;
+  animation: oot-firefly-drift 18s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes oot-firefly-drift {
+  from { background-position: 0 0, 80px 40px, 50px 100px; }
+  to { background-position: -60px -180px, 20px -140px, -10px -80px; }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * MAJORA'S MASK — descending moon over Clock Town
+ * ───────────────────────────────────────────────────────────────────────── */
+.mm-scene {
+  background:
+    radial-gradient(ellipse at center top, rgba(189, 218, 80, 0.18) 0%, transparent 60%),
+    linear-gradient(180deg, #1a1024 0%, #2e1735 50%, #0d0418 100%);
+}
+
+.mm-moon {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30vw;
+  height: 30vw;
+  filter: drop-shadow(0 0 30px rgba(240, 208, 154, 0.6));
+  animation: mm-loom 8s ease-in-out infinite;
+}
+
+@keyframes mm-loom {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -45%) scale(1.05); }
+}
+
+.mm-clocktown {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 28vh;
+}
+
+.mm-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(189, 218, 80, 0.12) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * BREATH OF THE WILD — Hyrule at sunset: castle + malice, Sheikah tower,
+ * plateau, shrine, layered mountains, Link on the cliff edge.
+ * ───────────────────────────────────────────────────────────────────────── */
+.botw-scene {
+  background: linear-gradient(180deg,
+    #2a1a3a 0% 18%,
+    #6a3a48 18% 35%,
+    #c8593a 35% 48%,
+    #f5a93a 48% 56%,
+    #a85a52 56% 70%,
+    #3a2438 70% 100%
+  );
+}
+
+.botw-sun {
+  position: absolute;
+  bottom: 35vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22vw;
+  height: 22vw;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255, 220, 120, 0.95) 0%,
+    rgba(245, 169, 58, 0.7) 35%,
+    rgba(245, 107, 26, 0) 70%
+  );
+  filter: blur(6px);
+  animation: botw-sun-glow 8s ease-in-out infinite;
+}
+
+@keyframes botw-sun-glow {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
+}
+
+.botw-mountains {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.botw-mountains-far {
+  bottom: 26vh;
+  height: 14vh;
+  opacity: 0.85;
+}
+
+.botw-mountains-mid {
+  bottom: 20vh;
+  height: 16vh;
+}
+
+.botw-castle {
+  position: absolute;
+  bottom: 32vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(280px, 22vw);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.botw-malice {
+  position: absolute;
+  bottom: 32vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(280px, 22vw);
+  filter: drop-shadow(0 0 8px rgba(255, 30, 30, 0.5));
+  animation: botw-malice-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes botw-malice-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+.botw-malice-tendril {
+  stroke-dasharray: 200;
+  animation: botw-malice-flow 6s linear infinite;
+}
+
+.botw-malice-tendril-2 {
+  animation-duration: 7s;
+  animation-delay: -2s;
+}
+
+.botw-malice-tendril-3 {
+  animation-duration: 8s;
+  animation-delay: -4s;
+}
+
+@keyframes botw-malice-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -200; }
+}
+
+.botw-tower {
+  position: absolute;
+  bottom: 12vh;
+  right: 8vw;
+  height: 65vh;
+  width: auto;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+}
+
+.botw-plateau {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+}
+
+.botw-shrine {
+  position: absolute;
+  bottom: 18vh;
+  left: 14vw;
+  width: min(90px, 8vw);
+  filter: drop-shadow(0 0 14px rgba(245, 107, 26, 0.8));
+  animation: botw-shrine-pulse 3s ease-in-out infinite;
+}
+
+@keyframes botw-shrine-pulse {
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(245, 107, 26, 0.8)); }
+  50% { filter: drop-shadow(0 0 26px rgba(255, 200, 100, 1)); }
+}
+
+.botw-shrine-glow {
+  position: absolute;
+  bottom: 16vh;
+  left: 14vw;
+  width: 16vw;
+  height: 16vw;
+  transform: translate(-30%, 20%);
+  background: radial-gradient(circle,
+    rgba(245, 107, 26, 0.35) 0%,
+    rgba(245, 107, 26, 0) 65%
+  );
+  filter: blur(8px);
+  animation: botw-shrine-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes botw-shrine-glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.botw-link {
+  /* Standing on the plateau edge — sized larger and placed on the right
+   * lip of the cliff so the silhouette reads immediately. */
+  position: absolute;
+  bottom: 14vh;
+  right: 24vw;
+  width: 5.5vw;
+  height: 11vw;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.85));
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * BotW Death Mountain — purple night sky, glowing volcano, Vah Rudania
+ * ───────────────────────────────────────────────────────────────────────── */
+.botw-dm-scene {
+  background: linear-gradient(180deg,
+    #1a0420 0% 25%,
+    #2a0a30 25% 45%,
+    #44143a 45% 55%,
+    #6a2030 55% 65%,
+    #2a0814 65% 100%
+  );
+}
+
+.botw-dm-skyglow {
+  position: absolute;
+  bottom: 18vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70vw;
+  height: 50vh;
+  background: radial-gradient(ellipse at center bottom,
+    rgba(255, 110, 32, 0.55) 0%,
+    rgba(255, 110, 32, 0.25) 35%,
+    rgba(255, 110, 32, 0) 70%
+  );
+  filter: blur(12px);
+  animation: botw-dm-glow-flicker 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes botw-dm-glow-flicker {
+  0% { opacity: 0.75; }
+  100% { opacity: 1; }
+}
+
+.botw-dm-smoke {
+  position: absolute;
+  bottom: 50vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26vw;
+  height: 40vh;
+  background: radial-gradient(ellipse at center bottom,
+    rgba(40, 20, 30, 0.6) 0%,
+    rgba(40, 20, 30, 0) 70%
+  );
+  filter: blur(14px);
+  animation: botw-dm-smoke-rise 7s ease-in-out infinite;
+}
+
+.botw-dm-smoke-2 {
+  animation-duration: 9s;
+  animation-delay: -3s;
+  opacity: 0.7;
+}
+
+.botw-dm-smoke-3 {
+  width: 32vw;
+  height: 48vh;
+  bottom: 45vh;
+  animation-duration: 11s;
+  animation-delay: -6s;
+  opacity: 0.85;
+  background: radial-gradient(ellipse at center bottom,
+    rgba(70, 30, 28, 0.7) 0%,
+    rgba(40, 20, 30, 0) 75%
+  );
+}
+
+@keyframes botw-dm-smoke-rise {
+  0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 0.6; }
+  50% { transform: translate(-50%, -30px) scale(1.15); opacity: 0.9; }
+}
+
+/* Fiery rocks ejected from the crater. The wrapper anchors at the
+ * caldera position (centred at the volcano peak) and each variant
+ * stamps its own arc + timing on top via the keyframe. */
+.botw-dm-rock {
+  position: absolute;
+  bottom: calc(6vh + 28vw);
+  left: 50%;
+  width: 2.4vw;
+  height: 2.4vw;
+  pointer-events: none;
+  opacity: 0;
+  filter: drop-shadow(0 0 8px rgba(255, 130, 40, 0.85));
+  mix-blend-mode: screen;
+}
+
+.botw-dm-rock svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes botw-dm-rock-left-tall {
+  0%       { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+  10%      { transform: translate(-80%, -120px) scale(1); opacity: 1; }
+  45%      { transform: translate(-220%, -40px) scale(0.95); opacity: 1; }
+  85%      { transform: translate(-260%, 220px) scale(0.6); opacity: 0.5; }
+  100%     { transform: translate(-280%, 320px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-right-tall {
+  0%       { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+  10%      { transform: translate(-20%, -130px) scale(1); opacity: 1; }
+  45%      { transform: translate(120%, -50px) scale(0.95); opacity: 1; }
+  85%      { transform: translate(160%, 240px) scale(0.6); opacity: 0.5; }
+  100%     { transform: translate(180%, 340px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-left-short {
+  0%       { transform: translate(-50%, 0) scale(0.3); opacity: 0; }
+  15%      { transform: translate(-90%, -70px) scale(0.85); opacity: 1; }
+  60%      { transform: translate(-160%, 80px) scale(0.7); opacity: 0.7; }
+  100%     { transform: translate(-180%, 220px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-right-short {
+  0%       { transform: translate(-50%, 0) scale(0.3); opacity: 0; }
+  15%      { transform: translate(-10%, -80px) scale(0.85); opacity: 1; }
+  60%      { transform: translate(70%, 100px) scale(0.7); opacity: 0.7; }
+  100%     { transform: translate(90%, 240px) scale(0.4); opacity: 0; }
+}
+
+@keyframes botw-dm-rock-straight-up {
+  0%       { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+  20%      { transform: translate(-55%, -160px) scale(1); opacity: 1; }
+  55%      { transform: translate(-45%, -110px) scale(0.85); opacity: 0.95; }
+  100%     { transform: translate(-50%, 340px) scale(0.3); opacity: 0; }
+}
+
+.botw-dm-rock-1 { animation: botw-dm-rock-left-tall   3.6s linear infinite; animation-delay: 0s;    }
+.botw-dm-rock-2 { animation: botw-dm-rock-right-tall  4.2s linear infinite; animation-delay: -1.4s; }
+.botw-dm-rock-3 { animation: botw-dm-rock-left-short  2.8s linear infinite; animation-delay: -0.8s; }
+.botw-dm-rock-4 { animation: botw-dm-rock-right-short 3.1s linear infinite; animation-delay: -2.2s; }
+.botw-dm-rock-5 { animation: botw-dm-rock-straight-up 5.0s linear infinite; animation-delay: -3.1s; }
+
+.botw-dm-far-mountains {
+  position: absolute;
+  bottom: 22vh;
+  left: 0;
+  width: 100%;
+  height: 14vh;
+  opacity: 0.85;
+}
+
+.botw-dm-volcano {
+  position: absolute;
+  bottom: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(820px, 60vw);
+  filter:
+    drop-shadow(0 0 40px rgba(255, 110, 32, 0.6))
+    drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+}
+
+.botw-dm-lava path {
+  filter: drop-shadow(0 0 4px rgba(255, 90, 24, 0.8));
+}
+
+/* Rudania prowls along the caldera rim. The outer wrapper handles the
+ * horizontal patrol + flip-at-each-end (so he turns around when he
+ * reaches the rim's edge). The inner .botw-dm-rudania-art handles the
+ * walking bob/rock independently so the two animations don't clobber
+ * each other's transform. */
+@property --rudania-bob {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+@property --rudania-rock {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.botw-dm-rudania {
+  position: absolute;
+  /* Anchored at the volcano's base — the patrol keyframe lifts him up
+   * along the slope via translateY, so the bottom only needs to match
+   * the bottom of the volcano element. */
+  bottom: 6vh;
+  left: 50%;
+  width: min(220px, 14vw);
+  transform-origin: 50% 100%;
+  animation: botw-dm-rudania-patrol 14s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 14px rgba(245, 107, 26, 0.6))
+    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.7));
+}
+
+.botw-dm-rudania-art {
+  display: block;
+  width: 100%;
+  --rudania-bob: 0px;
+  --rudania-rock: 0deg;
+  transform: translateY(var(--rudania-bob)) rotate(var(--rudania-rock));
+  animation:
+    botw-dm-rudania-bob 0.55s ease-in-out infinite,
+    botw-dm-rudania-rock 1.1s ease-in-out infinite;
+}
+
+@keyframes botw-dm-rudania-patrol {
+  /* Walks the upper slope of the volcano: left base → peak → right base,
+   * turns around, walks back. The translateX uses `Xvw - 50%` so the
+   * `-50%` centres the lizard on its own width while Xvw positions him
+   * relative to the volcano's centre. Y is the vertical lift up the cone. */
+
+  /* Forward pass — facing right, going up the left slope and down the right */
+  0%   { transform: translate(calc(-14vw - 50%), -12vw) scaleX(1); }
+  12%  { transform: translate(calc(-8vw - 50%),  -19vw) scaleX(1); }
+  25%  { transform: translate(calc(0vw - 50%),   -26vw) scaleX(1); }
+  37%  { transform: translate(calc(8vw - 50%),   -19vw) scaleX(1); }
+  47%  { transform: translate(calc(14vw - 50%),  -12vw) scaleX(1); }
+  /* Turn around at the right foot */
+  50%  { transform: translate(calc(14vw - 50%),  -12vw) scaleX(-1); }
+  /* Return pass — facing left, going back over the peak */
+  62%  { transform: translate(calc(8vw - 50%),   -19vw) scaleX(-1); }
+  75%  { transform: translate(calc(0vw - 50%),   -26vw) scaleX(-1); }
+  87%  { transform: translate(calc(-8vw - 50%),  -19vw) scaleX(-1); }
+  97%  { transform: translate(calc(-14vw - 50%), -12vw) scaleX(-1); }
+  /* Turn around at the left foot to repeat */
+  100% { transform: translate(calc(-14vw - 50%), -12vw) scaleX(1); }
+}
+
+@keyframes botw-dm-rudania-bob {
+  0%, 100% { --rudania-bob: 0px; }
+  50%      { --rudania-bob: -3px; }
+}
+
+@keyframes botw-dm-rudania-rock {
+  0%, 100% { --rudania-rock: -2deg; }
+  50%      { --rudania-rock: 2deg; }
+}
+
+/* Walking legs alternating stomps. */
+.botw-dm-rudania-leg-front,
+.botw-dm-rudania-leg-back {
+  transform-origin: top center;
+  animation: botw-dm-rudania-leg 0.55s ease-in-out infinite;
+}
+.botw-dm-rudania-leg-front { animation-delay: 0s; }
+.botw-dm-rudania-leg-back  { animation-delay: 0.275s; }
+
+@keyframes botw-dm-rudania-leg {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* Sheikah spine markings pulse with the volcano's heartbeat. */
+.botw-dm-rudania-spine circle {
+  animation: botw-dm-rudania-spine 2s ease-in-out infinite;
+}
+.botw-dm-rudania-spine circle:nth-child(2) { animation-delay: 0.2s; }
+.botw-dm-rudania-spine circle:nth-child(3) { animation-delay: 0.4s; }
+.botw-dm-rudania-spine circle:nth-child(4) { animation-delay: 0.6s; }
+
+@keyframes botw-dm-rudania-spine {
+  0%, 100% { fill: #f56b1a; }
+  50%      { fill: #ffd23a; }
+}
+
+/* Snout-fire blast — appears in flickers, otherwise hidden. */
+.botw-dm-rudania-breath {
+  transform-origin: 196px 48px;
+  opacity: 0;
+  animation: botw-dm-rudania-breath 7s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 130, 40, 0.85));
+}
+
+@keyframes botw-dm-rudania-breath {
+  0%, 80%, 100% { opacity: 0; transform: scaleX(0.6); }
+  85%           { opacity: 1; transform: scaleX(1); }
+  95%           { opacity: 0.4; transform: scaleX(1.4); }
+}
+
+.botw-dm-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 18vh;
+}
+
+.botw-dm-embers {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 130, 50, 0.95) 1.5px, transparent 2.5px),
+    radial-gradient(rgba(255, 210, 80, 0.7) 1.2px, transparent 2px);
+  background-size: 200px 240px, 160px 180px;
+  background-position: 30px 80px, 110px 40px;
+  animation: botw-dm-embers-rise 14s linear infinite;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+}
+
+.botw-dm-embers-2 {
+  background-size: 280px 280px, 220px 220px;
+  background-position: 90px 100px, 40px 60px;
+  animation-duration: 22s;
+  opacity: 0.55;
+}
+
+@keyframes botw-dm-embers-rise {
+  from { background-position: 30px 100vh, 110px 100vh; }
+  to { background-position: 80px -240px, 160px -220px; }
+}
+
+/* Silver Lynel patrolling the depths cavern floor. One keyframe handles
+ * both the X traversal and the horizontal flip at each end so he turns
+ * around at the edges. A small walking bob is layered in via a custom
+ * property so it stacks with the patrol's scaleX without one animation
+ * overwriting the other's transform. */
+@property --lynel-bob {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+@property --lynel-rock {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.totk-depths-lynel {
+  position: absolute;
+  bottom: 6vh;
+  left: 80vw;
+  width: min(160px, 11vw);
+  height: auto;
+  /* Sits above the gloom hands (z-index 6) and the foreground ledge
+   * (z-index 5) so the patrolling lynel reads as the closest thing
+   * to the camera. */
+  z-index: 7;
+  --lynel-bob: 0px;
+  --lynel-rock: 0deg;
+  transform-origin: 50% 100%;
+  /* Dim, dark-red gloom haze — barely there, just enough to tint the
+   * silhouette so he reads as part of the Depths atmosphere. */
+  filter:
+    drop-shadow(0 0 6px rgba(72, 6, 14, 0.35))
+    drop-shadow(0 0 12px rgba(40, 2, 8, 0.25))
+    drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
+  animation:
+    totk-depths-lynel-patrol 54s linear infinite,
+    totk-depths-lynel-bob 0.7s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Walks fully off-screen at each end and flips while invisible, so the
+ * direction change is never seen on stage. Source image faces left, so
+ * scaleX(1) = facing left and scaleX(-1) = facing right. */
+@keyframes totk-depths-lynel-patrol {
+  /* Enter from off-screen right, walking left */
+  0%    { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+  /* Fully off-screen on the left, still facing left */
+  48%   { left: -14vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+  /* Off-screen flip — invisible to the viewer */
+  48.5% { left: -14vw; transform: translateY(var(--lynel-bob)) scaleX(-1) rotate(var(--lynel-rock)); }
+  /* Re-enter from off-screen left, walking right */
+  50%   { left: -14vw; transform: translateY(var(--lynel-bob)) scaleX(-1) rotate(var(--lynel-rock)); }
+  /* Fully off-screen on the right, still facing right */
+  98%   { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(-1) rotate(var(--lynel-rock)); }
+  /* Off-screen flip back to natural orientation, ready for next loop */
+  98.5% { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+  100%  { left: 100vw; transform: translateY(var(--lynel-bob)) scaleX(1)  rotate(var(--lynel-rock)); }
+}
+
+/* Trotting cadence — quick up-down bob paired with a small head/body
+ * rock around the hooves. Both values feed the transform via custom
+ * props so the patrol keyframe can compose them without clobbering. */
+@keyframes totk-depths-lynel-bob {
+  0%   { --lynel-bob: 0px;  --lynel-rock: 0deg; }
+  25%  { --lynel-bob: -5px; --lynel-rock: 2deg; }
+  50%  { --lynel-bob: -1px; --lynel-rock: 0deg; }
+  75%  { --lynel-bob: -5px; --lynel-rock: -2deg; }
+  100% { --lynel-bob: 0px;  --lynel-rock: 0deg; }
+}
+
+/* Drifting orange Sheikah embers in the sky */
+.botw-embers {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(245, 107, 26, 0.85) 1.5px, transparent 2.5px),
+    radial-gradient(rgba(255, 200, 120, 0.6) 1.2px, transparent 2px);
+  background-size: 260px 220px, 180px 180px;
+  background-position: 30px 80px, 110px 40px;
+  animation: botw-embers-rise 20s linear infinite;
+  opacity: 0.7;
+  mix-blend-mode: screen;
+}
+
+@keyframes botw-embers-rise {
+  from { background-position: 30px 80px, 110px 40px; }
+  to { background-position: 60px -160px, 140px -160px; }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * TEARS OF THE KINGDOM — floating Zonai island
+ * ───────────────────────────────────────────────────────────────────────── */
+.totk-scene {
+  /* Dawn-lit Hyrule sky: deep teal up high, fading through dusty teal
+   * to a warm horizon glow, with the foreground sinking back into shadow. */
+  background:
+    radial-gradient(ellipse at 50% 64%, rgba(255, 200, 130, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg,
+      #1a2a3a 0%,
+      #284455 24%,
+      #5a7080 50%,
+      #c89878 64%,
+      #6a5c66 78%,
+      #1a1620 95%,
+      #0a0810 100%
+    );
+}
+
+.totk-fog {
+  position: absolute;
+  top: 46%;
+  left: 0;
+  right: 0;
+  height: 32vh;
+  background: linear-gradient(180deg,
+    rgba(220, 220, 230, 0.18) 0%,
+    rgba(160, 200, 210, 0.10) 40%,
+    rgba(120, 150, 160, 0.04) 75%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* Drifting Zonai energy motes — small glowing teal/gold particles
+ * scattered across the sky and slowly rising. */
+.totk-motes {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(154, 242, 230, 0.9) 1.5px, transparent 2px),
+    radial-gradient(circle, rgba(255, 230, 140, 0.8) 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(180, 230, 220, 0.65) 1px, transparent 1.6px);
+  background-size: 260px 220px, 320px 280px, 200px 180px;
+  background-position: 30px 60px, 90px 120px, 50px 30px;
+  animation: totk-motes-rise 28s linear infinite;
+  opacity: 0.85;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+@keyframes totk-motes-rise {
+  0%   { background-position: 30px 60px, 90px 120px, 50px 30px; }
+  100% { background-position: 30px -160px, 90px -160px, 50px -150px; }
+}
+
+/* Far mountain silhouettes along the horizon */
+.totk-mountains-far {
+  position: absolute;
+  bottom: 14%;
+  left: 0;
+  width: 100%;
+  height: 14vh;
+  opacity: 0.9;
+}
+
+/* Death Mountain — tall central peak, anchored at the horizon */
+.totk-deathmountain {
+  position: absolute;
+  bottom: 14%;
+  /* Pushed into the right third of the scene so it sits opposite the
+   * Hyrule Castle landmark on the left. */
+  left: 72%;
+  transform: translateX(-50%);
+  width: min(380px, 28vw);
+  height: auto;
+  filter: drop-shadow(0 0 18px rgba(255, 110, 32, 0.3));
+}
+
+.totk-smoke {
+  transform-origin: 172px 30px;
+  animation: totk-smoke-drift 6s ease-in-out infinite alternate;
+}
+
+@keyframes totk-smoke-drift {
+  from { transform: translateY(0)    scale(1);   opacity: 0.85; }
+  to   { transform: translateY(-6px) scale(1.05); opacity: 1; }
+}
+
+/* Floating Hyrule Castle — distance object, slightly left of centre */
+/* Hyrule Castle sits low on the scene — only barely lifted off the ground,
+ * with the Gloom pool at its base overlapping the foreground cliff. The
+ * drop-shadow is now red Malice rather than teal Zonai energy. A very
+ * subtle bob sells the "hovering, but only just" beat. */
+.totk-castle {
+  position: absolute;
+  bottom: 16vh;
+  /* Shifted to the left third so it doesn't overlap Death Mountain at
+   * the centre of the scene. */
+  left: 24%;
+  transform: translateX(-50%);
+  width: min(360px, 26vw);
+  height: auto;
+  filter: drop-shadow(0 0 18px rgba(216, 36, 58, 0.45));
+  animation: totk-castle-bob 6s ease-in-out infinite;
+  z-index: 4;
+}
+
+@keyframes totk-castle-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-2px); }
+}
+
+/* Waterfall trailing off the large sky island — animated dashes scroll
+ * downward along the streaks so the water reads as continuously falling. */
+.totk-waterfall-stream {
+  animation: totk-waterfall-fall 0.7s linear infinite;
+}
+
+.totk-waterfall-stream-2 {
+  animation-duration: 0.9s;
+  animation-delay: -0.3s;
+}
+
+.totk-waterfall-stream-3 {
+  animation-duration: 0.55s;
+  animation-delay: -0.15s;
+}
+
+@keyframes totk-waterfall-fall {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -32; }
+}
+
+/* Mist droplets falling and fading beneath the splash */
+.totk-waterfall-drops circle {
+  animation: totk-waterfall-drop 1.4s ease-in infinite;
+}
+
+.totk-waterfall-drops circle:nth-child(2) { animation-delay: -0.4s; animation-duration: 1.2s; }
+.totk-waterfall-drops circle:nth-child(3) { animation-delay: -0.8s; animation-duration: 1.6s; }
+.totk-waterfall-drops circle:nth-child(4) { animation-delay: -1.1s; animation-duration: 1.3s; }
+
+@keyframes totk-waterfall-drop {
+  0%   { transform: translateY(-10px); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 0.7; }
+  100% { transform: translateY(14px); opacity: 0; }
+}
+
+/* Castle remnants on the ground directly below the floating castle. Sits
+ * at the same horizontal position with a small vertical gap so the
+ * "lifted" beat is legible. Same drop-shadow colour family as the castle
+ * (red Gloom) for visual cohesion. */
+.totk-castle-remnants {
+  position: absolute;
+  /* The cliff foreground occupies bottom 0–22vh. The remnants sit on
+   * the ground just below the cliff top, partly overlapping it. */
+  bottom: 12vh;
+  left: 24%;
+  transform: translateX(-50%);
+  width: min(320px, 24vw);
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7))
+          drop-shadow(0 0 14px rgba(216, 36, 58, 0.4));
+  z-index: 4;
+}
+
+/* Tiny pulse on the embers rising from the Gloom pool */
+.totk-gloom-embers circle {
+  animation: totk-ember-flicker 2.4s ease-in-out infinite;
+}
+.totk-gloom-embers circle:nth-child(2) { animation-delay: -0.6s; }
+.totk-gloom-embers circle:nth-child(3) { animation-delay: -1.2s; }
+.totk-gloom-embers circle:nth-child(4) { animation-delay: -1.8s; }
+
+@keyframes totk-ember-flicker {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50%      { opacity: 1;   transform: translateY(-3px); }
+}
+
+/* Light Dragon — golden serpentine ribbon arcing across the sky */
+.totk-dragon {
+  position: absolute;
+  top: 6%;
+  left: 0;
+  width: 100%;
+  height: 30vh;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(255, 215, 120, 0.55));
+}
+
+.totk-dragon-glow {
+  filter: blur(8px);
+  animation: totk-dragon-pulse 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes totk-dragon-pulse {
+  from { opacity: 0.45; }
+  to   { opacity: 0.8; }
+}
+
+.totk-dragon-ribbon {
+  /* Dasharray lets us animate the ribbon "flowing" along the arc. */
+  stroke-dasharray: 120 40;
+  animation: totk-dragon-flow 6s linear infinite;
+}
+
+@keyframes totk-dragon-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -320; }
+}
+
+.totk-dragon-sparks circle {
+  animation: totk-spark-twinkle 2.2s ease-in-out infinite;
+}
+
+.totk-dragon-sparks circle:nth-child(2) { animation-delay: -0.4s; }
+.totk-dragon-sparks circle:nth-child(3) { animation-delay: -0.9s; }
+.totk-dragon-sparks circle:nth-child(4) { animation-delay: -1.3s; }
+.totk-dragon-sparks circle:nth-child(5) { animation-delay: -1.7s; }
+.totk-dragon-sparks circle:nth-child(6) { animation-delay: -2s; }
+
+@keyframes totk-spark-twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%      { opacity: 1;   transform: scale(1.3); }
+}
+
+/* Sky island shared base — each island drifts gently on its own cadence */
+.totk-island {
+  position: absolute;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55));
+  height: auto;
+  /* Override the older centred positioning that lived here. */
+  transform: none;
+}
+
+.totk-island-large {
+  top: 24%;
+  left: 50%;
+  width: min(620px, 46vw);
+  margin-left: calc(min(620px, 46vw) / -2);
+  z-index: 3;
+  animation: totk-float-large 8s ease-in-out infinite;
+}
+
+.totk-island-mid {
+  top: 16%;
+  left: 6%;
+  width: min(360px, 26vw);
+  z-index: 2;
+  animation: totk-float-mid 10s ease-in-out infinite;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5));
+}
+
+.totk-island-small {
+  top: 9%;
+  right: 8%;
+  width: min(240px, 18vw);
+  z-index: 2;
+  animation: totk-float-small 7s ease-in-out infinite;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
+}
+
+@keyframes totk-float-large {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+@keyframes totk-float-mid {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes totk-float-small {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* Foreground rock ledge — the cliff the camera stands on */
+.totk-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  filter: drop-shadow(0 -4px 14px rgba(0, 0, 0, 0.5));
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * TEARS OF THE KINGDOM — DEPTHS SCENE
+ * Underground cavern with chasm sunbeams, Lightroot glow, Brightblooms,
+ * Poe wisps, monsters, and Gloom.
+ * ───────────────────────────────────────────────────────────────────────── */
+.totk-depths-scene {
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(40, 6, 14, 0.4) 0%, transparent 55%),
+    radial-gradient(ellipse at 28% 60%, rgba(20, 80, 100, 0.18) 0%, transparent 50%),
+    linear-gradient(180deg,
+      #050608 0%,
+      #0a0c14 30%,
+      #0c1018 60%,
+      #06060c 100%
+    );
+}
+
+.totk-depths-ceiling {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30vh;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.75));
+}
+
+/* Bright chasm openings in the ceiling */
+.totk-depths-hole {
+  position: absolute;
+  top: 0;
+  width: 90px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    #fff5d0 0%,
+    #ffd380 35%,
+    rgba(255, 180, 80, 0.5) 60%,
+    transparent 85%
+  );
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.totk-depths-hole-1 { left: 18%; }
+.totk-depths-hole-2 { right: 22%; top: 1.5%; }
+
+/* Sunbeams pouring down from each chasm */
+.totk-depths-beam {
+  position: absolute;
+  top: 1%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  filter: blur(8px);
+}
+
+.totk-depths-beam-1 {
+  left: 19%;
+  border-style: solid;
+  border-width: 70vh 80px 0 30px;
+  border-color: rgba(255, 220, 140, 0.18) transparent transparent transparent;
+  transform: translateX(-30px);
+  animation: totk-depths-beam-flicker 4.5s ease-in-out infinite alternate;
+}
+
+.totk-depths-beam-2 {
+  right: 23%;
+  border-style: solid;
+  border-width: 64vh 28px 0 70px;
+  border-color: rgba(255, 220, 140, 0.16) transparent transparent transparent;
+  transform: translateX(28px);
+  animation: totk-depths-beam-flicker 6s ease-in-out infinite alternate;
+  animation-delay: -2s;
+}
+
+@keyframes totk-depths-beam-flicker {
+  from { opacity: 0.7; }
+  to   { opacity: 1; }
+}
+
+/* Falling dust motes inside each beam */
+.totk-depths-dust {
+  position: absolute;
+  width: 120px;
+  height: 60vh;
+  top: 1%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 240, 200, 0.7) 0.8px, transparent 1.5px),
+    radial-gradient(circle, rgba(255, 220, 140, 0.5) 1px, transparent 1.8px);
+  background-size: 80px 90px, 100px 130px;
+  animation: totk-depths-dust-fall 7s linear infinite;
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+.totk-depths-dust-1 { left: 16%; }
+.totk-depths-dust-2 { right: 21%; animation-duration: 9s; animation-delay: -3s; }
+
+@keyframes totk-depths-dust-fall {
+  from { background-position: 0 -90px, 40px -130px; }
+  to   { background-position: 0 90px,  40px 130px; }
+}
+
+/* Floating script ribbons of abstract glyphs flowing across the cavern.
+ * Width is 200% of the scene because the SVG viewBox is 2400 wide with
+ * the glyph pattern duplicated at x=1200; translating by -50% (or +50%)
+ * loops seamlessly. Drop-shadow gives an ethereal teal glow. */
+.totk-depths-script {
+  position: absolute;
+  left: 0;
+  width: 200%;
+  height: 10vh;
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 0 5px rgba(154, 248, 238, 0.85))
+          drop-shadow(0 0 12px rgba(90, 240, 232, 0.45));
+  mix-blend-mode: screen;
+}
+
+.totk-depths-script-1 {
+  top: 28%;
+  opacity: 0.7;
+  animation: totk-script-flow-left 48s linear infinite;
+}
+
+.totk-depths-script-2 {
+  top: 44%;
+  opacity: 0.55;
+  height: 8vh;
+  animation: totk-script-flow-right 60s linear infinite;
+}
+
+@keyframes totk-script-flow-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes totk-script-flow-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+/* Each glyph fades and gently shimmers on its own slow cadence so the
+ * script reads as alive and breathing rather than a static row of marks. */
+.totk-script-glyph {
+  animation: totk-script-wisp 7s ease-in-out infinite;
+}
+
+@keyframes totk-script-wisp {
+  0%, 100% { opacity: 0.2; transform: translateY(0); }
+  25%      { opacity: 0.7; transform: translateY(-2px); }
+  50%      { opacity: 1;   transform: translateY(-4px); }
+  75%      { opacity: 0.5; transform: translateY(-2px); }
+}
+
+/* Malice wisp orbs drifting along the ribbon — red eye-pulses that
+ * breathe and brighten on their own staggered cadence. */
+.totk-malice-wisp {
+  animation: totk-malice-wisp-pulse 3.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes totk-malice-wisp-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1.18); }
+}
+
+/* Wisps in each pass come after the 12 glyphs, so they're nth-child 13–16
+ * in ribbon 1 and 13–15 in ribbon 2. Stagger each so they don't pulse in
+ * lockstep. */
+.totk-script-pass > .totk-malice-wisp:nth-child(13) { animation-delay: 0s;    animation-duration: 3.6s; }
+.totk-script-pass > .totk-malice-wisp:nth-child(14) { animation-delay: -1.4s; animation-duration: 4.2s; }
+.totk-script-pass > .totk-malice-wisp:nth-child(15) { animation-delay: -2.6s; animation-duration: 3.9s; }
+.totk-script-pass > .totk-malice-wisp:nth-child(16) { animation-delay: -0.8s; animation-duration: 4.5s; }
+
+/* Stagger the flicker across the 12 glyphs per pass so the ribbon
+ * shimmers like wind through grass. Both passes share these nth-child
+ * indices, which keeps pass-2 in sync with pass-1 for the seamless loop. */
+.totk-script-pass .totk-script-glyph:nth-child(1)  { animation-delay: 0s;     animation-duration: 6.4s; }
+.totk-script-pass .totk-script-glyph:nth-child(2)  { animation-delay: -0.6s;  animation-duration: 7.2s; }
+.totk-script-pass .totk-script-glyph:nth-child(3)  { animation-delay: -1.2s;  animation-duration: 6.8s; }
+.totk-script-pass .totk-script-glyph:nth-child(4)  { animation-delay: -1.9s;  animation-duration: 7.6s; }
+.totk-script-pass .totk-script-glyph:nth-child(5)  { animation-delay: -2.4s;  animation-duration: 6.6s; }
+.totk-script-pass .totk-script-glyph:nth-child(6)  { animation-delay: -3.0s;  animation-duration: 7.4s; }
+.totk-script-pass .totk-script-glyph:nth-child(7)  { animation-delay: -3.7s;  animation-duration: 7.0s; }
+.totk-script-pass .totk-script-glyph:nth-child(8)  { animation-delay: -4.2s;  animation-duration: 6.5s; }
+.totk-script-pass .totk-script-glyph:nth-child(9)  { animation-delay: -4.8s;  animation-duration: 7.8s; }
+.totk-script-pass .totk-script-glyph:nth-child(10) { animation-delay: -5.3s;  animation-duration: 7.2s; }
+.totk-script-pass .totk-script-glyph:nth-child(11) { animation-delay: -5.9s;  animation-duration: 6.7s; }
+.totk-script-pass .totk-script-glyph:nth-child(12) { animation-delay: -6.4s;  animation-duration: 7.3s; }
+
+/* Atmospheric haze across the mid-band of the cavern */
+.totk-depths-fog {
+  position: absolute;
+  top: 30%;
+  left: 0;
+  right: 0;
+  height: 36vh;
+  background: linear-gradient(180deg,
+    rgba(40, 60, 80, 0.18) 0%,
+    rgba(60, 30, 60, 0.10) 50%,
+    rgba(80, 10, 26, 0.08) 100%
+  );
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+/* Brightbloom seeds scattered across the cavern floor and walls */
+.totk-depths-blooms {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, #5af0e8  1.4px, transparent 2px),
+    radial-gradient(circle, #a8f8f0  1.1px, transparent 1.6px),
+    radial-gradient(circle, #6ae8ff  1px,   transparent 1.4px);
+  background-size: 320px 240px, 220px 180px, 380px 280px;
+  background-position: 60px 50%, 180px 70%, 90px 60%;
+  filter: drop-shadow(0 0 4px rgba(120, 240, 232, 0.85));
+  mix-blend-mode: screen;
+  opacity: 0.95;
+  animation: totk-blooms-pulse 5s ease-in-out infinite alternate;
+}
+
+@keyframes totk-blooms-pulse {
+  from { opacity: 0.75; }
+  to   { opacity: 1; }
+}
+
+/* Drifting Poe wisps — float up gently with side-to-side wander */
+.totk-depths-wisp {
+  position: absolute;
+  width: 50px;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(168, 232, 255, 0.7));
+}
+
+.totk-depths-wisp-1 {
+  left: 12%;
+  bottom: 28vh;
+  width: 56px;
+  animation: totk-wisp-drift-1 9s ease-in-out infinite;
+}
+
+.totk-depths-wisp-2 {
+  left: 42%;
+  bottom: 24vh;
+  width: 46px;
+  animation: totk-wisp-drift-2 11s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.totk-depths-wisp-3 {
+  right: 18%;
+  bottom: 36vh;
+  width: 38px;
+  animation: totk-wisp-drift-3 8s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+@keyframes totk-wisp-drift-1 {
+  0%, 100% { transform: translate(0, 0)     scale(1); opacity: 0.9; }
+  25%      { transform: translate(8px, -10px) scale(1.05); }
+  50%      { transform: translate(-6px, -18px) scale(0.95); opacity: 1; }
+  75%      { transform: translate(4px, -8px)  scale(1.02); }
+}
+
+@keyframes totk-wisp-drift-2 {
+  0%, 100% { transform: translate(0, 0)     scale(1); opacity: 0.85; }
+  30%      { transform: translate(-10px, -14px) scale(1.08); opacity: 1; }
+  60%      { transform: translate(8px, -22px)   scale(0.9); }
+  80%      { transform: translate(2px, -10px)   scale(1.03); }
+}
+
+@keyframes totk-wisp-drift-3 {
+  0%, 100% { transform: translate(0, 0)     scale(0.95); opacity: 0.8; }
+  40%      { transform: translate(6px, -12px)  scale(1.05); opacity: 1; }
+  70%      { transform: translate(-6px, -20px) scale(0.92); }
+}
+
+/* Monster silhouette skulking in the middle distance */
+.totk-depths-monster {
+  position: absolute;
+  bottom: 18vh;
+  left: 32%;
+  width: min(110px, 8vw);
+  height: auto;
+  z-index: 2;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.7));
+  animation: totk-monster-sway 3.2s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+@keyframes totk-monster-sway {
+  0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+  50%      { transform: rotate(1.5deg)  translateY(-2px); }
+}
+
+/* Gloom seeping along the cavern floor */
+.totk-depths-gloom {
+  position: absolute;
+  bottom: 18vh;
+  left: 0;
+  width: 100%;
+  height: 10vh;
+  z-index: 1;
+  filter: drop-shadow(0 0 14px rgba(216, 36, 58, 0.35));
+}
+
+/* Gloom Hands — spindly skeletal arms rising from the Gloom pool. Each
+ * hand sways on its own slow cadence so the group never moves in lockstep. */
+.totk-depths-gloom-hands {
+  position: absolute;
+  bottom: 18vh;
+  left: 12%;
+  width: 76%;
+  height: 28vh;
+  z-index: 6;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(216, 36, 58, 0.4))
+          drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+}
+
+.totk-gloom-hand {
+  transform-origin: 50% 100%;
+  animation: totk-gloom-hand-sway 4s ease-in-out infinite;
+}
+
+.totk-gloom-hand-1 { animation-duration: 4.6s; animation-delay: 0s;     transform-origin: 90px 260px; }
+.totk-gloom-hand-2 { animation-duration: 5.2s; animation-delay: -1.3s;  transform-origin: 216px 260px; }
+.totk-gloom-hand-3 { animation-duration: 3.8s; animation-delay: -0.6s;  transform-origin: 356px 260px; }
+.totk-gloom-hand-4 { animation-duration: 4.9s; animation-delay: -2.1s;  transform-origin: 492px 260px; }
+.totk-gloom-hand-5 { animation-duration: 5.6s; animation-delay: -3.4s;  transform-origin: 626px 260px; }
+
+@keyframes totk-gloom-hand-sway {
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50%      { transform: rotate(2.5deg) translateY(-3px); }
+}
+
+/* Foreground rock ledge — the cliff the camera stands on */
+.totk-depths-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  z-index: 5;
+  filter: drop-shadow(0 -4px 14px rgba(0, 0, 0, 0.6));
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * SKYWARD SWORD — Skyloft + Goddess statue + Loftwing + cloud sea + cyphers
+ * ───────────────────────────────────────────────────────────────────────── */
+.ss-scene {
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(255, 230, 160, 0.45) 0%, transparent 50%),
+    linear-gradient(180deg,
+      #2a3f72 0% 14%,
+      #6a86c2 14% 26%,
+      #b0c8e2 26% 38%,
+      #ffd6a0 38% 50%,
+      #f4b078 50% 60%,
+      #d68a5a 60% 70%,
+      #3a3a6e 70% 88%,
+      #0e1a36 88% 100%
+    );
+}
+
+/* Warm sun disc behind the goddess statue */
+.ss-sun {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28vw;
+  height: 28vw;
+  background: radial-gradient(circle,
+    rgba(255, 246, 210, 0.95) 0%,
+    rgba(255, 220, 140, 0.55) 18%,
+    rgba(255, 180, 100, 0.30) 38%,
+    transparent 65%
+  );
+  mix-blend-mode: screen;
+  filter: blur(2px);
+  animation: ss-sun-pulse 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ss-sun-pulse {
+  0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;    transform: translateX(-50%) scale(1.04); }
+}
+
+/* Cone of golden light pouring down through the clouds */
+.ss-sunrays {
+  position: absolute;
+  inset: 0;
+  background:
+    conic-gradient(from 175deg at 50% 0%,
+      transparent 0deg,
+      rgba(255, 240, 180, 0.10) 5deg,
+      transparent 12deg,
+      rgba(255, 240, 180, 0.18) 16deg,
+      transparent 22deg,
+      rgba(255, 240, 180, 0.10) 30deg,
+      transparent 40deg,
+      rgba(255, 240, 180, 0.15) 350deg,
+      transparent 358deg
+    );
+  mix-blend-mode: screen;
+  animation: ss-sunray-pulse 6s ease-in-out infinite;
+  opacity: 0.85;
+}
+
+@keyframes ss-sunray-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.ss-goddess {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 22vw;
+  filter: blur(0.6px) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.55));
+  opacity: 0.7;
+  z-index: 0;
+}
+
+.ss-clouds {
+  position: absolute;
+  width: 220%;
+  height: 70%;
+  pointer-events: none;
+}
+
+.ss-clouds-far {
+  bottom: 12%;
+  left: -10%;
+  background:
+    radial-gradient(ellipse 18% 30% at 12% 70%, rgba(255, 255, 255, 0.45), transparent 70%),
+    radial-gradient(ellipse 22% 35% at 35% 85%, rgba(255, 255, 255, 0.50), transparent 70%),
+    radial-gradient(ellipse 16% 28% at 58% 75%, rgba(255, 255, 255, 0.40), transparent 70%),
+    radial-gradient(ellipse 20% 32% at 80% 80%, rgba(255, 255, 255, 0.55), transparent 70%);
+  filter: blur(6px);
+  animation: ss-cloud-drift 90s linear infinite;
+}
+
+.ss-clouds-mid {
+  bottom: 0%;
+  left: -10%;
+  background:
+    radial-gradient(ellipse 24% 36% at 20% 85%, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(ellipse 28% 42% at 45% 95%, rgba(255, 255, 255, 0.80), transparent 70%),
+    radial-gradient(ellipse 22% 30% at 70% 88%, rgba(255, 255, 255, 0.75), transparent 70%),
+    radial-gradient(ellipse 30% 40% at 90% 92%, rgba(255, 255, 255, 0.85), transparent 70%);
+  filter: blur(4px);
+  animation: ss-cloud-drift 60s linear infinite reverse;
+}
+
+.ss-clouds-near {
+  bottom: -5%;
+  left: -10%;
+  height: 35%;
+  background:
+    radial-gradient(ellipse 24% 60% at 18% 90%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(ellipse 28% 65% at 50% 100%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(ellipse 22% 55% at 80% 90%, rgba(255, 255, 255, 0.9), transparent 70%);
+  filter: blur(3px);
+  animation: ss-cloud-drift 40s linear infinite;
+}
+
+@keyframes ss-cloud-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.ss-island {
+  position: absolute;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
+}
+
+.ss-island-left {
+  top: 35%;
+  left: 4vw;
+  width: 18vw;
+  animation: ss-bob 7s ease-in-out infinite;
+}
+
+.ss-island-right {
+  top: 42%;
+  right: 5vw;
+  width: 16vw;
+  animation: ss-bob 9s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.ss-skyloft {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 50vw;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.5));
+  animation: ss-bob 5s ease-in-out infinite;
+}
+
+@keyframes ss-bob {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(0, -12px); }
+}
+
+.ss-skyloft {
+  animation: ss-bob-center 5s ease-in-out infinite;
+}
+
+@keyframes ss-bob-center {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -10px); }
+}
+
+/* Wrapper handles the long horizontal glide across the sky. */
+.ss-loftwing-wrap {
+  position: absolute;
+  top: 20%;
+  left: -22vw;
+  width: 22vw;
+  animation: ss-glide 22s linear infinite;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.55));
+  z-index: 4;
+}
+
+/* The SVG itself gets a gentle bob to suggest soaring through thermals,
+ * decoupled from the glide so we can stack transforms cleanly. */
+.ss-loftwing {
+  display: block;
+  width: 100%;
+  height: auto;
+  animation: ss-bob-soar 3.6s ease-in-out infinite;
+}
+
+@keyframes ss-bob-soar {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(1deg); }
+}
+
+/* Wing flap — front wing rotates further than back wing, and they share
+ * the same cadence so the upstroke/downstroke read as one motion. Origins
+ * are set via inline style in SVG-userspace coordinates (transform-box
+ * defaults to view-box for SVG elements, which is what we want). */
+.ss-wing-front {
+  animation: ss-flap-front 1.2s ease-in-out infinite;
+}
+
+.ss-wing-back {
+  animation: ss-flap-back 1.2s ease-in-out infinite;
+}
+
+@keyframes ss-flap-front {
+  0%, 100% { transform: rotate(0deg); }
+  35%      { transform: rotate(-28deg); }
+  70%      { transform: rotate(14deg); }
+}
+
+@keyframes ss-flap-back {
+  0%, 100% { transform: rotate(0deg) scaleY(1); }
+  35%      { transform: rotate(-10deg) scaleY(0.85); }
+  70%      { transform: rotate(6deg)   scaleY(0.95); }
+}
+
+@keyframes ss-glide {
+  0%   { transform: translateX(0)     translateY(0); }
+  50%  { transform: translateX(70vw)  translateY(40px); }
+  100% { transform: translateX(140vw) translateY(0); }
+}
+
+/* Tiny dark island silhouettes far in the haze — slow horizontal drift to
+ * suggest the world rotating beneath the Loftwing. */
+.ss-far-islands {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  height: 20vh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ss-far-island {
+  position: absolute;
+  border-radius: 60% 60% 50% 50% / 80% 80% 30% 30%;
+  background: rgba(34, 50, 78, 0.55);
+  filter: blur(1.5px);
+  animation: ss-far-drift 80s linear infinite;
+}
+
+.ss-far-island-1 {
+  top: 18%;
+  left: 8%;
+  width: 9vw;
+  height: 2.4vh;
+}
+
+.ss-far-island-2 {
+  top: 32%;
+  left: 70%;
+  width: 7vw;
+  height: 2vh;
+  opacity: 0.85;
+  animation-duration: 110s;
+}
+
+.ss-far-island-3 {
+  top: 8%;
+  left: 38%;
+  width: 6vw;
+  height: 1.8vh;
+  opacity: 0.7;
+  animation-duration: 140s;
+}
+
+@keyframes ss-far-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-22vw); }
+}
+
+/* Golden motes drifting upward — warmth and life in the sky */
+.ss-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 230, 140, 0.95) 1.4px, transparent 2.2px),
+    radial-gradient(circle, rgba(255, 200, 100, 0.7)  1.1px, transparent 1.8px),
+    radial-gradient(circle, rgba(255, 248, 220, 0.6)  0.9px, transparent 1.5px);
+  background-size: 220px 280px, 320px 220px, 180px 160px;
+  background-position: 30px 60px, 110px 140px, 60px 200px;
+  animation: ss-motes-rise 28s linear infinite;
+  opacity: 0.7;
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+@keyframes ss-motes-rise {
+  from { background-position: 30px 60px,  110px 140px, 60px 200px; }
+  to   { background-position: 30px -220px, 110px -120px, 60px -140px; }
+}
+
+/* Ancient Skyward Sword cyphers — dots-and-dashes pattern rising upward */
+.ss-cyphers {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 215, 130, 0.55) 1.5px, transparent 2.5px),
+    radial-gradient(circle, rgba(180, 220, 255, 0.45) 1px, transparent 2px),
+    radial-gradient(circle, rgba(255, 215, 130, 0.35) 0.8px, transparent 1.6px);
+  background-size: 180px 220px, 240px 180px, 120px 150px;
+  background-position: 0 0, 40px 60px, 80px 30px;
+  animation: ss-cypher-rise 22s linear infinite;
+  opacity: 0.7;
+  mix-blend-mode: screen;
+}
+
+@keyframes ss-cypher-rise {
+  from { background-position: 0 0, 40px 60px, 80px 30px; }
+  to { background-position: 0 -220px, 40px -120px, 80px -120px; }
+}
+
+.ss-foreground-mist {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 34vh;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(255, 200, 150, 0.18) 30%,
+    rgba(74, 70, 110, 0.65) 100%
+  );
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * TWILIGHT PRINCESS — twilight particles + wolf on a hill
+ * ───────────────────────────────────────────────────────────────────────── */
+.tp-scene {
+  background:
+    radial-gradient(ellipse at center 70%, rgba(126, 45, 142, 0.4) 0%, transparent 50%),
+    linear-gradient(180deg, #1a0a20 0%, #2a1130 50%, #0c0418 100%);
+}
+
+.tp-twilight-glow {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle,
+    rgba(255, 170, 58, 0.2) 0%,
+    rgba(126, 45, 142, 0.15) 40%,
+    transparent 70%
+  );
+}
+
+.tp-particles {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 170, 58, 0.6) 1px, transparent 2px),
+    radial-gradient(circle, rgba(126, 45, 142, 0.5) 1.5px, transparent 3px);
+  background-size: 80px 80px, 130px 130px;
+  background-position: 0 0, 40px 40px;
+  animation: tp-rise 12s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes tp-rise {
+  from { background-position: 0 0, 40px 40px; }
+  to { background-position: 0 -120px, 40px -80px; }
+}
+
+.tp-hill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30vh;
+}
+
+.tp-wolf {
+  position: absolute;
+  bottom: 24vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10vw;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * A LINK TO THE PAST — 16-bit pixel art Lost Woods + Master Sword pedestal,
+ * Hyrule Castle far back, with a light↔dark world flip on a slow loop.
+ * ───────────────────────────────────────────────────────────────────────── */
+.alttp-scene {
+  /* Light World by default: bright cyan sky over the sunlit Lost Woods floor */
+  background:
+    radial-gradient(ellipse at 50% 28%, rgba(255, 240, 180, 0.45) 0%, transparent 55%),
+    linear-gradient(180deg,
+      #4aa8e4 0% 18%,
+      #7ac4f0 18% 30%,
+      #a8d8f4 30% 36%,
+      #6abc4a 36% 46%,
+      #4a8a34 46% 58%,
+      #3a6a24 58% 78%,
+      #1c4218 78% 100%
+    );
+  image-rendering: pixelated;
+}
+
+.alttp-scene svg {
+  image-rendering: pixelated;
+}
+
+/* Dark world overlay — fades in/out on a 24s loop to flip worlds. */
+.alttp-darkworld-tint {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 32%, rgba(180, 80, 220, 0.25) 0%, transparent 60%),
+    linear-gradient(180deg,
+      #1c0a30 0% 30%,
+      #2a0e3a 30% 70%,
+      #0a0418 70% 100%
+    );
+  opacity: 0;
+  animation: alttp-world-flip 24s ease-in-out infinite;
+  mix-blend-mode: multiply;
+}
+
+@keyframes alttp-world-flip {
+  0%, 30% { opacity: 0; }
+  50%, 80% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+
+.alttp-bg {
+  position: absolute;
+  bottom: 40vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 60vw);
+  transition: opacity 1s ease;
+}
+
+/* Castle visible in the light world half */
+.alttp-castle {
+  opacity: 0.85;
+  animation: alttp-castle-show 24s ease-in-out infinite;
+  filter: drop-shadow(0 6px 0 #1a0a04);
+}
+
+/* Pyramid visible in the dark world half — a touch larger than the castle,
+ * wrapped in a malevolent crimson-purple aura to read clearly against the
+ * dark-world tint. */
+.alttp-pyramid {
+  opacity: 0;
+  animation: alttp-pyramid-show 24s ease-in-out infinite, alttp-pyramid-aura 3.5s ease-in-out infinite;
+  /* Each colour glow is offset upward by roughly its blur radius so the
+   * aura radiates from the upper/sides of the pyramid, never below the base. */
+  filter:
+    drop-shadow(0 -12px 14px rgba(140, 30, 70, 0.9))
+    drop-shadow(0 -28px 36px rgba(90, 20, 130, 0.65))
+    drop-shadow(0 -48px 64px rgba(50, 10, 90, 0.55))
+    drop-shadow(0 6px 0 #1a0a14);
+  width: min(700px, 72vw);
+}
+
+@keyframes alttp-pyramid-aura {
+  0%, 100% {
+    filter:
+      drop-shadow(0 -12px 14px rgba(140, 30, 70, 0.9))
+      drop-shadow(0 -28px 36px rgba(90, 20, 130, 0.65))
+      drop-shadow(0 -48px 64px rgba(50, 10, 90, 0.55))
+      drop-shadow(0 6px 0 #1a0a14);
+  }
+  50% {
+    filter:
+      drop-shadow(0 -18px 22px rgba(180, 40, 90, 1))
+      drop-shadow(0 -40px 50px rgba(120, 30, 160, 0.8))
+      drop-shadow(0 -60px 80px rgba(70, 14, 110, 0.7))
+      drop-shadow(0 6px 0 #1a0a14);
+  }
+}
+
+@keyframes alttp-castle-show {
+  0%, 30% { opacity: 0.85; }
+  50%, 80% { opacity: 0; }
+  100% { opacity: 0.85; }
+}
+
+@keyframes alttp-pyramid-show {
+  0%, 30% { opacity: 0; }
+  50%, 80% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+/* Castle window flickers warmly */
+.alttp-window {
+  animation: alttp-window-flicker 1.2s steps(2, end) infinite;
+}
+
+@keyframes alttp-window-flicker {
+  0%, 100% { fill: #ffd23a; }
+  50% { fill: #ff9a3a; }
+}
+
+/* Lost Woods trees framing the sides — darken in sync with the world flip */
+.alttp-trees {
+  position: absolute;
+  bottom: 0;
+  width: min(360px, 24vw);
+  height: 70vh;
+  filter: drop-shadow(2px 0 0 #061008);
+  animation: alttp-trees-darken 24s ease-in-out infinite;
+}
+
+@keyframes alttp-trees-darken {
+  0%, 30%   { filter: drop-shadow(2px 0 0 #061008) brightness(1) saturate(1); }
+  50%, 80%  { filter: drop-shadow(2px 0 0 #060410) brightness(0.35) saturate(0.6) hue-rotate(260deg); }
+  100%      { filter: drop-shadow(2px 0 0 #061008) brightness(1) saturate(1); }
+}
+
+.alttp-trees-left {
+  left: 0;
+}
+
+.alttp-trees-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+/* Master Sword pedestal — centred, bobbing slightly */
+.alttp-master-sword {
+  position: absolute;
+  bottom: 9.5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(160px, 14vw);
+  filter:
+    drop-shadow(0 0 12px rgba(168, 212, 255, 0.6))
+    drop-shadow(0 6px 0 rgba(0, 0, 0, 0.5));
+  animation: alttp-sword-bob 4s ease-in-out infinite;
+}
+
+@keyframes alttp-sword-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -6px); }
+}
+
+/* Holy light beam shining down on the sword */
+.alttp-light-beam {
+  position: absolute;
+  top: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(180px, 16vw);
+  height: 82vh;
+  background: linear-gradient(180deg,
+    rgba(255, 230, 130, 0) 0%,
+    rgba(255, 230, 130, 0.35) 30%,
+    rgba(255, 230, 130, 0.45) 60%,
+    rgba(255, 230, 130, 0) 100%
+  );
+  mix-blend-mode: screen;
+  animation: alttp-beam-pulse 4s ease-in-out infinite;
+  filter: blur(2px);
+}
+
+@keyframes alttp-beam-pulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+/* Triforce hovering above the sword, pulsing larger */
+.alttp-triforce {
+  position: absolute;
+  top: 12vh;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: min(120px, 10vw);
+  filter: drop-shadow(0 0 12px rgba(255, 210, 58, 0.85));
+  animation: alttp-triforce-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes alttp-triforce-pulse {
+  0%, 100% {
+    transform: translate(-50%, 0) scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 210, 58, 0.65));
+  }
+  50% {
+    transform: translate(-50%, -5px) scale(1.1);
+    filter: drop-shadow(0 0 20px rgba(255, 240, 130, 1));
+  }
+}
+
+/* Pixel grass — alternating green tiles using repeating-linear-gradient */
+.alttp-grass {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12vh;
+  background:
+    repeating-linear-gradient(90deg,
+      #2a5a1c 0 12px,
+      #1c4218 12px 24px
+    ),
+    repeating-linear-gradient(0deg,
+      transparent 0 4px,
+      rgba(0, 0, 0, 0.15) 4px 8px
+    );
+  background-blend-mode: overlay;
+  border-top: 4px solid #6abc4a;
+  image-rendering: pixelated;
+  animation: alttp-grass-darken 24s ease-in-out infinite;
+}
+
+@keyframes alttp-grass-darken {
+  0%, 30%   { filter: brightness(1) saturate(1); border-top-color: #6abc4a; }
+  50%, 80%  { filter: brightness(0.35) saturate(0.6) hue-rotate(260deg); border-top-color: #3a2a5a; }
+  100%     { filter: brightness(1) saturate(1); border-top-color: #6abc4a; }
+}
+
+/* Forest particles (faerie sparkles) drifting upward */
+.alttp-particles {
+  /* Confined to the sky/middle-ground area so sparkles never drift across
+   * the foreground trees, sword pedestal or grass band. */
+  position: absolute;
+  top: 6vh;
+  left: 26vw;
+  right: 26vw;
+  bottom: 26vh;
+  background-image:
+    radial-gradient(rgba(255, 230, 130, 0.85) 1.5px, transparent 2px),
+    radial-gradient(rgba(200, 255, 200, 0.6) 1px, transparent 1.5px);
+  background-size: 200px 240px, 140px 160px;
+  background-position: 20px 60px, 80px 30px;
+  animation: alttp-particles-rise 18s linear infinite;
+  opacity: 0.75;
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+
+@keyframes alttp-particles-rise {
+  from { background-position: 20px 60px, 80px 30px; }
+  to { background-position: 20px -180px, 80px -130px; }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * ZELDA II — 8-bit Great Palace under a stormy NES sky
+ * ───────────────────────────────────────────────────────────────────────── */
+.z2-scene {
+  background:
+    linear-gradient(180deg,
+      #0a0418 0% 25%,
+      #1c0a30 25% 45%,
+      #3a1a4a 45% 70%,
+      #5a2058 70% 82%,
+      #1c0420 82% 100%
+    );
+  image-rendering: pixelated;
+}
+
+.z2-scene svg {
+  image-rendering: pixelated;
+}
+
+/* 8-bit stars — flat dots placed via background gradients */
+.z2-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.95) 1.5px, transparent 2px),
+    radial-gradient(rgba(255, 230, 140, 0.85) 1.5px, transparent 2px),
+    radial-gradient(rgba(180, 220, 255, 0.85) 1px, transparent 1.5px);
+  background-size: 220px 260px, 320px 200px, 140px 180px;
+  background-position: 10px 40px, 80px 110px, 30px 200px;
+  animation: z2-twinkle 4s steps(4, end) infinite;
+  opacity: 0.85;
+}
+
+@keyframes z2-twinkle {
+  0%, 100% { opacity: 0.85; }
+  25% { opacity: 0.6; }
+  50% { opacity: 1; }
+  75% { opacity: 0.7; }
+}
+
+/* Lightning flash — covers the whole scene briefly every few seconds */
+.z2-lightning {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 230, 130, 0.7);
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: z2-flash 9s steps(1, end) infinite;
+}
+
+@keyframes z2-flash {
+  0%, 88%, 100% { opacity: 0; }
+  88.2% { opacity: 0.8; }
+  88.5% { opacity: 0; }
+  88.8% { opacity: 0.95; }
+  89.3% { opacity: 0; }
+  89.6% { opacity: 0.5; }
+  90% { opacity: 0; }
+}
+
+/* Mountains silhouette behind the palace */
+.z2-mountains {
+  position: absolute;
+  bottom: 14vh;
+  left: 0;
+  width: 100%;
+  height: 18vh;
+  opacity: 0.9;
+}
+
+/* The Great Palace — fills the lower-centre */
+.z2-palace {
+  position: absolute;
+  bottom: 10vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 70vw);
+  filter: drop-shadow(0 8px 0 #1a0204);
+}
+
+/* Window glow flickers like a candle / torch */
+.z2-window {
+  animation: z2-window-flicker 0.5s steps(2, end) infinite;
+}
+
+@keyframes z2-window-flicker {
+  0%, 100% { fill: #ff8a3a; }
+  50% { fill: #ffd23a; }
+}
+
+/* Triforce hovering above the palace tower */
+.z2-triforce {
+  position: absolute;
+  top: 14vh;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: min(120px, 14vw);
+  filter: drop-shadow(0 0 10px rgba(255, 210, 58, 0.8));
+  animation: z2-triforce-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes z2-triforce-pulse {
+  0%, 100% {
+    transform: translate(-50%, 0) scale(1);
+    filter: drop-shadow(0 0 8px rgba(255, 210, 58, 0.6));
+  }
+  50% {
+    transform: translate(-50%, -6px) scale(1.06);
+    filter: drop-shadow(0 0 20px rgba(255, 230, 102, 1));
+  }
+}
+
+/* Lightning bolt — appears synced with the flash */
+.z2-bolt {
+  position: absolute;
+  top: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 30vh;
+  opacity: 0;
+  filter: drop-shadow(0 0 8px rgba(255, 230, 102, 0.9));
+  animation: z2-bolt-strike 9s steps(1, end) infinite;
+}
+
+@keyframes z2-bolt-strike {
+  0%, 88%, 100% { opacity: 0; }
+  88.2% { opacity: 1; }
+  88.5% { opacity: 0; }
+  88.8% { opacity: 1; }
+  89.3% { opacity: 0; }
+}
+
+/* 8-bit ground band — alternating brick squares scrolling slowly */
+.z2-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12vh;
+  background:
+    repeating-linear-gradient(0deg,
+      #3a1a08 0 16px,
+      #2a0e04 16px 32px
+    ),
+    repeating-linear-gradient(90deg,
+      #3a1a08 0 24px,
+      #2a0e04 24px 48px
+    );
+  background-blend-mode: overlay;
+  border-top: 4px solid #5a2410;
+  image-rendering: pixelated;
+}
+
+/* Pixel-Link walks across the bottom */
+.z2-link {
+  position: absolute;
+  bottom: 10.5vh;
+  left: 0;
+  width: 36px;
+  height: 48px;
+  image-rendering: pixelated;
+  animation: z2-link-walk 28s linear infinite;
+  filter: drop-shadow(2px 2px 0 #000);
+}
+
+@keyframes z2-link-walk {
+  0% { transform: translateX(-50px) translateY(0); }
+  4% { transform: translateX(-50px) translateY(-3px); }
+  8% { transform: translateX(-50px) translateY(0); }
+  100% { transform: translateX(105vw) translateY(0); }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * NES — Pixelated forest tiles + triforce
+ * ───────────────────────────────────────────────────────────────────────── */
+.nes-scene {
+  background: linear-gradient(180deg, #1a3a1c 0%, #061008 100%);
+}
+
+.nes-tiles {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 138, 58, 0.06) 0 32px, transparent 32px 64px),
+    repeating-linear-gradient(90deg, rgba(255, 138, 58, 0.06) 0 32px, transparent 32px 64px);
+  opacity: 0.5;
+}
+
+.nes-triforce,
+.nes-triforce-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30vw;
+  filter: drop-shadow(0 0 24px rgba(255, 210, 58, 0.6));
+  animation: nes-glow 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── NES HUD (top strip, 4 blocks: mini-map, inventory, B/A items, life) ── */
+.nes-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #000;
+  border-bottom: 4px solid #fcfcfc;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.6fr;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  font-family: 'VT323', monospace;
+  color: #fcfcfc;
+  z-index: 5;
+}
+
+.nes-hud-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.nes-hud-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+}
+
+.nes-label-yellow {
+  color: #fcd078;
+}
+
+.nes-hud-mini-map {
+  display: grid;
+  grid-template-columns: repeat(8, 12px);
+  grid-auto-rows: 12px;
+  gap: 1px;
+}
+
+.nes-mini-cell {
+  background: #5a2400;
+  border: 1px solid #000;
+}
+
+.nes-mini-cell.is-here {
+  background: #fc7460;
+}
+
+.nes-hud-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.1rem;
+}
+
+.nes-hud-text {
+  letter-spacing: 0.05em;
+}
+
+.nes-hud-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background: #fcfcfc;
+}
+
+.nes-icon-rupee   { background: #00a844; }
+.nes-icon-key     { background: #fcd078; }
+.nes-icon-bomb    { background: #5a5a5a; border-radius: 50%; }
+.nes-icon-boomerang { background: #fc7460; }
+.nes-icon-sword   { background: #d0d0d0; }
+
+.nes-hud-items {
+  flex-direction: row;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.nes-hud-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.5rem;
+  background: #5a2400;
+  border: 2px solid #fcfcfc;
+  min-width: 44px;
+}
+
+.nes-slot-label {
+  font-size: 0.9rem;
+  color: #fcd078;
+  letter-spacing: 0.05em;
+}
+
+.nes-hud-hearts {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.nes-hud-heart {
+  width: 22px;
+  height: 22px;
+}
+
+@keyframes nes-glow {
+  0%, 100% { filter: drop-shadow(0 0 24px rgba(255, 210, 58, 0.6)); }
+  50% { filter: drop-shadow(0 0 36px rgba(255, 210, 58, 0.95)); }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * A LINK BETWEEN WORLDS — watercolour paper, paint drips, brushstroke
+ * bands, periodic splatter "events", and a flat-painted Link merged
+ * onto a Yuga canvas.
+ * ───────────────────────────────────────────────────────────────────────── */
+.albw-scene {
+  background:
+    /* Subtle paper-grain noise via a faint dotted radial gradient */
+    radial-gradient(circle at 30% 20%, rgba(255, 244, 214, 0.04) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(255, 244, 214, 0.03) 0 1px, transparent 2px),
+    linear-gradient(160deg, #2a1f4a 0%, #1c1238 45%, #0a0418 100%);
+  background-size: 7px 7px, 11px 11px, 100% 100%;
+}
+
+/* Three watercolour wash layers — large translucent ovals blurred to
+ * extreme so they read as wet pigment soaking into paper. */
+.albw-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: blur(70px);
+  mix-blend-mode: screen;
+}
+
+.albw-wash-gold {
+  background:
+    radial-gradient(ellipse 50vw 32vh at 22% 78%, rgba(255, 200, 61, 0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 32vw 22vh at 70% 18%, rgba(255, 224, 122, 0.35) 0%, transparent 75%);
+  animation: albw-wash-drift 28s ease-in-out infinite alternate;
+}
+
+.albw-wash-violet {
+  background:
+    radial-gradient(ellipse 56vw 36vh at 80% 70%, rgba(160, 124, 255, 0.5) 0%, transparent 70%),
+    radial-gradient(ellipse 36vw 26vh at 18% 30%, rgba(126, 140, 255, 0.42) 0%, transparent 75%);
+  animation: albw-wash-drift 34s ease-in-out infinite alternate-reverse;
+}
+
+.albw-wash-rose {
+  background:
+    radial-gradient(ellipse 40vw 26vh at 50% 92%, rgba(214, 92, 132, 0.4) 0%, transparent 75%),
+    radial-gradient(ellipse 28vw 18vh at 38% 12%, rgba(248, 168, 168, 0.32) 0%, transparent 75%);
+  animation: albw-wash-drift 41s ease-in-out infinite alternate;
+}
+
+@keyframes albw-wash-drift {
+  from { transform: translate(-2vw, 0)    scale(1); }
+  to   { transform: translate(2vw, -1vh)  scale(1.06); }
+}
+
+/* Soft watercolour brushstroke bands — large blurred organic shapes
+ * stretched across the canvas. */
+.albw-strokes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(8px);
+  opacity: 0.92;
+  mix-blend-mode: screen;
+}
+
+/* Drip strands streaming down from the top edge. Each drip is a thin
+ * vertical bar with a rounded blob at the bottom; the keyframe scales
+ * its height up over time so it appears to extend downward. */
+.albw-drips {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.albw-drip {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: var(--drip-len, 40vh);
+  background:
+    /* Round bulb at the tip */
+    radial-gradient(circle 7px at 50% 100%, var(--drip-color, #ffc83d) 60%, transparent 70%),
+    /* Vertical taper */
+    linear-gradient(180deg, transparent 0%, var(--drip-color, #ffc83d) 8%, var(--drip-color, #ffc83d) 100%);
+  border-radius: 0 0 6px 6px;
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+  filter: blur(0.6px) drop-shadow(0 0 6px var(--drip-color, #ffc83d));
+  opacity: 0;
+  animation: albw-drip-fall var(--drip-dur, 12s) ease-in-out infinite;
+  animation-delay: var(--drip-delay, 0s);
+}
+
+@keyframes albw-drip-fall {
+  0%   { transform: scaleY(0);   opacity: 0; }
+  10%  { opacity: 1; }
+  60%  { transform: scaleY(1);   opacity: 1; }
+  85%  { transform: scaleY(1.05); opacity: 0.8; }
+  100% { transform: scaleY(1.1); opacity: 0; }
+}
+
+/* Yuga's canvas — an ornate frame on the right side with a paint-soaked
+ * panel inside cradling the flat-painted Link figure. */
+.albw-canvas {
+  position: absolute;
+  right: 8vw;
+  bottom: 18vh;
+  width: min(220px, 16vw);
+  height: min(320px, 56vh);
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.6));
+}
+
+.albw-canvas-frame {
+  position: absolute;
+  inset: 0;
+  border: 8px solid #c89a4a;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 3px #6e4a18,
+    inset 0 0 0 11px #e8b85a,
+    inset 0 0 0 14px #6e4a18,
+    0 0 0 2px rgba(20, 10, 4, 0.9);
+  background:
+    linear-gradient(135deg, #2a1438 0%, #4a1f5e 40%, #2a0a3a 100%);
+}
+
+.albw-canvas-panel {
+  position: absolute;
+  inset: 16px;
+  background:
+    radial-gradient(circle at 50% 60%, rgba(255, 220, 160, 0.25) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(60, 30, 80, 0.85) 0%, rgba(30, 10, 40, 0.95) 100%);
+  overflow: hidden;
+}
+
+.albw-link {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  animation: albw-link-bleed 6s ease-in-out infinite alternate;
+}
+
+@keyframes albw-link-bleed {
+  from { transform: translateX(-50%) translateY(0)    scale(1); }
+  to   { transform: translateX(-50%) translateY(-3px) scale(1.02); }
+}
+
+.albw-triforce {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38%;
+  opacity: 0.7;
+  animation: albw-triforce-pulse 4s ease-in-out infinite;
+}
+
+@keyframes albw-triforce-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.85; }
+}
+
+/* Hilda's inverted-triforce mark drifting on the left as a Lorule
+ * watermark — softer, larger, ghostlier than Link's. */
+.albw-hilda-mark {
+  position: absolute;
+  top: 18vh;
+  left: 6vw;
+  width: min(260px, 18vw);
+  height: auto;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 18px rgba(160, 124, 255, 0.4));
+  animation: albw-hilda-drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes albw-hilda-drift {
+  from { transform: translate(0, 0)        rotate(-2deg); }
+  to   { transform: translate(1vw, -1.5vh) rotate(2deg); }
+}
+
+/* Paint splatter "events" — radial blooms that bloom in at staggered
+ * intervals. Each splat is a div with a paint-blot radial-gradient
+ * background; the animation scales from 0 to full and fades out over
+ * its cycle. Six concurrent splats keep the canvas feeling actively
+ * painted. */
+.albw-splat {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  transform: scale(0);
+  opacity: 0;
+  mix-blend-mode: screen;
+  filter: blur(2px);
+}
+
+/* Each splat has its own palette, position, size, and animation phase. */
+.albw-splat-1 {
+  top: 12%;
+  left: 14%;
+  width: 22vw;
+  height: 22vw;
+  background:
+    radial-gradient(circle, rgba(255, 200, 61, 0.85) 0%, rgba(255, 200, 61, 0.45) 28%, rgba(255, 200, 61, 0.0) 60%),
+    radial-gradient(circle at 30% 40%, rgba(255, 244, 200, 0.6) 0%, transparent 25%),
+    radial-gradient(circle at 70% 65%, rgba(255, 224, 122, 0.4) 0%, transparent 35%);
+  animation: albw-splat-bloom 11s ease-out infinite;
+  animation-delay: 0s;
+}
+
+.albw-splat-2 {
+  top: 40%;
+  left: 64%;
+  width: 28vw;
+  height: 28vw;
+  background:
+    radial-gradient(circle, rgba(160, 124, 255, 0.85) 0%, rgba(160, 124, 255, 0.4) 30%, transparent 62%),
+    radial-gradient(circle at 35% 35%, rgba(220, 200, 255, 0.5) 0%, transparent 28%);
+  animation: albw-splat-bloom 14s ease-out infinite;
+  animation-delay: -3.5s;
+}
+
+.albw-splat-3 {
+  top: 58%;
+  left: 8%;
+  width: 18vw;
+  height: 18vw;
+  background:
+    radial-gradient(circle, rgba(214, 92, 132, 0.85) 0%, rgba(214, 92, 132, 0.4) 32%, transparent 62%),
+    radial-gradient(circle at 40% 30%, rgba(255, 200, 220, 0.55) 0%, transparent 26%);
+  animation: albw-splat-bloom 9s ease-out infinite;
+  animation-delay: -5.2s;
+}
+
+.albw-splat-4 {
+  top: 22%;
+  left: 42%;
+  width: 16vw;
+  height: 16vw;
+  background:
+    radial-gradient(circle, rgba(126, 200, 140, 0.8) 0%, rgba(126, 200, 140, 0.35) 32%, transparent 62%);
+  animation: albw-splat-bloom 12s ease-out infinite;
+  animation-delay: -7s;
+}
+
+.albw-splat-5 {
+  top: 70%;
+  left: 38%;
+  width: 24vw;
+  height: 24vw;
+  background:
+    radial-gradient(circle, rgba(255, 224, 122, 0.78) 0%, rgba(255, 200, 61, 0.36) 30%, transparent 60%),
+    radial-gradient(circle at 60% 40%, rgba(255, 244, 200, 0.5) 0%, transparent 26%);
+  animation: albw-splat-bloom 13s ease-out infinite;
+  animation-delay: -1.8s;
+}
+
+.albw-splat-6 {
+  top: 4%;
+  left: 72%;
+  width: 14vw;
+  height: 14vw;
+  background:
+    radial-gradient(circle, rgba(126, 140, 255, 0.82) 0%, rgba(126, 140, 255, 0.35) 30%, transparent 62%);
+  animation: albw-splat-bloom 10s ease-out infinite;
+  animation-delay: -4.4s;
+}
+
+/* Each event: a sudden scale-up bloom, peak hold, then fade and shrink.
+ * Includes a tiny burst beat in the middle so the splat looks like wet
+ * paint relaxing as it dries. */
+@keyframes albw-splat-bloom {
+  0%   { transform: scale(0)    rotate(0deg);   opacity: 0; }
+  8%   { transform: scale(0.95) rotate(8deg);   opacity: 1; }
+  14%  { transform: scale(1.08) rotate(4deg);   opacity: 0.95; }
+  35%  { transform: scale(1)    rotate(-4deg);  opacity: 0.85; }
+  60%  { transform: scale(1.04) rotate(-6deg);  opacity: 0.7; }
+  82%  { transform: scale(1.05) rotate(-8deg);  opacity: 0.35; }
+  100% { transform: scale(1.1)  rotate(-10deg); opacity: 0; }
+}
+
+/* Scattered tiny droplet flecks — sub-splat detail across the canvas. */
+.albw-flecks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 200, 61, 0.85) 1.4px, transparent 2.2px),
+    radial-gradient(circle, rgba(160, 124, 255, 0.85) 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(214, 92, 132, 0.78) 1.4px, transparent 2.2px),
+    radial-gradient(circle, rgba(255, 244, 200, 0.7) 0.9px, transparent 1.6px);
+  background-size: 220px 180px, 260px 220px, 300px 260px, 180px 160px;
+  background-position: 30px 60px, 110px 140px, 50px 230px, 170px 90px;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: albw-flecks-shift 22s ease-in-out infinite alternate;
+}
+
+@keyframes albw-flecks-shift {
+  from { background-position: 30px 60px, 110px 140px, 50px 230px, 170px 90px; }
+  to   { background-position: 50px 90px, 90px 110px, 70px 200px, 150px 120px; }
+}
+
+/* Soft inner vignette tying the painting to the paper edges */
+.albw-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%,
+    transparent 50%,
+    rgba(8, 4, 16, 0.45) 88%,
+    rgba(8, 4, 16, 0.7) 100%
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * PHANTOM HOURGLASS — DS cel-shaded ocean with the titular artifact, the
+ * SS Linebeck steaming across, a Ghost Ship drifting behind, and a sea chart
+ * tacked in the corner.
+ * ───────────────────────────────────────────────────────────────────────── */
+.ph-scene {
+  background: linear-gradient(180deg,
+    #0a3a5a 0%,
+    #103850 35%,
+    #0a2b40 70%,
+    #04111c 100%
+  );
+}
+
+.ph-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28%;
+  height: 18%;
+  background: radial-gradient(ellipse at 50% 100%,
+    rgba(120, 220, 240, 0.25) 0%,
+    rgba(120, 220, 240, 0) 70%);
+  pointer-events: none;
+}
+
+/* Sea chart pinned in the upper-left corner. Hand-drawn parchment look with
+ * a slow rocking motion as if pinned by one corner. */
+.ph-chart {
+  position: absolute;
+  top: 4vh;
+  left: 3vw;
+  width: min(320px, 22vw);
+  height: auto;
+  transform-origin: 10% 10%;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  animation: ph-chart-rock 9s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes ph-chart-rock {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(-1.5deg); }
+}
+
+/* Ghost Ship — drifts right→left across the upper third, fading in and out.
+ * Slow, ghostly, never quite solid. */
+.ph-ghost-ship {
+  position: absolute;
+  top: 22%;
+  width: min(360px, 26vw);
+  height: auto;
+  filter: drop-shadow(0 0 14px rgba(180, 255, 220, 0.5));
+  animation:
+    ph-ghost-drift 70s linear infinite,
+    ph-ghost-fade 14s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes ph-ghost-drift {
+  from { transform: translateX(110vw); }
+  to   { transform: translateX(-40vw); }
+}
+
+@keyframes ph-ghost-fade {
+  0%, 100% { opacity: 0.15; }
+  40%, 60% { opacity: 0.6; }
+}
+
+/* Wave bands (back → front) at the bottom. */
+.ph-waves {
+  position: absolute;
+  left: 0;
+  width: 100vw;
+  height: 12vh;
+  pointer-events: none;
+}
+.ph-waves-back  { bottom: 14vh; z-index: 3; opacity: 0.85; }
+.ph-waves-mid   { bottom: 6vh;  z-index: 5; opacity: 0.95; }
+.ph-waves-front { bottom: 0;    z-index: 7; }
+
+/* Linebeck's steamship — sails left → right across the front. Wake trails
+ * behind it on the left (port side relative to direction of travel). */
+.ph-linebeck {
+  position: absolute;
+  bottom: 8vh;
+  width: min(280px, 22vw);
+  height: auto;
+  z-index: 6;
+  animation: ph-linebeck-sail 38s linear infinite;
+}
+
+@keyframes ph-linebeck-sail {
+  from { transform: translateX(-40vw); }
+  to   { transform: translateX(120vw); }
+}
+
+.ph-linebeck-ship {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+  animation: ph-linebeck-bob 3.5s ease-in-out infinite;
+}
+
+@keyframes ph-linebeck-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-3px) rotate(1deg); }
+}
+
+.ph-linebeck-trail {
+  position: absolute;
+  right: 92%;
+  bottom: 8%;
+  width: 70%;
+  height: 30%;
+  opacity: 0.85;
+}
+
+/* Smoke puffs rising from the smokestack. Three offset puffs so the trail
+ * looks continuous. Each rises and dissipates. */
+.ph-smoke {
+  position: absolute;
+  top: -6%;
+  left: 48%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(240, 240, 240, 0.95) 0%,
+    rgba(180, 180, 180, 0.6) 60%,
+    rgba(140, 140, 140, 0) 100%);
+  filter: blur(1px);
+  opacity: 0;
+  animation: ph-smoke-rise 3s ease-out infinite;
+}
+.ph-smoke-1 { animation-delay: 0s; }
+.ph-smoke-2 { animation-delay: 1s; }
+.ph-smoke-3 { animation-delay: 2s; }
+
+@keyframes ph-smoke-rise {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  20%  { opacity: 0.8; }
+  100% { transform: translate(-30px, -90px) scale(1.6); opacity: 0; }
+}
+
+/* The Phantom Hourglass — centred, glowing, slowly rotating ever so slightly
+ * with the rest of the ship motion. */
+.ph-hourglass {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(280px, 22vw);
+  height: auto;
+  z-index: 4;
+  filter: drop-shadow(0 0 20px rgba(38, 179, 211, 0.65));
+  animation: ph-hourglass-float 6s ease-in-out infinite;
+}
+
+@keyframes ph-hourglass-float {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-2deg); }
+  50%      { transform: translate(-50%, -54%) rotate(2deg); }
+}
+
+.ph-hourglass svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Sand in the upper bulb shrinks over the loop, lower bulb grows in unison.
+ * The stream stays visible throughout. */
+.ph-sand-upper {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: ph-sand-drain 12s linear infinite;
+}
+
+@keyframes ph-sand-drain {
+  0%   { transform: scaleY(1); }
+  95%  { transform: scaleY(0.05); }
+  100% { transform: scaleY(1); }
+}
+
+.ph-sand-lower {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: ph-sand-fill 12s linear infinite;
+}
+
+@keyframes ph-sand-fill {
+  0%   { transform: scaleY(0.1); }
+  95%  { transform: scaleY(1); }
+  100% { transform: scaleY(0.1); }
+}
+
+.ph-sand-stream {
+  animation: ph-sand-stream-flicker 0.18s steps(2, end) infinite;
+}
+
+@keyframes ph-sand-stream-flicker {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.65; transform: translateX(0.4px); }
+  100% { opacity: 1; }
+}
+
+/* Gold sand motes drifting around the hourglass — small glowing dots
+ * floating upward on staggered loops. */
+.ph-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.ph-mote {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff7c8 0%, #f0c54a 60%, rgba(240,197,74,0) 100%);
+  filter: blur(0.4px);
+  opacity: 0;
+  animation: ph-mote-rise 9s ease-in-out infinite;
+}
+
+.ph-mote-1 { left: 42%; bottom: 30%; animation-delay: 0s; }
+.ph-mote-2 { left: 48%; bottom: 40%; animation-delay: 1.4s; animation-duration: 11s; }
+.ph-mote-3 { left: 55%; bottom: 25%; animation-delay: 2.8s; animation-duration: 8s; }
+.ph-mote-4 { left: 60%; bottom: 35%; animation-delay: 4.2s; animation-duration: 10s; }
+.ph-mote-5 { left: 38%; bottom: 50%; animation-delay: 1s;   animation-duration: 12s; }
+.ph-mote-6 { left: 52%; bottom: 45%; animation-delay: 3.2s; animation-duration: 9s; }
+.ph-mote-7 { left: 46%; bottom: 28%; animation-delay: 5s;   animation-duration: 11s; }
+.ph-mote-8 { left: 58%; bottom: 48%; animation-delay: 6.4s; animation-duration: 10s; }
+
+@keyframes ph-mote-rise {
+  0%   { transform: translateY(0); opacity: 0; }
+  15%  { opacity: 0.9; }
+  85%  { opacity: 0.6; }
+  100% { transform: translateY(-180px); opacity: 0; }
+}
+
+/* Cel-shaded foam ripples scattered over the surface — they drift sideways
+ * subtly so the ocean reads as alive. */
+.ph-foam {
+  position: absolute;
+  left: 0;
+  bottom: 6vh;
+  width: 100vw;
+  height: 22vh;
+  z-index: 4;
+  opacity: 0.65;
+  animation: ph-foam-drift 18s linear infinite;
+}
+
+@keyframes ph-foam-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-60px); }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * FOUR SWORDS ADVENTURES — GBA-style pixel art of the Four Sword Sanctuary,
+ * with the Four Sword in its pedestal and the four colored Links around it.
+ * ───────────────────────────────────────────────────────────────────────── */
+.fsa-scene {
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(120, 180, 255, 0.35) 0%, transparent 55%),
+    linear-gradient(180deg,
+      #0a1438 0% 20%,
+      #1c2a52 20% 46%,
+      #2a3a6e 46% 56%,
+      #3a4a18 56% 62%,
+      #2a3a10 62% 76%,
+      #14200a 76% 100%
+    );
+  image-rendering: pixelated;
+}
+
+.fsa-scene svg {
+  image-rendering: pixelated;
+}
+
+/* Soft heavenly light pouring down on the sanctuary */
+.fsa-light {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(620px, 52vw);
+  height: 90vh;
+  background: radial-gradient(ellipse at 50% 0%,
+    rgba(255, 240, 200, 0.55) 0%,
+    rgba(255, 220, 140, 0.25) 30%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: fsa-light-pulse 5s ease-in-out infinite;
+}
+
+@keyframes fsa-light-pulse {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+/* Stone shrine arch behind the pedestal */
+.fsa-shrine {
+  position: absolute;
+  top: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, 44vw);
+  filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.55));
+}
+
+/* Pixel stone floor tiles in front of the shrine */
+.fsa-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 18vh;
+  background:
+    repeating-linear-gradient(90deg,
+      #4a5470 0 28px,
+      #3a4458 28px 30px,
+      #5a6480 30px 58px,
+      #3a4458 58px 60px
+    ),
+    repeating-linear-gradient(0deg,
+      #4a5470 0 28px,
+      #2a3450 28px 30px,
+      #5a6480 30px 58px,
+      #2a3450 58px 60px
+    );
+  background-blend-mode: multiply;
+  border-top: 3px solid #2a3450;
+  image-rendering: pixelated;
+}
+
+/* The Four Sword pedestal — centered, with a gentle bob */
+.fsa-pedestal {
+  position: absolute;
+  bottom: 14vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(170px, 14vw);
+  filter:
+    drop-shadow(0 0 16px rgba(122, 212, 255, 0.7))
+    drop-shadow(0 6px 0 rgba(0, 0, 0, 0.55));
+  animation: fsa-pedestal-bob 4.5s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes fsa-pedestal-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, -4px); }
+}
+
+/* Magical light beam pouring onto the sword */
+.fsa-beam {
+  position: absolute;
+  top: 4vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(180px, 15vw);
+  height: 78vh;
+  background: linear-gradient(180deg,
+    rgba(180, 220, 255, 0) 0%,
+    rgba(180, 220, 255, 0.35) 30%,
+    rgba(220, 240, 255, 0.5) 60%,
+    rgba(180, 220, 255, 0) 100%
+  );
+  mix-blend-mode: screen;
+  filter: blur(2px);
+  animation: fsa-beam-pulse 4s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes fsa-beam-pulse {
+  0%, 100% { opacity: 0.65; }
+  50%      { opacity: 1; }
+}
+
+/* Four heroes container — fills the lower-centre area and positions each
+ * Link around the pedestal at cardinal points. */
+.fsa-heroes {
+  position: absolute;
+  bottom: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, 44vw);
+  height: 32vh;
+  z-index: 4;
+}
+
+.fsa-hero {
+  position: absolute;
+  width: min(80px, 7vw);
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.6));
+  animation: fsa-hero-bob 2.4s ease-in-out infinite;
+}
+
+/* Back hero (green) — sits highest, behind the pedestal */
+.fsa-hero-back {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 0s;
+  opacity: 0.92;
+}
+
+/* Left hero (red) — west of the pedestal */
+.fsa-hero-left {
+  top: 30%;
+  left: 6%;
+  animation-delay: -0.6s;
+}
+
+/* Right hero (blue) — east of the pedestal, mirrored so sword & shield
+ * flip relative to its facing direction. */
+.fsa-hero-right {
+  top: 30%;
+  right: 6%;
+  transform: scaleX(-1);
+  animation-delay: -1.2s;
+}
+
+.fsa-hero-right.fsa-hero {
+  animation-name: fsa-hero-bob-mirror;
+}
+
+/* Front hero (purple) — closest to camera, foreground */
+.fsa-hero-front {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scale(1.1);
+  animation-delay: -1.8s;
+  animation-name: fsa-hero-bob-front;
+  z-index: 1;
+}
+
+@keyframes fsa-hero-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* Mirrored version so scaleX(-1) is preserved across the bob */
+@keyframes fsa-hero-bob-mirror {
+  0%, 100% { transform: scaleX(-1) translateY(0); }
+  50%      { transform: scaleX(-1) translateY(-3px); }
+}
+
+/* Front-hero variant retains the translateX centring */
+@keyframes fsa-hero-bob-front {
+  0%, 100% { transform: translateX(-50%) scale(1.1) translateY(0); }
+  50%      { transform: translateX(-50%) scale(1.1) translateY(-3px); }
+}
+
+/* The back hero stays centred while bobbing */
+.fsa-hero-back.fsa-hero {
+  animation-name: fsa-hero-bob-back;
+}
+
+@keyframes fsa-hero-bob-back {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-3px); }
+}
+
+/* Sparkles rising around the sword — pixel glints in the Four-Sword colours */
+.fsa-sparkles {
+  position: absolute;
+  top: 12vh;
+  left: 30vw;
+  right: 30vw;
+  bottom: 22vh;
+  background-image:
+    radial-gradient(rgba(122, 212, 255, 0.95) 1.6px, transparent 2.2px),
+    radial-gradient(rgba(255, 220, 140, 0.85) 1.4px, transparent 2px),
+    radial-gradient(rgba(214, 58, 58, 0.7)   1px,   transparent 1.6px),
+    radial-gradient(rgba(58, 168, 74, 0.75)  1px,   transparent 1.6px);
+  background-size: 220px 280px, 180px 220px, 260px 320px, 200px 260px;
+  background-position: 20px 60px, 90px 30px, 50px 180px, 160px 110px;
+  animation: fsa-sparkles-rise 16s linear infinite;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+@keyframes fsa-sparkles-rise {
+  from { background-position: 20px 60px,  90px 30px,  50px 180px, 160px 110px; }
+  to   { background-position: 20px -220px, 90px -190px, 50px -100px, 160px -150px; }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * SPIRIT TRACKS — DS cel-shaded landscape with the Tower of Spirits on the
+ * horizon and the Spirit Train chugging along tracks across the foreground.
+ * ───────────────────────────────────────────────────────────────────────── */
+.st-scene {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 240, 180, 0.5) 0%, transparent 55%),
+    linear-gradient(180deg,
+      #a8d8ff 0% 20%,
+      #c8e8ff 20% 38%,
+      #d8f0d0 38% 48%,
+      #7eb04a 48% 60%,
+      #4a7a2a 60% 78%,
+      #2c3a1c 78% 100%
+    );
+}
+
+/* Soft sun in the upper sky */
+.st-sun {
+  position: absolute;
+  top: 6vh;
+  right: 18vw;
+  width: 12vw;
+  height: 12vw;
+  background: radial-gradient(circle,
+    rgba(255, 245, 200, 0.9) 0%,
+    rgba(255, 220, 140, 0.5) 40%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+  animation: st-sun-glow 6s ease-in-out infinite;
+}
+
+@keyframes st-sun-glow {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+/* Drifting clouds — soft puffs in the upper sky */
+.st-clouds {
+  position: absolute;
+  top: 4vh;
+  left: 0;
+  right: 0;
+  height: 22vh;
+  background:
+    radial-gradient(ellipse 80px 30px at 10% 30%,  rgba(255, 255, 255, 0.75) 0%, transparent 60%),
+    radial-gradient(ellipse 110px 36px at 32% 20%, rgba(255, 255, 255, 0.7)  0%, transparent 60%),
+    radial-gradient(ellipse 90px 28px at 55% 40%,  rgba(255, 255, 255, 0.65) 0%, transparent 60%),
+    radial-gradient(ellipse 130px 38px at 78% 28%, rgba(255, 255, 255, 0.7)  0%, transparent 60%),
+    radial-gradient(ellipse 70px 24px at 92% 18%,  rgba(255, 255, 255, 0.6)  0%, transparent 60%);
+  animation: st-clouds-drift 90s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes st-clouds-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-20vw); }
+}
+
+/* Tower of Spirits — back-centre, tall fantasy spire */
+.st-tower {
+  position: absolute;
+  bottom: 32vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(180px, 14vw);
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+  z-index: 1;
+}
+
+/* Far rolling hills */
+.st-hills-far {
+  position: absolute;
+  bottom: 28vh;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  z-index: 1;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.2));
+}
+
+/* Mid hills — closer, slightly larger */
+.st-hills-mid {
+  position: absolute;
+  bottom: 22vh;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  z-index: 2;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.3));
+}
+
+/* Distant tree silhouettes scattered along the mid hills */
+.st-trees {
+  position: absolute;
+  bottom: 28vh;
+  left: 0;
+  width: 100%;
+  height: 6vh;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+/* Foreground grass strip the tracks rest on */
+.st-grass {
+  position: absolute;
+  bottom: 4vh;
+  left: 0;
+  right: 0;
+  height: 22vh;
+  background:
+    linear-gradient(180deg,
+      #6ea03a 0%,
+      #4a7a2a 40%,
+      #2c4a18 100%
+    );
+  border-top: 3px solid #8ec048;
+  z-index: 3;
+}
+
+/* Train tracks running horizontally across the grass */
+.st-tracks {
+  position: absolute;
+  bottom: 12vh;
+  left: -2vw;
+  width: 104vw;
+  height: 7vh;
+  z-index: 4;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.35));
+}
+
+/* Subtle shadow strip under the tracks for depth */
+.st-track-shadow {
+  position: absolute;
+  bottom: 11vh;
+  left: 0;
+  right: 0;
+  height: 2vh;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    transparent 100%
+  );
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* The Spirit Train — animates across the screen */
+.st-train {
+  position: absolute;
+  bottom: 13.5vh;
+  left: -32vw;
+  width: min(420px, 32vw);
+  z-index: 5;
+  animation: st-train-roll 28s linear infinite;
+  filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.55));
+}
+
+.st-train svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Tiny up-down jitter to suggest the rolling motion of wheels on tracks */
+  animation: st-train-jitter 0.5s steps(2, end) infinite;
+}
+
+@keyframes st-train-roll {
+  /* Start fully off-screen on the left, end fully off-screen on the right.
+   * The pause at 100% (single frame) is enough — the loop restarts cleanly. */
+  from { transform: translateX(0); }
+  to   { transform: translateX(140vw); }
+}
+
+/* Flip horizontally so the locomotive (drawn on the left of the SVG) faces
+ * the direction of travel (rightward). scaleX is baked into the jitter
+ * keyframes because CSS animations replace the whole transform property. */
+@keyframes st-train-jitter {
+  0%, 100% { transform: scaleX(-1) translateY(0); }
+  50%      { transform: scaleX(-1) translateY(1px); }
+}
+
+/* Steam puffs — positioned above the smokestack of the locomotive, each
+ * rising and fading on its own offset cycle to make a continuous trail. */
+.st-steam {
+  position: absolute;
+  /* Smokestack sits ~17% from the left of the un-flipped SVG; after the
+   * scaleX(-1) flip that's ~83% from the left of the .st-train container. */
+  left: 83%;
+  top: -28px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(220, 230, 240, 0.7) 50%,
+    rgba(180, 200, 220, 0) 80%
+  );
+  filter: blur(1px);
+  opacity: 0;
+  animation: st-steam-rise 3.2s ease-out infinite;
+}
+
+.st-steam-1 { animation-delay: 0s; }
+.st-steam-2 { animation-delay: -0.6s; }
+.st-steam-3 { animation-delay: -1.2s; }
+.st-steam-4 { animation-delay: -1.8s; }
+.st-steam-5 { animation-delay: -2.4s; }
+
+@keyframes st-steam-rise {
+  0%   { transform: translate(0, 0)        scale(0.4); opacity: 0; }
+  15%  { transform: translate(-2px, -16px) scale(0.8); opacity: 0.9; }
+  60%  { transform: translate(-10px, -64px) scale(1.4); opacity: 0.7; }
+  100% { transform: translate(-22px, -120px) scale(1.9); opacity: 0; }
+}
+
+/* Spirit wisps drifting horizontally — floating points of green light */
+.st-wisps {
+  position: absolute;
+  top: 18vh;
+  left: 0;
+  right: 0;
+  bottom: 28vh;
+  background-image:
+    radial-gradient(rgba(180, 240, 140, 0.85) 1.6px, transparent 2.4px),
+    radial-gradient(rgba(220, 255, 180, 0.7)  1.2px, transparent 2px),
+    radial-gradient(rgba(140, 220, 180, 0.6)  1px,   transparent 1.6px);
+  background-size: 260px 220px, 200px 180px, 320px 260px;
+  background-position: 30px 60px, 110px 140px, 60px 200px;
+  animation: st-wisps-drift 24s linear infinite;
+  opacity: 0.7;
+  mix-blend-mode: screen;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@keyframes st-wisps-drift {
+  from { background-position: 30px 60px,  110px 140px, 60px 200px; }
+  to   { background-position: 290px 40px, 370px 110px, 320px 220px; }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * TWILIGHT PRINCESS — HYRULE CASTLE INSIDE THE TWILIGHT DOME
+ * Amber pyramidal barrier over a silhouetted castle, with twilight pixels
+ * peeling off into a dusk sky.
+ * ───────────────────────────────────────────────────────────────────────── */
+.tpc-scene {
+  background:
+    radial-gradient(ellipse at 50% 75%,
+      rgba(120, 50, 110, 0.55) 0%,
+      rgba(40, 18, 50, 0) 60%),
+    linear-gradient(180deg,
+      #2a1130 0%,
+      #4a1f3a 35%,
+      #2a1130 70%,
+      #0c0418 100%);
+}
+
+.tpc-horizon-glow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18%;
+  height: 22%;
+  background: radial-gradient(ellipse at 50% 100%,
+    rgba(255, 170, 58, 0.45) 0%,
+    rgba(255, 170, 58, 0.12) 35%,
+    rgba(255, 170, 58, 0) 70%);
+  pointer-events: none;
+}
+
+.tpc-hills {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 26vh;
+  z-index: 3;
+}
+
+.tpc-dome {
+  position: absolute;
+  left: 50%;
+  bottom: 14vh;
+  transform: translateX(-50%);
+  width: min(620px, 46vw);
+  filter: drop-shadow(0 0 40px rgba(255, 180, 80, 0.55))
+          drop-shadow(0 0 14px rgba(255, 220, 120, 0.65));
+  animation: tpc-dome-pulse 6s ease-in-out infinite;
+  z-index: 4;
+}
+
+.tpc-dome svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+@keyframes tpc-dome-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 40px rgba(255, 180, 80, 0.55))
+            drop-shadow(0 0 14px rgba(255, 220, 120, 0.65));
+  }
+  50% {
+    filter: drop-shadow(0 0 60px rgba(255, 180, 80, 0.8))
+            drop-shadow(0 0 22px rgba(255, 220, 120, 0.95));
+  }
+}
+
+/* Drifting twili glyphs in the upper sky */
+.tpc-glyph {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  opacity: 0;
+  filter: drop-shadow(0 0 8px rgba(126, 45, 142, 0.7));
+  animation: tpc-glyph-float 14s ease-in-out infinite;
+  z-index: 2;
+}
+.tpc-glyph-1 { top: 10%; left: 14%; animation-delay: 0s; }
+.tpc-glyph-2 { top: 6%;  left: 72%; animation-delay: 4.5s; }
+.tpc-glyph-3 { top: 22%; left: 84%; animation-delay: 9s;   }
+
+@keyframes tpc-glyph-float {
+  0%   { transform: translateY(0)   rotate(0deg);   opacity: 0; }
+  15%  { opacity: 0.85; }
+  85%  { opacity: 0.6; }
+  100% { transform: translateY(-40px) rotate(20deg); opacity: 0; }
+}
+
+/* Black twilight squares dissolving upward from the dome area */
+.tpc-pixels {
+  position: absolute;
+  left: 50%;
+  bottom: 14vh;
+  width: 48vw;
+  height: 70vh;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.tpc-pixel {
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  background: #08040c;
+  opacity: 0;
+  animation: tpc-pixel-rise 7s linear infinite;
+}
+.tpc-pixel-1  { left: 8%;  width: 12px; height: 12px; animation-delay: 0s;   }
+.tpc-pixel-2  { left: 16%; width: 8px;  height: 8px;  animation-delay: 0.9s; }
+.tpc-pixel-3  { left: 24%; width: 10px; height: 10px; animation-delay: 1.8s; }
+.tpc-pixel-4  { left: 32%; width: 14px; height: 14px; animation-delay: 2.7s; }
+.tpc-pixel-5  { left: 42%; width: 8px;  height: 8px;  animation-delay: 3.6s; }
+.tpc-pixel-6  { left: 50%; width: 10px; height: 10px; animation-delay: 0.4s; }
+.tpc-pixel-7  { left: 58%; width: 12px; height: 12px; animation-delay: 1.3s; }
+.tpc-pixel-8  { left: 66%; width: 8px;  height: 8px;  animation-delay: 2.2s; }
+.tpc-pixel-9  { left: 74%; width: 14px; height: 14px; animation-delay: 3.1s; }
+.tpc-pixel-10 { left: 82%; width: 10px; height: 10px; animation-delay: 4s;   }
+.tpc-pixel-11 { left: 38%; width: 8px;  height: 8px;  animation-delay: 4.9s; }
+.tpc-pixel-12 { left: 60%; width: 10px; height: 10px; animation-delay: 5.8s; }
+
+@keyframes tpc-pixel-rise {
+  0%   { transform: translateY(0)    rotate(0deg);    opacity: 0; }
+  10%  { opacity: 1; }
+  60%  { opacity: 0.7; }
+  100% { transform: translateY(-70vh) rotate(45deg); opacity: 0; }
+}
+
+.tpc-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 60%,
+    transparent 40%,
+    rgba(8, 4, 16, 0.55) 90%,
+    rgba(8, 4, 16, 0.85) 100%);
+  z-index: 9;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * TWILIGHT PRINCESS — WOLF LINK + MIDNA IN THE TWILI-RUNE CHAMBER
+ * Stone dungeon with cyan glyphs, wolf silhouette, Midna perched up top.
+ * ───────────────────────────────────────────────────────────────────────── */
+.tpw-scene {
+  background: linear-gradient(180deg,
+    #08070c 0%,
+    #110b18 30%,
+    #1a1224 60%,
+    #0a0610 100%);
+}
+
+/* Back wall — stacked stone bricks. Mortar built from two repeating
+ * gradients, one per axis, so it scales without an image. */
+.tpw-wall {
+  position: absolute;
+  inset: 0 0 38% 0;
+  background-color: #14101a;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 56px,
+      rgba(0, 0, 0, 0.55) 56px 60px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 90px,
+      rgba(0, 0, 0, 0.4) 90px 94px
+    );
+  opacity: 0.95;
+}
+
+/* Glowing twili rune carved into the back wall */
+.tpw-wall-rune {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  width: min(360px, 26vw);
+  height: auto;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 14px rgba(95, 214, 192, 0.7))
+          drop-shadow(0 0 28px rgba(95, 214, 192, 0.35));
+  animation: tpw-rune-pulse 4.5s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes tpw-rune-pulse {
+  0%, 100% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 10px rgba(95, 214, 192, 0.55))
+            drop-shadow(0 0 20px rgba(95, 214, 192, 0.25));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(95, 214, 192, 0.95))
+            drop-shadow(0 0 40px rgba(95, 214, 192, 0.55));
+  }
+}
+
+/* Perspective floor */
+.tpw-floor {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 38vh;
+  z-index: 1;
+}
+
+/* Cyan pool of light on the floor right under the wolf */
+.tpw-floor-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 6vh;
+  transform: translateX(-50%);
+  width: 36vw;
+  height: 8vh;
+  background: radial-gradient(ellipse at center,
+    rgba(95, 214, 192, 0.55) 0%,
+    rgba(95, 214, 192, 0.18) 45%,
+    rgba(95, 214, 192, 0) 70%);
+  filter: blur(2px);
+  z-index: 2;
+  animation: tpw-glow-breath 4.5s ease-in-out infinite;
+}
+
+@keyframes tpw-glow-breath {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+
+/* Wolf Link — sits in the foreground centre */
+.tpw-wolf {
+  position: absolute;
+  left: 50%;
+  bottom: 8vh;
+  transform: translateX(-50%);
+  width: min(480px, 36vw);
+  height: auto;
+  z-index: 6;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.55));
+  animation: tpw-wolf-breathe 5s ease-in-out infinite;
+}
+
+@keyframes tpw-wolf-breathe {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50%      { transform: translate(-50%, -3px) scale(1.005); }
+}
+
+/* Midna — perched on the wolf's back, centred above it */
+.tpw-midna {
+  position: absolute;
+  left: 50%;
+  bottom: 18vh;
+  width: min(180px, 12vw);
+  height: auto;
+  z-index: 7;
+  filter: drop-shadow(0 0 12px rgba(95, 214, 192, 0.55))
+          drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+  transform-origin: 50% 100%;
+  animation: tpw-midna-sway 6s ease-in-out infinite;
+}
+
+@keyframes tpw-midna-sway {
+  0%, 100% { transform: translateX(-50%) rotate(-2deg); }
+  50%      { transform: translateX(-50%) rotate(2deg); }
+}
+
+/* Twili pixel motes drifting upward */
+.tpw-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.tpw-mote {
+  position: absolute;
+  bottom: 8vh;
+  width: 6px;
+  height: 6px;
+  background: #06040a;
+  opacity: 0;
+  animation: tpw-mote-rise 8s linear infinite;
+}
+.tpw-mote-cyan {
+  background: #5fd6c0;
+  box-shadow: 0 0 6px rgba(95, 214, 192, 0.85);
+}
+.tpw-mote-1 { left: 28%; animation-delay: 0s;   width: 8px; height: 8px; }
+.tpw-mote-2 { left: 38%; animation-delay: 1.1s; }
+.tpw-mote-3 { left: 46%; animation-delay: 2.3s; width: 5px; height: 5px; }
+.tpw-mote-4 { left: 56%; animation-delay: 3.4s; width: 9px; height: 9px; }
+.tpw-mote-5 { left: 64%; animation-delay: 4.5s; }
+.tpw-mote-6 { left: 72%; animation-delay: 5.6s; width: 6px; height: 6px; }
+.tpw-mote-7 { left: 32%; animation-delay: 0.6s; width: 4px; height: 4px; }
+.tpw-mote-8 { left: 50%; animation-delay: 2.8s; width: 5px; height: 5px; }
+.tpw-mote-9 { left: 68%; animation-delay: 5s;   width: 4px; height: 4px; }
+
+@keyframes tpw-mote-rise {
+  0%   { transform: translateY(0)    rotate(0deg);  opacity: 0; }
+  15%  { opacity: 0.85; }
+  85%  { opacity: 0.4; }
+  100% { transform: translateY(-65vh) rotate(40deg); opacity: 0; }
+}
+
+/* Side wall torches — warm orange pools against the cool stone */
+.tpw-torch {
+  position: absolute;
+  top: 18%;
+  width: 12vw;
+  height: 30vh;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 170, 58, 0.45) 0%,
+    rgba(255, 170, 58, 0.15) 30%,
+    rgba(255, 170, 58, 0) 60%);
+  filter: blur(3px);
+  animation: tpw-torch-flicker 0.18s steps(2, end) infinite alternate;
+}
+.tpw-torch-l { left: 4%;  }
+.tpw-torch-r { right: 4%; }
+
+@keyframes tpw-torch-flicker {
+  from { opacity: 0.85; transform: scale(1); }
+  to   { opacity: 1;    transform: scale(1.04); }
+}
+
+.tpw-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 60%,
+    transparent 35%,
+    rgba(4, 2, 8, 0.6) 85%,
+    rgba(4, 2, 8, 0.9) 100%);
+  z-index: 9;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * THE MINISH CAP — Picori-scale forest floor: giant grass blades and
+ * clover loom over a Minish mushroom-house and the base of an oak;
+ * Ezlo's hat drifts on the wind; kinstone halves spin in mid-air;
+ * sunbeams pierce the canopy; pollen drifts everywhere.
+ * ───────────────────────────────────────────────────────────────────────── */
+.mc-scene {
+  background:
+    radial-gradient(ellipse at 40% 0%, rgba(180, 240, 140, 0.28) 0%, transparent 55%),
+    linear-gradient(180deg, #4a8a3a 0%, #2e5e26 38%, #1a3e18 78%, #081608 100%);
+}
+
+/* Bright lime canopy glow at the top edge */
+.mc-canopy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36vh;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(220, 255, 160, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse at 75% 0%, rgba(160, 220, 80, 0.35) 0%, transparent 60%);
+  filter: blur(18px);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* God rays piercing through the canopy from above-left */
+.mc-rays {
+  position: absolute;
+  top: -10vh;
+  left: -10vw;
+  width: 80vw;
+  height: 110vh;
+  background:
+    linear-gradient(108deg,
+      transparent 30%,
+      rgba(255, 248, 200, 0.18) 40%,
+      transparent 50%,
+      rgba(255, 244, 180, 0.14) 60%,
+      transparent 72%,
+      rgba(255, 240, 170, 0.18) 82%,
+      transparent 92%
+    );
+  filter: blur(6px);
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: mc-rays-drift 16s ease-in-out infinite alternate;
+}
+
+.mc-rays-2 {
+  left: 14vw;
+  width: 90vw;
+  background:
+    linear-gradient(96deg,
+      transparent 22%,
+      rgba(255, 252, 220, 0.12) 32%,
+      transparent 42%,
+      rgba(255, 244, 180, 0.16) 56%,
+      transparent 66%,
+      rgba(255, 232, 160, 0.10) 78%,
+      transparent 88%
+    );
+  animation-duration: 22s;
+  opacity: 0.85;
+}
+
+@keyframes mc-rays-drift {
+  from { transform: translateX(0)    rotate(0deg); }
+  to   { transform: translateX(2vw)  rotate(0.6deg); }
+}
+
+/* Distant rolling forest hills along the horizon */
+.mc-far-hills {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  bottom: 32vh;
+  height: 18vh;
+  filter: drop-shadow(0 -2px 8px rgba(0, 0, 0, 0.4));
+}
+
+/* Massive oak trunk on the right rising out of frame */
+.mc-tree {
+  position: absolute;
+  right: -3vw;
+  bottom: 4vh;
+  width: min(280px, 22vw);
+  height: auto;
+  filter: drop-shadow(-8px 6px 14px rgba(0, 0, 0, 0.55));
+}
+
+/* Minish mushroom-house at the base of the tree */
+.mc-mushroom {
+  position: absolute;
+  right: 22vw;
+  bottom: 8vh;
+  width: min(190px, 14vw);
+  height: auto;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  animation: mc-mushroom-sway 5.6s ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+}
+
+@keyframes mc-mushroom-sway {
+  from { transform: rotate(-1deg) translateY(0); }
+  to   { transform: rotate(1deg)  translateY(-2px); }
+}
+
+/* Tiny Picori standing next to the mushroom house */
+.mc-picori {
+  position: absolute;
+  right: 38vw;
+  bottom: 9vh;
+  width: min(54px, 4vw);
+  height: auto;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.6));
+  animation: mc-picori-bob 1.6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes mc-picori-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* Kinstone halves — fan-shaped medallions spinning in mid-air. Each
+ * also bobs vertically on its own independent cycle so the trio never
+ * moves in lockstep. */
+.mc-kinstone {
+  position: absolute;
+  width: min(70px, 5.5vw);
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))
+          drop-shadow(0 0 10px rgba(255, 232, 140, 0.45));
+  pointer-events: none;
+  transform-origin: 50% 50%;
+}
+
+.mc-kinstone-1 {
+  top: 24vh;
+  left: 18vw;
+  animation:
+    mc-kinstone-spin 5.4s linear infinite,
+    mc-kinstone-bob  3.2s ease-in-out infinite alternate;
+}
+
+.mc-kinstone-2 {
+  top: 32vh;
+  left: 56vw;
+  width: min(56px, 4.4vw);
+  animation:
+    mc-kinstone-spin 7.1s linear infinite reverse,
+    mc-kinstone-bob  4.1s ease-in-out infinite alternate-reverse;
+}
+
+.mc-kinstone-3 {
+  top: 16vh;
+  left: 70vw;
+  width: min(48px, 3.8vw);
+  animation:
+    mc-kinstone-spin 6.2s linear infinite,
+    mc-kinstone-bob  3.7s ease-in-out infinite alternate;
+}
+
+@keyframes mc-kinstone-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mc-kinstone-bob {
+  from { translate: 0 0; }
+  to   { translate: 0 -10px; }
+}
+
+/* Ezlo's hat drifting across the upper-middle area */
+.mc-ezlo {
+  position: absolute;
+  top: 14vh;
+  left: 0;
+  width: min(160px, 12vw);
+  height: auto;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  animation:
+    mc-ezlo-drift 38s linear infinite,
+    mc-ezlo-bob   3.4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes mc-ezlo-drift {
+  0%   { transform: translateX(-20vw) translateY(0); }
+  100% { transform: translateX(110vw) translateY(0); }
+}
+
+@keyframes mc-ezlo-bob {
+  from { translate: 0 0; }
+  to   { translate: 0 -8px; }
+}
+
+/* Giant clover at the foreground lower-right — towering over Picori
+ * Link. The leaves sway gently in the breeze. */
+.mc-clover {
+  position: absolute;
+  right: -4vw;
+  bottom: 0;
+  width: min(260px, 20vw);
+  height: auto;
+  filter: drop-shadow(-4px 0 8px rgba(0, 0, 0, 0.5));
+  animation: mc-clover-sway 4.8s ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+  z-index: 3;
+}
+
+@keyframes mc-clover-sway {
+  from { transform: rotate(-2deg); }
+  to   { transform: rotate(2deg); }
+}
+
+/* Giant blades of grass on the foreground lower-left */
+.mc-grass {
+  position: absolute;
+  left: -2vw;
+  bottom: 0;
+  width: min(340px, 26vw);
+  height: auto;
+  filter: drop-shadow(4px 0 8px rgba(0, 0, 0, 0.55));
+  animation: mc-grass-sway 5.2s ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+  z-index: 4;
+}
+
+@keyframes mc-grass-sway {
+  from { transform: rotate(1deg)  skewX(-1deg); }
+  to   { transform: rotate(-2deg) skewX(1.5deg); }
+}
+
+/* Drifting pollen — small yellow-green motes rising on the breeze */
+.mc-pollen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 240, 140, 0.85) 1.4px, transparent 2.2px),
+    radial-gradient(circle, rgba(220, 255, 160, 0.75) 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(255, 220, 100, 0.6)  1px,   transparent 1.6px);
+  background-size: 260px 220px, 320px 280px, 200px 180px;
+  background-position: 30px 80px, 110px 140px, 60px 200px;
+  animation: mc-pollen-rise 22s linear infinite;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+}
+
+.mc-pollen-2 {
+  background-size: 360px 300px, 280px 240px, 240px 200px;
+  background-position: 80px 120px, 40px 60px, 140px 180px;
+  animation-duration: 32s;
+  opacity: 0.55;
+}
+
+@keyframes mc-pollen-rise {
+  from { background-position: 30px 100vh, 110px 100vh, 60px 100vh; }
+  to   { background-position: 80px -220px, 60px -280px, 140px -200px; }
+}
+
+/* Soft dappled-light spots on the ground from canopy gaps */
+.mc-dapple {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 18vw 8vh at 28% 78%, rgba(255, 244, 180, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 14vw 6vh at 62% 86%, rgba(255, 248, 200, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 22vw 10vh at 80% 70%, rgba(220, 255, 160, 0.14) 0%, transparent 70%);
+  filter: blur(8px);
+  mix-blend-mode: screen;
+  animation: mc-dapple-shift 14s ease-in-out infinite alternate;
+}
+
+@keyframes mc-dapple-shift {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(2vw, -1vh); }
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * LINK'S AWAKENING — Koholint Island at dawn
+ * Pink dawn sky with a whale-like silhouette drifting overhead, a mountain
+ * with an oversized egg on its peak, calm ocean and a beach.
+ * ───────────────────────────────────────────────────────────────────────── */
+.la-scene {
+  background:
+    radial-gradient(ellipse at 50% 78%, rgba(255, 200, 168, 0.35) 0%, transparent 60%),
+    linear-gradient(180deg,
+      #1e2a52 0%,
+      #5a3a72 22%,
+      #b87898 42%,
+      #ffb5c5 56%,
+      #ffd6c8 66%,
+      #6e7ea8 78%,
+      #1e3a5e 90%,
+      #070f1c 100%
+    );
+}
+
+/* Drifting starlight motes high in the sky */
+.la-stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40vh;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(255, 230, 240, 0.7)  0.8px, transparent 1.6px);
+  background-size: 220px 180px, 140px 120px;
+  background-position: 30px 50px, 90px 80px;
+  opacity: 0.85;
+  pointer-events: none;
+  animation: la-stars-twinkle 6s ease-in-out infinite alternate;
+}
+
+@keyframes la-stars-twinkle {
+  from { opacity: 0.55; }
+  to   { opacity: 0.95; }
+}
+
+/* Warm sun glow on the horizon */
+.la-sun {
+  position: absolute;
+  bottom: 24vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56vw;
+  height: 20vh;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 220, 180, 0.55) 0%,
+    rgba(255, 190, 160, 0.28) 35%,
+    rgba(255, 181, 197, 0)     70%
+  );
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Drifting puffy clouds */
+.la-clouds {
+  position: absolute;
+  top: 14%;
+  left: -10%;
+  width: 130%;
+  height: 14vh;
+  opacity: 0.95;
+  pointer-events: none;
+  animation: la-clouds-drift 90s linear infinite;
+  z-index: 2;
+}
+
+@keyframes la-clouds-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-20%); }
+}
+
+/* The Wind Fish — user-supplied artwork drifting right to left across the
+ * upper sky. The OUTER div handles the long horizontal drift (60s); the
+ * INNER img handles the faster turbulent bob + tilt so the two motions
+ * compose without overwriting each other's transform. */
+.la-windfish {
+  position: absolute;
+  top: 10%;
+  right: -30%;
+  width: min(340px, 24vw);
+  z-index: 3;
+  animation: la-windfish-drift 60s linear infinite;
+}
+
+.la-windfish-inner {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+  animation: la-windfish-flutter 4.4s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes la-windfish-drift {
+  /* Off-screen right → off-screen left, with a slight scale-pulse so the
+   * Wind Fish feels closer at mid-screen. */
+  0%   { transform: translate(0, 0)      scale(0.95); }
+  50%  { transform: translate(-80vw, 0)   scale(1.05); }
+  100% { transform: translate(-160vw, 0)  scale(0.95); }
+}
+
+@keyframes la-windfish-flutter {
+  /* Five waypoints of Y bob + small rotation wobble to suggest the
+   * creature being buffeted by turbulent air — kept subtle so it doesn't
+   * read as a hard up-and-down sine wave. */
+  0%, 100% { transform: translateY(0)     rotate(0deg); }
+  20%      { transform: translateY(-0.9vh) rotate(-1.1deg); }
+  40%      { transform: translateY(0.5vh)  rotate(0.7deg); }
+  60%      { transform: translateY(-1.1vh) rotate(-0.6deg); }
+  80%      { transform: translateY(0.4vh)  rotate(0.9deg); }
+}
+
+/* The mountain with an egg perched on the peak */
+.la-mountain {
+  position: absolute;
+  bottom: 16vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(620px, 46vw);
+  height: auto;
+  z-index: 4;
+  filter:
+    drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 18px rgba(255, 181, 197, 0.35));
+  animation: la-mountain-shimmer 5s ease-in-out infinite alternate;
+}
+
+@keyframes la-mountain-shimmer {
+  from { filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5))
+                 drop-shadow(0 0 18px rgba(255, 181, 197, 0.35)); }
+  to   { filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5))
+                 drop-shadow(0 0 30px rgba(255, 181, 197, 0.6)); }
+}
+
+/* Lower foothill ridges flanking the mountain */
+.la-foothills {
+  position: absolute;
+  bottom: 12vh;
+  left: 0;
+  width: 100%;
+  height: 14vh;
+  z-index: 5;
+  opacity: 0.95;
+}
+
+/* Ocean band across the horizon */
+.la-ocean {
+  position: absolute;
+  bottom: 4vh;
+  left: 0;
+  width: 100%;
+  height: 14vh;
+  z-index: 6;
+}
+
+/* Beach silhouette at the very front */
+.la-beach {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 6vh;
+  z-index: 7;
+}
+
+/* Floating sparkles / petals — dreamlike pink-gold motes drifting upward */
+.la-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 181, 197, 0.85) 1.4px, transparent 2.2px),
+    radial-gradient(circle, rgba(255, 240, 200, 0.75) 1px,   transparent 1.8px),
+    radial-gradient(circle, rgba(255, 215, 230, 0.6)  0.8px, transparent 1.4px);
+  background-size: 280px 240px, 200px 180px, 140px 110px;
+  background-position: 30px 40px, 100px 90px, 50px 70px;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+  animation: la-sparkles-rise 24s linear infinite;
+  z-index: 8;
+}
+
+@keyframes la-sparkles-rise {
+  from { background-position: 30px 40px,  100px 90px,  50px 70px; }
+  to   { background-position: 30px -200px, 100px -180px, 50px -110px; }
+}

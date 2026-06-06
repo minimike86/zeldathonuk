@@ -1,0 +1,275 @@
+#donations {
+}
+
+.donation-container {
+  z-index: -5;
+}
+
+.donation {
+  background: radial-gradient(ellipse closest-corner, rgba(184,134,11,0.75) 0%, rgba(184,134,11,0.85) 60%, rgba(184,134,11,1) 85%, rgba(184,134,11,1) 100%),
+  url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
+  border-radius: 5px;
+  height: 44px;
+  width: 70%;
+  margin-left: 20%;
+  margin-top: 6px;
+  z-index: -5;
+}
+
+.donation-bm {
+  background: radial-gradient(ellipse closest-corner, rgba(231,19,71,0.75) 0%, rgba(218,68,113,0.85) 30%, rgba(231,54,75,0.85) 60%, rgba(218,68,113,1) 85%, rgba(231,19,71,1) 100%),
+  url("../../../../../assets/img/obs-bg/hylian-symbol-1.png");
+  border-radius: 5px;
+  height: 44px;
+  width: 70%;
+  margin-left: 20%;
+  margin-top: 6px;
+  z-index: -5;
+}
+
+.donation-text-container {
+  position: relative;
+  top: -0.25em;
+  width: calc(90% - 28px);
+}
+
+.donation-text {
+  color: #f5f5f5;
+  -webkit-text-stroke: 0.025em black;
+  font-size: 32px;
+  font-family: 'Passion One', cursive;
+  z-index: 0;
+}
+
+.time-ago {
+  position: relative;
+  top: -0.5em;
+  color: #f5f5f5;
+  font-size: 10px;
+}
+
+#last-donors-text {
+  z-index: 2;
+}
+
+.up-next-div {
+  background: linear-gradient(-45deg, darkgoldenrod, darkgoldenrod);
+  width: 300px;
+  height: 56px;
+  max-height: 56px;
+}
+
+.up-next-div-bm {
+  background: linear-gradient(-45deg, #E71347, #E7364B, #DA4471);
+  width: 300px;
+  height: 56px;
+  max-height: 56px;
+}
+
+.up-next {
+  font-family: 'Bungee', cursive;
+  font-size: 28px;
+  color: white;
+  -webkit-text-stroke: 0.040em saddlebrown;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2;
+}
+
+.up-next-bm {
+  font-family: 'Bungee', cursive;
+  font-size: 28px;
+  color: white;
+  -webkit-text-stroke: 0.040em #E71347;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2;
+}
+
+.up-next-div-triangle {
+  position: relative;
+  width: 0;
+  height: 0;
+  top: 0;
+  left: 0;
+  border-style: solid;
+  border-width: 28px 0 28px 24px;
+  border-color: transparent transparent transparent darkgoldenrod;
+  z-index: 2;
+}
+
+.up-next-div-triangle-bm {
+  width: 0;
+  height: 0;
+  position: relative;
+  top: 0;
+  left: 0;
+  border-style: solid;
+  border-width: 28px 0 28px 24px;
+  border-color: transparent transparent transparent #E71347;
+  z-index: 2;
+}
+
+.call-to-action-white {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.call-to-action-blue {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: rgb(59, 148, 224); /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.call-to-action-gold {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: darkgoldenrod; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.call-to-action-bm {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: #E71347; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+.call-to-action-bm2 {
+  font-weight: bold;
+  font-family: 'Mukta', sans-serif;
+  color: black;
+  -webkit-text-fill-color: #DA4471; /* Will override color (regardless of order) */
+  text-shadow: 2px 2px black;
+}
+
+
+.slide-in-left {
+  -webkit-animation: slide-in-left 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s 1 normal both;
+  animation: slide-in-left 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s 1 normal both;
+}
+/**
+ * ----------------------------------------
+ * animation slide-in-left
+ * ----------------------------------------
+ */
+@-webkit-keyframes slide-in-left {
+  0% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slide-in-left {
+  0% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+
+.slide-out-left {
+  -webkit-animation: slide-out-left 1s cubic-bezier(0.550, 0.085, 0.680, 0.530) 1s both;
+  animation: slide-out-left 1s cubic-bezier(0.550, 0.085, 0.680, 0.530) 1s both;
+}
+/**
+ * ----------------------------------------
+ * animation slide-out-left
+ * ----------------------------------------
+ */
+@-webkit-keyframes slide-out-left {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+}
+@keyframes slide-out-left {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: translateX(-1000px);
+    transform: translateX(-1000px);
+    opacity: 0;
+  }
+}
+
+
+.fade-in {
+  -webkit-animation: fade-in 1.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) 3s both;
+  animation: fade-in 1.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) 3s both;
+}
+/**
+ * ----------------------------------------
+ * animation fade-in
+ * ----------------------------------------
+ */
+@-webkit-keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+
+.fade-out {
+  -webkit-animation: fade-out 1s ease-out both;
+  animation: fade-out 1s ease-out both;
+}
+/**
+ * ----------------------------------------
+ * animation fade-out
+ * ----------------------------------------
+ */
+@-webkit-keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

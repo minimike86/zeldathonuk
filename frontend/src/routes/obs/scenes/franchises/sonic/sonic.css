@@ -1,0 +1,1239 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * SONIC THE HEDGEHOG franchise scenes. Five co-located scenes, one per game,
+ * each with a unique namespace.
+ *   .snc-  Sonic 1 (Green Hill Zone, fallback)
+ *   .sn2-  Sonic 2 (Chemical Plant Zone)
+ *   .sn3-  Sonic 3 (Angel Island / Launch Base)
+ *   .scd-  Sonic CD (Palmtree Panic)
+ *   .s3d-  Sonic 3D Blast (isometric Flicky island)
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ===========================================================================
+ * SONIC 1 — GREEN HILL ZONE
+ * ======================================================================== */
+.snc-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1f8edb 0%, #58b6f0 55%, #9fdcff 100%);
+}
+
+.snc-clouds,
+.snc-clouds::before {
+  position: absolute;
+  top: 12%;
+  left: -10%;
+  width: 220px;
+  height: 50px;
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 60px 14px 0 -8px rgba(255, 255, 255, 0.92),
+    -50px 18px 0 -12px rgba(255, 255, 255, 0.92);
+  animation: snc-drift 32s linear infinite;
+}
+.snc-clouds::before {
+  content: '';
+  top: 120px;
+  left: 480px;
+  transform: scale(0.7);
+  animation-duration: 44s;
+  animation-delay: -12s;
+}
+@keyframes snc-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(120vw); }
+}
+
+.snc-hills-far {
+  position: absolute;
+  bottom: 14%;
+  left: 0;
+  width: 100%;
+  height: 34%;
+}
+
+.snc-tree {
+  position: absolute;
+  bottom: 26%;
+  width: 7%;
+  max-width: 90px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
+  animation: snc-sway 5s ease-in-out infinite;
+}
+.snc-tree-1 { left: 12%; }
+.snc-tree-2 { right: 16%; animation-delay: -2.3s; }
+@keyframes snc-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.snc-loop {
+  position: absolute;
+  bottom: 18%;
+  left: 36%;
+  width: 26%;
+  max-width: 340px;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
+}
+.snc-runner {
+  offset-path: path("M10 230 Q60 220 110 180 Q150 148 150 110 Q150 60 110 60 Q70 60 70 110 Q70 150 110 178 Q160 214 290 220");
+  offset-rotate: auto;
+  animation: snc-run 4.2s linear infinite;
+}
+@keyframes snc-run {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+.snc-rings {
+  position: absolute;
+  bottom: 40%;
+  left: 22%;
+  width: 30%;
+  max-width: 400px;
+}
+.snc-ring {
+  animation: snc-spin 1.6s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@keyframes snc-spin {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(0.2); }
+}
+
+.snc-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+}
+
+.snc-sparkle,
+.snc-sparkle::before {
+  position: absolute;
+  bottom: 30%;
+  left: 20%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 60px -20px #fff, 200px 10px #fff4b8, 360px -30px #fff,
+    520px 20px #fff4b8, 700px -10px #fff, 880px 30px #fff4b8;
+  animation: snc-twinkle 2.4s ease-in-out infinite;
+}
+.snc-sparkle::before {
+  content: '';
+  transform: translate(120px, 60px);
+  animation-delay: 1.1s;
+}
+@keyframes snc-twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+/* ===========================================================================
+ * SONIC 2 — CHEMICAL PLANT ZONE
+ * ======================================================================== */
+.sn2-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #5a1f7e 0%, #b0308c 48%, #2a1060 100%);
+}
+
+.sn2-haze {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255, 79, 176, 0.28), transparent 60%);
+  animation: sn2-pulse 9s ease-in-out infinite;
+}
+@keyframes sn2-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.sn2-skyline {
+  position: absolute;
+  bottom: 26%;
+  left: 0;
+  width: 100%;
+  height: 42%;
+}
+.sn2-beacon { animation: sn2-blink 1.8s steps(2, jump-none) infinite; }
+@keyframes sn2-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.2; }
+}
+
+.sn2-tanks {
+  position: absolute;
+  bottom: 20%;
+  left: 0;
+  width: 100%;
+  height: 32%;
+  filter: drop-shadow(0 0 16px rgba(255, 79, 176, 0.4));
+}
+.sn2-fluid {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sn2-slosh 4s ease-in-out infinite;
+}
+.sn2-fluid-2 { animation-delay: -1.6s; }
+@keyframes sn2-slosh {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-3px) scaleY(1.2); }
+}
+
+.sn2-pipes {
+  position: absolute;
+  bottom: 8%;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.sn2-spiral {
+  position: absolute;
+  bottom: 20%;
+  right: 10%;
+  width: 16%;
+  max-width: 200px;
+  filter: drop-shadow(0 0 10px rgba(91, 155, 255, 0.5));
+}
+.sn2-runner {
+  offset-path: path("M110 20 A90 90 0 1 1 109 20");
+  offset-rotate: auto;
+  animation: sn2-run 3.4s linear infinite;
+}
+@keyframes sn2-run {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+.sn2-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22%;
+}
+
+/* ===========================================================================
+ * SONIC 3 — ANGEL ISLAND / LAUNCH BASE
+ * ======================================================================== */
+.sn3-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a1a4e 0%, #d8662c 52%, #ffb24a 100%);
+}
+
+.sn3-sun {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  width: 30vw;
+  height: 30vw;
+  max-width: 360px;
+  max-height: 360px;
+  transform: translate(-50%, 50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 224, 138, 0.95) 0%, rgba(255, 150, 60, 0.6) 45%, transparent 72%);
+  animation: sn3-glow 8s ease-in-out infinite;
+}
+@keyframes sn3-glow {
+  0%, 100% { opacity: 0.8; transform: translate(-50%, 50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, 50%) scale(1.06); }
+}
+
+.sn3-clouds,
+.sn3-clouds::before {
+  position: absolute;
+  top: 20%;
+  left: -10%;
+  width: 260px;
+  height: 30px;
+  border-radius: 30px;
+  background: rgba(255, 200, 140, 0.5);
+  animation: sn3-cloud-drift 40s linear infinite;
+}
+.sn3-clouds::before {
+  content: '';
+  top: 90px;
+  left: 540px;
+  transform: scale(0.7);
+  animation-delay: -16s;
+}
+@keyframes sn3-cloud-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(120vw); }
+}
+
+.sn3-island {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 56%;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
+}
+
+.sn3-palm {
+  position: absolute;
+  bottom: 40%;
+  width: 9%;
+  max-width: 100px;
+  transform-origin: bottom center;
+}
+.sn3-palm-1 { left: 16%; }
+.sn3-palm-2 { right: 20%; }
+.sn3-fronds {
+  transform-origin: 50% 50px;
+  transform-box: fill-box;
+  animation: sn3-frond-sway 4.5s ease-in-out infinite;
+}
+.sn3-palm-2 .sn3-fronds { animation-delay: -2s; }
+@keyframes sn3-frond-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.sn3-rig {
+  position: absolute;
+  bottom: 30%;
+  right: 14%;
+  width: 18%;
+  max-width: 240px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+.sn3-gear { animation: sn3-spin 7s linear infinite; }
+.sn3-gear-rev { animation: sn3-spin-rev 5s linear infinite; }
+@keyframes sn3-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes sn3-spin-rev {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+/* ===========================================================================
+ * SONIC CD — PALMTREE PANIC
+ * ======================================================================== */
+.scd-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #4fc3f7 0%, #8fe0ff 50%, #c8f2c0 100%);
+}
+
+.scd-sun {
+  position: absolute;
+  top: 8%;
+  right: 12%;
+  width: 22%;
+  max-width: 200px;
+  filter: drop-shadow(0 0 24px rgba(255, 226, 122, 0.7));
+}
+.scd-sun-rays {
+  transform-origin: 100px 100px;
+  transform-box: fill-box;
+  animation: scd-ray-spin 36s linear infinite;
+}
+@keyframes scd-ray-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.scd-clouds,
+.scd-clouds::before {
+  position: absolute;
+  top: 30%;
+  left: -10%;
+  width: 180px;
+  height: 44px;
+  border-radius: 44px;
+  background: #ffffff;
+  box-shadow: 50px 12px 0 -6px #ffffff, -40px 16px 0 -10px #ffffff;
+  animation: scd-cloud 28s linear infinite;
+}
+.scd-clouds::before {
+  content: '';
+  top: 80px;
+  left: 560px;
+  transform: scale(0.8);
+  animation-delay: -10s;
+}
+@keyframes scd-cloud {
+  from { transform: translateX(0); }
+  to { transform: translateX(120vw); }
+}
+
+.scd-hills {
+  position: absolute;
+  bottom: 8%;
+  left: 0;
+  width: 100%;
+  height: 48%;
+}
+
+.scd-palm {
+  position: absolute;
+  bottom: 30%;
+  width: 8%;
+  max-width: 90px;
+  transform-origin: bottom center;
+  animation: scd-bounce 3.2s ease-in-out infinite;
+}
+.scd-palm-1 { left: 10%; }
+.scd-palm-2 { left: 70%; animation-delay: -1.5s; }
+@keyframes scd-bounce {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
+}
+
+.scd-signpost {
+  position: absolute;
+  bottom: 26%;
+  left: 44%;
+  width: 12%;
+  max-width: 130px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  animation: scd-post-wobble 2.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+@keyframes scd-post-wobble {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+.scd-sign-future { animation: scd-flip 4s ease-in-out infinite; }
+.scd-sign-past { animation: scd-flip 4s ease-in-out infinite reverse; }
+@keyframes scd-flip {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0.35; }
+}
+.scd-sign-spark { animation: scd-spark 1.4s ease-in-out infinite; }
+@keyframes scd-spark {
+  0%, 100% { opacity: 0.2; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.scd-warp {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(115deg, transparent 0 60px, rgba(255, 255, 255, 0.18) 60px 64px);
+  mix-blend-mode: screen;
+  animation: scd-streak 1.4s linear infinite;
+}
+@keyframes scd-streak {
+  from { background-position: 0 0; }
+  to { background-position: -200px 0; }
+}
+
+.scd-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 18%;
+}
+
+/* ===========================================================================
+ * SONIC 3D BLAST — ISOMETRIC FLICKY ISLAND
+ * ======================================================================== */
+.s3d-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #aee8b6 0%, #d6f4d0 50%, #f0fae8 100%);
+}
+
+.s3d-clouds,
+.s3d-clouds::before {
+  position: absolute;
+  top: 14%;
+  left: -10%;
+  width: 200px;
+  height: 40px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 56px 12px 0 -6px rgba(255, 255, 255, 0.8);
+  animation: s3d-cloud 38s linear infinite;
+}
+.s3d-clouds::before {
+  content: '';
+  top: 70px;
+  left: 540px;
+  transform: scale(0.75);
+  animation-delay: -14s;
+}
+@keyframes s3d-cloud {
+  from { transform: translateX(0); }
+  to { transform: translateX(120vw); }
+}
+
+.s3d-island {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  width: 50%;
+  max-width: 620px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 12px 18px rgba(60, 90, 50, 0.35));
+  animation: s3d-float 9s ease-in-out infinite;
+}
+@keyframes s3d-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-14px); }
+}
+
+.s3d-flicky {
+  position: absolute;
+  width: 4%;
+  max-width: 44px;
+}
+.s3d-flicky-1 { top: 20%; left: 24%; animation: s3d-flutter 6s ease-in-out infinite; }
+.s3d-flicky-2 { top: 30%; right: 22%; animation: s3d-flutter 7.5s ease-in-out infinite; animation-delay: -2s; }
+.s3d-flicky-3 { top: 12%; left: 56%; animation: s3d-flutter 6.8s ease-in-out infinite; animation-delay: -4s; }
+@keyframes s3d-flutter {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(14px, -10px); }
+  50% { transform: translate(28px, 4px); }
+  75% { transform: translate(12px, 12px); }
+}
+.s3d-wing {
+  transform-origin: 16px 16px;
+  transform-box: fill-box;
+  animation: s3d-flap 0.4s ease-in-out infinite;
+}
+@keyframes s3d-flap {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-30deg); }
+}
+
+/* ===========================================================================
+ * SONIC & KNUCKLES — MUSHROOM HILL / FLYING BATTERY
+ * ======================================================================== */
+.snk-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #6fae3a 0%, #9fcf5a 46%, #d4e89a 100%);
+}
+
+.snk-haze {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 226, 150, 0.3), transparent 62%);
+  animation: snk-haze-pulse 11s ease-in-out infinite;
+}
+@keyframes snk-haze-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+
+.snk-hills {
+  position: absolute;
+  bottom: 16%;
+  left: 0;
+  width: 100%;
+  height: 38%;
+}
+
+.snk-rotor {
+  position: absolute;
+  bottom: 42%;
+  right: 8%;
+  width: 13%;
+  max-width: 170px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+.snk-rotor-blades {
+  transform-origin: 80px 80px;
+  transform-box: fill-box;
+  animation: snk-rotor-spin 6s linear infinite;
+}
+@keyframes snk-rotor-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.snk-mush {
+  position: absolute;
+  bottom: 24%;
+  width: 12%;
+  max-width: 150px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+  animation: snk-mush-bob 3.4s ease-in-out infinite;
+}
+.snk-mush-1 { left: 10%; }
+.snk-mush-2 { left: 64%; animation-delay: -1.7s; }
+@keyframes snk-mush-bob {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-6px) scaleY(1.04); }
+}
+
+.snk-totem {
+  position: absolute;
+  bottom: 18%;
+  left: 42%;
+  width: 11%;
+  max-width: 150px;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+}
+
+.snk-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 26%;
+}
+
+.snk-leaves,
+.snk-leaves::before {
+  position: absolute;
+  top: -6%;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 60% 20% 60% 20%;
+  background: transparent;
+  box-shadow: 12vw 8vh #d8742c, 28vw 22vh #c0392b, 44vw 4vh #e0a23a,
+    62vw 26vh #d8742c, 78vw 14vh #c0392b, 92vw 30vh #e0a23a;
+  animation: snk-fall 14s linear infinite;
+}
+.snk-leaves::before {
+  content: '';
+  transform: translateX(8vw);
+  animation-duration: 18s;
+  animation-delay: -7s;
+}
+@keyframes snk-fall {
+  from { transform: translateY(0) rotate(0deg); }
+  to { transform: translateY(116vh) rotate(220deg); }
+}
+
+/* ===========================================================================
+ * SONIC ADVENTURE 2 — CITY ESCAPE
+ * ======================================================================== */
+.sa2-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1f6f9e 0%, #4fb0c8 50%, #aee4d0 100%);
+}
+
+.sa2-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 70% 18%, rgba(255, 244, 200, 0.4), transparent 58%);
+  animation: sa2-glow-pulse 10s ease-in-out infinite;
+}
+@keyframes sa2-glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.sa2-skyline {
+  position: absolute;
+  bottom: 22%;
+  left: 0;
+  width: 100%;
+  height: 50%;
+}
+
+.sa2-road {
+  position: absolute;
+  bottom: 6%;
+  left: 0;
+  width: 100%;
+  height: 40%;
+}
+
+.sa2-rail {
+  position: absolute;
+  bottom: 14%;
+  left: 8%;
+  width: 50%;
+  max-width: 620px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+.sa2-grinder {
+  offset-path: path("M10 40 Q150 60 260 110 Q360 156 590 170");
+  offset-rotate: auto;
+  animation: sa2-grind 4.6s linear infinite;
+}
+.sa2-spark {
+  offset-path: path("M10 40 Q150 60 260 110 Q360 156 590 170");
+  offset-rotate: auto;
+  animation: sa2-grind 4.6s linear infinite;
+  animation-delay: -0.04s;
+}
+@keyframes sa2-grind {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+.sa2-truck {
+  position: absolute;
+  bottom: 8%;
+  left: -28%;
+  width: 26%;
+  max-width: 300px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
+  animation: sa2-chase 9s linear infinite;
+}
+@keyframes sa2-chase {
+  from { transform: translateX(0); }
+  to { transform: translateX(150vw); }
+}
+.sa2-wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sa2-wheel-spin 0.6s linear infinite;
+}
+@keyframes sa2-wheel-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sa2-curb {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 14%;
+}
+
+/* ===========================================================================
+ * SONIC ADVENTURE — EMERALD COAST
+ * ======================================================================== */
+.sad-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2ec8e8 0%, #7fe4f4 48%, #d4f6fa 100%);
+}
+
+.sad-sun {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: 26vw;
+  height: 26vw;
+  max-width: 300px;
+  max-height: 300px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 252, 220, 0.9) 0%, rgba(255, 240, 170, 0.5) 45%, transparent 72%);
+  animation: sad-sun-glow 9s ease-in-out infinite;
+}
+@keyframes sad-sun-glow {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.06); }
+}
+
+.sad-clouds,
+.sad-clouds::before {
+  position: absolute;
+  top: 16%;
+  left: -10%;
+  width: 200px;
+  height: 44px;
+  border-radius: 44px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 56px 12px 0 -6px rgba(255, 255, 255, 0.92), -44px 16px 0 -10px rgba(255, 255, 255, 0.92);
+  animation: sad-cloud 34s linear infinite;
+}
+.sad-clouds::before {
+  content: '';
+  top: 100px;
+  left: 540px;
+  transform: scale(0.7);
+  animation-delay: -14s;
+}
+@keyframes sad-cloud {
+  from { transform: translateX(0); }
+  to { transform: translateX(120vw); }
+}
+
+.sad-headland {
+  position: absolute;
+  bottom: 36%;
+  left: 0;
+  width: 100%;
+  height: 24%;
+}
+
+.sad-sea {
+  position: absolute;
+  bottom: 22%;
+  left: 0;
+  width: 100%;
+  height: 34%;
+}
+.sad-glints {
+  animation: sad-glint 2.6s ease-in-out infinite;
+}
+@keyframes sad-glint {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.sad-surf {
+  position: absolute;
+  bottom: 30%;
+  left: 0;
+  width: 100%;
+  height: 10%;
+}
+.sad-surf-wave {
+  animation: sad-surf-slide 6s ease-in-out infinite;
+}
+@keyframes sad-surf-slide {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-30px); }
+}
+
+.sad-pier {
+  position: absolute;
+  bottom: 16%;
+  left: 50%;
+  width: 34%;
+  max-width: 440px;
+  transform: translateX(-46%);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
+}
+
+.sad-palm {
+  position: absolute;
+  bottom: 22%;
+  left: 9%;
+  width: 11%;
+  max-width: 130px;
+  transform-origin: bottom center;
+}
+.sad-fronds {
+  transform-origin: 30px 50px;
+  transform-box: fill-box;
+  animation: sad-frond-sway 5s ease-in-out infinite;
+}
+@keyframes sad-frond-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.sad-beach {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 24%;
+}
+
+/* ===========================================================================
+ * SONIC MANIA — STUDIOPOLIS
+ * ======================================================================== */
+.smn-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a0e4e 0%, #6b1f78 50%, #2a1550 100%);
+}
+
+.smn-wash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 36%, rgba(255, 95, 168, 0.3), transparent 60%);
+  animation: smn-wash-pulse 8s ease-in-out infinite;
+}
+@keyframes smn-wash-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.smn-skyline {
+  position: absolute;
+  bottom: 14%;
+  left: 0;
+  width: 100%;
+  height: 54%;
+}
+.smn-neon-strip {
+  animation: smn-neon-flicker 2.2s steps(2, jump-none) infinite;
+}
+@keyframes smn-neon-flicker {
+  0%, 60% { opacity: 1; }
+  62%, 70% { opacity: 0.3; }
+  72%, 100% { opacity: 1; }
+}
+
+.smn-tower {
+  position: absolute;
+  bottom: 40%;
+  left: 14%;
+  width: 11%;
+  max-width: 140px;
+  filter: drop-shadow(0 0 12px rgba(51, 230, 208, 0.5));
+}
+.smn-beacon {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: smn-beacon-pulse 1.6s ease-in-out infinite;
+}
+.smn-beacon-ring {
+  transform-box: fill-box;
+  transform-origin: 60px 40px;
+  animation: smn-beacon-ring 1.6s ease-out infinite;
+}
+@keyframes smn-beacon-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+@keyframes smn-beacon-ring {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.smn-sign {
+  position: absolute;
+  bottom: 46%;
+  right: 12%;
+  width: 16%;
+  max-width: 220px;
+  filter: drop-shadow(0 0 10px rgba(255, 95, 168, 0.5));
+}
+.smn-onair { animation: smn-sign-flicker 1.8s steps(2, jump-none) infinite; }
+.smn-onair-2 { animation: smn-sign-flicker 1.8s steps(2, jump-none) infinite; animation-delay: -0.9s; }
+@keyframes smn-sign-flicker {
+  0%, 70% { opacity: 1; }
+  74%, 84% { opacity: 0.25; }
+  88%, 100% { opacity: 1; }
+}
+
+.smn-popcorn,
+.smn-popcorn::before {
+  position: absolute;
+  top: 18%;
+  left: -10%;
+  width: 150px;
+  height: 40px;
+  border-radius: 40px;
+  background: rgba(255, 240, 250, 0.85);
+  box-shadow: 44px 10px 0 -4px rgba(255, 240, 250, 0.85), -36px 14px 0 -8px rgba(255, 240, 250, 0.85);
+  animation: smn-popcorn-drift 30s linear infinite;
+}
+.smn-popcorn::before {
+  content: '';
+  top: 90px;
+  left: 560px;
+  transform: scale(0.7);
+  animation-delay: -12s;
+}
+@keyframes smn-popcorn-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(120vw); }
+}
+
+.smn-flash {
+  position: absolute;
+  top: 24%;
+  right: 28%;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 226, 122, 0.5) 50%, transparent 72%);
+  animation: smn-flash-pop 4s ease-in-out infinite;
+}
+@keyframes smn-flash-pop {
+  0%, 80%, 100% { opacity: 0; transform: scale(0.4); }
+  84% { opacity: 1; transform: scale(1.3); }
+  90% { opacity: 0; transform: scale(1.6); }
+}
+
+.smn-street {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 16%;
+}
+
+/* ===========================================================================
+ * SONIC HEROES — SEASIDE HILL
+ * ======================================================================== */
+.shr-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #29c4cc 0%, #7ee6e0 46%, #d2f6ee 100%);
+}
+
+.shr-haze {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 24%, rgba(255, 255, 255, 0.45), transparent 60%);
+  animation: shr-haze-pulse 12s ease-in-out infinite;
+}
+@keyframes shr-haze-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+
+.shr-sea {
+  position: absolute;
+  bottom: 20%;
+  left: 0;
+  width: 100%;
+  height: 34%;
+}
+.shr-glints {
+  animation: shr-glint 2.8s ease-in-out infinite;
+}
+@keyframes shr-glint {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.shr-dolphin {
+  position: absolute;
+  bottom: 30%;
+  left: 22%;
+  width: 10%;
+  max-width: 120px;
+  animation: shr-leap 6s ease-in-out infinite;
+}
+@keyframes shr-leap {
+  0%, 100% { transform: translateY(40px) rotate(8deg); opacity: 0; }
+  20% { opacity: 1; }
+  50% { transform: translateY(-30px) rotate(-6deg); opacity: 1; }
+  80% { opacity: 1; }
+}
+
+.shr-arch {
+  position: absolute;
+  bottom: 44%;
+  right: 14%;
+  width: 22%;
+  max-width: 280px;
+  opacity: 0.7;
+}
+
+.shr-ruins {
+  position: absolute;
+  bottom: 16%;
+  left: 30%;
+  width: 42%;
+  max-width: 520px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
+}
+.shr-runner {
+  offset-path: path("M40 290 Q90 280 140 240 Q180 208 180 170 Q180 120 140 120 Q100 120 100 170 Q100 210 140 238 Q190 274 320 280");
+  offset-rotate: auto;
+  animation: shr-run 4.4s linear infinite;
+}
+@keyframes shr-run {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+.shr-cliff {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22%;
+}
+
+/* ===========================================================================
+ * SONIC COLOURS — STARLIGHT CARNIVAL
+ * ======================================================================== */
+.scl-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #160a3a 0%, #3a1f6e 52%, #1a0e30 100%);
+}
+
+.scl-stars,
+.scl-stars::before {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  box-shadow:
+    8vw 12vh #fff, 22vw 30vh #b07cff, 38vw 8vh #fff, 52vw 22vh #33e6d0,
+    66vw 16vh #fff, 78vw 34vh #ff5fa8, 90vw 10vh #fff, 14vw 44vh #fff,
+    46vw 48vh #b07cff, 72vw 50vh #fff;
+  border-radius: 50%;
+  width: 2px;
+  height: 2px;
+  animation: scl-twinkle 3.4s ease-in-out infinite;
+}
+.scl-stars::before {
+  content: '';
+  transform: translate(6vw, 8vh) scale(1.4);
+  animation-delay: -1.7s;
+}
+@keyframes scl-twinkle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.scl-planet {
+  position: absolute;
+  top: 10%;
+  left: 8%;
+  width: 22%;
+  max-width: 260px;
+  animation: scl-planet-drift 22s ease-in-out infinite;
+}
+@keyframes scl-planet-drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.scl-wheel {
+  position: absolute;
+  bottom: 24%;
+  right: 12%;
+  width: 18%;
+  max-width: 220px;
+  filter: drop-shadow(0 0 14px rgba(51, 230, 208, 0.5));
+}
+.scl-wheel-spin {
+  transform-origin: 100px 100px;
+  transform-box: fill-box;
+  animation: scl-wheel-turn 16s linear infinite;
+}
+@keyframes scl-wheel-turn {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.scl-track {
+  position: absolute;
+  bottom: 26%;
+  left: 6%;
+  width: 56%;
+  max-width: 660px;
+  filter: drop-shadow(0 0 10px rgba(51, 230, 208, 0.4));
+}
+.scl-track-line {
+  stroke-dasharray: 12 10;
+  animation: scl-track-flow 1.4s linear infinite;
+}
+@keyframes scl-track-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -44; }
+}
+.scl-car {
+  offset-path: path("M-10 200 Q120 60 260 140 Q380 208 480 90 Q540 20 610 70");
+  offset-rotate: auto;
+  animation: scl-car-run 5.2s linear infinite;
+}
+@keyframes scl-car-run {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+.scl-wisp {
+  position: absolute;
+  top: 30%;
+  left: 40%;
+  width: 5%;
+  max-width: 56px;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+  animation: scl-wisp-dart 7s ease-in-out infinite;
+}
+@keyframes scl-wisp-dart {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(22vw, -8vh); }
+  50% { transform: translate(8vw, 12vh); }
+  75% { transform: translate(-12vw, 4vh); }
+}
+
+.scl-fireworks,
+.scl-fireworks::before {
+  position: absolute;
+  top: 22%;
+  left: 30%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    0 0 0 2px #ff5fa8, 0 -16px #ff5fa8, 0 16px #ff5fa8, -16px 0 #ff5fa8, 16px 0 #ff5fa8,
+    -11px -11px #33e6d0, 11px -11px #33e6d0, -11px 11px #33e6d0, 11px 11px #33e6d0;
+  animation: scl-burst 4.4s ease-out infinite;
+}
+.scl-fireworks::before {
+  content: '';
+  top: 40px;
+  left: 360px;
+  box-shadow:
+    0 0 0 2px #ffe27a, 0 -16px #ffe27a, 0 16px #ffe27a, -16px 0 #ffe27a, 16px 0 #ffe27a,
+    -11px -11px #b07cff, 11px -11px #b07cff, -11px 11px #b07cff, 11px 11px #b07cff;
+  animation-delay: -2.2s;
+}
+@keyframes scl-burst {
+  0% { transform: scale(0.2); opacity: 0; }
+  20% { opacity: 1; }
+  60% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.scl-promenade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 14%;
+}
+
+/* ===========================================================================
+ * REDUCED-MOTION GUARD (all Sonic scenes)
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .snc-clouds, .snc-clouds::before, .snc-tree, .snc-runner, .snc-ring, .snc-sparkle, .snc-sparkle::before,
+  .sn2-haze, .sn2-beacon, .sn2-fluid, .sn2-runner,
+  .sn3-sun, .sn3-clouds, .sn3-clouds::before, .sn3-fronds, .sn3-gear, .sn3-gear-rev,
+  .scd-sun-rays, .scd-clouds, .scd-clouds::before, .scd-palm, .scd-signpost, .scd-sign-future, .scd-sign-past, .scd-sign-spark, .scd-warp,
+  .s3d-clouds, .s3d-clouds::before, .s3d-island, .s3d-flicky, .s3d-wing,
+  .snk-haze, .snk-rotor-blades, .snk-mush, .snk-leaves, .snk-leaves::before,
+  .sa2-glow, .sa2-grinder, .sa2-spark, .sa2-truck, .sa2-wheel,
+  .sad-sun, .sad-clouds, .sad-clouds::before, .sad-glints, .sad-surf-wave, .sad-fronds,
+  .smn-wash, .smn-neon-strip, .smn-beacon, .smn-beacon-ring, .smn-onair, .smn-onair-2, .smn-popcorn, .smn-popcorn::before, .smn-flash,
+  .shr-haze, .shr-glints, .shr-dolphin, .shr-runner,
+  .scl-stars, .scl-stars::before, .scl-planet, .scl-wheel-spin, .scl-track-line, .scl-car, .scl-wisp, .scl-fireworks, .scl-fireworks::before {
+    animation: none;
+  }
+}

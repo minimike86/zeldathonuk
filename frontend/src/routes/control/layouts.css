@@ -1,0 +1,315 @@
+/* /control/layouts — OBS layout-preset editor. Leans on the shared control
+ * surface (.control-card, .btn-*) and only adds the bits specific to the
+ * region/element editor + the to-scale stage preview. */
+
+.layouts-type-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.layouts-guide-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.layouts-guide-row small {
+  flex: 1;
+  min-width: 220px;
+}
+
+.layouts-soon {
+  opacity: 0.7;
+  font-size: 0.8em;
+}
+
+/* "● live" marker on the type tab that's currently forced onto /obs/full. */
+.layouts-tab-live {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: #6dffa6;
+}
+
+/* Row controlling which aspect ratio /obs/full renders (auto vs forced). */
+.layouts-obsfull-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.layouts-obsfull-status {
+  min-width: 220px;
+}
+.layouts-obsfull-row > small {
+  flex: 1 1 100%;
+}
+
+.layouts-preset.is-active {
+  border-color: color-mix(in srgb, #5fd38a 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, #5fd38a 35%, transparent) inset;
+}
+
+.layouts-preset-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.layouts-name-input {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+  color: #fff;
+  padding: 0.3rem 0.6rem;
+  min-width: 200px;
+}
+
+.layouts-active-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(95, 211, 138, 0.18);
+  border: 1px solid rgba(95, 211, 138, 0.55);
+  color: #8ff0b4;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.layouts-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layouts-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Control cards flow into a multi-column masonry (reuses the .obs-region-
+ * itemsections pattern): as many ≥270px columns as fit, packed tightly with no
+ * row-gap dead space, collapsing to one column when narrow. */
+.layouts-controls-grid {
+  columns: 270px;
+  column-gap: 0.85rem;
+}
+
+/* Slim caption above the masonry — the active arrangement, not a card. */
+.layouts-arrangement-bar {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.75rem;
+}
+.layouts-arrangement-bar .layouts-arrangement-name {
+  font-size: 0.95rem;
+}
+
+.layouts-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.85rem;
+}
+.layouts-field--inline {
+  margin-bottom: 0;
+}
+.layouts-field small {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.layouts-arrangement-name {
+  font-family: var(--theme-font-heading, 'Bungee', sans-serif);
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.layouts-region {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  padding: 0.7rem;
+  margin-bottom: 0.85rem;
+  /* Never split a card across the masonry column break. */
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+}
+
+.layouts-region-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+.layouts-region-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.layouts-element-list {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.layouts-element-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  padding: 0.25rem 0.45rem;
+}
+.layouts-element-name {
+  font-size: 0.88rem;
+}
+
+/* Compact add-element dropdown (replaces the old button wall). */
+.layouts-add-select {
+  width: 100%;
+}
+
+.layouts-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+/* Gap zones (whitespace freed by the capture position) read as a dashed,
+ * tinted variant of the carved-zone editor. */
+.layouts-region--gap {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 7%, rgba(255, 255, 255, 0.03));
+}
+
+/* 3×3 capture-position picker. */
+.layouts-align-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  width: 96px;
+  aspect-ratio: 1920 / 984;
+}
+.layouts-align-cell {
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.25));
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  padding: 0;
+}
+.layouts-align-cell:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.layouts-align-cell.is-active {
+  background: var(--theme-primary, #b92753);
+  border-color: var(--theme-primary, #b92753);
+}
+
+/* ── To-scale preview ──────────────────────────────────────────────────── */
+.layouts-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+  /* Stay in view while scrolling a preset's controls; releases at the card's
+   * end. align-self:start lets it stick rather than stretch the grid cell. */
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+}
+
+/* On narrow screens the editor grid is a single column — drop the sticky so the
+ * preview sits naturally below the controls. */
+@media (max-width: 900px) {
+  .layouts-preview {
+    position: static;
+  }
+}
+
+.layouts-preview-stage {
+  position: relative;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 8px, transparent 8px 16px),
+    rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--theme-line, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Clip box (free capture area) — crops the shell preview at the panel boundary,
+ * mirroring the OBS .obs-region-shell-clip so the operator previews the crop. */
+.layouts-preview-shell-clip {
+  position: absolute;
+  overflow: hidden;
+}
+.layouts-preview-shell {
+  position: absolute;
+  border: 1px dashed color-mix(in srgb, var(--theme-primary, #b92753) 55%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 8%, transparent);
+}
+/* The actual shell PNG, scaled to the preview so the operator can align its
+ * screen holes to the capture boxes. object-fit: contain mirrors the OBS render
+ * (.obs-region-shell). */
+.layouts-preview-shell-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.layouts-preview-capture,
+.layouts-preview-region {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bungee', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-align: center;
+  overflow: hidden;
+}
+
+.layouts-preview-capture {
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 35%, transparent);
+  border: 1px solid var(--theme-primary, #b92753);
+  color: #fff;
+}
+
+.layouts-preview-region {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.85);
+}
+.layouts-preview-region small {
+  font-family: inherit;
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+/* An unfilled gap zone in the preview — fainter, to read as "available". */
+.layouts-preview-gap {
+  background: color-mix(in srgb, var(--theme-primary, #b92753) 12%, transparent);
+  border-style: dotted;
+  color: rgba(255, 255, 255, 0.6);
+}

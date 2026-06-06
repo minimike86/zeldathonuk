@@ -1,0 +1,25 @@
+.side-panel {
+}
+
+.screen {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 2em;
+  color: white;
+  padding: 8px 8px 8px 16px;
+  width: 100%;
+}
+
+.big-screen {
+  height: 804px;
+}
+
+.small-screen {
+  height: 220px;
+  border: #E71347 4px solid;
+  border-top: #E71347 6px solid;
+  border-left: #E71347 0 solid;
+}
+
+.small-screen:last-child {
+  border-right: #E71347 4px solid;
+}
