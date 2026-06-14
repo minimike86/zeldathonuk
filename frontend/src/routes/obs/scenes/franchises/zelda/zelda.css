@@ -5,6 +5,7 @@
 .ww-scene,
 .oot-scene,
 .mm-scene,
+.mmm-scene,
 .botw-scene,
 .botw-dm-scene,
 .totk-scene,
@@ -1875,18 +1876,41 @@
  * ───────────────────────────────────────────────────────────────────────── */
 .mm-scene {
   background:
-    radial-gradient(ellipse at center top, rgba(189, 218, 80, 0.18) 0%, transparent 60%),
-    linear-gradient(180deg, #1a1024 0%, #2e1735 50%, #0d0418 100%);
+    radial-gradient(ellipse at 50% 20%, rgba(208, 230, 77, 0.16) 0%, transparent 42%),
+    radial-gradient(ellipse at 18% 0%, rgba(138, 62, 112, 0.28) 0%, transparent 44%),
+    linear-gradient(180deg, #10091c 0%, #291036 42%, #160521 70%, #07020d 100%);
+}
+
+.mm-sky-pulse {
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(231, 203, 97, 0.14) 0%, transparent 26%),
+    conic-gradient(from 15deg at 50% 28%,
+      transparent 0deg,
+      rgba(180, 214, 72, 0.1) 18deg,
+      transparent 34deg,
+      transparent 70deg,
+      rgba(244, 170, 70, 0.08) 92deg,
+      transparent 112deg,
+      transparent 360deg);
+  filter: blur(8px);
+  mix-blend-mode: screen;
+  animation: mm-sky-pulse 7s ease-in-out infinite;
 }
 
 .mm-moon {
   position: absolute;
-  top: 30%;
+  top: 29%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 30vw;
-  height: 30vw;
-  filter: drop-shadow(0 0 30px rgba(240, 208, 154, 0.6));
+  width: min(440px, 34vw);
+  height: min(440px, 34vw);
+  filter:
+    drop-shadow(0 0 18px rgba(255, 215, 120, 0.8))
+    drop-shadow(0 0 54px rgba(174, 211, 74, 0.32))
+    drop-shadow(0 18px 24px rgba(8, 2, 10, 0.72));
+  z-index: 4;
   animation: mm-loom 8s ease-in-out infinite;
 }
 
@@ -1895,19 +1919,251 @@
   50% { transform: translate(-50%, -45%) scale(1.05); }
 }
 
+.mm-clouds {
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  height: 22vh;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 8% 68%, rgba(39, 18, 44, 0.72) 0 9%, transparent 18%),
+    radial-gradient(ellipse at 22% 56%, rgba(62, 26, 55, 0.7) 0 11%, transparent 21%),
+    radial-gradient(ellipse at 42% 66%, rgba(38, 16, 44, 0.74) 0 10%, transparent 20%),
+    radial-gradient(ellipse at 62% 58%, rgba(66, 28, 58, 0.7) 0 12%, transparent 22%),
+    radial-gradient(ellipse at 84% 68%, rgba(36, 14, 42, 0.78) 0 10%, transparent 20%);
+  filter: blur(7px);
+  opacity: 0.82;
+  mix-blend-mode: screen;
+}
+
+.mm-clouds-back {
+  top: 14vh;
+  animation: mm-cloud-drift 52s linear infinite;
+}
+
+.mm-clouds-front {
+  top: 35vh;
+  opacity: 0.68;
+  transform: scaleX(-1);
+  animation: mm-cloud-drift 38s linear infinite reverse;
+}
+
+.mm-falling-star {
+  position: absolute;
+  top: 9vh;
+  left: 20vw;
+  width: 22vw;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(220, 244, 120, 0.72), transparent);
+  filter: drop-shadow(0 0 8px rgba(220, 244, 120, 0.7));
+  opacity: 0;
+  transform: rotate(-18deg);
+  z-index: 2;
+  animation: mm-falling-star 9s ease-in-out infinite;
+}
+
+.mm-falling-star-2 {
+  top: 20vh;
+  left: 62vw;
+  width: 15vw;
+  animation-delay: -4.5s;
+  animation-duration: 11s;
+}
+
+.mm-clocktower {
+  position: absolute;
+  bottom: 8vh;
+  left: 50%;
+  width: min(210px, 15vw);
+  height: auto;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 12px rgba(244, 184, 75, 0.2));
+  z-index: 3;
+}
+
 .mm-clocktown {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 28vh;
+  filter: drop-shadow(0 -6px 12px rgba(0, 0, 0, 0.38));
+  z-index: 3;
 }
 
 .mm-glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 30%, rgba(189, 218, 80, 0.12) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at 50% 29%, rgba(232, 196, 88, 0.22) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 100%, rgba(244, 78, 54, 0.12) 0%, transparent 48%),
+    radial-gradient(ellipse at center, transparent 45%, rgba(3, 0, 8, 0.58) 100%);
   pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes mm-sky-pulse {
+  0%, 100% { opacity: 0.64; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes mm-cloud-drift {
+  from { translate: -8vw 0; }
+  to { translate: 8vw 0; }
+}
+
+@keyframes mm-falling-star {
+  0%, 58%, 100% { opacity: 0; transform: translate(0, 0) rotate(-18deg); }
+  64% { opacity: 0.9; }
+  78% { opacity: 0; transform: translate(-18vw, 10vh) rotate(-18deg); }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * MAJORA'S MASK — mask ritual, with Termina's other masks orbiting
+ * ───────────────────────────────────────────────────────────────────────── */
+.mmm-scene {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(238, 91, 138, 0.22) 0%, transparent 24%),
+    radial-gradient(ellipse at 50% 12%, rgba(189, 218, 80, 0.18) 0%, transparent 38%),
+    linear-gradient(180deg, #12051c 0%, #2e1040 46%, #0b0312 100%);
+}
+
+.mmm-aura {
+  position: absolute;
+  inset: -12%;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 45%,
+      rgba(189, 218, 80, 0.1) 0deg 8deg,
+      transparent 8deg 24deg,
+      rgba(238, 91, 138, 0.11) 24deg 32deg,
+      transparent 32deg 54deg),
+    radial-gradient(circle at 50% 45%, rgba(255, 213, 76, 0.18) 0%, transparent 32%);
+  filter: blur(5px);
+  mix-blend-mode: screen;
+  animation: mmm-aura-turn 36s linear infinite;
+}
+
+.mmm-swirl {
+  position: absolute;
+  inset: 8vh 9vw;
+  border: 2px solid rgba(189, 218, 80, 0.18);
+  border-left-color: rgba(238, 91, 138, 0.32);
+  border-right-color: rgba(66, 183, 232, 0.28);
+  border-radius: 48% 52% 44% 56%;
+  filter: drop-shadow(0 0 14px rgba(189, 218, 80, 0.22));
+  z-index: 1;
+  animation: mmm-swirl-turn 22s linear infinite;
+}
+
+.mmm-swirl-front {
+  inset: 17vh 17vw;
+  opacity: 0.82;
+  animation-duration: 16s;
+  animation-direction: reverse;
+}
+
+.mmm-majora-mask {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: min(680px, 48vw);
+  height: auto;
+  transform: translate(-50%, -50%);
+  filter:
+    drop-shadow(0 0 18px rgba(238, 91, 138, 0.78))
+    drop-shadow(0 0 42px rgba(189, 218, 80, 0.36))
+    drop-shadow(0 20px 26px rgba(0, 0, 0, 0.72));
+  z-index: 4;
+  animation: mmm-mask-hover 5.8s ease-in-out infinite;
+}
+
+.mmm-mask-horns {
+  animation: mmm-horn-glow 3.4s ease-in-out infinite;
+}
+
+.mmm-support-mask {
+  position: absolute;
+  width: min(145px, 10vw);
+  height: auto;
+  z-index: 3;
+  opacity: 0.9;
+  filter:
+    drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 12px rgba(189, 218, 80, 0.24));
+  animation: mmm-support-float 6s ease-in-out infinite;
+}
+
+.mmm-mask-deku {
+  top: 19vh;
+  left: 23vw;
+  transform: rotate(-14deg);
+  animation-delay: -0.8s;
+}
+
+.mmm-mask-goron {
+  top: 16vh;
+  right: 24vw;
+  transform: rotate(12deg);
+  animation-delay: -2.2s;
+}
+
+.mmm-mask-zora {
+  bottom: 19vh;
+  left: 21vw;
+  width: min(170px, 12vw);
+  transform: rotate(10deg);
+  animation-delay: -3.4s;
+}
+
+.mmm-mask-bunny {
+  bottom: 16vh;
+  right: 21vw;
+  width: min(158px, 11vw);
+  transform: rotate(-10deg);
+  animation-delay: -1.6s;
+}
+
+.mmm-mask-captain {
+  top: 49vh;
+  left: 50%;
+  width: min(126px, 9vw);
+  transform: translateX(-50%) rotate(4deg);
+  opacity: 0.72;
+  z-index: 2;
+  animation-delay: -4.2s;
+}
+
+.mmm-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 48%, transparent 32%, rgba(7, 1, 12, 0.44) 78%, rgba(3, 0, 7, 0.82) 100%),
+    linear-gradient(180deg, rgba(6, 0, 12, 0.22) 0%, transparent 36%, rgba(6, 0, 12, 0.34) 100%);
+  z-index: 5;
+}
+
+@keyframes mmm-aura-turn {
+  to { transform: rotate(360deg) scale(1.04); }
+}
+
+@keyframes mmm-swirl-turn {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mmm-mask-hover {
+  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(-1deg); }
+  50% { transform: translate(-50%, -53%) scale(1.025) rotate(1deg); }
+}
+
+@keyframes mmm-horn-glow {
+  0%, 100% { filter: saturate(1) brightness(1); }
+  50% { filter: saturate(1.22) brightness(1.1); }
+}
+
+@keyframes mmm-support-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -1.5vh; }
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import type { GameTheme } from '../../../game-themes';
 import { WindWakerScene } from './WindWakerScene';
 import { OcarinaScene } from './OcarinaScene';
 import { MajorasMaskScene } from './MajorasMaskScene';
+import { MajorasMaskMaskScene } from './MajorasMaskMaskScene';
 import { BotwScene } from './BotwScene';
 import { BotwDeathMountainScene } from './BotwDeathMountainScene';
 import { TotkScene } from './TotkScene';
@@ -160,7 +161,7 @@ export const zeldaThemes: Array<{ match: string; theme: GameTheme }> = [
       secondary: '#3b1d4a',
       tertiary: '#ee5b8a',
       glow: 'rgba(189, 218, 80, 0.7)',
-      scenes: [MajorasMaskScene],
+      scenes: [MajorasMaskScene, MajorasMaskMaskScene],
     },
   },
   {
