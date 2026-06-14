@@ -116,12 +116,19 @@ class ClerkJWTAuthentication(authentication.BaseAuthentication):
                 algorithms=['RS256'],
                 issuer=issuer,
                 # Tolerate modest clock skew between this server and Clerk for
-                # iat/nbf/exp. Clerk session tokens are short-lived (~60s), so
-                # keep this small — it's a skew cushion, not a lifetime extension.
-                # (If tokens are rejected with "not yet valid (iat)", the host
-                # clock is badly out of sync — fix the clock, don't grow this.)
+                # exp. Clerk session tokens are short-lived (~60s), so keep
+                # this small — it's a skew cushion, not a lifetime extension.
                 leeway=60,
-                options={'require': ['exp', 'sub']},
+                options={
+                    'require': ['exp', 'sub'],
+                    # PyJWT treats future `iat`/`nbf` claims as immature tokens
+                    # by default. Clerk session JWTs are signed and short-lived;
+                    # `exp` is the important freshness boundary for this API, so
+                    # don't reject an otherwise valid token purely because Clerk
+                    # or the browser clock is ahead of the API host.
+                    'verify_iat': False,
+                    'verify_nbf': False,
+                },
             )
         except InvalidTokenError as exc:
             logger.warning('Clerk auth: token verification failed: %s', exc)

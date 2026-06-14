@@ -63,6 +63,21 @@ class ClerkAuthTests(TestCase):
 
     @patch('api.authentication._jwks_client_for')
     @patch('api.authentication.jwt.decode')
+    def test_verification_does_not_reject_future_iat_or_nbf(self, mock_dec, mock_jwks):
+        mock_jwks.return_value.get_signing_key_from_jwt.return_value = MagicMock(key='k')
+        mock_dec.side_effect = [
+            {'iss': 'https://clerk.test'},
+            {'sub': 'user_iat', 'exp': _FUTURE, 'iat': _FUTURE, 'nbf': _FUTURE,
+             'iss': 'https://clerk.test'},
+        ]
+
+        self.assertIsNotNone(self._auth(self._req('Bearer xyz')))
+        options = mock_dec.call_args_list[1].kwargs['options']
+        self.assertFalse(options['verify_iat'])
+        self.assertFalse(options['verify_nbf'])
+
+    @patch('api.authentication._jwks_client_for')
+    @patch('api.authentication.jwt.decode')
     def test_untrusted_azp(self, mock_dec, mock_jwks):
         mock_jwks.return_value.get_signing_key_from_jwt.return_value = MagicMock(key='k')
         mock_dec.side_effect = [
