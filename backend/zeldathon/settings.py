@@ -229,10 +229,15 @@ TWITCH_EVENTSUB_SECRET = env('TWITCH_EVENTSUB_SECRET', default='')
 TWITCH_EVENTSUB_CALLBACK_URL = env('TWITCH_EVENTSUB_CALLBACK_URL', default='')
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Production hardening
+# Proxy / production hardening
 # ──────────────────────────────────────────────────────────────────────────────
+# The same dev Django container is sometimes reached through Cloudflare Tunnel
+# at https://api.zeldathon.co.uk. Trust the forwarded scheme even in DEBUG so
+# request.build_absolute_uri('/media/...') stores https:// URLs instead of
+# leaking http:// API media URLs into the public site.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True

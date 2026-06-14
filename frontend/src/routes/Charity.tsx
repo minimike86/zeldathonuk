@@ -239,16 +239,19 @@ function CharityHero({
   charity: Charity;
   showPrimaryBadge: boolean;
 }) {
+  const bannerUrl = resolveMediaUrl(charity.banner_url);
+  const logoUrl = resolveMediaUrl(charity.logo_url);
+
   return (
     <div
-      className={`charity-hero${charity.banner_url ? ' charity-hero--banner' : ''}`}
+      className={`charity-hero${bannerUrl ? ' charity-hero--banner' : ''}`}
       style={
-        charity.banner_url
-          ? { backgroundImage: `url(${charity.banner_url})` }
+        bannerUrl
+          ? { backgroundImage: `url(${bannerUrl})` }
           : undefined
       }
     >
-      {charity.logo_url && (
+      {logoUrl && (
         <a
           className="charity-hero-logo"
           href={charity.primary_website_url || undefined}
@@ -256,7 +259,7 @@ function CharityHero({
           rel="noreferrer"
           title={charity.name}
         >
-          <img src={resolveMediaUrl(charity.logo_url)} alt={`${charity.name} logo`} />
+          <img src={logoUrl} alt={`${charity.name} logo`} />
         </a>
       )}
       <div className="charity-hero-meta">
@@ -391,7 +394,7 @@ function ImpactTiers({ charity }: { charity: Charity }) {
             {t.image_url && (
               <img
                 className="charity-impact-img"
-                src={t.image_url}
+                src={resolveMediaUrl(t.image_url)}
                 alt={t.alt_text || ''}
                 loading="lazy"
               />
@@ -509,25 +512,28 @@ function ImageGallery({ charity }: { charity: Charity }) {
         </span>
       </header>
       <div className="charity-gallery-grid">
-        {visible.map((img) => (
-          <a
-            key={img.id}
-            className="charity-gallery-tile"
-            href={img.image_url}
-            target="_blank"
-            rel="noreferrer"
-            title={img.caption || img.alt_text || charity.name}
-          >
-            <img
-              src={img.image_url}
-              alt={img.alt_text || ''}
-              loading="lazy"
-            />
-            {img.caption && (
-              <span className="charity-gallery-caption">{img.caption}</span>
-            )}
-          </a>
-        ))}
+        {visible.map((img) => {
+          const imageUrl = resolveMediaUrl(img.image_url);
+          return (
+            <a
+              key={img.id}
+              className="charity-gallery-tile"
+              href={imageUrl}
+              target="_blank"
+              rel="noreferrer"
+              title={img.caption || img.alt_text || charity.name}
+            >
+              <img
+                src={imageUrl}
+                alt={img.alt_text || ''}
+                loading="lazy"
+              />
+              {img.caption && (
+                <span className="charity-gallery-caption">{img.caption}</span>
+              )}
+            </a>
+          );
+        })}
       </div>
       {overflow > 0 && (
         <button

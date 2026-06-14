@@ -135,6 +135,18 @@ export function resolveMediaUrl(value: string | null | undefined): string {
     }
   }
 
+  // Public HTTPS page, but a media URL was persisted as http:// (common when
+  // uploads are saved through a dev/tunnel backend). Upgrade it client-side so
+  // old database values don't trigger mixed-content warnings while the backend
+  // setting prevents new ones. This helper is only for media/branding assets,
+  // so preferring HTTPS for public absolute URLs is the least surprising path.
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    if (parsed.protocol === 'http:' && !isLoopback(parsed.hostname)) {
+      parsed.protocol = 'https:';
+      return parsed.toString();
+    }
+  }
+
   return value;
 }
 
