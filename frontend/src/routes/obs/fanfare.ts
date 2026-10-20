@@ -20,9 +20,9 @@
 
 let ctx: AudioContext | null = null;
 
-/** Lazily construct the shared AudioContext. Browsers will refuse to
- *  build one before any user gesture in dev; that's OK — we return null
- *  and the caller silent-fails. */
+/** Construct the shared AudioContext. Non-Chrome Browsers will refuse to 
+ * build one before any user gesture in dev; Chrome it may start suspended; 
+ * that's OK — we return null and the caller silent-fails. */
 function getCtx(): AudioContext | null {
   if (ctx) return ctx;
   const Ctor =
@@ -36,6 +36,28 @@ function getCtx(): AudioContext | null {
   } catch {
     return null;
   }
+}
+
+// Chrome's resume() never settles (rather than rejecting) when autoplay
+// policy blocks it, so an unguarded await hangs the caller forever.
+// 250 ms is far longer than a permitted resume takes.
+const RESUME_TIMEOUT_MS = 250;
+
+// Read through a call so TS doesn't carry a stale narrowing across the 
+// await - resume() changes `state` underneath us.
+const isRunning = (ac: AudioContext): boolean => ac.state === 'running';
+
+async function resumeWithTimeout(ac: AudioContext): Promise<boolean> {
+  if (isRunning(ac)) return true;
+  try {
+    await Promise.race([
+      ac.resume(),
+      new Promise((r) => window.setTimeout(r, RESUME_TIMEOUT_MS)),
+    ]);
+  } catch {
+    // Some engines do reject - same outcome.
+  }
+  return isRunning(ac);
 }
 
 interface FanfareOptions {
@@ -104,24 +126,7 @@ export async function playFanfare(
   const { volume = 0.18, waveform = 'square' } = options;
   const ac = getCtx();
   if (!ac) return null;
-
-  // Properly *await* resume. Previously this was fire-and-forget, which
-  // meant `ac.currentTime` was read while the context was still
-  // suspended; the timestamps we scheduled at were already in the past
-  // once resume finally completed, and the first notes silent-dropped.
-  if (ac.state === 'suspended') {
-    try {
-      await ac.resume();
-    } catch {
-      // Autoplay policy blocked us — caller can't recover without a
-      // user gesture. Silent fail.
-      return null;
-    }
-  }
-  // Belt-and-braces: if resume succeeded but the context still isn't
-  // running (some engines leave it in 'interrupted' on background tabs),
-  // bail rather than schedule into the void.
-  if (ac.state !== 'running') return null;
+  if (!(await resumeWithTimeout(ac))) return null;
 
   // Master gain → low-pass softens the square wave so it doesn't sound
   // brittle on streaming speakers.
@@ -197,13 +202,21 @@ export async function playFanfare(
  */
 export async function warmUpFanfare(): Promise<boolean> {
   const ac = getCtx();
-  if (!ac) return false;
-  if (ac.state === 'suspended') {
-    try {
-      await ac.resume();
-    } catch {
-      return false;
-    }
-  }
-  return ac.state === 'running';
+  return ac ? resumeWithTimeout(ac) : false;
+}
+
+/**
+ * Wether audio can play right now, without a user gesture. Safe to call on
+ * mount: constructing the context without a gesture is allowed (it starts 
+ * suspended), and resume() succeeds only if autoplay policy permits - true
+ * in OBS's browser source, false in a fresh browser tab until a click.
+ */
+export const probeAudioUnlocked = warmUpFanfare;
+
+export function onAudioStateChange(cb: (running: boolean) => void): () => void {
+  const ac = getCtx();
+  if (!ac) return () => {};
+  const h = () => cb(isRunning(ac));
+  ac.addEventListener('statechange', h);
+  return () => ac.removeEventListener('statechange', h);
 }
