@@ -9,7 +9,7 @@ import {
   HERO_REACH_SRC,
   HERO_HOLD_SRC,
 } from './chest-placeholders';
-import { playFanfare, warmUpFanfare, type PlaybackHandle } from './fanfare';
+import { probeAudioUnlocked, onAudioStateChange, playFanfare, warmUpFanfare, type PlaybackHandle } from './fanfare';
 import { pickTrigger, playSound } from './chestSoundTriggers';
 import './chest-announcer.css';
 
@@ -165,38 +165,45 @@ interface ActiveCard {
  * window. After that the source runs unattended for the whole stream.
  */
 export function ChestAnnouncer() {
-  const [started, setStarted] = useState(false);
-  if (!started) return <StartGate onStart={() => setStarted(true)} />;
-  return <ChestAnnouncerScene />;
-}
-
-function StartGate({ onStart }: { onStart: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const handleClick = async () => {
-    if (busy) return;
-    setBusy(true);
-    // Warm up the AudioContext while we still hold the user-gesture
-    // permission. Even if audio is disabled in /control settings, we
-    // do this so flipping it on later doesn't require another click.
-    await warmUpFanfare();
-    onStart();
-  };
+  const unlocked = useAudioUnlock();
   return (
-    <div className="ca-root">
-      <button
-        type="button"
-        className="ca-start-gate"
-        onClick={() => void handleClick()}
-        disabled={busy}
-      >
-        <span className="ca-start-title">Chest Announcer</span>
-        <span className="ca-start-hint">Click to start</span>
-      </button>
-    </div>
+    <>
+      <ChestAnnouncerScene audioUnlocked={unlocked === true} />
+      {unlocked === false && (
+        <div>
+          🔇 Click to enable sound
+        </div>
+      )}
+    </>
   );
 }
 
-function ChestAnnouncerScene() {
+function useAudioUnlock(): boolean | null {
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void probeAudioUnlocked().then((ok) => alive && setUnlocked(ok));
+    const off = onAudioStateChange((running) => alive && setUnlocked(running));
+    const unlock = () => {
+      void warmUpFanfare().then((ok) => alive && setUnlocked(ok));
+    }
+    window.addEventListener('pointerdown', unlock, { capture: true });
+    window.addEventListener('keydown', unlock, { capture: true });
+    return () => {
+      alive = false;
+      off();
+      window.removeEventListener('pointerdown', unlock, { capture: true });
+      window.removeEventListener('keydown', unlock, { capture: true });
+    }
+  }, []);
+  return unlocked;
+}
+
+function ChestAnnouncerScene({ audioUnlocked }: { audioUnlocked: boolean }) {
+  // Mirrored into a ref so the timer-driven phase effect reads the live
+  // value without it becoming a dep.
+  const audioUnlockedRef = useRef(audioUnlocked);
+  audioUnlockedRef.current = audioUnlocked;
   // Audio toggle is configured in /control/chest-announcer and stored
   // on the backend singleton ChestAnnouncerSettings model. Polled here
   // so the streamer can flip it mid-stream without refreshing the OBS
@@ -496,7 +503,7 @@ function ChestAnnouncerScene() {
           setCardPhase('enter');
           setPhase('showing_card');
         };
-        if (audioEnabledRef.current) {
+        if (audioEnabledRef.current && audioUnlockedRef.current) {
           const match = pickTrigger(
             donation,
             triggersRef.current ?? [],
@@ -550,7 +557,7 @@ function ChestAnnouncerScene() {
       // the fanfare `audio_enabled`). Build the utterance from the card:
       // donor + amount, plus the (TTS-cleaned) message when present.
       const showing = cardRef.current;
-      if (ttsEnabledRef.current && showing) {
+      if (ttsEnabledRef.current && audioUnlockedRef.current && showing) {
         const spokenMsg = showing.message.trim() ? cleanForTTS(showing.message) : '';
         const utterance = spokenMsg
           ? `${showing.donor} just donated ${showing.currency}${showing.amount} and says: ${spokenMsg}`
