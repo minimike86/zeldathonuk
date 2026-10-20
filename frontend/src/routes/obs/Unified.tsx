@@ -96,6 +96,7 @@ export function UnifiedLayout() {
       <div className="obs-unified-stage" key={`${renderedKey}-${tick}`}>
         <PresetLayout layoutType={renderedKey} />
       </div>
+      {/*
       <div className={`obs-unified-layout-badge obs-unified-layout-badge--${corner}`}>
         <span className="obs-unified-layout-tag">
           Layout{tagSuffix}
@@ -107,6 +108,7 @@ export function UnifiedLayout() {
         </span>
         {gameTitle && <span className="obs-unified-layout-game">{gameTitle}</span>}
       </div>
+      */}
       <div className="obs-unified-omnibar">
         <Omnibar />
       </div>
